@@ -53,7 +53,7 @@ export interface Template {
 }
 
 // Section and Widget Types
-export type SectionType = 'hero' | 'about' | 'services' | 'contact';
+export type SectionType = 'hero' | 'headline' | 'image-text' | 'image-gallery' | 'custom-code' | 'image-navigation' | 'contact-form' | 'about' | 'services' | 'contact';
 
 export interface Section {
   id: string;
@@ -62,23 +62,231 @@ export interface Section {
   widget: Widget;
 }
 
-export type Widget = HeroWidget | AboutWidget | ServicesWidget | ContactWidget;
+export type Widget = HeroWidget | HeadlineWidget | ImageTextWidget | ImageGalleryWidget | CustomCodeWidget | ImageNavigationWidget | ContactFormWidget | AboutWidget | ServicesWidget | ContactWidget;
 
+// Spacing interface for consistent spacing properties
+export interface SpacingValues {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+// Background types
+export interface BackgroundConfig {
+  type: 'color' | 'image' | 'video' | 'gradient';
+  color?: string;
+  url?: string;
+  opacity: number;
+  blur: number;
+  gradient?: {
+    enabled: boolean;
+    colorStart: string;
+    colorEnd: string;
+    angle: number;
+  };
+  overlay?: {
+    enabled: boolean;
+    color: string;
+    opacity: number;
+    gradient?: {
+      enabled: boolean;
+      colorStart: string;
+      colorEnd: string;
+      angle: number;
+    };
+  };
+}
+
+// Button style configuration
+export interface ButtonStyleConfig {
+  text: string;
+  url: string;
+  radius: number;
+  bgColor: string;
+  textColor: string;
+  bgOpacity?: number; // 0-100
+  blurAmount?: number; // 0-20px
+  hasBlur?: boolean; // Legacy - kept for backward compatibility
+  hasShadow: boolean;
+  shadowAmount: number;
+  strokeWidth: number;
+  strokeColor: string;
+}
+
+// Typography configuration
+export interface TypographyConfig {
+  fontFamily: string;
+  size: string;
+  weight: string;
+  lineHeight: string;
+  letterSpacing?: string;
+  color: string;
+}
+
+// Layout configuration
+export interface LayoutConfig {
+  height: {
+    type: 'auto' | 'vh' | 'percentage' | 'pixels';
+    value?: number;
+  };
+  width: 'full' | 'container';
+  padding: SpacingValues;
+  margin: SpacingValues;
+}
+
+// Enhanced Hero Widget with comprehensive properties
 export interface HeroWidget {
   type: 'hero';
-  background: {
-    type: 'image' | 'video';
-    url: string;
+  title: string;
+  subtitle: string;
+  button: ButtonStyleConfig;
+  textColor: string;
+  background: BackgroundConfig;
+  layout: LayoutConfig;
+  textStyles: {
+    title: TypographyConfig;
+    subtitle: TypographyConfig;
   };
-  headline: string;
-  subheadline: string;
-  cta: {
+  textPosition: {
+    horizontal: 'left' | 'center' | 'right';
+    vertical: 'top' | 'middle' | 'bottom';
+  };
+  border?: {
+    width: number;
+    style: 'solid' | 'dashed' | 'dotted';
+    color: string;
+  };
+  // Legacy fields for backward compatibility
+  headline?: string;
+  subheadline?: string;
+  cta?: {
     text: string;
     url: string;
   };
-  alignment: 'left' | 'center' | 'right';
+  alignment?: 'left' | 'center' | 'right';
 }
 
+// Headline Widget
+export interface HeadlineWidget {
+  type: 'headline';
+  title: string;
+  subtitle?: string;
+  background: {
+    color: string;
+    hasLink: boolean;
+    linkUrl?: string;
+  };
+  textAlign: 'left' | 'center' | 'right';
+  padding: SpacingValues;
+  margin?: SpacingValues;
+  height?: {
+    type: 'auto' | 'vh' | 'percentage' | 'pixels';
+    value?: number;
+  };
+}
+
+// Image + Text Widget
+export interface ImageTextWidget {
+  type: 'image-text';
+  layout: 'image-left' | 'image-right';
+  image: string;
+  imageHeight?: {
+    type: 'auto' | 'vh' | 'percentage' | 'pixels';
+    value?: number;
+  };
+  imageBorderRadius?: number;
+  imageObjectFit?: 'cover' | 'contain' | 'fill';
+  imageObjectPosition?: {
+    x: string; // 'center', 'left', 'right', or percentage like '25%'
+    y: string; // 'center', 'top', 'bottom', or percentage like '75%'
+  };
+  title?: string;
+  content: string;
+  textAlign?: 'left' | 'center' | 'right';
+  textVerticalAlign?: 'top' | 'middle' | 'bottom';
+  cta?: {
+    text: string;
+    url: string;
+  };
+  buttonStyles?: {
+    radius: number;
+    bgColor: string;
+    textColor: string;
+    bgOpacity?: number;
+    blurAmount?: number;
+    hasShadow: boolean;
+    shadowAmount: number;
+    strokeWidth: number;
+    strokeColor: string;
+  };
+  imageWidth: number; // percentage
+  gap: number;
+  background?: {
+    type: 'none' | 'color' | 'image' | 'video';
+    color?: string;
+    url?: string;
+    opacity?: number;
+  };
+  mobileLayout?: 'stacked-image-top' | 'stacked-image-bottom' | 'horizontal';
+  padding?: SpacingValues;
+  margin?: SpacingValues;
+}
+
+// Image Gallery Widget
+export interface ImageGalleryWidget {
+  type: 'image-gallery';
+  images: {
+    id: string;
+    url: string;
+    alt?: string;
+    caption?: string;
+  }[];
+  columns: number;
+  gap: number;
+  aspectRatio: '1:1' | '4:3' | '16:9' | 'auto';
+}
+
+// Custom Code Widget
+export interface CustomCodeWidget {
+  type: 'custom-code';
+  html: string;
+  css: string;
+  javascript: string;
+}
+
+// Image Navigation Widget
+export interface ImageNavigationWidget {
+  type: 'image-navigation';
+  items: {
+    id: string;
+    title: string;
+    image: string;
+    url: string;
+  }[];
+  columns: number;
+  gap: number;
+}
+
+// Contact Form Widget
+export interface ContactFormWidget {
+  type: 'contact-form';
+  formFields: FormField[];
+  buttonText: string;
+  confirmationMessage: string;
+  submitEndpoint?: string;
+}
+
+export interface FormField {
+  id: string;
+  type: 'text' | 'email' | 'phone' | 'textarea' | 'custom';
+  label: string;
+  placeholder?: string;
+  required: boolean;
+  order: number;
+}
+
+// Legacy widgets for backward compatibility
 export interface AboutWidget {
   type: 'about';
   content: string;
@@ -108,15 +316,6 @@ export interface ContactWidget {
   formFields: FormField[];
   buttonText: string;
   confirmationMessage: string;
-}
-
-export interface FormField {
-  id: string;
-  type: 'text' | 'email' | 'phone' | 'textarea' | 'custom';
-  label: string;
-  placeholder?: string;
-  required: boolean;
-  order: number;
 }
 
 // Global Styles Types

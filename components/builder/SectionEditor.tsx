@@ -4,19 +4,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Section, HeroWidget, AboutWidget, ServicesWidget, ContactWidget } from '@/lib/types';
+import { Section, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { HeroSectionEditor } from './HeroSectionEditor';
+import { HeadlineEditor } from './section-editors/HeadlineEditor';
+import { ImageTextEditor } from './section-editors/ImageTextEditor';
 
 interface SectionEditorProps {
-  siteId: string;
   pageId: string;
   sections: Section[];
 }
 
-export function SectionEditor({ siteId, pageId, sections }: SectionEditorProps) {
+export function SectionEditor({ pageId, sections }: SectionEditorProps) {
   const { selectedSectionId, selectSection } = useBuilderStore();
   const { updatePage } = useWebsiteStore();
 
@@ -28,7 +30,7 @@ export function SectionEditor({ siteId, pageId, sections }: SectionEditorProps) 
     const updatedSections = sections.map(s =>
       s.id === selectedSectionId ? { ...s, ...updates } : s
     );
-    updatePage(siteId, pageId, { sections: updatedSections });
+    updatePage(pageId, { sections: updatedSections });
   };
 
   const updateWidget = (widgetUpdates: any) => {
@@ -52,8 +54,44 @@ export function SectionEditor({ siteId, pageId, sections }: SectionEditorProps) 
 
       <div className="flex-1 overflow-auto p-4 space-y-4">
         {section.type === 'hero' && (
-          <HeroEditor 
+          <HeroSectionEditor 
             widget={section.widget as HeroWidget}
+            onChange={updateWidget}
+          />
+        )}
+        {section.type === 'headline' && (
+          <HeadlineEditor 
+            widget={section.widget as HeadlineWidget}
+            onChange={updateWidget}
+          />
+        )}
+        {section.type === 'image-text' && (
+          <ImageTextEditor 
+            widget={section.widget as ImageTextWidget}
+            onChange={updateWidget}
+          />
+        )}
+        {section.type === 'image-gallery' && (
+          <ImageGalleryEditor 
+            widget={section.widget as ImageGalleryWidget}
+            onChange={updateWidget}
+          />
+        )}
+        {section.type === 'custom-code' && (
+          <CustomCodeEditor 
+            widget={section.widget as CustomCodeWidget}
+            onChange={updateWidget}
+          />
+        )}
+        {section.type === 'image-navigation' && (
+          <ImageNavigationEditor 
+            widget={section.widget as ImageNavigationWidget}
+            onChange={updateWidget}
+          />
+        )}
+        {section.type === 'contact-form' && (
+          <ContactFormEditor 
+            widget={section.widget as ContactFormWidget}
             onChange={updateWidget}
           />
         )}
@@ -80,69 +118,111 @@ export function SectionEditor({ siteId, pageId, sections }: SectionEditorProps) 
   );
 }
 
-function HeroEditor({ widget, onChange }: { widget: HeroWidget; onChange: (updates: any) => void }) {
+// Placeholder editors for new section types (HeadlineEditor and ImageTextEditor are now imported)
+
+function ImageGalleryEditor({ widget, onChange }: { widget: ImageGalleryWidget; onChange: (updates: any) => void }) {
   return (
     <>
       <div className="space-y-2">
-        <Label>Background Image URL</Label>
+        <Label>Columns</Label>
         <Input
-          value={widget.background.url}
-          onChange={(e) => onChange({ background: { ...widget.background, url: e.target.value } })}
-          placeholder="https://example.com/image.jpg"
+          type="number"
+          min="1"
+          max="6"
+          value={widget.columns}
+          onChange={(e) => onChange({ columns: parseInt(e.target.value) })}
         />
       </div>
-
       <div className="space-y-2">
-        <Label>Headline</Label>
+        <Label>Gap (px)</Label>
         <Input
-          value={widget.headline}
-          onChange={(e) => onChange({ headline: e.target.value })}
-          placeholder="Your main headline"
+          type="number"
+          value={widget.gap}
+          onChange={(e) => onChange({ gap: parseInt(e.target.value) })}
         />
       </div>
+      <p className="text-sm text-muted-foreground">
+        Gallery with {widget.images.length} images
+      </p>
+    </>
+  );
+}
 
+function CustomCodeEditor({ widget, onChange }: { widget: CustomCodeWidget; onChange: (updates: any) => void }) {
+  return (
+    <>
       <div className="space-y-2">
-        <Label>Subheadline</Label>
+        <Label>HTML</Label>
         <Textarea
-          value={widget.subheadline}
-          onChange={(e) => onChange({ subheadline: e.target.value })}
-          placeholder="Supporting text"
+          value={widget.html}
+          onChange={(e) => onChange({ html: e.target.value })}
+          rows={4}
+          className="font-mono text-xs"
         />
       </div>
+      <div className="space-y-2">
+        <Label>CSS</Label>
+        <Textarea
+          value={widget.css}
+          onChange={(e) => onChange({ css: e.target.value })}
+          rows={4}
+          className="font-mono text-xs"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>JavaScript</Label>
+        <Textarea
+          value={widget.javascript}
+          onChange={(e) => onChange({ javascript: e.target.value })}
+          rows={4}
+          className="font-mono text-xs"
+        />
+      </div>
+    </>
+  );
+}
 
+function ImageNavigationEditor({ widget, onChange }: { widget: ImageNavigationWidget; onChange: (updates: any) => void }) {
+  return (
+    <>
+      <div className="space-y-2">
+        <Label>Columns</Label>
+        <Input
+          type="number"
+          min="1"
+          max="6"
+          value={widget.columns}
+          onChange={(e) => onChange({ columns: parseInt(e.target.value) })}
+        />
+      </div>
+      <p className="text-sm text-muted-foreground">
+        {widget.items.length} navigation items
+      </p>
+    </>
+  );
+}
+
+function ContactFormEditor({ widget, onChange }: { widget: ContactFormWidget; onChange: (updates: any) => void }) {
+  return (
+    <>
       <div className="space-y-2">
         <Label>Button Text</Label>
         <Input
-          value={widget.cta.text}
-          onChange={(e) => onChange({ cta: { ...widget.cta, text: e.target.value } })}
+          value={widget.buttonText}
+          onChange={(e) => onChange({ buttonText: e.target.value })}
         />
       </div>
-
       <div className="space-y-2">
-        <Label>Button URL</Label>
-        <Input
-          value={widget.cta.url}
-          onChange={(e) => onChange({ cta: { ...widget.cta, url: e.target.value } })}
-          placeholder="/contact"
+        <Label>Confirmation Message</Label>
+        <Textarea
+          value={widget.confirmationMessage}
+          onChange={(e) => onChange({ confirmationMessage: e.target.value })}
+          rows={3}
         />
       </div>
-
-      <div className="space-y-2">
-        <Label>Alignment</Label>
-        <div className="grid grid-cols-3 gap-2">
-          {(['left', 'center', 'right'] as const).map((align) => (
-            <Button
-              key={align}
-              variant={widget.alignment === align ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => onChange({ alignment: align })}
-              className="capitalize"
-            >
-              {align}
-            </Button>
-          ))}
-        </div>
-      </div>
+      <p className="text-sm text-muted-foreground">
+        Form has {widget.formFields.length} fields
+      </p>
     </>
   );
 }

@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Websites', href: '/sites', icon: Globe },
+  { name: 'Pages', href: '/pages', icon: Globe },
   { name: 'Leads', href: '/leads', icon: Users },
   { name: 'Templates', href: '/templates', icon: FolderKanban, adminOnly: true },
 ];

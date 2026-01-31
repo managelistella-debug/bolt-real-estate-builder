@@ -7,11 +7,13 @@ interface BuilderState {
   currentPageId: string | null;
   selectedSectionId: string | null;
   deviceView: DeviceView;
+  showLayersPanel: boolean;
   history: Section[][];
   historyIndex: number;
   setCurrentPage: (pageId: string) => void;
   selectSection: (sectionId: string | null) => void;
   setDeviceView: (view: DeviceView) => void;
+  setShowLayersPanel: (show: boolean) => void;
   addToHistory: (sections: Section[]) => void;
   undo: () => void;
   redo: () => void;
@@ -23,6 +25,7 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   currentPageId: null,
   selectedSectionId: null,
   deviceView: 'desktop',
+  showLayersPanel: false,
   history: [],
   historyIndex: -1,
   
@@ -41,6 +44,10 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   
   setDeviceView: (view) => {
     set({ deviceView: view });
+  },
+  
+  setShowLayersPanel: (show) => {
+    set({ showLayersPanel: show });
   },
   
   addToHistory: (sections) => {

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User } from '@/lib/types';
+import { useWebsiteStore } from './website';
 
 interface AuthState {
   user: User | null;
