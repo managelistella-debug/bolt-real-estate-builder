@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Page, Website, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
+import { Page, Website, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { useImageCollectionsStore } from '@/lib/stores/imageCollections';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { Lightbox } from './Lightbox';
+import { getIcon } from '@/lib/icons/iconLibrary';
 
 interface LivePreviewProps {
   page: Page;
@@ -67,6 +68,12 @@ export function LivePreview({ page, website }: LivePreviewProps) {
               )}
               {section.type === 'image-gallery' && (
                 <ImageGallerySection widget={section.widget as ImageGalleryWidget} />
+              )}
+              {section.type === 'icon-text' && (
+                <IconTextSection widget={section.widget as IconTextWidget} />
+              )}
+              {section.type === 'text-section' && (
+                <TextSectionComponent widget={section.widget as TextSectionWidget} />
               )}
               {section.type === 'custom-code' && (
                 <CustomCodeSection widget={section.widget as CustomCodeWidget} />
@@ -1071,6 +1078,536 @@ function ImageNavigationSection({ widget }: { widget: ImageNavigationWidget }) {
             </a>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function IconTextSection({ widget }: { widget: IconTextWidget }) {
+  const { deviceView } = useBuilderStore();
+
+  // Ensure alignment has a valid value
+  const alignment = widget.alignment || 'center';
+
+  // Icon size mapping
+  const ICON_SIZES = {
+    sm: 'w-8 h-8',
+    md: 'w-12 h-12',
+    lg: 'w-16 h-16',
+    xl: 'w-20 h-20',
+  };
+
+  const iconSizeClass = ICON_SIZES[widget.iconSize || 'md'];
+  
+  // Safeguard for columns, gap, and items
+  const columns = widget.columns || 3;
+  const gap = widget.gap ?? 24;
+  const items = widget.items || [];
+  
+  // Box styling
+  const boxed = widget.boxed || false;
+  const boxBackground = widget.boxBackground || '#ffffff';
+  const boxBorderRadius = widget.boxBorderRadius ?? 12;
+  const boxPadding = widget.boxPadding ?? 24;
+  const boxShadow = widget.boxShadow !== false; // Default to true
+  const boxBorder = widget.boxBorder || false;
+  const boxBorderColor = widget.boxBorderColor || '#e5e7eb';
+  const boxBorderWidth = widget.boxBorderWidth ?? 1;
+  
+  const boxStyle: React.CSSProperties = boxed ? {
+    backgroundColor: boxBackground,
+    borderRadius: `${boxBorderRadius}px`,
+    padding: `${boxPadding}px`,
+    ...(boxShadow && {
+      boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+    }),
+    ...(boxBorder && {
+      border: `${boxBorderWidth}px solid ${boxBorderColor}`,
+    }),
+  } : {};
+
+  // Determine number of columns based on device view
+  let displayColumns = columns;
+  if (deviceView === 'mobile') {
+    displayColumns = 1;
+  } else if (deviceView === 'tablet') {
+    displayColumns = Math.max(2, columns - 1);
+  }
+
+  // Determine items to display
+  const displayItems = widget.showViewMore && widget.itemsBeforeViewMore
+    ? items.slice(0, widget.itemsBeforeViewMore)
+    : items;
+
+  // Background styling
+  const bgType = widget.background?.type || 'none';
+  const bgColor = widget.background?.color || 'transparent';
+  const bgOpacity = (widget.background?.opacity || 100) / 100;
+  const bgBlur = widget.background?.blur || 0;
+
+  // Layout - with robust safeguards for corrupted data
+  const defaultLayout = {
+    height: { type: 'auto' as const },
+    width: 'container' as const,
+    padding: { top: 60, right: 20, bottom: 60, left: 20 },
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
+  };
+  
+  // Ensure layout is an object and has proper structure
+  const layoutCfg = (widget.layout && typeof widget.layout === 'object' && 'height' in widget.layout)
+    ? {
+        height: widget.layout.height || defaultLayout.height,
+        width: widget.layout.width || defaultLayout.width,
+        padding: widget.layout.padding || defaultLayout.padding,
+        margin: widget.layout.margin || defaultLayout.margin,
+      }
+    : defaultLayout;
+
+  let heightStyle: React.CSSProperties = {};
+  if (layoutCfg.height?.type === 'vh') {
+    heightStyle.height = `${layoutCfg.height.value || 100}vh`;
+  } else if (layoutCfg.height?.type === 'pixels') {
+    heightStyle.height = `${layoutCfg.height.value || 500}px`;
+  }
+
+  const sectionStyle: React.CSSProperties = {
+    ...heightStyle,
+    paddingTop: `${layoutCfg.padding?.top || 60}px`,
+    paddingRight: `${layoutCfg.padding?.right || 20}px`,
+    paddingBottom: `${layoutCfg.padding?.bottom || 60}px`,
+    paddingLeft: `${layoutCfg.padding?.left || 20}px`,
+    marginTop: `${layoutCfg.margin?.top || 0}px`,
+    marginRight: `${layoutCfg.margin?.right || 0}px`,
+    marginBottom: `${layoutCfg.margin?.bottom || 0}px`,
+    marginLeft: `${layoutCfg.margin?.left || 0}px`,
+  };
+
+  return (
+    <div className="relative overflow-hidden" style={sectionStyle}>
+      {/* Background layer */}
+      {bgType !== 'none' && (
+        <div className="absolute inset-0 z-0">
+          {bgType === 'color' && (
+            <div
+              className="w-full h-full"
+              style={{
+                backgroundColor: bgColor,
+                opacity: bgOpacity,
+              }}
+            />
+          )}
+          {bgType === 'image' && widget.background?.url && (
+            <Image
+              src={widget.background.url}
+              alt="Section background"
+              fill
+              className="object-cover"
+              style={{ opacity: bgOpacity }}
+            />
+          )}
+          {bgType === 'video' && widget.background?.url && (
+            <video
+              src={widget.background.url}
+              autoPlay
+              loop
+              muted
+              className="w-full h-full object-cover"
+              style={{ opacity: bgOpacity }}
+            />
+          )}
+          {bgBlur > 0 && (
+            <div
+              className="absolute inset-0"
+              style={{ backdropFilter: `blur(${bgBlur}px)` }}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Content layer */}
+      <div className={cn('relative z-10', layoutCfg.width === 'container' && 'max-w-6xl mx-auto')}>
+        {/* Section Header */}
+        {(widget.sectionHeading || widget.sectionSubheading) && (
+          <div className="text-center mb-12">
+            {widget.sectionHeading && (
+              <h2
+                className="text-4xl font-bold mb-4"
+                style={{ color: widget.sectionHeadingColor || '#1f2937' }}
+              >
+                {widget.sectionHeading}
+              </h2>
+            )}
+            {widget.sectionSubheading && (
+              <p
+                className="text-lg"
+                style={{ color: widget.sectionSubheadingColor || '#6b7280' }}
+              >
+                {widget.sectionSubheading}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Items Grid */}
+        <div
+          className="grid"
+          style={{
+            gridTemplateColumns: `repeat(${displayColumns}, minmax(0, 1fr))`,
+            gap: `${deviceView === 'mobile' ? gap / 2 : gap}px`,
+          }}
+        >
+          {displayItems.map((item) => {
+            const IconComponent = getIcon(item.icon);
+
+            if (alignment === 'left') {
+              // Left Aligned Layout
+              return (
+                <div key={item.id} className="flex gap-4 items-start" style={boxStyle}>
+                  {/* Icon Container */}
+                  <div
+                    className="flex-shrink-0 rounded-full flex items-center justify-center"
+                    style={{
+                      backgroundColor: item.iconBgColor || 'transparent',
+                      padding: widget.iconSize === 'sm' ? '12px' : widget.iconSize === 'md' ? '16px' : widget.iconSize === 'lg' ? '20px' : '24px',
+                    }}
+                  >
+                    <IconComponent className={iconSizeClass} color={item.iconColor} />
+                  </div>
+
+                  {/* Text Content */}
+                  <div className="flex-1">
+                    {item.heading && (
+                      <h3
+                        className="text-xl font-semibold mb-2"
+                        style={{ color: item.headingColor || '#1f2937' }}
+                      >
+                        {item.heading}
+                      </h3>
+                    )}
+                    {item.subheading && (
+                      <p
+                        className="text-sm leading-relaxed"
+                        style={{ color: item.subheadingColor || '#6b7280' }}
+                      >
+                        {item.subheading}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            } else {
+              // Center Aligned Layout
+              return (
+                <div key={item.id} className="flex flex-col items-center text-center" style={boxStyle}>
+                  {/* Icon Container */}
+                  <div
+                    className="rounded-full flex items-center justify-center mb-4"
+                    style={{
+                      backgroundColor: item.iconBgColor || 'transparent',
+                      padding: widget.iconSize === 'sm' ? '12px' : widget.iconSize === 'md' ? '16px' : widget.iconSize === 'lg' ? '20px' : '24px',
+                    }}
+                  >
+                    <IconComponent className={iconSizeClass} color={item.iconColor} />
+                  </div>
+
+                  {/* Text Content */}
+                  <div>
+                    {item.heading && (
+                      <h3
+                        className="text-xl font-semibold mb-2"
+                        style={{ color: item.headingColor || '#1f2937' }}
+                      >
+                        {item.heading}
+                      </h3>
+                    )}
+                    {item.subheading && (
+                      <p
+                        className="text-sm leading-relaxed"
+                        style={{ color: item.subheadingColor || '#6b7280' }}
+                      >
+                        {item.subheading}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+          })}
+        </div>
+
+        {/* View More Button */}
+        {widget.showViewMore && widget.viewMoreUrl && (
+          <div className="mt-12 text-center">
+            <a
+              href={widget.viewMoreUrl}
+              className="inline-block px-8 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors"
+            >
+              {widget.viewMoreText || 'View More'}
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TextSectionComponent({ widget }: { widget: TextSectionWidget }) {
+  const { deviceView } = useBuilderStore();
+
+  // Safeguards
+  const layout = widget.layout || 'side-by-side';
+  const headingAlignment = widget.headingAlignment || 'left';
+  const bodyAlignment = widget.bodyAlignment || 'left';
+  const headingSize = widget.headingSize ?? 48;
+  const bodySize = widget.bodySize ?? 16;
+  const taglineSize = widget.taglineSize ?? 14;
+  const columnGap = widget.columnGap ?? 60;
+  const rowGap = widget.rowGap ?? 24;
+  const headingColumnWidth = widget.headingColumnWidth ?? 40;
+  const reverseOrder = widget.reverseOrder || false;
+
+  // Force stacked layout on mobile
+  const effectiveLayout = deviceView === 'mobile' ? 'stacked' : layout;
+
+  // Background styling
+  const bgType = widget.background?.type || 'none';
+  const bgColor = widget.background?.color || 'transparent';
+  const bgOpacity = (widget.background?.opacity || 100) / 100;
+  const bgBlur = widget.background?.blur || 0;
+
+  // Layout config
+  const defaultLayout = {
+    height: { type: 'auto' as const },
+    width: 'container' as const,
+    padding: { top: 80, right: 20, bottom: 80, left: 20 },
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
+  };
+  
+  const layoutCfg = (widget.layout && typeof widget.layout === 'object' && 'height' in widget.layout)
+    ? {
+        height: widget.layout.height || defaultLayout.height,
+        width: widget.layout.width || defaultLayout.width,
+        padding: widget.layout.padding || defaultLayout.padding,
+        margin: widget.layout.margin || defaultLayout.margin,
+      }
+    : defaultLayout;
+
+  let heightStyle: React.CSSProperties = {};
+  if (layoutCfg.height?.type === 'vh') {
+    heightStyle.height = `${layoutCfg.height.value || 100}vh`;
+  } else if (layoutCfg.height?.type === 'pixels') {
+    heightStyle.height = `${layoutCfg.height.value || 500}px`;
+  }
+
+  const sectionStyle: React.CSSProperties = {
+    ...heightStyle,
+    paddingTop: `${layoutCfg.padding?.top || 80}px`,
+    paddingRight: `${layoutCfg.padding?.right || 20}px`,
+    paddingBottom: `${layoutCfg.padding?.bottom || 80}px`,
+    paddingLeft: `${layoutCfg.padding?.left || 20}px`,
+    marginTop: `${layoutCfg.margin?.top || 0}px`,
+    marginRight: `${layoutCfg.margin?.right || 0}px`,
+    marginBottom: `${layoutCfg.margin?.bottom || 0}px`,
+    marginLeft: `${layoutCfg.margin?.left || 0}px`,
+  };
+
+  // Button styling
+  const buttonStyle = widget.buttonStyle || {
+    backgroundColor: '#10b981',
+    backgroundOpacity: 100,
+    textColor: '#ffffff',
+    borderRadius: 8,
+    blur: 0,
+    shadow: true,
+    borderWidth: 0,
+    borderColor: '#000000',
+  };
+
+  const buttonBgColor = buttonStyle.backgroundColor;
+  const buttonOpacity = (buttonStyle.backgroundOpacity || 100) / 100;
+  const buttonTextColor = buttonStyle.textColor;
+  const buttonBorderRadius = buttonStyle.borderRadius;
+  const buttonBlur = buttonStyle.blur || 0;
+  const buttonShadow = buttonStyle.shadow;
+  const buttonBorderWidth = buttonStyle.borderWidth || 0;
+  const buttonBorderColor = buttonStyle.borderColor;
+
+  const buttonContainerStyle: React.CSSProperties = {
+    backgroundColor: buttonBgColor,
+    opacity: buttonOpacity,
+    color: buttonTextColor,
+    borderRadius: `${buttonBorderRadius}px`,
+    ...(buttonBlur > 0 && { backdropFilter: `blur(${buttonBlur}px)` }),
+    ...(buttonShadow && { boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' }),
+    ...(buttonBorderWidth > 0 && {
+      border: `${buttonBorderWidth}px solid ${buttonBorderColor}`,
+    }),
+  };
+
+  // Alignment classes
+  const getAlignmentClass = (alignment: string) => {
+    switch (alignment) {
+      case 'center':
+        return 'text-center';
+      case 'right':
+        return 'text-right';
+      default:
+        return 'text-left';
+    }
+  };
+
+  // Responsive font sizes
+  const responsiveHeadingSize = deviceView === 'mobile' ? Math.min(headingSize, 32) : deviceView === 'tablet' ? Math.min(headingSize, 36) : headingSize;
+  const responsiveBodySize = deviceView === 'mobile' ? Math.min(bodySize, 14) : bodySize;
+
+  // Tagline component
+  const taglineElement = widget.tagline && (
+    <div
+      className="font-semibold uppercase tracking-wide mb-4"
+      style={{
+        color: widget.taglineColor || '#10b981',
+        fontSize: `${taglineSize}px`,
+      }}
+    >
+      {widget.tagline}
+    </div>
+  );
+
+  // Heading component
+  const headingElement = (
+    <h2
+      className={`font-bold ${getAlignmentClass(headingAlignment)}`}
+      style={{
+        color: widget.headingColor || '#1f2937',
+        fontSize: `${responsiveHeadingSize}px`,
+        lineHeight: '1.2',
+      }}
+    >
+      {widget.heading}
+    </h2>
+  );
+
+  // Body component
+  const bodyElement = (
+    <div
+      className={`${getAlignmentClass(bodyAlignment)}`}
+      style={{
+        color: widget.bodyTextColor || '#6b7280',
+        fontSize: `${responsiveBodySize}px`,
+        lineHeight: '1.6',
+        maxWidth: bodyAlignment === 'center' ? '65ch' : 'none',
+        margin: bodyAlignment === 'center' ? '0 auto' : '0',
+      }}
+    >
+      {widget.bodyText}
+    </div>
+  );
+
+  // Button component
+  const buttonElement = widget.buttonText && widget.buttonText.trim() !== '' && (
+    <div className={`mt-6 ${getAlignmentClass(bodyAlignment)}`}>
+      <a
+        href={widget.buttonUrl || '#'}
+        className="inline-block px-6 py-3 font-medium transition-all hover:scale-105"
+        style={buttonContainerStyle}
+      >
+        {widget.buttonText}
+      </a>
+    </div>
+  );
+
+  return (
+    <div className="relative overflow-hidden" style={sectionStyle}>
+      {/* Background layer */}
+      {bgType !== 'none' && (
+        <div className="absolute inset-0 z-0">
+          {bgType === 'color' && (
+            <div
+              className="w-full h-full"
+              style={{
+                backgroundColor: bgColor,
+                opacity: bgOpacity,
+              }}
+            />
+          )}
+          {bgType === 'image' && widget.background?.url && (
+            <Image
+              src={widget.background.url}
+              alt="Section background"
+              fill
+              className="object-cover"
+              style={{ opacity: bgOpacity }}
+            />
+          )}
+          {bgType === 'video' && widget.background?.url && (
+            <video
+              src={widget.background.url}
+              autoPlay
+              loop
+              muted
+              className="w-full h-full object-cover"
+              style={{ opacity: bgOpacity }}
+            />
+          )}
+          {bgBlur > 0 && (
+            <div
+              className="absolute inset-0"
+              style={{ backdropFilter: `blur(${bgBlur}px)` }}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Content layer */}
+      <div className={cn('relative z-10', layoutCfg.width === 'container' && 'max-w-6xl mx-auto')}>
+        {effectiveLayout === 'side-by-side' ? (
+          // Side by Side Layout
+          <div
+            className="grid items-start"
+            style={{
+              gridTemplateColumns: reverseOrder
+                ? `${100 - headingColumnWidth}% ${headingColumnWidth}%`
+                : `${headingColumnWidth}% ${100 - headingColumnWidth}%`,
+              gap: `${columnGap}px`,
+            }}
+          >
+            {reverseOrder ? (
+              <>
+                {/* Body Column */}
+                <div>
+                  {bodyElement}
+                  {buttonElement}
+                </div>
+                {/* Heading Column */}
+                <div>
+                  {taglineElement}
+                  {headingElement}
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Heading Column */}
+                <div>
+                  {taglineElement}
+                  {headingElement}
+                </div>
+                {/* Body Column */}
+                <div>
+                  {bodyElement}
+                  {buttonElement}
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          // Stacked Layout
+          <div className="flex flex-col" style={{ gap: `${rowGap}px` }}>
+            {taglineElement}
+            {headingElement}
+            {bodyElement}
+            {buttonElement}
+          </div>
+        )}
       </div>
     </div>
   );

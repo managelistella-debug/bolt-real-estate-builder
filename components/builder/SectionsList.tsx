@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Section, SectionType } from '@/lib/types';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { useWebsiteStore } from '@/lib/stores/website';
-import { Plus, GripVertical, Edit, Trash2, Sparkles, Type, Image, Grid3x3, Code, Navigation, Mail, FileText, Wrench } from 'lucide-react';
+import { Plus, GripVertical, Edit, Trash2, Sparkles, Type, Image, Grid3x3, Boxes, AlignLeft, Code, Navigation, Mail, FileText, Wrench } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { SectionPickerDialog } from './SectionPickerDialog';
 
@@ -20,6 +20,8 @@ const sectionIcons: Record<string, any> = {
   headline: Type,
   'image-text': Image,
   'image-gallery': Grid3x3,
+  'icon-text': Boxes,
+  'text-section': AlignLeft,
   'custom-code': Code,
   'image-navigation': Navigation,
   'contact-form': Mail,
@@ -33,6 +35,8 @@ const sectionLabels: Record<string, string> = {
   headline: 'Headline',
   'image-text': 'Image + Text',
   'image-gallery': 'Image Gallery',
+  'icon-text': 'Icon + Text',
+  'text-section': 'Text Section',
   'custom-code': 'Custom Code',
   'image-navigation': 'Image Navigation',
   'contact-form': 'Contact Form',
@@ -332,6 +336,116 @@ function createDefaultWidget(type: SectionType): any {
           height: { type: 'auto' },
           width: 'container',
           padding: { top: 40, right: 20, bottom: 40, left: 20 },
+          margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        },
+      };
+    case 'icon-text':
+      return {
+        type: 'icon-text',
+        alignment: 'center',
+        items: [
+          {
+            id: `item_${Date.now()}_1`,
+            icon: 'check',
+            iconColor: '#10b981',
+            iconBgColor: '#d1fae5',
+            heading: 'Feature One',
+            headingColor: '#1f2937',
+            subheading: 'Description of feature one goes here. Add details about this feature.',
+            subheadingColor: '#6b7280',
+            order: 0,
+          },
+          {
+            id: `item_${Date.now()}_2`,
+            icon: 'star',
+            iconColor: '#10b981',
+            iconBgColor: '#d1fae5',
+            heading: 'Feature Two',
+            headingColor: '#1f2937',
+            subheading: 'Description of feature two goes here. Add details about this feature.',
+            subheadingColor: '#6b7280',
+            order: 1,
+          },
+          {
+            id: `item_${Date.now()}_3`,
+            icon: 'shield',
+            iconColor: '#10b981',
+            iconBgColor: '#d1fae5',
+            heading: 'Feature Three',
+            headingColor: '#1f2937',
+            subheading: 'Description of feature three goes here. Add details about this feature.',
+            subheadingColor: '#6b7280',
+            order: 2,
+          },
+        ],
+        columns: 3,
+        gap: 24,
+        iconSize: 'md',
+        showViewMore: false,
+        viewMoreText: 'View More',
+        itemsBeforeViewMore: 6,
+        boxed: false,
+        boxBackground: '#ffffff',
+        boxBorderRadius: 12,
+        boxPadding: 24,
+        boxShadow: true,
+        boxBorder: false,
+        boxBorderColor: '#e5e7eb',
+        boxBorderWidth: 1,
+        background: {
+          type: 'color',
+          color: 'transparent',
+          opacity: 100,
+          blur: 0,
+        },
+        layout: {
+          height: { type: 'auto' },
+          width: 'container',
+          padding: { top: 60, right: 20, bottom: 60, left: 20 },
+          margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        },
+      };
+    case 'text-section':
+      return {
+        type: 'text-section',
+        layout: 'side-by-side',
+        tagline: 'LOCAL. RELIABLE. PROFESSIONAL.',
+        taglineColor: '#10b981',
+        heading: 'About Us',
+        headingColor: '#1f2937',
+        bodyText: 'Your company description goes here. Add details about your services, mission, and what makes you unique.',
+        bodyTextColor: '#6b7280',
+        buttonText: 'Get in Touch',
+        buttonUrl: '/contact',
+        buttonStyle: {
+          backgroundColor: '#10b981',
+          backgroundOpacity: 100,
+          textColor: '#ffffff',
+          borderRadius: 8,
+          blur: 0,
+          shadow: true,
+          borderWidth: 0,
+          borderColor: '#000000',
+        },
+        reverseOrder: false,
+        headingAlignment: 'left',
+        bodyAlignment: 'left',
+        headingSize: 48,
+        bodySize: 16,
+        taglineSize: 14,
+        columnGap: 60,
+        rowGap: 24,
+        headingColumnWidth: 40,
+        background: {
+          type: 'color',
+          color: 'transparent',
+          opacity: 100,
+          blur: 0,
+        },
+        layout: {
+          height: { type: 'auto' },
+          width: 'container',
+          padding: { top: 80, right: 20, bottom: 80, left: 20 },
           margin: { top: 0, right: 0, bottom: 0, left: 0 },
         },
       };

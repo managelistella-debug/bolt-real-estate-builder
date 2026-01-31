@@ -6,7 +6,8 @@ import {
   Sparkles, 
   Type, 
   Image as ImageIcon, 
-  Grid3x3, 
+  Grid3x3,
+  Boxes,
   Code, 
   Navigation, 
   Mail 
@@ -48,6 +49,20 @@ const sectionOptions: SectionOption[] = [
     icon: Grid3x3,
     title: 'Image Gallery',
     description: 'Grid layout for showcasing multiple images',
+  },
+  {
+    id: 'icon-text',
+    type: 'icon-text',
+    icon: Boxes,
+    title: 'Icon + Text',
+    description: 'Display features or services with icons and descriptions',
+  },
+  {
+    id: 'text-section',
+    type: 'text-section',
+    icon: Type,
+    title: 'Text Section',
+    description: 'Flexible text layout with heading, body, and optional button',
   },
   {
     id: 'custom-code',

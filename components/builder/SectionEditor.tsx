@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Section, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
+import { Section, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
@@ -13,6 +13,8 @@ import { HeroSectionEditor } from './HeroSectionEditor';
 import { HeadlineEditor } from './section-editors/HeadlineEditor';
 import { ImageTextEditor } from './section-editors/ImageTextEditor';
 import { ImageGalleryEditor as ImageGalleryEditorComponent } from './section-editors/ImageGalleryEditor';
+import { IconTextEditor } from './section-editors/IconTextEditor';
+import { TextSectionEditor } from './section-editors/TextSectionEditor';
 
 interface SectionEditorProps {
   pageId: string;
@@ -75,6 +77,18 @@ export function SectionEditor({ pageId, sections }: SectionEditorProps) {
         {section.type === 'image-gallery' && (
           <ImageGalleryEditorComponent 
             widget={section.widget as ImageGalleryWidget}
+            onChange={updateWidget}
+          />
+        )}
+        {section.type === 'icon-text' && (
+          <IconTextEditor
+            widget={section.widget as IconTextWidget}
+            onChange={updateWidget}
+          />
+        )}
+        {section.type === 'text-section' && (
+          <TextSectionEditor
+            widget={section.widget as TextSectionWidget}
             onChange={updateWidget}
           />
         )}

@@ -53,7 +53,7 @@ export interface Template {
 }
 
 // Section and Widget Types
-export type SectionType = 'hero' | 'headline' | 'image-text' | 'image-gallery' | 'custom-code' | 'image-navigation' | 'contact-form' | 'about' | 'services' | 'contact';
+export type SectionType = 'hero' | 'headline' | 'image-text' | 'image-gallery' | 'icon-text' | 'text-section' | 'custom-code' | 'image-navigation' | 'contact-form' | 'about' | 'services' | 'contact';
 
 export interface Section {
   id: string;
@@ -62,7 +62,7 @@ export interface Section {
   widget: Widget;
 }
 
-export type Widget = HeroWidget | HeadlineWidget | ImageTextWidget | ImageGalleryWidget | CustomCodeWidget | ImageNavigationWidget | ContactFormWidget | AboutWidget | ServicesWidget | ContactWidget;
+export type Widget = HeroWidget | HeadlineWidget | ImageTextWidget | ImageGalleryWidget | IconTextWidget | TextSectionWidget | CustomCodeWidget | ImageNavigationWidget | ContactFormWidget | AboutWidget | ServicesWidget | ContactWidget;
 
 // Spacing interface for consistent spacing properties
 export interface SpacingValues {
@@ -276,6 +276,92 @@ export interface ImageGalleryWidget {
     alt?: string;
     caption?: string;
   }[];
+}
+
+// Icon + Text Widget Types
+export type IconTextLayout = 'left' | 'center';
+export type IconSize = 'sm' | 'md' | 'lg' | 'xl';
+
+export interface IconTextItem {
+  id: string;
+  icon: string; // SVG icon name
+  iconColor: string;
+  iconBgColor?: string; // Background color for icon container
+  heading?: string;
+  headingColor?: string;
+  subheading?: string;
+  subheadingColor?: string;
+  order: number;
+}
+
+export interface IconTextWidget {
+  type: 'icon-text';
+  alignment: IconTextLayout;
+  items: IconTextItem[];
+  columns: number; // 1-6
+  gap: number; // Gap between items in px
+  iconSize: IconSize;
+  showViewMore: boolean;
+  viewMoreText?: string;
+  viewMoreUrl?: string;
+  itemsBeforeViewMore?: number; // Show this many items before "View More"
+  boxed?: boolean; // Enable box/card style for each item
+  boxBackground?: string; // Box background color
+  boxBorderRadius?: number; // Box border radius in px
+  boxPadding?: number; // Inner padding of box in px
+  boxShadow?: boolean; // Enable box shadow
+  boxBorder?: boolean; // Enable box border
+  boxBorderColor?: string; // Box border color
+  boxBorderWidth?: number; // Box border width in px
+  background?: BackgroundConfig;
+  layout?: LayoutConfig;
+  sectionHeading?: string;
+  sectionSubheading?: string;
+  sectionHeadingColor?: string;
+  sectionSubheadingColor?: string;
+}
+
+// Text Section Widget Types
+export type TextSectionLayout = 'side-by-side' | 'stacked';
+export type TextAlignment = 'left' | 'center' | 'right';
+
+export interface TextSectionWidget {
+  type: 'text-section';
+  layout: TextSectionLayout;
+  
+  // Content
+  tagline?: string;
+  taglineColor?: string;
+  heading: string;
+  headingColor?: string;
+  bodyText: string;
+  bodyTextColor?: string;
+  
+  // Button (optional)
+  buttonText?: string;
+  buttonUrl?: string;
+  buttonStyle?: ButtonStyleConfig;
+  
+  // Layout Options
+  reverseOrder?: boolean; // For side-by-side, swap left/right
+  headingAlignment?: TextAlignment;
+  bodyAlignment?: TextAlignment;
+  
+  // Styling
+  headingSize?: number; // Font size in px
+  bodySize?: number; // Font size in px
+  taglineSize?: number; // Font size in px
+  
+  // Spacing
+  columnGap?: number; // Gap between columns in side-by-side
+  rowGap?: number; // Gap between elements in stacked
+  
+  // Column Widths (for side-by-side)
+  headingColumnWidth?: number; // Percentage (30-70)
+  
+  // Background & Layout
+  background?: BackgroundConfig;
+  layout?: LayoutConfig;
 }
 
 // Custom Code Widget

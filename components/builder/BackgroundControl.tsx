@@ -19,13 +19,16 @@ interface BackgroundControlProps {
 }
 
 export function BackgroundControl({ value, onChange, allowNone = true }: BackgroundControlProps) {
+  // Ensure value has defaults
+  const bgValue = value || { type: 'none' };
+  
   return (
     <div className="space-y-4">
       <div className="space-y-2">
         <Label>Background Type</Label>
         <Select
-          value={value.type || 'none'}
-          onValueChange={(type: 'none' | 'color' | 'image' | 'video') => onChange({ ...value, type })}
+          value={bgValue.type || 'none'}
+          onValueChange={(type: 'none' | 'color' | 'image' | 'video') => onChange({ ...bgValue, type })}
         >
           <SelectTrigger>
             <SelectValue />
@@ -39,20 +42,20 @@ export function BackgroundControl({ value, onChange, allowNone = true }: Backgro
         </Select>
       </div>
 
-      {value.type === 'color' && (
+      {bgValue.type === 'color' && (
         <>
           <div className="space-y-2">
             <Label>Background Color</Label>
             <div className="flex gap-2">
               <input
                 type="color"
-                value={value.color || '#ffffff'}
-                onChange={(e) => onChange({ ...value, color: e.target.value })}
+                value={bgValue.color || '#ffffff'}
+                onChange={(e) => onChange({ ...bgValue, color: e.target.value })}
                 className="h-10 w-16 rounded border cursor-pointer"
               />
               <Input
-                value={value.color || '#ffffff'}
-                onChange={(e) => onChange({ ...value, color: e.target.value })}
+                value={bgValue.color || '#ffffff'}
+                onChange={(e) => onChange({ ...bgValue, color: e.target.value })}
                 placeholder="#ffffff"
                 className="flex-1"
               />
@@ -60,49 +63,49 @@ export function BackgroundControl({ value, onChange, allowNone = true }: Backgro
           </div>
 
           <div className="space-y-2">
-            <Label>Opacity: {value.opacity || 100}%</Label>
+            <Label>Opacity: {bgValue.opacity || 100}%</Label>
             <input
               type="range"
               min="0"
               max="100"
-              value={value.opacity || 100}
-              onChange={(e) => onChange({ ...value, opacity: parseInt(e.target.value) })}
+              value={bgValue.opacity || 100}
+              onChange={(e) => onChange({ ...bgValue, opacity: parseInt(e.target.value) })}
               className="w-full"
             />
           </div>
         </>
       )}
 
-      {value.type === 'image' && (
+      {bgValue.type === 'image' && (
         <>
           <ImageUpload
             label="Background Image"
-            value={value.url || ''}
-            onChange={(url) => onChange({ ...value, url })}
+            value={bgValue.url || ''}
+            onChange={(url) => onChange({ ...bgValue, url })}
             maxSizeMB={4}
           />
 
           <div className="space-y-2">
-            <Label>Opacity: {value.opacity || 100}%</Label>
+            <Label>Opacity: {bgValue.opacity || 100}%</Label>
             <input
               type="range"
               min="0"
               max="100"
-              value={value.opacity || 100}
-              onChange={(e) => onChange({ ...value, opacity: parseInt(e.target.value) })}
+              value={bgValue.opacity || 100}
+              onChange={(e) => onChange({ ...bgValue, opacity: parseInt(e.target.value) })}
               className="w-full"
             />
           </div>
         </>
       )}
 
-      {value.type === 'video' && (
+      {bgValue.type === 'video' && (
         <>
           <div className="space-y-2">
             <Label>Video URL</Label>
             <Input
-              value={value.url || ''}
-              onChange={(e) => onChange({ ...value, url: e.target.value })}
+              value={bgValue.url || ''}
+              onChange={(e) => onChange({ ...bgValue, url: e.target.value })}
               placeholder="https://youtube.com/... or https://cdn.com/video.mp4"
             />
             <p className="text-xs text-muted-foreground">
@@ -111,13 +114,13 @@ export function BackgroundControl({ value, onChange, allowNone = true }: Backgro
           </div>
 
           <div className="space-y-2">
-            <Label>Opacity: {value.opacity || 100}%</Label>
+            <Label>Opacity: {bgValue.opacity || 100}%</Label>
             <input
               type="range"
               min="0"
               max="100"
-              value={value.opacity || 100}
-              onChange={(e) => onChange({ ...value, opacity: parseInt(e.target.value) })}
+              value={bgValue.opacity || 100}
+              onChange={(e) => onChange({ ...bgValue, opacity: parseInt(e.target.value) })}
               className="w-full"
             />
           </div>

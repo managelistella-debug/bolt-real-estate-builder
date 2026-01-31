@@ -49,6 +49,21 @@ export function ImageGalleryEditor({ widget, onChange }: ImageGalleryEditorProps
   const { collections } = useImageCollectionsStore();
 
   const userCollections = collections.filter((c) => c.userId === user?.id);
+  
+  // Ensure lightbox and layout have default values for backward compatibility
+  const lightbox = widget.lightbox || { enabled: true, showCaptions: true };
+  const layout = widget.layout || {
+    height: { type: 'auto' },
+    width: 'container',
+    padding: { top: 40, right: 20, bottom: 40, left: 20 },
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
+  };
+  const background = widget.background || {
+    type: 'color',
+    color: 'transparent',
+    opacity: 100,
+    blur: 0,
+  };
 
   const selectedCollection = widget.collectionId
     ? collections.find((c) => c.id === widget.collectionId)
@@ -212,37 +227,37 @@ export function ImageGalleryEditor({ widget, onChange }: ImageGalleryEditorProps
           <button
             onClick={() =>
               onChange({
-                lightbox: { ...widget.lightbox, enabled: !widget.lightbox.enabled },
+                lightbox: { ...lightbox, enabled: !lightbox.enabled },
               })
             }
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              widget.lightbox.enabled ? 'bg-primary' : 'bg-muted'
+              lightbox.enabled ? 'bg-primary' : 'bg-muted'
             }`}
           >
             <span
               className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                widget.lightbox.enabled ? 'translate-x-6' : 'translate-x-1'
+                lightbox.enabled ? 'translate-x-6' : 'translate-x-1'
               }`}
             />
           </button>
         </div>
 
-        {widget.lightbox.enabled && (
+        {lightbox.enabled && (
           <div className="flex items-center justify-between">
             <Label>Show Captions</Label>
             <button
               onClick={() =>
                 onChange({
-                  lightbox: { ...widget.lightbox, showCaptions: !widget.lightbox.showCaptions },
+                  lightbox: { ...lightbox, showCaptions: !lightbox.showCaptions },
                 })
               }
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                widget.lightbox.showCaptions ? 'bg-primary' : 'bg-muted'
+                lightbox.showCaptions ? 'bg-primary' : 'bg-muted'
               }`}
             >
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  widget.lightbox.showCaptions ? 'translate-x-6' : 'translate-x-1'
+                  lightbox.showCaptions ? 'translate-x-6' : 'translate-x-1'
                 }`}
               />
             </button>
@@ -253,7 +268,7 @@ export function ImageGalleryEditor({ widget, onChange }: ImageGalleryEditorProps
       {/* Background */}
       <div className="pt-4 border-t">
         <BackgroundControl
-          background={widget.background}
+          value={background}
           onChange={(background) => onChange({ background })}
         />
       </div>
@@ -267,14 +282,14 @@ export function ImageGalleryEditor({ widget, onChange }: ImageGalleryEditorProps
           <Label>Height</Label>
           <div className="flex gap-2">
             <Select
-              value={widget.layout?.height.type || 'auto'}
+              value={layout.height.type || 'auto'}
               onValueChange={(value) =>
                 onChange({
                   layout: {
-                    ...widget.layout!,
+                    ...layout,
                     height: {
                       type: value as any,
-                      value: widget.layout?.height.value,
+                      value: layout.height.value,
                     },
                   },
                 })
@@ -289,16 +304,16 @@ export function ImageGalleryEditor({ widget, onChange }: ImageGalleryEditorProps
                 <SelectItem value="pixels">Pixels</SelectItem>
               </SelectContent>
             </Select>
-            {widget.layout?.height.type !== 'auto' && (
+            {layout.height.type !== 'auto' && (
               <Input
                 type="number"
-                value={widget.layout?.height.value || 100}
+                value={layout.height.value || 100}
                 onChange={(e) =>
                   onChange({
                     layout: {
-                      ...widget.layout!,
+                      ...layout,
                       height: {
-                        ...widget.layout!.height,
+                        ...layout.height,
                         value: parseInt(e.target.value) || 100,
                       },
                     },
@@ -313,11 +328,11 @@ export function ImageGalleryEditor({ widget, onChange }: ImageGalleryEditorProps
         <div className="space-y-2">
           <Label>Width</Label>
           <Select
-            value={widget.layout?.width || 'container'}
+            value={layout.width || 'container'}
             onValueChange={(value) =>
               onChange({
                 layout: {
-                  ...widget.layout!,
+                  ...layout,
                   width: value as 'full' | 'container',
                 },
               })
@@ -340,13 +355,13 @@ export function ImageGalleryEditor({ widget, onChange }: ImageGalleryEditorProps
             <Input
               type="number"
               placeholder="Top"
-              value={widget.layout?.padding?.top || 0}
+              value={layout.padding.top || 0}
               onChange={(e) =>
                 onChange({
                   layout: {
-                    ...widget.layout!,
+                    ...layout,
                     padding: {
-                      ...widget.layout!.padding,
+                      ...layout.padding,
                       top: parseInt(e.target.value) || 0,
                     },
                   },
@@ -356,13 +371,13 @@ export function ImageGalleryEditor({ widget, onChange }: ImageGalleryEditorProps
             <Input
               type="number"
               placeholder="Right"
-              value={widget.layout?.padding?.right || 0}
+              value={layout.padding.right || 0}
               onChange={(e) =>
                 onChange({
                   layout: {
-                    ...widget.layout!,
+                    ...layout,
                     padding: {
-                      ...widget.layout!.padding,
+                      ...layout.padding,
                       right: parseInt(e.target.value) || 0,
                     },
                   },
@@ -372,13 +387,13 @@ export function ImageGalleryEditor({ widget, onChange }: ImageGalleryEditorProps
             <Input
               type="number"
               placeholder="Bottom"
-              value={widget.layout?.padding?.bottom || 0}
+              value={layout.padding.bottom || 0}
               onChange={(e) =>
                 onChange({
                   layout: {
-                    ...widget.layout!,
+                    ...layout,
                     padding: {
-                      ...widget.layout!.padding,
+                      ...layout.padding,
                       bottom: parseInt(e.target.value) || 0,
                     },
                   },
@@ -388,13 +403,13 @@ export function ImageGalleryEditor({ widget, onChange }: ImageGalleryEditorProps
             <Input
               type="number"
               placeholder="Left"
-              value={widget.layout?.padding?.left || 0}
+              value={layout.padding.left || 0}
               onChange={(e) =>
                 onChange({
                   layout: {
-                    ...widget.layout!,
+                    ...layout,
                     padding: {
-                      ...widget.layout!.padding,
+                      ...layout.padding,
                       left: parseInt(e.target.value) || 0,
                     },
                   },
@@ -411,13 +426,13 @@ export function ImageGalleryEditor({ widget, onChange }: ImageGalleryEditorProps
             <Input
               type="number"
               placeholder="Top"
-              value={widget.layout?.margin?.top || 0}
+              value={layout.margin.top || 0}
               onChange={(e) =>
                 onChange({
                   layout: {
-                    ...widget.layout!,
+                    ...layout,
                     margin: {
-                      ...widget.layout!.margin,
+                      ...layout.margin,
                       top: parseInt(e.target.value) || 0,
                     },
                   },
@@ -427,13 +442,13 @@ export function ImageGalleryEditor({ widget, onChange }: ImageGalleryEditorProps
             <Input
               type="number"
               placeholder="Right"
-              value={widget.layout?.margin?.right || 0}
+              value={layout.margin.right || 0}
               onChange={(e) =>
                 onChange({
                   layout: {
-                    ...widget.layout!,
+                    ...layout,
                     margin: {
-                      ...widget.layout!.margin,
+                      ...layout.margin,
                       right: parseInt(e.target.value) || 0,
                     },
                   },
@@ -443,13 +458,13 @@ export function ImageGalleryEditor({ widget, onChange }: ImageGalleryEditorProps
             <Input
               type="number"
               placeholder="Bottom"
-              value={widget.layout?.margin?.bottom || 0}
+              value={layout.margin.bottom || 0}
               onChange={(e) =>
                 onChange({
                   layout: {
-                    ...widget.layout!,
+                    ...layout,
                     margin: {
-                      ...widget.layout!.margin,
+                      ...layout.margin,
                       bottom: parseInt(e.target.value) || 0,
                     },
                   },
@@ -459,13 +474,13 @@ export function ImageGalleryEditor({ widget, onChange }: ImageGalleryEditorProps
             <Input
               type="number"
               placeholder="Left"
-              value={widget.layout?.margin?.left || 0}
+              value={layout.margin.left || 0}
               onChange={(e) =>
                 onChange({
                   layout: {
-                    ...widget.layout!,
+                    ...layout,
                     margin: {
-                      ...widget.layout!.margin,
+                      ...layout.margin,
                       left: parseInt(e.target.value) || 0,
                     },
                   },
