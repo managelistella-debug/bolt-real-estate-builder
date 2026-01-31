@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/card';
 import { HeroSectionEditor } from './HeroSectionEditor';
 import { HeadlineEditor } from './section-editors/HeadlineEditor';
 import { ImageTextEditor } from './section-editors/ImageTextEditor';
+import { ImageGalleryEditor as ImageGalleryEditorComponent } from './section-editors/ImageGalleryEditor';
 
 interface SectionEditorProps {
   pageId: string;
@@ -72,7 +73,7 @@ export function SectionEditor({ pageId, sections }: SectionEditorProps) {
           />
         )}
         {section.type === 'image-gallery' && (
-          <ImageGalleryEditor 
+          <ImageGalleryEditorComponent 
             widget={section.widget as ImageGalleryWidget}
             onChange={updateWidget}
           />
@@ -118,35 +119,7 @@ export function SectionEditor({ pageId, sections }: SectionEditorProps) {
   );
 }
 
-// Placeholder editors for new section types (HeadlineEditor and ImageTextEditor are now imported)
-
-function ImageGalleryEditor({ widget, onChange }: { widget: ImageGalleryWidget; onChange: (updates: any) => void }) {
-  return (
-    <>
-      <div className="space-y-2">
-        <Label>Columns</Label>
-        <Input
-          type="number"
-          min="1"
-          max="6"
-          value={widget.columns}
-          onChange={(e) => onChange({ columns: parseInt(e.target.value) })}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label>Gap (px)</Label>
-        <Input
-          type="number"
-          value={widget.gap}
-          onChange={(e) => onChange({ gap: parseInt(e.target.value) })}
-        />
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Gallery with {widget.images.length} images
-      </p>
-    </>
-  );
-}
+// Placeholder editors for remaining section types
 
 function CustomCodeEditor({ widget, onChange }: { widget: CustomCodeWidget; onChange: (updates: any) => void }) {
   return (

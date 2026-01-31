@@ -313,14 +313,27 @@ function createDefaultWidget(type: SectionType): any {
     case 'image-gallery':
       return {
         type: 'image-gallery',
-        images: [
-          { id: '1', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400', alt: 'Gallery image 1' },
-          { id: '2', url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400', alt: 'Gallery image 2' },
-          { id: '3', url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400', alt: 'Gallery image 3' },
-        ],
+        collectionId: undefined,
+        style: 'grid',
         columns: 3,
         gap: 16,
-        aspectRatio: '1:1',
+        aspectRatio: '3:2',
+        lightbox: {
+          enabled: true,
+          showCaptions: true,
+        },
+        background: {
+          type: 'color',
+          color: 'transparent',
+          opacity: 100,
+          blur: 0,
+        },
+        layout: {
+          height: { type: 'auto' },
+          width: 'container',
+          padding: { top: 40, right: 20, bottom: 40, left: 20 },
+          margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        },
       };
     case 'custom-code':
       return {

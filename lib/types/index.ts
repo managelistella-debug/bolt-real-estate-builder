@@ -233,18 +233,49 @@ export interface ImageTextWidget {
   margin?: SpacingValues;
 }
 
+// Image Collection Types
+export interface ImageCollection {
+  id: string;
+  userId: string;
+  name: string;
+  images: CollectionImage[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CollectionImage {
+  id: string;
+  url: string;
+  caption?: string;
+  order: number;
+}
+
+// Gallery Style Types
+export type GalleryStyle = 'grid' | 'mosaic' | 'set-layout';
+export type GalleryAspectRatio = '1:1' | '3:2' | '4:5' | '4:3';
+
 // Image Gallery Widget
 export interface ImageGalleryWidget {
   type: 'image-gallery';
-  images: {
+  collectionId?: string; // Reference to image collection
+  style: GalleryStyle;
+  columns: number; // For grid and mosaic
+  maxImages?: number; // Maximum images to display
+  gap: number;
+  aspectRatio?: GalleryAspectRatio; // For grid only
+  lightbox: {
+    enabled: boolean;
+    showCaptions: boolean;
+  };
+  background?: BackgroundConfig;
+  layout?: LayoutConfig;
+  // Legacy fields for backward compatibility
+  images?: {
     id: string;
     url: string;
     alt?: string;
     caption?: string;
   }[];
-  columns: number;
-  gap: number;
-  aspectRatio: '1:1' | '4:3' | '16:9' | 'auto';
 }
 
 // Custom Code Widget

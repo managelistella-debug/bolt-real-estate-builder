@@ -1,9 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { Page, Website, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
 import { useBuilderStore } from '@/lib/stores/builder';
+import { useImageCollectionsStore } from '@/lib/stores/imageCollections';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { Lightbox } from './Lightbox';
 
 interface LivePreviewProps {
   page: Page;
@@ -683,28 +686,353 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
 }
 
 function ImageGallerySection({ widget }: { widget: ImageGalleryWidget }) {
+  const { getCollectionById } = useImageCollectionsStore();
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  // Get images from collection or fallback to legacy images array
+  const collection = widget.collectionId ? getCollectionById(widget.collectionId) : null;
+  const allImages = collection?.images || widget.images || [];
+  
+  // Sort images by order
+  const sortedImages = [...allImages].sort((a, b) => (a.order || 0) - (b.order || 0));
+  
+  // Limit images if maxImages is set
+  const displayImages = widget.maxImages 
+    ? sortedImages.slice(0, widget.maxImages)
+    : sortedImages;
+
+  if (displayImages.length === 0) {
+    return (
+      <div className="py-16 px-6 text-center text-muted-foreground">
+        <p>No images to display. Please select a collection with images.</p>
+      </div>
+    );
+  }
+
+  const handleImageClick = (index: number) => {
+    if (widget.lightbox?.enabled) {
+      setLightboxIndex(index);
+      setLightboxOpen(true);
+    }
+  };
+
+  // Apply background styles
+  const bgType = widget.background?.type || 'color';
+  const bgColor = widget.background?.color || 'transparent';
+  const bgOpacity = (widget.background?.opacity || 100) / 100;
+  
+  let backgroundStyle: React.CSSProperties = {};
+  if (bgType === 'color' && bgColor !== 'transparent') {
+    backgroundStyle.backgroundColor = bgColor;
+    backgroundStyle.opacity = bgOpacity;
+  } else if (bgType === 'image' && widget.background?.url) {
+    backgroundStyle.backgroundImage = `url(${widget.background.url})`;
+    backgroundStyle.backgroundSize = 'cover';
+    backgroundStyle.backgroundPosition = 'center';
+  } else if (bgType === 'video' && widget.background?.url) {
+    backgroundStyle.position = 'relative';
+  }
+
+  // Apply layout styles
+  const heightType = widget.layout?.height?.type || 'auto';
+  const heightValue = widget.layout?.height?.value || 100;
+  let height = 'auto';
+  if (heightType === 'vh') height = `${heightValue}vh`;
+  else if (heightType === 'pixels') height = `${heightValue}px`;
+
+  const padding = widget.layout?.padding || { top: 40, right: 20, bottom: 40, left: 20 };
+  const margin = widget.layout?.margin || { top: 0, right: 0, bottom: 0, left: 0 };
+  const width = widget.layout?.width || 'container';
+
+  const sectionStyle: React.CSSProperties = {
+    ...backgroundStyle,
+    minHeight: height,
+    paddingTop: `${padding.top}px`,
+    paddingRight: `${padding.right}px`,
+    paddingBottom: `${padding.bottom}px`,
+    paddingLeft: `${padding.left}px`,
+    marginTop: `${margin.top}px`,
+    marginRight: `${margin.right}px`,
+    marginBottom: `${margin.bottom}px`,
+    marginLeft: `${margin.left}px`,
+  };
+
+  const containerClass = width === 'container' ? 'max-w-6xl mx-auto' : 'w-full';
+
   return (
-    <div className="py-16 px-6">
-      <div className="max-w-6xl mx-auto">
-        <div 
-          className="grid"
-          style={{ 
-            gridTemplateColumns: `repeat(${widget.columns}, 1fr)`,
-            gap: `${widget.gap}px`,
-          }}
-        >
-          {widget.images.map((image) => (
-            <div key={image.id} className="relative overflow-hidden rounded-lg" style={{ aspectRatio: widget.aspectRatio === 'auto' ? 'auto' : widget.aspectRatio.replace(':', '/') }}>
-              <Image src={image.url} alt={image.alt || ''} fill className="object-cover" />
-              {image.caption && (
-                <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white p-2 text-sm">
-                  {image.caption}
-                </div>
-              )}
-            </div>
-          ))}
+    <>
+      <div style={sectionStyle}>
+        <div className={containerClass}>
+          {widget.style === 'grid' && (
+            <GridGallery
+              images={displayImages}
+              columns={widget.columns}
+              gap={widget.gap}
+              aspectRatio={widget.aspectRatio || '3:2'}
+              onImageClick={handleImageClick}
+            />
+          )}
+          {widget.style === 'mosaic' && (
+            <MosaicGallery
+              images={displayImages}
+              columns={widget.columns}
+              gap={widget.gap}
+              onImageClick={handleImageClick}
+            />
+          )}
+          {widget.style === 'set-layout' && (
+            <SetLayoutGallery
+              images={displayImages}
+              gap={widget.gap}
+              onImageClick={handleImageClick}
+            />
+          )}
         </div>
       </div>
+
+      {lightboxOpen && widget.lightbox?.enabled && (
+        <Lightbox
+          images={sortedImages}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxOpen(false)}
+          showCaptions={widget.lightbox.showCaptions}
+        />
+      )}
+    </>
+  );
+}
+
+function GridGallery({
+  images,
+  columns,
+  gap,
+  aspectRatio,
+  onImageClick,
+}: {
+  images: any[];
+  columns: number;
+  gap: number;
+  aspectRatio: string;
+  onImageClick: (index: number) => void;
+}) {
+  const { deviceView } = useBuilderStore();
+  
+  // Responsive columns
+  let responsiveColumns = columns;
+  if (deviceView === 'mobile') {
+    responsiveColumns = Math.min(columns, 2);
+  } else if (deviceView === 'tablet') {
+    responsiveColumns = Math.max(2, columns - 1);
+  }
+
+  return (
+    <div
+      className="grid"
+      style={{
+        gridTemplateColumns: `repeat(${responsiveColumns}, 1fr)`,
+        gap: `${gap}px`,
+      }}
+    >
+      {images.map((image, index) => (
+        <div
+          key={image.id}
+          className="relative overflow-hidden rounded cursor-pointer hover:opacity-90 transition-opacity"
+          style={{ aspectRatio: aspectRatio.replace(':', '/') }}
+          onClick={() => onImageClick(index)}
+        >
+          {image.url.startsWith('data:') ? (
+            <img src={image.url} alt={image.caption || `Image ${index + 1}`} className="w-full h-full object-cover" />
+          ) : (
+            <Image src={image.url} alt={image.caption || `Image ${index + 1}`} fill className="object-cover" />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MosaicGallery({
+  images,
+  columns,
+  gap,
+  onImageClick,
+}: {
+  images: any[];
+  columns: number;
+  gap: number;
+  onImageClick: (index: number) => void;
+}) {
+  const { deviceView } = useBuilderStore();
+  
+  // Responsive columns
+  let responsiveColumns = columns;
+  if (deviceView === 'mobile') {
+    responsiveColumns = 1;
+  } else if (deviceView === 'tablet') {
+    responsiveColumns = 2;
+  }
+
+  return (
+    <div
+      className="grid"
+      style={{
+        gridTemplateColumns: `repeat(${responsiveColumns}, 1fr)`,
+        gridAutoRows: '200px',
+        gridAutoFlow: 'dense',
+        gap: `${gap}px`,
+      }}
+    >
+      {images.map((image, index) => {
+        // Randomly make some images taller for variety
+        const spanRows = index % 3 === 0 ? 2 : 1;
+        return (
+          <div
+            key={image.id}
+            className="relative overflow-hidden rounded cursor-pointer hover:opacity-90 transition-opacity"
+            style={{ gridRow: `span ${spanRows}` }}
+            onClick={() => onImageClick(index)}
+          >
+            {image.url.startsWith('data:') ? (
+              <img src={image.url} alt={image.caption || `Image ${index + 1}`} className="w-full h-full object-cover" />
+            ) : (
+              <Image src={image.url} alt={image.caption || `Image ${index + 1}`} fill className="object-cover" />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SetLayoutGallery({
+  images,
+  gap,
+  onImageClick,
+}: {
+  images: any[];
+  gap: number;
+  onImageClick: (index: number) => void;
+}) {
+  const { deviceView } = useBuilderStore();
+
+  if (deviceView === 'mobile') {
+    // Stack vertically on mobile
+    return (
+      <div className="flex flex-col" style={{ gap: `${gap}px` }}>
+        {images.map((image, index) => (
+          <div
+            key={image.id}
+            className="relative overflow-hidden rounded cursor-pointer hover:opacity-90 transition-opacity"
+            style={{ aspectRatio: '3/2' }}
+            onClick={() => onImageClick(index)}
+          >
+            {image.url.startsWith('data:') ? (
+              <img src={image.url} alt={image.caption || `Image ${index + 1}`} className="w-full h-full object-cover" />
+            ) : (
+              <Image src={image.url} alt={image.caption || `Image ${index + 1}`} fill className="object-cover" />
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Desktop/Tablet: Pattern layout
+  // Pattern: [img1 img2] [img3----] [img4----] [img5 img6] ...
+  const renderPattern = () => {
+    const elements = [];
+    let imageIndex = 0;
+
+    while (imageIndex < images.length) {
+      const patternBlock = [];
+      
+      // Row 1: Two images side by side
+      if (imageIndex < images.length) {
+        patternBlock.push(
+          <div key={`row1-${imageIndex}`} className="grid grid-cols-2" style={{ gap: `${gap}px` }}>
+            {images[imageIndex] && (
+              <div
+                className="relative overflow-hidden rounded cursor-pointer hover:opacity-90 transition-opacity"
+                style={{ aspectRatio: '3/2' }}
+                onClick={() => onImageClick(imageIndex)}
+              >
+                {images[imageIndex].url.startsWith('data:') ? (
+                  <img src={images[imageIndex].url} alt={images[imageIndex].caption || `Image ${imageIndex + 1}`} className="w-full h-full object-cover" />
+                ) : (
+                  <Image src={images[imageIndex].url} alt={images[imageIndex].caption || `Image ${imageIndex + 1}`} fill className="object-cover" />
+                )}
+              </div>
+            )}
+            {images[imageIndex + 1] && (
+              <div
+                className="relative overflow-hidden rounded cursor-pointer hover:opacity-90 transition-opacity"
+                style={{ aspectRatio: '3/2' }}
+                onClick={() => onImageClick(imageIndex + 1)}
+              >
+                {images[imageIndex + 1].url.startsWith('data:') ? (
+                  <img src={images[imageIndex + 1].url} alt={images[imageIndex + 1].caption || `Image ${imageIndex + 2}`} className="w-full h-full object-cover" />
+                ) : (
+                  <Image src={images[imageIndex + 1].url} alt={images[imageIndex + 1].caption || `Image ${imageIndex + 2}`} fill className="object-cover" />
+                )}
+              </div>
+            )}
+          </div>
+        );
+        imageIndex += 2;
+      }
+
+      // Row 2: One full-width image
+      if (imageIndex < images.length) {
+        patternBlock.push(
+          <div
+            key={`row2-${imageIndex}`}
+            className="relative overflow-hidden rounded cursor-pointer hover:opacity-90 transition-opacity"
+            style={{ aspectRatio: '3/2' }}
+            onClick={() => onImageClick(imageIndex)}
+          >
+            {images[imageIndex].url.startsWith('data:') ? (
+              <img src={images[imageIndex].url} alt={images[imageIndex].caption || `Image ${imageIndex + 1}`} className="w-full h-full object-cover" />
+            ) : (
+              <Image src={images[imageIndex].url} alt={images[imageIndex].caption || `Image ${imageIndex + 1}`} fill className="object-cover" />
+            )}
+          </div>
+        );
+        imageIndex++;
+      }
+
+      // Row 3: One full-width image
+      if (imageIndex < images.length) {
+        patternBlock.push(
+          <div
+            key={`row3-${imageIndex}`}
+            className="relative overflow-hidden rounded cursor-pointer hover:opacity-90 transition-opacity"
+            style={{ aspectRatio: '3/2' }}
+            onClick={() => onImageClick(imageIndex)}
+          >
+            {images[imageIndex].url.startsWith('data:') ? (
+              <img src={images[imageIndex].url} alt={images[imageIndex].caption || `Image ${imageIndex + 1}`} className="w-full h-full object-cover" />
+            ) : (
+              <Image src={images[imageIndex].url} alt={images[imageIndex].caption || `Image ${imageIndex + 1}`} fill className="object-cover" />
+            )}
+          </div>
+        );
+        imageIndex++;
+      }
+
+      elements.push(
+        <div key={`pattern-${imageIndex}`} className="flex flex-col" style={{ gap: `${gap}px` }}>
+          {patternBlock}
+        </div>
+      );
+    }
+
+    return elements;
+  };
+
+  return (
+    <div className="flex flex-col" style={{ gap: `${gap}px` }}>
+      {renderPattern()}
     </div>
   );
 }

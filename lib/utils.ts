@@ -37,9 +37,11 @@ export function getTagColor(tag: string) {
 }
 
 // Format date helpers
-export function formatDate(date: Date): string {
+export function formatDate(date: Date | string): string {
+  // Convert string dates from localStorage back to Date objects
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
   const now = new Date();
-  const diff = now.getTime() - date.getTime();
+  const diff = now.getTime() - dateObj.getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   
   if (days === 0) return 'Today';
@@ -48,15 +50,17 @@ export function formatDate(date: Date): string {
   if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
   if (days < 365) return `${Math.floor(days / 30)} months ago`;
   
-  return date.toLocaleDateString('en-US', { 
+  return dateObj.toLocaleDateString('en-US', { 
     year: 'numeric', 
     month: 'short', 
     day: 'numeric' 
   });
 }
 
-export function formatDateTime(date: Date): string {
-  return date.toLocaleDateString('en-US', { 
+export function formatDateTime(date: Date | string): string {
+  // Convert string dates from localStorage back to Date objects
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return dateObj.toLocaleDateString('en-US', { 
     year: 'numeric', 
     month: 'short', 
     day: 'numeric',
