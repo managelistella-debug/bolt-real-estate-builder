@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Toaster } from '@/components/ui/toaster';
@@ -16,25 +16,51 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const { isAuthenticated, user } = useAuthStore();
   const { initializeUserWebsite } = useWebsiteStore();
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  // Check if we're in builder mode (hide sidebar)
+  // Check if we're in builder or preview mode (hide sidebar)
   const isBuilderMode = pathname?.includes('/builder');
+  const isPreviewMode = pathname?.includes('/preview');
+
+  // Wait for Zustand to rehydrate from localStorage
+  useEffect(() => {
+    // Small delay to ensure localStorage has loaded
+    const timer = setTimeout(() => {
+      setIsHydrated(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
-    } else if (user) {
-      // Initialize user's website if not already done
-      initializeUserWebsite(user.id);
+    // Only check auth after hydration to avoid false redirects
+    if (isHydrated) {
+      if (!isAuthenticated) {
+        router.push('/login');
+      } else if (user) {
+        // Initialize user's website if not already done
+        initializeUserWebsite(user.id);
+      }
     }
-  }, [isAuthenticated, user, router, initializeUserWebsite]);
+  }, [isHydrated, isAuthenticated, user, router, initializeUserWebsite]);
+
+  // Show loading while hydrating to prevent flash and false redirects
+  if (!isHydrated) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return null;
   }
 
-  // Full-screen layout for builder mode
-  if (isBuilderMode) {
+  // Full-screen layout for builder and preview modes
+  if (isBuilderMode || isPreviewMode) {
     return (
       <>
         {children}

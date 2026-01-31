@@ -65,11 +65,9 @@ export default function PageBuilderPage({ params }: { params: { pageId: string }
   };
 
   const handlePreview = () => {
-    // TODO: Open preview in new tab
-    toast({
-      title: "Preview",
-      description: "Preview functionality coming soon",
-    });
+    // Open preview in new tab
+    const previewUrl = `/pages/${pageId}/preview`;
+    window.open(previewUrl, '_blank');
   };
 
   return (
