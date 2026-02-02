@@ -53,7 +53,7 @@ export interface Template {
 }
 
 // Section and Widget Types
-export type SectionType = 'hero' | 'headline' | 'image-text' | 'image-gallery' | 'icon-text' | 'text-section' | 'custom-code' | 'image-navigation' | 'contact-form' | 'about' | 'services' | 'contact';
+export type SectionType = 'hero' | 'headline' | 'image-text' | 'image-gallery' | 'icon-text' | 'text-section' | 'faq' | 'testimonials' | 'custom-code' | 'image-navigation' | 'contact-form' | 'about' | 'services' | 'contact';
 
 export interface Section {
   id: string;
@@ -62,7 +62,7 @@ export interface Section {
   widget: Widget;
 }
 
-export type Widget = HeroWidget | HeadlineWidget | ImageTextWidget | ImageGalleryWidget | IconTextWidget | TextSectionWidget | CustomCodeWidget | ImageNavigationWidget | ContactFormWidget | AboutWidget | ServicesWidget | ContactWidget;
+export type Widget = HeroWidget | HeadlineWidget | ImageTextWidget | ImageGalleryWidget | IconTextWidget | TextSectionWidget | FAQWidget | TestimonialWidget | CustomCodeWidget | ImageNavigationWidget | ContactFormWidget | AboutWidget | ServicesWidget | ContactWidget;
 
 // Spacing interface for consistent spacing properties
 export interface SpacingValues {
@@ -364,6 +364,77 @@ export interface TextSectionWidget {
   layout?: LayoutConfig;
 }
 
+// FAQ Widget Types
+export type FAQIconStyle = 'chevron' | 'plus-minus' | 'arrow' | 'caret';
+export type FAQItemStyle = 'boxed' | 'dividers' | 'clean';
+
+export interface FAQItem {
+  id: string;
+  question: string;
+  answer: string;
+}
+
+export interface FAQWidget {
+  type: 'faq';
+  
+  // Header Content
+  heading: string;
+  headingColor?: string;
+  headingSize?: number;
+  headingAlignment?: TextAlignment;
+  
+  subheading?: string;
+  subheadingColor?: string;
+  subheadingSize?: number;
+  subheadingAlignment?: TextAlignment;
+  
+  // FAQ Items
+  items: FAQItem[];
+  
+  // Question/Answer Styling
+  questionFontSize?: number;
+  questionColor?: string;
+  questionAlignment?: TextAlignment;
+  questionFontWeight?: number;
+  
+  answerFontSize?: number;
+  answerColor?: string;
+  answerAlignment?: TextAlignment;
+  answerFontWeight?: number;
+  
+  // Icon Settings
+  iconStyle?: FAQIconStyle;
+  iconColor?: string;
+  iconBackgroundColor?: string;
+  iconCircleSize?: number;
+  iconPosition?: 'left' | 'right'; // Position of icon relative to question
+  
+  // Item Style (boxed, dividers, or clean)
+  itemStyle?: FAQItemStyle;
+  
+  // Box Styling (if itemStyle === 'boxed')
+  boxBackgroundColor?: string;
+  boxBorderRadius?: number;
+  boxPadding?: number;
+  boxShadow?: boolean;
+  boxBorder?: boolean;
+  boxBorderColor?: string;
+  boxBorderWidth?: number;
+  
+  // Divider Styling (if itemStyle === 'dividers')
+  dividerColor?: string;
+  dividerWidth?: number;
+  
+  // Spacing
+  itemGap?: number; // Gap between FAQ items
+  questionAnswerGap?: number; // Gap between question and answer within an item
+  headerGap?: number; // Gap between heading/subheading and FAQ items
+  
+  // Section Settings
+  background?: BackgroundConfig;
+  layout?: LayoutConfig;
+}
+
 // Custom Code Widget
 export interface CustomCodeWidget {
   type: 'custom-code';
@@ -385,22 +456,159 @@ export interface ImageNavigationWidget {
   gap: number;
 }
 
-// Contact Form Widget
-export interface ContactFormWidget {
-  type: 'contact-form';
-  formFields: FormField[];
-  buttonText: string;
-  confirmationMessage: string;
-  submitEndpoint?: string;
-}
+// Contact Form Widget Types
+export type ContactFormStyle = 'simple' | 'split' | 'contact-details';
+export type ContactFormLayout = 'form-left' | 'form-right';
+export type FormFieldType = 'text' | 'email' | 'phone' | 'textarea' | 'select' | 'radio';
 
 export interface FormField {
   id: string;
-  type: 'text' | 'email' | 'phone' | 'textarea' | 'custom';
-  label: string;
-  placeholder?: string;
+  type: FormFieldType;
+  label: string; // Backend label (e.g., "message")
+  placeholder?: string; // Override label display (e.g., "How can we help?")
   required: boolean;
+  options?: string[]; // For select/radio fields
   order: number;
+}
+
+export interface ContactFormWidget {
+  type: 'contact-form';
+  
+  // Style & Layout
+  style: ContactFormStyle;
+  layout?: ContactFormLayout;
+  
+  // Form Content
+  formHeading: string;
+  formDescription?: string;
+  fields: FormField[];
+  buttonText: string;
+  confirmationMessage: string;
+  
+  // Column Content (for split & contact-details styles)
+  columnHeading?: string;
+  columnDescription?: string;
+  
+  // Contact Details (for contact-details style)
+  phone?: string;
+  email?: string;
+  website?: string;
+  showContactIcons?: boolean;
+  
+  // Buttons (for left column)
+  button1Text?: string;
+  button1Url?: string;
+  button2Text?: string;
+  button2Url?: string;
+  
+  // Form Styling
+  formBoxed?: boolean;
+  formBoxBackground?: string;
+  formBoxBorderRadius?: number;
+  formBoxPadding?: number;
+  formBoxShadow?: boolean;
+  
+  // Field Styling
+  fieldBackgroundColor?: string;
+  fieldTextColor?: string;
+  fieldPlaceholderColor?: string;
+  fieldBorderRadius?: number;
+  fieldBorderWidth?: number;
+  fieldBorderColor?: string;
+  fieldBorderSides?: {
+    top: boolean;
+    right: boolean;
+    bottom: boolean;
+    left: boolean;
+  };
+  
+  // Button Styling
+  buttonFullWidth?: boolean;
+  buttonAlignment?: 'left' | 'center' | 'right';
+  buttonStyle?: ButtonStyleConfig;
+  buttonHoverColor?: string;
+  buttonHoverBackground?: string;
+  
+  // Typography
+  headingSize?: number;
+  headingColor?: string;
+  descriptionSize?: number;
+  descriptionColor?: string;
+  
+  // Background & Layout
+  background?: BackgroundConfig;
+  layout?: LayoutConfig;
+  
+  // Legacy support
+  formFields?: FormField[];
+  submitEndpoint?: string;
+  contactIconSize?: number;
+  contactLineSpacing?: number;
+}
+
+// Testimonials Widget Types
+export interface Testimonial {
+  id: string;
+  name: string;
+  quote: string;
+  rating: number; // 1-5
+  title?: string; // Optional job title/company
+  avatar?: string; // Optional image URL
+}
+
+export type TestimonialArrowStyle = 'circle' | 'square' | 'minimal';
+
+export interface TestimonialWidget {
+  type: 'testimonials';
+  
+  // Section Header
+  sectionHeading?: string;
+  sectionHeadingColor?: string;
+  sectionSubheading?: string;
+  sectionSubheadingColor?: string;
+  
+  // Testimonials
+  testimonials: Testimonial[];
+  
+  // Display Options
+  autoplay?: boolean;
+  autoplayInterval?: number; // seconds, default 5
+  showAvatar?: boolean;
+  avatarShape?: 'circle' | 'square';
+  avatarSize?: number; // px
+  namePosition?: 'above-quote' | 'below-quote';
+  textAlign?: TextAlignment;
+  
+  // Star Settings
+  showStars?: boolean;
+  starColor?: string;
+  starSize?: number;
+  
+  // Typography
+  nameFontSize?: number;
+  nameColor?: string;
+  nameFontWeight?: number;
+  titleFontSize?: number;
+  titleColor?: string;
+  quoteFontSize?: number;
+  quoteColor?: string;
+  quoteLineHeight?: number;
+  quoteMaxWidth?: number;
+  
+  // Navigation Arrows
+  arrowStyle?: TestimonialArrowStyle;
+  arrowBackgroundColor?: string;
+  arrowColor?: string;
+  arrowSize?: number;
+  
+  // Navigation Dots
+  dotColor?: string;
+  activeDotColor?: string;
+  dotSize?: number;
+  
+  // Section Layout & Background
+  background: BackgroundConfig;
+  layout: LayoutConfig;
 }
 
 // Legacy widgets for backward compatibility

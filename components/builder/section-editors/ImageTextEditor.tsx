@@ -22,7 +22,7 @@ export function ImageTextEditor({ widget, onChange }: ImageTextEditorProps) {
         label="Section Image"
         value={widget.image}
         onChange={(url) => onChange({ image: url })}
-        maxSizeMB={4}
+        maxSizeMB={1}
       />
 
       {/* Image Height */}
@@ -605,7 +605,7 @@ export function ImageTextEditor({ widget, onChange }: ImageTextEditorProps) {
             onChange={(url) => onChange({
               background: { ...widget.background, url }
             })}
-            maxSizeMB={4}
+            maxSizeMB={1}
           />
 
           <div className="space-y-2">

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Section, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
+import { Section, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, FAQWidget, TestimonialWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
@@ -15,6 +15,9 @@ import { ImageTextEditor } from './section-editors/ImageTextEditor';
 import { ImageGalleryEditor as ImageGalleryEditorComponent } from './section-editors/ImageGalleryEditor';
 import { IconTextEditor } from './section-editors/IconTextEditor';
 import { TextSectionEditor } from './section-editors/TextSectionEditor';
+import { FAQEditor } from './section-editors/FAQEditor';
+import { TestimonialsEditor } from './section-editors/TestimonialsEditor';
+import { ContactFormEditor } from './section-editors/ContactFormEditor';
 
 interface SectionEditorProps {
   pageId: string;
@@ -89,6 +92,18 @@ export function SectionEditor({ pageId, sections }: SectionEditorProps) {
         {section.type === 'text-section' && (
           <TextSectionEditor
             widget={section.widget as TextSectionWidget}
+            onChange={updateWidget}
+          />
+        )}
+        {section.type === 'faq' && (
+          <FAQEditor
+            widget={section.widget as FAQWidget}
+            onChange={updateWidget}
+          />
+        )}
+        {section.type === 'testimonials' && (
+          <TestimonialsEditor
+            widget={section.widget as TestimonialWidget}
             onChange={updateWidget}
           />
         )}
@@ -184,31 +199,6 @@ function ImageNavigationEditor({ widget, onChange }: { widget: ImageNavigationWi
       </div>
       <p className="text-sm text-muted-foreground">
         {widget.items.length} navigation items
-      </p>
-    </>
-  );
-}
-
-function ContactFormEditor({ widget, onChange }: { widget: ContactFormWidget; onChange: (updates: any) => void }) {
-  return (
-    <>
-      <div className="space-y-2">
-        <Label>Button Text</Label>
-        <Input
-          value={widget.buttonText}
-          onChange={(e) => onChange({ buttonText: e.target.value })}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label>Confirmation Message</Label>
-        <Textarea
-          value={widget.confirmationMessage}
-          onChange={(e) => onChange({ confirmationMessage: e.target.value })}
-          rows={3}
-        />
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Form has {widget.formFields.length} fields
       </p>
     </>
   );

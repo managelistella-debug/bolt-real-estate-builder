@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { Page, Website, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
+import { useState, useEffect } from 'react';
+import { Page, Website, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, FAQWidget, FAQIconStyle, TestimonialWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { useImageCollectionsStore } from '@/lib/stores/imageCollections';
 import { cn } from '@/lib/utils';
-import Image from 'next/image';
 import { Lightbox } from './Lightbox';
 import { getIcon } from '@/lib/icons/iconLibrary';
+import { ChevronRight, ChevronLeft, ChevronDown, Plus, Minus, ArrowRight, Star } from 'lucide-react';
 
 interface LivePreviewProps {
   page: Page;
@@ -15,7 +15,7 @@ interface LivePreviewProps {
 }
 
 export function LivePreview({ page, website }: LivePreviewProps) {
-  const { deviceView, selectedSectionId } = useBuilderStore();
+  const { deviceView, selectedSectionId, selectSection } = useBuilderStore();
 
   const containerClass = cn(
     'mx-auto bg-white min-h-full transition-all duration-300',
@@ -52,8 +52,9 @@ export function LivePreview({ page, website }: LivePreviewProps) {
           {page.sections.map((section) => (
             <div
               key={section.id}
+              onClick={() => selectSection(section.id)}
               className={cn(
-                'transition-all',
+                'transition-all cursor-pointer hover:ring-1 hover:ring-gray-300 hover:ring-inset',
                 selectedSectionId === section.id && 'ring-2 ring-primary ring-inset'
               )}
             >
@@ -74,6 +75,12 @@ export function LivePreview({ page, website }: LivePreviewProps) {
               )}
               {section.type === 'text-section' && (
                 <TextSectionComponent widget={section.widget as TextSectionWidget} />
+              )}
+              {section.type === 'faq' && (
+                <FAQSection widget={section.widget as FAQWidget} />
+              )}
+              {section.type === 'testimonials' && (
+                <TestimonialsSection widget={section.widget as TestimonialWidget} />
               )}
               {section.type === 'custom-code' && (
                 <CustomCodeSection widget={section.widget as CustomCodeWidget} />
@@ -208,22 +215,12 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
       {/* Background */}
       <div className="absolute inset-0" style={{ opacity: bgOpacity }}>
         {bgType === 'image' && widget.background?.url && (
-          widget.background.url.startsWith('data:') ? (
-            <img
-              src={widget.background.url}
-              alt="Hero background"
-              className="w-full h-full object-cover"
-              style={{ filter: bgBlur > 0 ? `blur(${bgBlur}px)` : 'none' }}
-            />
-          ) : (
-            <Image
-              src={widget.background.url}
-              alt="Hero background"
-              fill
-              className="object-cover"
-              style={{ filter: bgBlur > 0 ? `blur(${bgBlur}px)` : 'none' }}
-            />
-          )
+          <img
+            src={widget.background.url}
+            alt="Hero background"
+            className="w-full h-full object-cover"
+            style={{ filter: bgBlur > 0 ? `blur(${bgBlur}px)` : 'none' }}
+          />
         )}
         {bgType === 'video' && widget.background?.url && (
           <video
@@ -326,11 +323,10 @@ function AboutSection({ widget, styles }: { widget: AboutWidget; styles: any }) 
           )}
         </div>
         <div className="relative h-[400px] rounded-lg overflow-hidden">
-          <Image
+          <img
             src={widget.image}
             alt="About"
-            fill
-            className="object-cover"
+            className="w-full h-full object-cover"
           />
         </div>
       </div>
@@ -516,30 +512,16 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
         minHeight: 0, // Prevent flex item from growing beyond its content
       }}
     >
-      {widget.image.startsWith('data:') ? (
-        // Use regular img tag for base64 data URLs
-        <img 
-          src={widget.image} 
-          alt={widget.title || ''} 
-          className="w-full h-full"
-          style={{
-            objectFit: imageObjectFit as any,
-            objectPosition: imageObjectPosition,
-            display: 'block',
-          }}
-        />
-      ) : (
-        // Use Next.js Image for external URLs
-        <Image 
-          src={widget.image} 
-          alt={widget.title || ''} 
-          fill 
-          style={{
-            objectFit: imageObjectFit as any,
-            objectPosition: imageObjectPosition,
-          }}
-        />
-      )}
+      <img 
+        src={widget.image} 
+        alt={widget.title || ''} 
+        className="w-full h-full"
+        style={{
+          objectFit: imageObjectFit as any,
+          objectPosition: imageObjectPosition,
+          display: 'block',
+        }}
+      />
     </div>
   ) : (
     // Placeholder when no image
@@ -613,22 +595,12 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
             />
           )}
           {bgType === 'image' && widget.background?.url && (
-            widget.background.url.startsWith('data:') ? (
-              <img
-                src={widget.background.url}
-                alt="Section background"
-                className="w-full h-full object-cover"
-                style={{ opacity: bgOpacity }}
-              />
-            ) : (
-              <Image
-                src={widget.background.url}
-                alt="Section background"
-                fill
-                className="object-cover"
-                style={{ opacity: bgOpacity }}
-              />
-            )
+            <img
+              src={widget.background.url}
+              alt="Section background"
+              className="w-full h-full object-cover"
+              style={{ opacity: bgOpacity }}
+            />
           )}
           {bgType === 'video' && widget.background?.url && (
             <video
@@ -851,7 +823,7 @@ function GridGallery({
           {image.url.startsWith('data:') ? (
             <img src={image.url} alt={image.caption || `Image ${index + 1}`} className="w-full h-full object-cover" />
           ) : (
-            <Image src={image.url} alt={image.caption || `Image ${index + 1}`} fill className="object-cover" />
+            <img src={image.url} alt={image.caption || `Image ${index + 1}`} className="w-full h-full object-cover" />
           )}
         </div>
       ))}
@@ -903,7 +875,7 @@ function MosaicGallery({
             {image.url.startsWith('data:') ? (
               <img src={image.url} alt={image.caption || `Image ${index + 1}`} className="w-full h-full object-cover" />
             ) : (
-              <Image src={image.url} alt={image.caption || `Image ${index + 1}`} fill className="object-cover" />
+              <img src={image.url} alt={image.caption || `Image ${index + 1}`} className="w-full h-full object-cover" />
             )}
           </div>
         );
@@ -937,7 +909,7 @@ function SetLayoutGallery({
             {image.url.startsWith('data:') ? (
               <img src={image.url} alt={image.caption || `Image ${index + 1}`} className="w-full h-full object-cover" />
             ) : (
-              <Image src={image.url} alt={image.caption || `Image ${index + 1}`} fill className="object-cover" />
+              <img src={image.url} alt={image.caption || `Image ${index + 1}`} className="w-full h-full object-cover" />
             )}
           </div>
         ))}
@@ -1071,7 +1043,7 @@ function ImageNavigationSection({ widget }: { widget: ImageNavigationWidget }) {
               href={item.url}
               className="relative h-64 rounded-lg overflow-hidden group"
             >
-              <Image src={item.image} alt={item.title} fill className="object-cover group-hover:scale-110 transition-transform duration-300" />
+              <img src={item.image} alt={item.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
               <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors flex items-center justify-center">
                 <h3 className="text-white text-2xl font-bold">{item.title}</h3>
               </div>
@@ -1197,12 +1169,19 @@ function IconTextSection({ widget }: { widget: IconTextWidget }) {
             />
           )}
           {bgType === 'image' && widget.background?.url && (
-            <Image
+            <img
               src={widget.background.url}
               alt="Section background"
-              fill
-              className="object-cover"
-              style={{ opacity: bgOpacity }}
+              className="w-full h-full object-cover"
+              style={{ 
+                opacity: bgOpacity,
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
             />
           )}
           {bgType === 'video' && widget.background?.url && (
@@ -1460,10 +1439,10 @@ function TextSectionComponent({ widget }: { widget: TextSectionWidget }) {
   const responsiveHeadingSize = deviceView === 'mobile' ? Math.min(headingSize, 32) : deviceView === 'tablet' ? Math.min(headingSize, 36) : headingSize;
   const responsiveBodySize = deviceView === 'mobile' ? Math.min(bodySize, 14) : bodySize;
 
-  // Tagline component
+  // Tagline component (subheader - appears under heading)
   const taglineElement = widget.tagline && (
     <div
-      className="font-semibold uppercase tracking-wide mb-4"
+      className={`font-semibold uppercase tracking-wide mt-3 ${getAlignmentClass(headingAlignment)}`}
       style={{
         color: widget.taglineColor || '#10b981',
         fontSize: `${taglineSize}px`,
@@ -1531,12 +1510,19 @@ function TextSectionComponent({ widget }: { widget: TextSectionWidget }) {
             />
           )}
           {bgType === 'image' && widget.background?.url && (
-            <Image
+            <img
               src={widget.background.url}
               alt="Section background"
-              fill
-              className="object-cover"
-              style={{ opacity: bgOpacity }}
+              className="w-full h-full object-cover"
+              style={{ 
+                opacity: bgOpacity,
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
             />
           )}
           {bgType === 'video' && widget.background?.url && (
@@ -1580,16 +1566,16 @@ function TextSectionComponent({ widget }: { widget: TextSectionWidget }) {
                 </div>
                 {/* Heading Column */}
                 <div>
-                  {taglineElement}
                   {headingElement}
+                  {taglineElement}
                 </div>
               </>
             ) : (
               <>
                 {/* Heading Column */}
                 <div>
-                  {taglineElement}
                   {headingElement}
+                  {taglineElement}
                 </div>
                 {/* Body Column */}
                 <div>
@@ -1602,8 +1588,10 @@ function TextSectionComponent({ widget }: { widget: TextSectionWidget }) {
         ) : (
           // Stacked Layout
           <div className="flex flex-col" style={{ gap: `${rowGap}px` }}>
-            {taglineElement}
-            {headingElement}
+            <div>
+              {headingElement}
+              {taglineElement}
+            </div>
             {bodyElement}
             {buttonElement}
           </div>
@@ -1613,41 +1601,1341 @@ function TextSectionComponent({ widget }: { widget: TextSectionWidget }) {
   );
 }
 
-function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
+function FAQSection({ widget }: { widget: FAQWidget }) {
+  const { deviceView } = useBuilderStore();
+  const [openItemId, setOpenItemId] = useState<string | null>(null);
+
+  // Ensure defaults
+  const heading = widget.heading || 'Have Questions?';
+  const headingColor = widget.headingColor || '#1f2937';
+  const headingSize = widget.headingSize || 48;
+  const headingAlignment = widget.headingAlignment || 'center';
+  
+  const subheading = widget.subheading || '';
+  const subheadingColor = widget.subheadingColor || '#6b7280';
+  const subheadingSize = widget.subheadingSize || 18;
+  const subheadingAlignment = widget.subheadingAlignment || 'center';
+  
+  const items = widget.items || [];
+  
+  const questionFontSize = widget.questionFontSize || 18;
+  const questionColor = widget.questionColor || '#1f2937';
+  const questionAlignment = widget.questionAlignment || 'left';
+  const questionFontWeight = widget.questionFontWeight || 600;
+  
+  const answerFontSize = widget.answerFontSize || 16;
+  const answerColor = widget.answerColor || '#6b7280';
+  const answerAlignment = widget.answerAlignment || 'left';
+  const answerFontWeight = widget.answerFontWeight || 400;
+  
+  const iconStyle = widget.iconStyle || 'chevron';
+  const iconColor = widget.iconColor || '#10b981';
+  const iconBackgroundColor = widget.iconBackgroundColor || '#d1fae5';
+  const iconCircleSize = widget.iconCircleSize || 40;
+  const iconPosition = widget.iconPosition || 'left';
+  
+  const itemStyle = widget.itemStyle || 'clean';
+  
+  const boxBackgroundColor = widget.boxBackgroundColor || '#f9fafb';
+  const boxBorderRadius = widget.boxBorderRadius || 12;
+  const boxPadding = widget.boxPadding || 24;
+  const boxShadow = widget.boxShadow || false;
+  const boxBorder = widget.boxBorder || false;
+  const boxBorderColor = widget.boxBorderColor || '#e5e7eb';
+  const boxBorderWidth = widget.boxBorderWidth || 1;
+  
+  const dividerColor = widget.dividerColor || '#e5e7eb';
+  const dividerWidth = widget.dividerWidth || 1;
+  
+  const itemGap = widget.itemGap || 16;
+  const questionAnswerGap = widget.questionAnswerGap || 12;
+  const headerGap = widget.headerGap || 40;
+
+  // Responsive adjustments
+  const responsiveHeadingSize = deviceView === 'mobile' ? headingSize * 0.7 : deviceView === 'tablet' ? headingSize * 0.85 : headingSize;
+  const responsiveSubheadingSize = deviceView === 'mobile' ? subheadingSize * 0.9 : subheadingSize;
+  const responsiveIconCircleSize = deviceView === 'mobile' ? iconCircleSize * 0.8 : iconCircleSize;
+  const responsiveBoxPadding = deviceView === 'mobile' ? boxPadding * 0.75 : boxPadding;
+
+  const getAlignmentClass = (alignment: string) => {
+    switch (alignment) {
+      case 'left': return 'text-left';
+      case 'center': return 'text-center';
+      case 'right': return 'text-right';
+      default: return 'text-left';
+    }
+  };
+
+  const renderFAQIcon = (isOpen: boolean) => {
+    const iconSize = responsiveIconCircleSize * 0.5;
+    const iconProps = {
+      style: { width: iconSize, height: iconSize, color: iconColor },
+      className: 'transition-transform duration-200'
+    };
+
+    switch (iconStyle) {
+      case 'chevron':
+        return <ChevronRight {...iconProps} className={`${iconProps.className} ${isOpen ? 'rotate-90' : ''}`} />;
+      case 'plus-minus':
+        return isOpen ? <Minus {...iconProps} /> : <Plus {...iconProps} />;
+      case 'arrow':
+        return <ArrowRight {...iconProps} className={`${iconProps.className} ${isOpen ? 'rotate-90' : ''}`} />;
+      case 'caret':
+        return <ChevronDown {...iconProps} className={`${iconProps.className} ${isOpen ? '' : '-rotate-90'}`} />;
+      default:
+        return <ChevronRight {...iconProps} className={`${iconProps.className} ${isOpen ? 'rotate-90' : ''}`} />;
+    }
+  };
+
+  const toggleItem = (itemId: string) => {
+    setOpenItemId(openItemId === itemId ? null : itemId);
+  };
+
+  const getItemStyle = (index: number) => {
+    const baseStyle: React.CSSProperties = {
+      cursor: 'pointer',
+    };
+
+    if (itemStyle === 'boxed') {
+      return {
+        ...baseStyle,
+        backgroundColor: boxBackgroundColor,
+        borderRadius: `${boxBorderRadius}px`,
+        padding: `${responsiveBoxPadding}px`,
+        boxShadow: boxShadow ? '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' : 'none',
+        border: boxBorder ? `${boxBorderWidth}px solid ${boxBorderColor}` : 'none',
+      };
+    } else if (itemStyle === 'dividers') {
+      return {
+        ...baseStyle,
+        borderBottom: index < items.length - 1 ? `${dividerWidth}px solid ${dividerColor}` : 'none',
+        paddingBottom: index < items.length - 1 ? `${itemGap}px` : '0',
+        paddingTop: index > 0 ? `${itemGap}px` : '0',
+      };
+    } else {
+      // clean style
+      return baseStyle;
+    }
+  };
+
   return (
-    <div className="py-16 px-6">
-      <div className="max-w-2xl mx-auto">
-        <form className="space-y-4">
-          {widget.formFields.map((field) => (
-            <div key={field.id} className="space-y-2">
-              <label className="block text-sm font-medium">
-                {field.label}
-                {field.required && <span className="text-red-500 ml-1">*</span>}
-              </label>
-              {field.type === 'textarea' ? (
-                <textarea
-                  className="w-full px-4 py-2 border rounded-md"
-                  rows={4}
-                  placeholder={field.placeholder}
-                  required={field.required}
-                />
-              ) : (
-                <input
-                  type={field.type}
-                  className="w-full px-4 py-2 border rounded-md"
-                  placeholder={field.placeholder}
-                  required={field.required}
-                />
+    <div className="w-full">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div style={{ marginBottom: `${headerGap}px` }}>
+          <h2
+            className={`font-bold ${getAlignmentClass(headingAlignment)}`}
+            style={{
+              color: headingColor,
+              fontSize: `${responsiveHeadingSize}px`,
+              lineHeight: '1.2',
+              marginBottom: subheading ? '12px' : '0',
+            }}
+          >
+            {heading}
+          </h2>
+          {subheading && (
+            <p
+              className={getAlignmentClass(subheadingAlignment)}
+              style={{
+                color: subheadingColor,
+                fontSize: `${responsiveSubheadingSize}px`,
+              }}
+            >
+              {subheading}
+            </p>
+          )}
+        </div>
+
+        {/* FAQ Items */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: itemStyle === 'dividers' ? '0' : `${itemGap}px` }}>
+          {items.map((item, index) => {
+            const isOpen = openItemId === item.id;
+            
+            return (
+              <div
+                key={item.id}
+                style={getItemStyle(index)}
+              >
+                {/* Question */}
+                <div
+                  onClick={() => toggleItem(item.id)}
+                  className="flex items-center"
+                  style={{ 
+                    gap: iconPosition === 'left' ? '16px' : '0',
+                    justifyContent: iconPosition === 'right' ? 'space-between' : 'flex-start'
+                  }}
+                >
+                  {/* Icon Circle - Left Position */}
+                  {iconPosition === 'left' && (
+                    <div
+                      style={{
+                        width: `${responsiveIconCircleSize}px`,
+                        height: `${responsiveIconCircleSize}px`,
+                        backgroundColor: iconBackgroundColor,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {renderFAQIcon(isOpen)}
+                    </div>
+                  )}
+
+                  {/* Question Text */}
+                  <div className="flex-1" style={{ minWidth: 0 }}>
+                    <h3
+                      className={getAlignmentClass(questionAlignment)}
+                      style={{
+                        color: questionColor,
+                        fontSize: `${questionFontSize}px`,
+                        fontWeight: questionFontWeight,
+                        margin: 0,
+                      }}
+                    >
+                      {item.question}
+                    </h3>
+                  </div>
+
+                  {/* Icon Circle - Right Position */}
+                  {iconPosition === 'right' && (
+                    <div
+                      style={{
+                        width: `${responsiveIconCircleSize}px`,
+                        height: `${responsiveIconCircleSize}px`,
+                        backgroundColor: iconBackgroundColor,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        marginLeft: '16px',
+                      }}
+                    >
+                      {renderFAQIcon(isOpen)}
+                    </div>
+                  )}
+                </div>
+
+                {/* Answer */}
+                {isOpen && (
+                  <div
+                    style={{
+                      marginTop: `${questionAnswerGap}px`,
+                      marginLeft: iconPosition === 'left' ? `${responsiveIconCircleSize + 16}px` : '0',
+                      marginRight: iconPosition === 'right' ? `${responsiveIconCircleSize + 16}px` : '0',
+                      paddingBottom: `${questionAnswerGap}px`,
+                    }}
+                  >
+                    <p
+                      className={getAlignmentClass(answerAlignment)}
+                      style={{
+                        color: answerColor,
+                        fontSize: `${answerFontSize}px`,
+                        fontWeight: answerFontWeight,
+                        margin: 0,
+                        lineHeight: '1.6',
+                      }}
+                    >
+                      {item.answer}
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
+  const { deviceView } = useBuilderStore();
+  const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // Ensure defaults
+  const style = widget.style || 'simple';
+  const layout = widget.layout || 'form-right';
+  const fields = widget.fields || widget.formFields || []; // Support legacy formFields
+  const formHeading = widget.formHeading || 'Get in Touch';
+  const buttonText = widget.buttonText || 'Send Message';
+  const confirmationMessage = widget.confirmationMessage || 'Thank you! We\'ll be in touch soon.';
+  
+  const formBoxed = widget.formBoxed ?? true;
+  const formBoxBackground = widget.formBoxBackground || '#ffffff';
+  const formBoxBorderRadius = widget.formBoxBorderRadius ?? 12;
+  const formBoxPadding = widget.formBoxPadding ?? 32;
+  const formBoxShadow = widget.formBoxShadow ?? true;
+  
+  const fieldBackgroundColor = widget.fieldBackgroundColor || '#f3f4f6';
+  const fieldTextColor = widget.fieldTextColor || '#1f2937';
+  const fieldPlaceholderColor = widget.fieldPlaceholderColor || '#9ca3af';
+  const fieldBorderRadius = widget.fieldBorderRadius ?? 8;
+  const fieldBorderWidth = widget.fieldBorderWidth ?? 0;
+  const fieldBorderColor = widget.fieldBorderColor || '#d1d5db';
+  const fieldBorderSides = widget.fieldBorderSides || { top: false, right: false, bottom: true, left: false };
+  
+  const buttonFullWidth = widget.buttonFullWidth ?? false;
+  const buttonAlignment = widget.buttonAlignment || 'left';
+  const buttonStyle = widget.buttonStyle || {
+    backgroundColor: '#10b981',
+    backgroundOpacity: 100,
+    textColor: '#ffffff',
+    borderRadius: 8,
+    blur: 0,
+    shadow: true,
+    borderWidth: 0,
+    borderColor: '#000000',
+  };
+  
+  const headingSize = widget.headingSize ?? 32;
+  const headingColor = widget.headingColor || '#1f2937';
+  const descriptionSize = widget.descriptionSize ?? 16;
+  const descriptionColor = widget.descriptionColor || '#6b7280';
+  
+  const background = widget.background || { type: 'color', color: 'transparent', opacity: 100, blur: 0 };
+  const layoutCfg = (widget.layout && typeof widget.layout === 'object' && 'height' in widget.layout)
+    ? widget.layout
+    : {
+        height: { type: 'auto' as const },
+        width: 'container' as const,
+        padding: { top: 80, right: 20, bottom: 80, left: 20 },
+        margin: { top: 0, right: 0, bottom: 0, left: 0 },
+      };
+  
+  const isMobile = deviceView === 'mobile';
+  const isTablet = deviceView === 'tablet';
+  
+  const responsiveHeadingSize = isMobile ? headingSize * 0.6 : isTablet ? headingSize * 0.8 : headingSize;
+  const responsiveDescriptionSize = isMobile ? descriptionSize * 0.9 : descriptionSize;
+  
+  // Get background styles
+  const getBackgroundStyles = () => {
+    const styles: React.CSSProperties = {};
+    
+    if (background.type === 'color') {
+      const opacity = background.opacity ?? 100;
+      if (background.color === 'transparent') {
+        styles.backgroundColor = 'transparent';
+      } else {
+        const r = parseInt(background.color.slice(1, 3), 16);
+        const g = parseInt(background.color.slice(3, 5), 16);
+        const b = parseInt(background.color.slice(5, 7), 16);
+        styles.backgroundColor = `rgba(${r}, ${g}, ${b}, ${opacity / 100})`;
+      }
+    } else if (background.type === 'image' && background.imageUrl) {
+      styles.backgroundImage = `url(${background.imageUrl})`;
+      styles.backgroundSize = 'cover';
+      styles.backgroundPosition = 'center';
+      styles.backgroundRepeat = 'no-repeat';
+    } else if (background.type === 'video' && background.videoUrl) {
+      styles.position = 'relative';
+    } else if (background.type === 'gradient' && background.gradientColors) {
+      const [color1, color2] = background.gradientColors;
+      const angle = background.gradientAngle ?? 135;
+      styles.backgroundImage = `linear-gradient(${angle}deg, ${color1}, ${color2})`;
+    }
+    
+    return styles;
+  };
+  
+  // Get field border styles
+  const getFieldBorderStyle = () => {
+    const borderParts: string[] = [];
+    if (fieldBorderSides.top) borderParts.push('top');
+    if (fieldBorderSides.right) borderParts.push('right');
+    if (fieldBorderSides.bottom) borderParts.push('bottom');
+    if (fieldBorderSides.left) borderParts.push('left');
+    
+    if (borderParts.length === 4) {
+      return `${fieldBorderWidth}px solid ${fieldBorderColor}`;
+    } else if (borderParts.length === 0) {
+      return 'none';
+    } else {
+      // Individual borders
+      const style: React.CSSProperties = {};
+      if (fieldBorderSides.top) style.borderTop = `${fieldBorderWidth}px solid ${fieldBorderColor}`;
+      if (fieldBorderSides.right) style.borderRight = `${fieldBorderWidth}px solid ${fieldBorderColor}`;
+      if (fieldBorderSides.bottom) style.borderBottom = `${fieldBorderWidth}px solid ${fieldBorderColor}`;
+      if (fieldBorderSides.left) style.borderLeft = `${fieldBorderWidth}px solid ${fieldBorderColor}`;
+      return style;
+    }
+  };
+  
+  const fieldBorderStyle = getFieldBorderStyle();
+  
+  // Get button alignment class
+  const getButtonAlignmentClass = () => {
+    if (buttonFullWidth) return '';
+    if (buttonAlignment === 'center') return 'mx-auto';
+    if (buttonAlignment === 'right') return 'ml-auto';
+    return ''; // left
+  };
+  
+  const getButtonAlignmentContainerClass = () => {
+    if (buttonFullWidth) return '';
+    if (buttonAlignment === 'center') return 'flex justify-center';
+    if (buttonAlignment === 'right') return 'flex justify-end';
+    return 'flex justify-start';
+  };
+  
+  const validateField = (field: FormField, value: string): string | null => {
+    if (field.required && !value.trim()) {
+      return `${field.placeholder || field.label} is required`;
+    }
+    
+    if (field.type === 'email' && value) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(value)) {
+        return 'Please enter a valid email address';
+      }
+    }
+    
+    if (field.type === 'phone' && value) {
+      const phoneRegex = /^[\d\s\-\+\(\)]+$/;
+      if (!phoneRegex.test(value)) {
+        return 'Please enter a valid phone number';
+      }
+    }
+    
+    return null;
+  };
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+    
+    const formData = new FormData(e.target as HTMLFormElement);
+    const data: Record<string, any> = {};
+    const newErrors: Record<string, string> = {};
+    
+    // Collect and validate form data
+    fields.forEach(field => {
+      const value = String(formData.get(field.id) || '');
+      data[field.label] = value;
+      
+      const error = validateField(field, value);
+      if (error) {
+        newErrors[field.id] = error;
+      }
+    });
+    
+    // If there are validation errors, show them
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    
+    // Parse full name into first and last name if needed
+    let firstName = data.firstName || '';
+    let lastName = data.lastName || '';
+    
+    if (data.name && !firstName && !lastName) {
+      const nameParts = (data.name as string).trim().split(' ');
+      firstName = nameParts[0] || '';
+      lastName = nameParts.slice(1).join(' ') || '';
+    }
+    
+    // Prepare lead data
+    const leadData = {
+      firstName: firstName || 'Unknown',
+      lastName: lastName || '',
+      email: data.email || '',
+      phone: data.phone || '',
+      message: data.message || '',
+      customFields: {} as Record<string, string>,
+    };
+    
+    // Add any custom fields
+    Object.keys(data).forEach(key => {
+      if (!['name', 'firstName', 'lastName', 'email', 'phone', 'message'].includes(key)) {
+        leadData.customFields[key] = String(data[key] || '');
+      }
+    });
+    
+    // Submit to CRM (in preview mode, just log it)
+    console.log('Form submission to CRM:', leadData);
+    
+    // In production, this would call an API endpoint:
+    // await fetch('/api/leads', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify(leadData),
+    // });
+    
+    setSubmitted(true);
+    (e.target as HTMLFormElement).reset();
+    setTimeout(() => setSubmitted(false), 5000);
+  };
+  
+  const renderFormFields = () => (
+    <>
+      {fields.sort((a, b) => a.order - b.order).map((field) => {
+        const placeholder = field.placeholder || field.label;
+        const hasError = errors[field.id];
+        const fieldStyles: React.CSSProperties = {
+          backgroundColor: fieldBackgroundColor,
+          color: fieldTextColor,
+          borderRadius: `${fieldBorderRadius}px`,
+          padding: '12px 16px',
+          width: '100%',
+          outline: 'none',
+          ...(typeof fieldBorderStyle === 'string' 
+            ? { border: hasError ? '2px solid #ef4444' : fieldBorderStyle }
+            : { ...fieldBorderStyle, border: hasError ? '2px solid #ef4444' : undefined }
+          ),
+        };
+        
+        if (field.type === 'textarea') {
+          return (
+            <div key={field.id}>
+              <textarea
+                name={field.id}
+                placeholder={placeholder}
+                required={field.required}
+                rows={4}
+                style={fieldStyles}
+                className="placeholder-opacity-60"
+              />
+              {hasError && (
+                <p style={{ color: '#ef4444', fontSize: '14px', marginTop: '4px' }}>
+                  {errors[field.id]}
+                </p>
               )}
             </div>
-          ))}
-          <button
-            type="submit"
-            className="w-full py-3 rounded-md font-medium text-white bg-primary"
-          >
-            {widget.buttonText}
-          </button>
+          );
+        } else if (field.type === 'select' && field.options) {
+          return (
+            <div key={field.id}>
+              <select
+                name={field.id}
+                required={field.required}
+                style={fieldStyles}
+              >
+                <option value="">{placeholder}</option>
+                {field.options.map((opt, idx) => (
+                  <option key={idx} value={opt}>{opt}</option>
+                ))}
+              </select>
+              {hasError && (
+                <p style={{ color: '#ef4444', fontSize: '14px', marginTop: '4px' }}>
+                  {errors[field.id]}
+                </p>
+              )}
+            </div>
+          );
+        } else if (field.type === 'radio' && field.options) {
+          return (
+            <div key={field.id} style={{ marginBottom: '16px' }}>
+              <label style={{ color: fieldTextColor, display: 'block', marginBottom: '8px', fontWeight: 500 }}>
+                {placeholder} {field.required && <span style={{ color: '#ef4444' }}>*</span>}
+              </label>
+              {field.options.map((opt, idx) => (
+                <div key={idx} style={{ marginBottom: '8px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name={field.id}
+                      value={opt}
+                      required={field.required}
+                      style={{ cursor: 'pointer' }}
+                    />
+                    <span style={{ color: fieldTextColor }}>{opt}</span>
+                  </label>
+                </div>
+              ))}
+              {hasError && (
+                <p style={{ color: '#ef4444', fontSize: '14px', marginTop: '4px' }}>
+                  {errors[field.id]}
+                </p>
+              )}
+            </div>
+          );
+        } else {
+          return (
+            <div key={field.id}>
+              <input
+                name={field.id}
+                type={field.type === 'phone' ? 'tel' : field.type}
+                placeholder={placeholder}
+                required={field.required}
+                style={fieldStyles}
+                className="placeholder-opacity-60"
+              />
+              {hasError && (
+                <p style={{ color: '#ef4444', fontSize: '14px', marginTop: '4px' }}>
+                  {errors[field.id]}
+                </p>
+              )}
+            </div>
+          );
+        }
+      })}
+    </>
+  );
+  
+  const renderButton = () => {
+    const bgOpacity = buttonStyle.backgroundOpacity ?? 100;
+    const bgColor = buttonStyle.backgroundColor || '#10b981';
+    const r = parseInt(bgColor.slice(1, 3), 16);
+    const g = parseInt(bgColor.slice(3, 5), 16);
+    const b = parseInt(bgColor.slice(5, 7), 16);
+    
+    return (
+      <div className={getButtonAlignmentContainerClass()}>
+        <button
+          type="submit"
+          style={{
+            backgroundColor: `rgba(${r}, ${g}, ${b}, ${bgOpacity / 100})`,
+            color: buttonStyle.textColor,
+            borderRadius: `${buttonStyle.borderRadius}px`,
+            padding: '12px 32px',
+            fontWeight: 600,
+            border: buttonStyle.borderWidth ? `${buttonStyle.borderWidth}px solid ${buttonStyle.borderColor}` : 'none',
+            boxShadow: buttonStyle.shadow ? '0 4px 6px rgba(0, 0, 0, 0.1)' : 'none',
+            backdropFilter: buttonStyle.blur ? `blur(${buttonStyle.blur}px)` : 'none',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            width: buttonFullWidth ? '100%' : 'auto',
+          }}
+          onMouseEnter={(e) => {
+            if (widget.buttonHoverBackground) {
+              e.currentTarget.style.backgroundColor = widget.buttonHoverBackground;
+            }
+            if (widget.buttonHoverColor) {
+              e.currentTarget.style.color = widget.buttonHoverColor;
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = `rgba(${r}, ${g}, ${b}, ${bgOpacity / 100})`;
+            e.currentTarget.style.color = buttonStyle.textColor;
+          }}
+        >
+          {buttonText}
+        </button>
+      </div>
+    );
+  };
+  
+  const renderForm = () => (
+    <div
+      style={{
+        backgroundColor: formBoxed ? formBoxBackground : 'transparent',
+        borderRadius: formBoxed ? `${formBoxBorderRadius}px` : 0,
+        padding: formBoxed ? `${formBoxPadding}px` : 0,
+        boxShadow: formBoxed && formBoxShadow ? '0 10px 30px rgba(0, 0, 0, 0.1)' : 'none',
+      }}
+    >
+      {!submitted ? (
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <h2 style={{ fontSize: `${responsiveHeadingSize}px`, color: headingColor, marginBottom: '12px', fontWeight: 700 }}>
+              {formHeading}
+            </h2>
+            {widget.formDescription && (
+              <p style={{ fontSize: `${responsiveDescriptionSize}px`, color: descriptionColor, marginBottom: '24px' }}>
+                {widget.formDescription}
+              </p>
+            )}
+          </div>
+          {renderFormFields()}
+          {renderButton()}
         </form>
+      ) : (
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <p style={{ fontSize: `${responsiveDescriptionSize}px`, color: headingColor }}>
+            {confirmationMessage}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+  
+  // Simple style - just the form
+  if (style === 'simple') {
+    return (
+      <div style={{
+        ...getBackgroundStyles(),
+        paddingTop: `${layoutCfg.padding.top}px`,
+        paddingBottom: `${layoutCfg.padding.bottom}px`,
+        paddingLeft: `${layoutCfg.padding.left}px`,
+        paddingRight: `${layoutCfg.padding.right}px`,
+      }}>
+        <div style={{ maxWidth: layoutCfg.width === 'container' ? '600px' : '100%', margin: '0 auto' }}>
+          {renderForm()}
+        </div>
+      </div>
+    );
+  }
+  
+  // Split style - text + form
+  if (style === 'split') {
+    const formColumn = renderForm();
+    const textColumn = (
+      <div>
+        {widget.columnHeading && (
+          <h2 style={{ fontSize: `${responsiveHeadingSize}px`, color: headingColor, marginBottom: '16px', fontWeight: 700 }}>
+            {widget.columnHeading}
+          </h2>
+        )}
+        {widget.columnDescription && (
+          <p style={{ fontSize: `${responsiveDescriptionSize}px`, color: descriptionColor, marginBottom: '24px', lineHeight: 1.6 }}>
+            {widget.columnDescription}
+          </p>
+        )}
+        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+          {widget.button1Text && (
+            <a
+              href={widget.button1Url || '#'}
+              style={{
+                display: 'inline-block',
+                padding: '12px 24px',
+                backgroundColor: buttonStyle.backgroundColor,
+                color: buttonStyle.textColor,
+                borderRadius: `${buttonStyle.borderRadius}px`,
+                fontWeight: 600,
+                textDecoration: 'none',
+                boxShadow: buttonStyle.shadow ? '0 4px 6px rgba(0, 0, 0, 0.1)' : 'none',
+              }}
+            >
+              {widget.button1Text}
+            </a>
+          )}
+          {widget.button2Text && (
+            <a
+              href={widget.button2Url || '#'}
+              style={{
+                display: 'inline-block',
+                padding: '12px 24px',
+                backgroundColor: 'transparent',
+                color: buttonStyle.backgroundColor,
+                border: `2px solid ${buttonStyle.backgroundColor}`,
+                borderRadius: `${buttonStyle.borderRadius}px`,
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              {widget.button2Text}
+            </a>
+          )}
+        </div>
+      </div>
+    );
+    
+    return (
+      <div style={{
+        ...getBackgroundStyles(),
+        paddingTop: `${layoutCfg.padding.top}px`,
+        paddingBottom: `${layoutCfg.padding.bottom}px`,
+        paddingLeft: `${layoutCfg.padding.left}px`,
+        paddingRight: `${layoutCfg.padding.right}px`,
+      }}>
+        <div style={{ maxWidth: layoutCfg.width === 'container' ? '1200px' : '100%', margin: '0 auto' }}>
+          <div style={{
+            display: isMobile ? 'flex' : 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+            gap: '48px',
+            flexDirection: isMobile ? 'column' : undefined,
+          }}>
+            {layout === 'form-left' ? (
+              <>
+                <div>{formColumn}</div>
+                <div>{textColumn}</div>
+              </>
+            ) : (
+              <>
+                <div>{textColumn}</div>
+                <div>{formColumn}</div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Contact details style - contact info + form
+  if (style === 'contact-details') {
+    const formColumn = renderForm();
+    const showIcons = widget.showContactIcons ?? true;
+    
+    const contactDetailsColumn = (
+      <div>
+        {widget.columnHeading && (
+          <h2 style={{ fontSize: `${responsiveHeadingSize}px`, color: headingColor, marginBottom: '16px', fontWeight: 700 }}>
+            {widget.columnHeading}
+          </h2>
+        )}
+        {widget.columnDescription && (
+          <p style={{ fontSize: `${responsiveDescriptionSize}px`, color: descriptionColor, marginBottom: '32px', lineHeight: 1.6 }}>
+            {widget.columnDescription}
+          </p>
+        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {widget.phone && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {showIcons && (
+                <div style={{ 
+                  width: '40px',
+                  height: '40px',
+                  backgroundColor: buttonStyle.backgroundColor,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={buttonStyle.textColor} strokeWidth="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                  </svg>
+                </div>
+              )}
+              <a href={`tel:${widget.phone}`} style={{ fontSize: `${responsiveDescriptionSize}px`, color: headingColor, textDecoration: 'none' }}>
+                {widget.phone}
+              </a>
+            </div>
+          )}
+          {widget.email && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {showIcons && (
+                <div style={{ 
+                  width: '40px',
+                  height: '40px',
+                  backgroundColor: buttonStyle.backgroundColor,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={buttonStyle.textColor} strokeWidth="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                    <polyline points="22,6 12,13 2,6"></polyline>
+                  </svg>
+                </div>
+              )}
+              <a href={`mailto:${widget.email}`} style={{ fontSize: `${responsiveDescriptionSize}px`, color: headingColor, textDecoration: 'none' }}>
+                {widget.email}
+              </a>
+            </div>
+          )}
+          {widget.website && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {showIcons && (
+                <div style={{ 
+                  width: '40px',
+                  height: '40px',
+                  backgroundColor: buttonStyle.backgroundColor,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={buttonStyle.textColor} strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                  </svg>
+                </div>
+              )}
+              <a href={`https://${widget.website.replace(/^https?:\/\//, '')}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: `${responsiveDescriptionSize}px`, color: headingColor, textDecoration: 'none' }}>
+                {widget.website}
+              </a>
+            </div>
+          )}
+        </div>
+        {widget.button1Text && (
+          <div style={{ marginTop: '32px' }}>
+            <a
+              href={widget.button1Url || '#'}
+              style={{
+                display: 'inline-block',
+                padding: '12px 24px',
+                backgroundColor: buttonStyle.backgroundColor,
+                color: buttonStyle.textColor,
+                borderRadius: `${buttonStyle.borderRadius}px`,
+                fontWeight: 600,
+                textDecoration: 'none',
+                boxShadow: buttonStyle.shadow ? '0 4px 6px rgba(0, 0, 0, 0.1)' : 'none',
+              }}
+            >
+              {widget.button1Text}
+            </a>
+          </div>
+        )}
+      </div>
+    );
+    
+    return (
+      <div style={{
+        ...getBackgroundStyles(),
+        paddingTop: `${layoutCfg.padding.top}px`,
+        paddingBottom: `${layoutCfg.padding.bottom}px`,
+        paddingLeft: `${layoutCfg.padding.left}px`,
+        paddingRight: `${layoutCfg.padding.right}px`,
+      }}>
+        <div style={{ maxWidth: layoutCfg.width === 'container' ? '1200px' : '100%', margin: '0 auto' }}>
+          <div style={{
+            display: isMobile ? 'flex' : 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+            gap: '48px',
+            flexDirection: isMobile ? 'column' : undefined,
+          }}>
+            {layout === 'form-left' ? (
+              <>
+                <div>{formColumn}</div>
+                <div>{contactDetailsColumn}</div>
+              </>
+            ) : (
+              <>
+                <div>{contactDetailsColumn}</div>
+                <div>{formColumn}</div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  return null;
+}
+
+function TestimonialsSection({ widget }: { widget: TestimonialWidget }) {
+  const { selectSection } = useBuilderStore();
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const testimonials = widget.testimonials || [];
+  const autoplay = widget.autoplay ?? true;
+  const autoplayInterval = (widget.autoplayInterval ?? 5) * 1000;
+  
+  // Auto-play logic
+  useEffect(() => {
+    if (!autoplay || isPaused || testimonials.length <= 1) return;
+    
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % testimonials.length);
+    }, autoplayInterval);
+    
+    return () => clearInterval(timer);
+  }, [autoplay, autoplayInterval, isPaused, testimonials.length]);
+  
+  const goToPrevious = () => {
+    setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+  };
+  
+  const goToNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % testimonials.length);
+  };
+  
+  const goToIndex = (index: number) => {
+    setCurrentIndex(index);
+  };
+  
+  if (testimonials.length === 0) {
+    return (
+      <div style={{
+        padding: '80px 24px',
+        textAlign: 'center',
+        backgroundColor: '#f3f4f6',
+      }}>
+        <p style={{ color: '#6b7280' }}>No testimonials added yet</p>
+      </div>
+    );
+  }
+  
+  const currentTestimonial = testimonials[currentIndex];
+  
+  // Ensure defaults
+  const showAvatar = widget.showAvatar ?? true;
+  const avatarShape = widget.avatarShape || 'circle';
+  const avatarSize = widget.avatarSize ?? 80;
+  const namePosition = widget.namePosition || 'above-quote';
+  const textAlign = widget.textAlign || 'center';
+  
+  const showStars = widget.showStars ?? true;
+  const starColor = widget.starColor || '#f59e0b';
+  const starSize = widget.starSize ?? 24;
+  
+  const nameFontSize = widget.nameFontSize ?? 24;
+  const nameColor = widget.nameColor || '#ffffff';
+  const nameFontWeight = widget.nameFontWeight ?? 700;
+  const titleFontSize = widget.titleFontSize ?? 16;
+  const titleColor = widget.titleColor || '#cbd5e1';
+  const quoteFontSize = widget.quoteFontSize ?? 20;
+  const quoteColor = widget.quoteColor || '#ffffff';
+  const quoteLineHeight = widget.quoteLineHeight ?? 1.6;
+  const quoteMaxWidth = widget.quoteMaxWidth ?? 700;
+  
+  const arrowStyle = widget.arrowStyle || 'circle';
+  const arrowBackgroundColor = widget.arrowBackgroundColor || '#ffffff';
+  const arrowColor = widget.arrowColor || '#1e40af';
+  const arrowSize = widget.arrowSize ?? 60;
+  
+  const dotColor = widget.dotColor || '#94a3b8';
+  const activeDotColor = widget.activeDotColor || '#ffffff';
+  const dotSize = widget.dotSize ?? 10;
+  
+  const sectionHeading = widget.sectionHeading || '';
+  const sectionHeadingColor = widget.sectionHeadingColor || '#ffffff';
+  const sectionSubheading = widget.sectionSubheading || '';
+  const sectionSubheadingColor = widget.sectionSubheadingColor || '#cbd5e1';
+  
+  // Background styles
+  const background = widget.background || { type: 'color', color: '#0f4c75', opacity: 100, blur: 0 };
+  const layout = widget.layout || {
+    fullWidth: true,
+    maxWidth: 1200,
+    paddingTop: 80,
+    paddingBottom: 80,
+    paddingLeft: 24,
+    paddingRight: 24,
+  };
+  
+  const backgroundStyles: React.CSSProperties = {};
+  
+  if (background.type === 'color') {
+    backgroundStyles.backgroundColor = background.color;
+    backgroundStyles.opacity = (background.opacity || 100) / 100;
+  } else if (background.type === 'image' && background.url) {
+    backgroundStyles.backgroundImage = `url(${background.url})`;
+    backgroundStyles.backgroundSize = 'cover';
+    backgroundStyles.backgroundPosition = 'center';
+  } else if (background.type === 'video' && background.url) {
+    backgroundStyles.position = 'relative';
+  }
+  
+  if (background.blur) {
+    backgroundStyles.backdropFilter = `blur(${background.blur}px)`;
+  }
+  
+  // Star rendering
+  const renderStars = () => {
+    if (!showStars) return null;
+    
+    return (
+      <div style={{
+        display: 'flex',
+        gap: '4px',
+        justifyContent: textAlign === 'center' ? 'center' : textAlign === 'right' ? 'flex-end' : 'flex-start',
+        marginBottom: '16px',
+      }}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Star
+            key={i}
+            size={starSize}
+            fill={i < currentTestimonial.rating ? starColor : 'transparent'}
+            stroke={starColor}
+            strokeWidth={2}
+          />
+        ))}
+      </div>
+    );
+  };
+  
+  // Avatar rendering
+  const renderAvatar = () => {
+    if (!showAvatar || !currentTestimonial.avatar) return null;
+    
+    return (
+      <img
+        src={currentTestimonial.avatar}
+        alt={currentTestimonial.name}
+        style={{
+          width: `${avatarSize}px`,
+          height: `${avatarSize}px`,
+          borderRadius: avatarShape === 'circle' ? '50%' : '8px',
+          objectFit: 'cover',
+          marginBottom: '16px',
+        }}
+      />
+    );
+  };
+  
+  // Navigation arrows
+  const renderArrows = () => {
+    if (testimonials.length <= 1) return null;
+    
+    const arrowContainerStyle: React.CSSProperties = {
+      position: 'absolute',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      zIndex: 10,
+    };
+    
+    const arrowButtonStyle: React.CSSProperties = {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: arrowStyle === 'minimal' ? 'transparent' : arrowBackgroundColor,
+      color: arrowColor,
+      border: 'none',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+    };
+    
+    if (arrowStyle !== 'minimal') {
+      arrowButtonStyle.width = `${arrowSize}px`;
+      arrowButtonStyle.height = `${arrowSize}px`;
+      arrowButtonStyle.borderRadius = arrowStyle === 'circle' ? '50%' : '8px';
+      arrowButtonStyle.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+    }
+    
+    return (
+      <>
+        <div style={{ ...arrowContainerStyle, left: '24px' }}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              goToPrevious();
+            }}
+            style={arrowButtonStyle}
+            onMouseEnter={(e) => {
+              if (arrowStyle !== 'minimal') {
+                e.currentTarget.style.transform = 'scale(1.1)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (arrowStyle !== 'minimal') {
+                e.currentTarget.style.transform = 'scale(1)';
+              }
+            }}
+          >
+            <ChevronLeft size={arrowStyle === 'minimal' ? 40 : arrowSize * 0.4} />
+          </button>
+        </div>
+        <div style={{ ...arrowContainerStyle, right: '24px' }}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              goToNext();
+            }}
+            style={arrowButtonStyle}
+            onMouseEnter={(e) => {
+              if (arrowStyle !== 'minimal') {
+                e.currentTarget.style.transform = 'scale(1.1)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (arrowStyle !== 'minimal') {
+                e.currentTarget.style.transform = 'scale(1)';
+              }
+            }}
+          >
+            <ChevronRight size={arrowStyle === 'minimal' ? 40 : arrowSize * 0.4} />
+          </button>
+        </div>
+      </>
+    );
+  };
+  
+  // Dot indicators
+  const renderDots = () => {
+    if (testimonials.length <= 1) return null;
+    
+    return (
+      <div style={{
+        display: 'flex',
+        gap: '8px',
+        justifyContent: 'center',
+        marginTop: '40px',
+      }}>
+        {testimonials.map((_, index) => (
+          <button
+            key={index}
+            onClick={(e) => {
+              e.stopPropagation();
+              goToIndex(index);
+            }}
+            style={{
+              width: `${dotSize}px`,
+              height: `${dotSize}px`,
+              borderRadius: '50%',
+              backgroundColor: index === currentIndex ? activeDotColor : dotColor,
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              padding: 0,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          />
+        ))}
+      </div>
+    );
+  };
+  
+  return (
+    <div
+      style={{
+        position: 'relative',
+        ...backgroundStyles,
+        paddingTop: `${layout.paddingTop}px`,
+        paddingBottom: `${layout.paddingBottom}px`,
+        paddingLeft: `${layout.paddingLeft}px`,
+        paddingRight: `${layout.paddingRight}px`,
+      }}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onClick={(e) => {
+        e.stopPropagation();
+        selectSection(null);
+      }}
+    >
+      {/* Video Background */}
+      {background.type === 'video' && background.url && (
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            zIndex: 0,
+          }}
+        >
+          <source src={background.url} type="video/mp4" />
+        </video>
+      )}
+      
+      {/* Overlay */}
+      {background.overlay?.enabled && (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: background.overlay.color,
+          opacity: (background.overlay.opacity || 50) / 100,
+          zIndex: 1,
+        }} />
+      )}
+      
+      <div style={{
+        position: 'relative',
+        zIndex: 2,
+        maxWidth: layout.fullWidth ? '100%' : `${layout.maxWidth}px`,
+        margin: '0 auto',
+      }}>
+        {/* Section Header */}
+        {(sectionHeading || sectionSubheading) && (
+          <div style={{
+            textAlign: 'center',
+            marginBottom: '48px',
+          }}>
+            {sectionHeading && (
+              <h2 style={{
+                fontSize: '48px',
+                fontWeight: 700,
+                color: sectionHeadingColor,
+                marginBottom: '16px',
+              }}>
+                {sectionHeading}
+              </h2>
+            )}
+            {sectionSubheading && (
+              <p style={{
+                fontSize: '18px',
+                color: sectionSubheadingColor,
+              }}>
+                {sectionSubheading}
+              </p>
+            )}
+          </div>
+        )}
+        
+        {/* Testimonial Content */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: textAlign === 'center' ? 'center' : textAlign === 'right' ? 'flex-end' : 'flex-start',
+          textAlign: textAlign,
+          maxWidth: `${quoteMaxWidth}px`,
+          margin: '0 auto',
+        }}>
+          {namePosition === 'above-quote' && (
+            <>
+              {renderAvatar()}
+              <div style={{ marginBottom: '16px' }}>
+                <h3 style={{
+                  fontSize: `${nameFontSize}px`,
+                  fontWeight: nameFontWeight,
+                  color: nameColor,
+                  marginBottom: '8px',
+                }}>
+                  {currentTestimonial.name}
+                </h3>
+                {currentTestimonial.title && (
+                  <p style={{
+                    fontSize: `${titleFontSize}px`,
+                    color: titleColor,
+                  }}>
+                    {currentTestimonial.title}
+                  </p>
+                )}
+              </div>
+              {renderStars()}
+            </>
+          )}
+          
+          <p style={{
+            fontSize: `${quoteFontSize}px`,
+            color: quoteColor,
+            lineHeight: quoteLineHeight,
+            marginBottom: namePosition === 'below-quote' ? '24px' : 0,
+          }}>
+            "{currentTestimonial.quote}"
+          </p>
+          
+          {namePosition === 'below-quote' && (
+            <>
+              {renderStars()}
+              <div style={{ marginTop: '16px' }}>
+                <h3 style={{
+                  fontSize: `${nameFontSize}px`,
+                  fontWeight: nameFontWeight,
+                  color: nameColor,
+                  marginBottom: '8px',
+                }}>
+                  {currentTestimonial.name}
+                </h3>
+                {currentTestimonial.title && (
+                  <p style={{
+                    fontSize: `${titleFontSize}px`,
+                    color: titleColor,
+                  }}>
+                    {currentTestimonial.title}
+                  </p>
+                )}
+              </div>
+              {renderAvatar()}
+            </>
+          )}
+        </div>
+        
+        {/* Dot Indicators */}
+        {renderDots()}
+        
+        {/* Navigation Arrows */}
+        {renderArrows()}
       </div>
     </div>
   );

@@ -69,34 +69,6 @@ export function TextSectionEditor({ widget, onChange }: TextSectionEditorProps) 
         {contentExpanded && (
           <div className="p-4 pt-0 space-y-4">
             <div className="space-y-2">
-              <Label>Tagline (Optional)</Label>
-              <Input
-                value={widget.tagline || ''}
-                onChange={(e) => onChange({ tagline: e.target.value })}
-                placeholder="e.g., LOCAL. RELIABLE. PROFESSIONAL."
-              />
-            </div>
-
-            {widget.tagline && (
-              <div className="space-y-2">
-                <Label>Tagline Color</Label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    value={widget.taglineColor || '#10b981'}
-                    onChange={(e) => onChange({ taglineColor: e.target.value })}
-                    className="h-10 w-16 rounded border cursor-pointer"
-                  />
-                  <Input
-                    value={widget.taglineColor || '#10b981'}
-                    onChange={(e) => onChange({ taglineColor: e.target.value })}
-                    placeholder="#10b981"
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-2">
               <Label>Heading</Label>
               <Textarea
                 value={widget.heading}
@@ -122,6 +94,35 @@ export function TextSectionEditor({ widget, onChange }: TextSectionEditorProps) 
                 />
               </div>
             </div>
+
+            <div className="space-y-2">
+              <Label>Subheader (Optional)</Label>
+              <Input
+                value={widget.tagline || ''}
+                onChange={(e) => onChange({ tagline: e.target.value })}
+                placeholder="e.g., LOCAL. RELIABLE. PROFESSIONAL."
+              />
+              <p className="text-xs text-muted-foreground">Appears below the heading</p>
+            </div>
+
+            {widget.tagline && (
+              <div className="space-y-2">
+                <Label>Subheader Color</Label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={widget.taglineColor || '#10b981'}
+                    onChange={(e) => onChange({ taglineColor: e.target.value })}
+                    className="h-10 w-16 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={widget.taglineColor || '#10b981'}
+                    onChange={(e) => onChange({ taglineColor: e.target.value })}
+                    placeholder="#10b981"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>Body Text</Label>
@@ -331,7 +332,7 @@ export function TextSectionEditor({ widget, onChange }: TextSectionEditorProps) 
           <div className="p-4 pt-0 space-y-4">
             {widget.tagline && (
               <div className="space-y-2">
-                <Label>Tagline Font Size (px)</Label>
+                <Label>Subheader Font Size (px)</Label>
                 <Input
                   type="number"
                   min={10}

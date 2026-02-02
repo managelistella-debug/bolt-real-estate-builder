@@ -5,7 +5,6 @@ import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import Image from 'next/image';
 import { useToast } from '@/components/ui/use-toast';
 
 interface ImageUploadProps {
@@ -35,9 +34,10 @@ export function ImageUpload({ value, onChange, label = 'Image', maxSizeMB = 4 }:
           }
 
           // Calculate new dimensions while maintaining aspect ratio
+          // Much more aggressive sizing for localStorage limits
           let width = img.width;
           let height = img.height;
-          const maxDimension = 2048; // Max width or height
+          const maxDimension = 1200; // Reduced significantly for localStorage
 
           if (width > maxDimension || height > maxDimension) {
             if (width > height) {
@@ -53,15 +53,21 @@ export function ImageUpload({ value, onChange, label = 'Image', maxSizeMB = 4 }:
           canvas.height = height;
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Start with quality 0.9 and reduce if needed
-          let quality = 0.9;
+          // Start with quality 0.7 for aggressive compression (localStorage limits)
+          let quality = 0.7;
           let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
 
-          // Keep reducing quality until under 4MB
-          const maxSizeBytes = 4 * 1024 * 1024;
-          while (compressedDataUrl.length > maxSizeBytes && quality > 0.1) {
-            quality -= 0.1;
+          // Keep reducing quality until under 800KB (very conservative for localStorage)
+          const maxSizeBytes = 800 * 1024;
+          while (compressedDataUrl.length > maxSizeBytes && quality > 0.2) {
+            quality -= 0.05;
             compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+
+          // Check if still too large
+          if (compressedDataUrl.length > maxSizeBytes) {
+            reject(new Error('Image is too large even after compression. Please use a much smaller image or a simpler photo with less detail.'));
+            return;
           }
 
           resolve(compressedDataUrl);
@@ -95,14 +101,21 @@ export function ImageUpload({ value, onChange, label = 'Image', maxSizeMB = 4 }:
       const compressedSizeKB = Math.round((compressedDataUrl.length * 3) / 4 / 1024);
       const originalSizeKB = Math.round(file.size / 1024);
       
+      console.log('Image compressed successfully:', {
+        originalSize: originalSizeKB,
+        compressedSize: compressedSizeKB,
+        dataUrlLength: compressedDataUrl.length
+      });
+      
       onChange(compressedDataUrl);
       setIsUploading(false);
       
       toast({
-        title: 'Image uploaded & compressed',
-        description: `${file.name}: ${originalSizeKB} KB → ${compressedSizeKB} KB`,
+        title: 'Image uploaded successfully',
+        description: `Compressed from ${originalSizeKB} KB to ${compressedSizeKB} KB`,
       });
     } catch (error) {
+      console.error('Image upload failed:', error);
       setIsUploading(false);
       toast({
         title: 'Upload failed',
@@ -177,21 +190,20 @@ export function ImageUpload({ value, onChange, label = 'Image', maxSizeMB = 4 }:
           <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           
           <p className="text-sm font-medium mb-1">
-            {isUploading ? 'Uploading...' : 'Drop your image here, or click to browse'}
+            {isUploading ? 'Compressing & uploading...' : 'Drop your image here, or click to browse'}
           </p>
           <p className="text-xs text-muted-foreground">
-            Supports JPG, PNG, GIF, WebP (max {maxSizeMB}MB)
+            Supports JPG, PNG, GIF, WebP (will be compressed for web)
           </p>
         </div>
       ) : (
         <div className="relative group">
           <div className="relative w-full h-48 rounded-lg overflow-hidden border">
             {value.startsWith('data:') || value.startsWith('http') ? (
-              <Image
+              <img
                 src={value}
                 alt="Uploaded image"
-                fill
-                className="object-cover"
+                className="w-full h-full object-cover"
               />
             ) : (
               <div className="flex items-center justify-center h-full bg-muted">

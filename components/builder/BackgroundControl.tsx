@@ -82,7 +82,7 @@ export function BackgroundControl({ value, onChange, allowNone = true }: Backgro
             label="Background Image"
             value={bgValue.url || ''}
             onChange={(url) => onChange({ ...bgValue, url })}
-            maxSizeMB={4}
+            maxSizeMB={1}
           />
 
           <div className="space-y-2">

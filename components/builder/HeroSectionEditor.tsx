@@ -190,10 +190,28 @@ export function HeroSectionEditor({ widget, onChange }: HeroSectionEditorProps) 
               <ImageUpload
                 label="Background Image"
                 value={widget.background?.url || ''}
-                onChange={(url) => onChange({
-                  background: { ...widget.background, url } as any
-                })}
-                maxSizeMB={4}
+                onChange={(url) => {
+                  console.log('Image URL received in HeroSectionEditor:', url.substring(0, 50) + '...');
+                  try {
+                    onChange({
+                      background: { 
+                        type: 'image',
+                        opacity: widget.background?.opacity || 100,
+                        blur: widget.background?.blur || 0,
+                        ...widget.background, 
+                        url 
+                      } as any
+                    });
+                  } catch (error: any) {
+                    console.error('Failed to save image:', error);
+                    if (error.name === 'QuotaExceededError' || error.message?.includes('quota')) {
+                      alert('Storage limit exceeded. Please use a smaller image or delete some existing images first.');
+                    } else {
+                      alert('Failed to save image: ' + error.message);
+                    }
+                  }
+                }}
+                maxSizeMB={1}
               />
 
               <div className="space-y-2">

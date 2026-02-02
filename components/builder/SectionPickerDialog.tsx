@@ -8,6 +8,8 @@ import {
   Image as ImageIcon, 
   Grid3x3,
   Boxes,
+  HelpCircle,
+  Quote,
   Code, 
   Navigation, 
   Mail 
@@ -63,6 +65,20 @@ const sectionOptions: SectionOption[] = [
     icon: Type,
     title: 'Text Section',
     description: 'Flexible text layout with heading, body, and optional button',
+  },
+  {
+    id: 'faq',
+    type: 'faq',
+    icon: HelpCircle,
+    title: 'FAQ',
+    description: 'Accordion-style frequently asked questions section',
+  },
+  {
+    id: 'testimonials',
+    type: 'testimonials',
+    icon: Quote,
+    title: 'Testimonials',
+    description: 'Showcase customer reviews with a carousel slider',
   },
   {
     id: 'custom-code',
