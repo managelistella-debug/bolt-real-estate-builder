@@ -53,7 +53,7 @@ export interface Template {
 }
 
 // Section and Widget Types
-export type SectionType = 'hero' | 'headline' | 'image-text' | 'image-gallery' | 'icon-text' | 'text-section' | 'faq' | 'testimonials' | 'custom-code' | 'image-navigation' | 'contact-form' | 'about' | 'services' | 'contact';
+export type SectionType = 'hero' | 'headline' | 'image-text' | 'image-gallery' | 'icon-text' | 'text-section' | 'faq' | 'testimonials' | 'steps' | 'custom-code' | 'image-navigation' | 'contact-form' | 'about' | 'services' | 'contact';
 
 export interface Section {
   id: string;
@@ -62,7 +62,7 @@ export interface Section {
   widget: Widget;
 }
 
-export type Widget = HeroWidget | HeadlineWidget | ImageTextWidget | ImageGalleryWidget | IconTextWidget | TextSectionWidget | FAQWidget | TestimonialWidget | CustomCodeWidget | ImageNavigationWidget | ContactFormWidget | AboutWidget | ServicesWidget | ContactWidget;
+export type Widget = HeroWidget | HeadlineWidget | ImageTextWidget | ImageGalleryWidget | IconTextWidget | TextSectionWidget | FAQWidget | TestimonialWidget | StepsWidget | CustomCodeWidget | ImageNavigationWidget | ContactFormWidget | AboutWidget | ServicesWidget | ContactWidget;
 
 // Spacing interface for consistent spacing properties
 export interface SpacingValues {
@@ -605,6 +605,64 @@ export interface TestimonialWidget {
   dotColor?: string;
   activeDotColor?: string;
   dotSize?: number;
+  
+  // Section Layout & Background
+  background: BackgroundConfig;
+  layout: LayoutConfig;
+}
+
+// Steps Widget Types
+export interface Step {
+  id: string;
+  label: string; // e.g., "STEP 01"
+  heading: string;
+  description: string;
+}
+
+export type StepsLayout = 'image-left' | 'image-right';
+
+export interface StepsWidget {
+  type: 'steps';
+  
+  // Section Header
+  sectionHeading: string;
+  sectionHeadingColor?: string;
+  sectionHeadingSize?: number;
+  
+  // Button
+  buttonText?: string;
+  buttonUrl?: string;
+  buttonVisible?: boolean;
+  buttonStyle?: ButtonStyleConfig;
+  
+  // Image Layout
+  imageLayout: StepsLayout;
+  imageUrl: string;
+  imagePosition?: 'center' | 'top' | 'bottom';
+  
+  // Steps
+  steps: Step[];
+  
+  // Card Styling
+  cardBackground?: string;
+  cardBorderRadius?: number;
+  cardPadding?: number;
+  cardShadow?: boolean;
+  
+  // Step Label Styling
+  stepLabelBackground?: string;
+  stepLabelColor?: string;
+  stepLabelFontSize?: number;
+  stepLabelBorderRadius?: number;
+  stepLabelPadding?: number;
+  
+  // Step Typography
+  stepHeadingColor?: string;
+  stepHeadingSize?: number;
+  stepHeadingFontWeight?: number;
+  stepDescriptionColor?: string;
+  stepDescriptionSize?: number;
+  stepGap?: number; // gap between steps
   
   // Section Layout & Background
   background: BackgroundConfig;

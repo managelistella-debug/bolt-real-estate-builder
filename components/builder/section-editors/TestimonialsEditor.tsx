@@ -13,7 +13,7 @@ import { GripVertical, Plus, Trash2, Star, ChevronLeft, ChevronRight, ChevronUp,
 import { BackgroundControl } from '../BackgroundControl';
 import { HexColorPicker } from 'react-colorful';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import ImageUpload from '../ImageUpload';
+import { ImageUpload } from '../ImageUpload';
 
 interface TestimonialsEditorProps {
   widget: TestimonialWidget;

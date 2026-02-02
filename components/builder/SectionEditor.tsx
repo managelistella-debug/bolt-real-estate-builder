@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Section, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, FAQWidget, TestimonialWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
+import { Section, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, FAQWidget, TestimonialWidget, StepsWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
@@ -17,6 +17,7 @@ import { IconTextEditor } from './section-editors/IconTextEditor';
 import { TextSectionEditor } from './section-editors/TextSectionEditor';
 import { FAQEditor } from './section-editors/FAQEditor';
 import { TestimonialsEditor } from './section-editors/TestimonialsEditor';
+import { StepsEditor } from './section-editors/StepsEditor';
 import { ContactFormEditor } from './section-editors/ContactFormEditor';
 
 interface SectionEditorProps {
@@ -104,6 +105,12 @@ export function SectionEditor({ pageId, sections }: SectionEditorProps) {
         {section.type === 'testimonials' && (
           <TestimonialsEditor
             widget={section.widget as TestimonialWidget}
+            onChange={updateWidget}
+          />
+        )}
+        {section.type === 'steps' && (
+          <StepsEditor
+            widget={section.widget as StepsWidget}
             onChange={updateWidget}
           />
         )}

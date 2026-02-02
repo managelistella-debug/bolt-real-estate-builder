@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Section, SectionType } from '@/lib/types';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { useWebsiteStore } from '@/lib/stores/website';
-import { Plus, GripVertical, Edit, Trash2, Sparkles, Type, Image, Grid3x3, Boxes, AlignLeft, HelpCircle, Quote, Code, Navigation, Mail, FileText, Wrench } from 'lucide-react';
+import { Plus, GripVertical, Edit, Trash2, Sparkles, Type, Image, Grid3x3, Boxes, AlignLeft, HelpCircle, Quote, ListOrdered, Code, Navigation, Mail, FileText, Wrench } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { SectionPickerDialog } from './SectionPickerDialog';
 
@@ -24,6 +24,7 @@ const sectionIcons: Record<string, any> = {
   'text-section': AlignLeft,
   'faq': HelpCircle,
   'testimonials': Quote,
+  'steps': ListOrdered,
   'custom-code': Code,
   'image-navigation': Navigation,
   'contact-form': Mail,
@@ -41,6 +42,7 @@ const sectionLabels: Record<string, string> = {
   'text-section': 'Text Section',
   'faq': 'FAQ',
   'testimonials': 'Testimonials',
+  'steps': 'Steps',
   'custom-code': 'Custom Code',
   'image-navigation': 'Image Navigation',
   'contact-form': 'Contact Form',
@@ -574,6 +576,73 @@ function createDefaultWidget(type: SectionType): any {
         background: {
           type: 'color',
           color: '#0f4c75',
+          opacity: 100,
+          blur: 0,
+        },
+        layout: {
+          fullWidth: true,
+          maxWidth: 1200,
+          paddingTop: 80,
+          paddingBottom: 80,
+          paddingLeft: 24,
+          paddingRight: 24,
+        },
+      };
+    case 'steps':
+      return {
+        type: 'steps',
+        sectionHeading: 'Get a free estimate',
+        sectionHeadingColor: '#000000',
+        sectionHeadingSize: 48,
+        buttonVisible: true,
+        buttonText: 'Get in Touch',
+        buttonUrl: '#contact',
+        buttonStyle: {
+          bgColor: '#10b981',
+          textColor: '#ffffff',
+          radius: 8,
+        },
+        imageLayout: 'image-left',
+        imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600',
+        imagePosition: 'center',
+        steps: [
+          {
+            id: `step_${Date.now()}_1`,
+            label: 'STEP 01',
+            heading: 'Contact us',
+            description: 'Reach out by phone, email, or our online form to start the conversation.',
+          },
+          {
+            id: `step_${Date.now()}_2`,
+            label: 'STEP 02',
+            heading: 'Tell Us About Your Project',
+            description: 'Share details about the work you need done so we can understand your goals and scope.',
+          },
+          {
+            id: `step_${Date.now()}_3`,
+            label: 'STEP 03',
+            heading: 'Receive Your Estimate',
+            description: 'We will review your request and provide a clear and straightforward quote with no obligation.',
+          },
+        ],
+        cardBackground: '#ffffff',
+        cardBorderRadius: 24,
+        cardPadding: 48,
+        cardShadow: true,
+        stepLabelBackground: '#d1fae5',
+        stepLabelColor: '#065f46',
+        stepLabelFontSize: 12,
+        stepLabelBorderRadius: 4,
+        stepLabelPadding: 6,
+        stepHeadingColor: '#000000',
+        stepHeadingSize: 24,
+        stepHeadingFontWeight: 600,
+        stepDescriptionColor: '#6b7280',
+        stepDescriptionSize: 16,
+        stepGap: 32,
+        background: {
+          type: 'color',
+          color: 'transparent',
           opacity: 100,
           blur: 0,
         },

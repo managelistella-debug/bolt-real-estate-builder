@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Page, Website, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, FAQWidget, FAQIconStyle, TestimonialWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
+import { Page, Website, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, FAQWidget, FAQIconStyle, TestimonialWidget, StepsWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { useImageCollectionsStore } from '@/lib/stores/imageCollections';
 import { cn } from '@/lib/utils';
@@ -81,6 +81,9 @@ export function LivePreview({ page, website }: LivePreviewProps) {
               )}
               {section.type === 'testimonials' && (
                 <TestimonialsSection widget={section.widget as TestimonialWidget} />
+              )}
+              {section.type === 'steps' && (
+                <StepsSection widget={section.widget as StepsWidget} />
               )}
               {section.type === 'custom-code' && (
                 <CustomCodeSection widget={section.widget as CustomCodeWidget} />
@@ -2936,6 +2939,272 @@ function TestimonialsSection({ widget }: { widget: TestimonialWidget }) {
         
         {/* Navigation Arrows */}
         {renderArrows()}
+      </div>
+    </div>
+  );
+}
+
+function StepsSection({ widget }: { widget: StepsWidget }) {
+  const { deviceView } = useBuilderStore();
+
+  // Safeguards for potentially undefined or corrupted data
+  const steps = widget.steps || [];
+  const layout = widget.imageLayout || 'image-left';
+  const imagePosition = widget.imagePosition || 'center';
+  const cardBackground = widget.cardBackground || '#ffffff';
+  const cardBorderRadius = widget.cardBorderRadius ?? 24;
+  const cardPadding = widget.cardPadding ?? 48;
+  const cardShadow = widget.cardShadow ?? true;
+  
+  // Ensure layout config has defaults
+  const layoutConfig = widget.layout || {
+    fullWidth: true,
+    maxWidth: 1200,
+    paddingTop: 80,
+    paddingBottom: 80,
+    paddingLeft: 24,
+    paddingRight: 24,
+  };
+  
+  // Ensure background config has defaults
+  const backgroundConfig = widget.background || {
+    type: 'color',
+    color: 'transparent',
+    opacity: 100,
+    blur: 0,
+  };
+  
+  const stepLabelBackground = widget.stepLabelBackground || '#d1fae5';
+  const stepLabelColor = widget.stepLabelColor || '#065f46';
+  const stepLabelFontSize = widget.stepLabelFontSize ?? 12;
+  const stepLabelBorderRadius = widget.stepLabelBorderRadius ?? 4;
+  const stepLabelPadding = widget.stepLabelPadding ?? 6;
+  
+  const stepHeadingColor = widget.stepHeadingColor || '#000000';
+  const stepHeadingSize = widget.stepHeadingSize ?? 24;
+  const stepHeadingFontWeight = widget.stepHeadingFontWeight ?? 600;
+  const stepDescriptionColor = widget.stepDescriptionColor || '#6b7280';
+  const stepDescriptionSize = widget.stepDescriptionSize ?? 16;
+  const stepGap = widget.stepGap ?? 32;
+  
+  const sectionHeading = widget.sectionHeading || '';
+  const sectionHeadingColor = widget.sectionHeadingColor || '#000000';
+  const sectionHeadingSize = widget.sectionHeadingSize ?? 48;
+  
+  const buttonVisible = widget.buttonVisible ?? true;
+  const buttonText = widget.buttonText || 'Get in Touch';
+  const buttonUrl = widget.buttonUrl || '#';
+  const buttonBgColor = widget.buttonStyle?.bgColor || '#10b981';
+  const buttonTextColor = widget.buttonStyle?.textColor || '#ffffff';
+  const buttonRadius = widget.buttonStyle?.radius ?? 8;
+
+  const getObjectPosition = () => {
+    switch (imagePosition) {
+      case 'top': return 'top';
+      case 'bottom': return 'bottom';
+      default: return 'center';
+    }
+  };
+
+  const getBackgroundStyle = () => {
+    const styles: React.CSSProperties = {};
+    
+    if (backgroundConfig.type === 'color') {
+      const opacity = backgroundConfig.opacity ?? 100;
+      if (backgroundConfig.color === 'transparent') {
+        styles.backgroundColor = 'transparent';
+      } else {
+        const r = parseInt(backgroundConfig.color.slice(1, 3), 16);
+        const g = parseInt(backgroundConfig.color.slice(3, 5), 16);
+        const b = parseInt(backgroundConfig.color.slice(5, 7), 16);
+        styles.backgroundColor = `rgba(${r}, ${g}, ${b}, ${opacity / 100})`;
+      }
+    } else if (backgroundConfig.type === 'image' && backgroundConfig.imageUrl) {
+      styles.backgroundImage = `url(${backgroundConfig.imageUrl})`;
+      styles.backgroundSize = 'cover';
+      styles.backgroundPosition = 'center';
+      styles.backgroundRepeat = 'no-repeat';
+    } else if (backgroundConfig.type === 'gradient' && backgroundConfig.gradientColors) {
+      const [color1, color2] = backgroundConfig.gradientColors;
+      const angle = backgroundConfig.gradientAngle ?? 135;
+      styles.backgroundImage = `linear-gradient(${angle}deg, ${color1}, ${color2})`;
+    }
+    
+    return styles;
+  };
+
+  return (
+    <div
+      className="relative overflow-hidden"
+      style={{
+        ...getBackgroundStyle(),
+        paddingTop: `${layoutConfig.paddingTop || 80}px`,
+        paddingBottom: `${layoutConfig.paddingBottom || 80}px`,
+        paddingLeft: `${layoutConfig.paddingLeft || 24}px`,
+        paddingRight: `${layoutConfig.paddingRight || 24}px`,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: layoutConfig.fullWidth ? '100%' : `${layoutConfig.maxWidth || 1200}px`,
+          margin: '0 auto',
+        }}
+      >
+        {/* Header with button */}
+        <div className={cn(
+          "flex items-center justify-between mb-8",
+          deviceView === 'mobile' && 'flex-col items-start gap-4'
+        )}>
+          {sectionHeading && (
+            <h2
+              style={{
+                fontSize: `${sectionHeadingSize}px`,
+                fontWeight: 700,
+                color: sectionHeadingColor,
+              }}
+            >
+              {sectionHeading}
+            </h2>
+          )}
+          {buttonVisible && buttonText && (
+            <a
+              href={buttonUrl}
+              style={{
+                backgroundColor: buttonBgColor,
+                color: buttonTextColor,
+                borderRadius: `${buttonRadius}px`,
+                padding: '12px 32px',
+                fontSize: '16px',
+                fontWeight: 600,
+                textDecoration: 'none',
+                display: 'inline-block',
+                transition: 'all 0.3s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '0.9';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '1';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              {buttonText}
+            </a>
+          )}
+        </div>
+
+        {/* Main content */}
+        <div
+          className={cn(
+            "grid gap-8 items-center",
+            deviceView === 'mobile' ? 'grid-cols-1' : 'grid-cols-2'
+          )}
+        >
+          {/* Image */}
+          {layout === 'image-left' && (
+            <div
+              style={{
+                borderRadius: `${cardBorderRadius}px`,
+                overflow: 'hidden',
+                height: '100%',
+                minHeight: '500px',
+              }}
+            >
+              <img
+                src={widget.imageUrl || 'https://via.placeholder.com/800x600'}
+                alt="Steps background"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  objectPosition: getObjectPosition(),
+                }}
+              />
+            </div>
+          )}
+
+          {/* Steps Card */}
+          <div
+            style={{
+              backgroundColor: cardBackground,
+              borderRadius: `${cardBorderRadius}px`,
+              padding: `${cardPadding}px`,
+              boxShadow: cardShadow ? '0 10px 40px rgba(0, 0, 0, 0.1)' : 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: `${stepGap}px`,
+            }}
+          >
+            {steps.map((step) => (
+              <div key={step.id}>
+                {/* Step Label */}
+                <div
+                  style={{
+                    display: 'inline-block',
+                    backgroundColor: stepLabelBackground,
+                    color: stepLabelColor,
+                    fontSize: `${stepLabelFontSize}px`,
+                    fontWeight: 600,
+                    padding: `${stepLabelPadding}px ${stepLabelPadding * 2}px`,
+                    borderRadius: `${stepLabelBorderRadius}px`,
+                    marginBottom: '12px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  {step.label}
+                </div>
+
+                {/* Step Heading */}
+                <h3
+                  style={{
+                    fontSize: `${stepHeadingSize}px`,
+                    fontWeight: stepHeadingFontWeight,
+                    color: stepHeadingColor,
+                    marginBottom: '8px',
+                  }}
+                >
+                  {step.heading}
+                </h3>
+
+                {/* Step Description */}
+                <p
+                  style={{
+                    fontSize: `${stepDescriptionSize}px`,
+                    color: stepDescriptionColor,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {step.description}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Image Right */}
+          {layout === 'image-right' && (
+            <div
+              style={{
+                borderRadius: `${cardBorderRadius}px`,
+                overflow: 'hidden',
+                height: '100%',
+                minHeight: '500px',
+              }}
+            >
+              <img
+                src={widget.imageUrl || 'https://via.placeholder.com/800x600'}
+                alt="Steps background"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  objectPosition: getObjectPosition(),
+                }}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ import {
   Boxes,
   HelpCircle,
   Quote,
+  ListOrdered,
   Code, 
   Navigation, 
   Mail 
@@ -79,6 +80,13 @@ const sectionOptions: SectionOption[] = [
     icon: Quote,
     title: 'Testimonials',
     description: 'Showcase customer reviews with a carousel slider',
+  },
+  {
+    id: 'steps',
+    type: 'steps',
+    icon: ListOrdered,
+    title: 'Steps',
+    description: 'Process or steps section with image and numbered steps',
   },
   {
     id: 'custom-code',
