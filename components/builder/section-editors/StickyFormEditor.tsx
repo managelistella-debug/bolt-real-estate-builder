@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
-import { StickyFormWidget, FormField, Hyperlink, LayoutConfig, BackgroundConfig, ButtonStyleConfig } from '@/lib/types';
+import React, { useState, useMemo } from 'react';
+import dynamic from 'next/dynamic';
+import { StickyFormWidget, FormField, LayoutConfig, BackgroundConfig, ButtonStyleConfig } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,12 +10,16 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GripVertical, Plus, Trash2, ChevronUp, ChevronDown, Link as LinkIcon } from 'lucide-react';
+import { GripVertical, Plus, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { BackgroundControl } from '../BackgroundControl';
 import { HexColorPicker } from 'react-colorful';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
+import 'react-quill/dist/quill.snow.css';
+
+// Dynamically import ReactQuill to avoid SSR issues
+const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
 
 interface StickyFormEditorProps {
   widget: StickyFormWidget;
@@ -50,56 +55,23 @@ export function StickyFormEditor({ widget, onChange }: StickyFormEditorProps) {
     onChange({ buttonStyle: { ...widget.buttonStyle, ...updates } as ButtonStyleConfig });
   };
 
-  // Text content management
-  const addParagraph = () => {
-    onChange({ bodyParagraphs: [...(widget.bodyParagraphs || []), ''] });
-  };
+  // ReactQuill modules configuration
+  const quillModules = useMemo(() => ({
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      ['link'],
+      ['clean']
+    ],
+  }), []);
 
-  const updateParagraph = (index: number, text: string) => {
-    const paragraphs = [...(widget.bodyParagraphs || [])];
-    paragraphs[index] = text;
-    onChange({ bodyParagraphs: paragraphs });
-  };
-
-  const removeParagraph = (index: number) => {
-    onChange({ bodyParagraphs: (widget.bodyParagraphs || []).filter((_, i) => i !== index) });
-  };
-
-  const addBulletPoint = () => {
-    onChange({ bulletPoints: [...(widget.bulletPoints || []), ''] });
-  };
-
-  const updateBulletPoint = (index: number, text: string) => {
-    const bullets = [...(widget.bulletPoints || [])];
-    bullets[index] = text;
-    onChange({ bulletPoints: bullets });
-  };
-
-  const removeBulletPoint = (index: number) => {
-    onChange({ bulletPoints: (widget.bulletPoints || []).filter((_, i) => i !== index) });
-  };
-
-  // Hyperlink management
-  const addHyperlink = () => {
-    const newLink: Hyperlink = {
-      id: `link_${Date.now()}`,
-      text: 'Link Text',
-      url: '#',
-    };
-    onChange({ hyperlinks: [...(widget.hyperlinks || []), newLink] });
-  };
-
-  const updateHyperlink = (id: string, updates: Partial<Hyperlink>) => {
-    onChange({
-      hyperlinks: (widget.hyperlinks || []).map(link =>
-        link.id === id ? { ...link, ...updates } : link
-      ),
-    });
-  };
-
-  const removeHyperlink = (id: string) => {
-    onChange({ hyperlinks: (widget.hyperlinks || []).filter(link => link.id !== id) });
-  };
+  const quillFormats = [
+    'header',
+    'bold', 'italic', 'underline',
+    'list', 'bullet',
+    'link'
+  ];
 
   // Form field management
   const addField = () => {
@@ -230,113 +202,65 @@ export function StickyFormEditor({ widget, onChange }: StickyFormEditorProps) {
             </Card>
 
             <Card className="p-4 space-y-4">
-              <h3 className="text-lg font-semibold">Body Paragraphs</h3>
-              <div className="space-y-3">
-                {(widget.bodyParagraphs || []).map((paragraph, index) => (
-                  <div key={index} className="flex gap-2">
-                    <Textarea
-                      value={paragraph}
-                      onChange={(e) => updateParagraph(index, e.target.value)}
-                      placeholder={`Paragraph ${index + 1}`}
-                      rows={3}
-                      className="flex-1"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeParagraph(index)}
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-              <Button onClick={addParagraph} variant="outline" className="w-full">
-                <Plus className="h-4 w-4 mr-2" /> Add Paragraph
-              </Button>
-            </Card>
-
-            <Card className="p-4 space-y-4">
-              <h3 className="text-lg font-semibold">Bullet Points</h3>
-              <div className="space-y-3">
-                {(widget.bulletPoints || []).map((bullet, index) => (
-                  <div key={index} className="flex gap-2">
-                    <Input
-                      value={bullet}
-                      onChange={(e) => updateBulletPoint(index, e.target.value)}
-                      placeholder={`Bullet ${index + 1}`}
-                      className="flex-1"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeBulletPoint(index)}
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-              <Button onClick={addBulletPoint} variant="outline" className="w-full">
-                <Plus className="h-4 w-4 mr-2" /> Add Bullet Point
-              </Button>
-            </Card>
-
-            <Card className="p-4 space-y-4">
-              <h3 className="text-lg font-semibold">Hyperlinks</h3>
+              <h3 className="text-lg font-semibold">Body Content</h3>
               <p className="text-sm text-muted-foreground">
-                Add links here. Use the format [linkId] in your body text to insert them (e.g., "Click [link1] to learn more").
+                Use the toolbar to format text, add headers, bold/italic, bullet points, and hyperlinks.
               </p>
-              <div className="space-y-3">
-                {(widget.hyperlinks || []).map((link) => (
-                  <div key={link.id} className="border rounded-md p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <LinkIcon className="h-4 w-4" />
-                        <span className="text-sm font-mono bg-muted px-2 py-1 rounded">[{link.id}]</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeHyperlink(link.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </div>
-                    <Input
-                      value={link.text}
-                      onChange={(e) => updateHyperlink(link.id, { text: e.target.value })}
-                      placeholder="Link text"
-                    />
-                    <Input
-                      value={link.url}
-                      onChange={(e) => updateHyperlink(link.id, { url: e.target.value })}
-                      placeholder="URL"
-                    />
-                  </div>
-                ))}
+              <div className="space-y-2">
+                <Label>Text Editor</Label>
+                <div className="border rounded-md overflow-hidden">
+                  <ReactQuill
+                    theme="snow"
+                    value={widget.richTextContent || ''}
+                    onChange={(content) => onChange({ richTextContent: content })}
+                    modules={quillModules}
+                    formats={quillFormats}
+                    placeholder="Write your content here..."
+                    style={{ minHeight: '200px' }}
+                  />
+                </div>
               </div>
-              <Button onClick={addHyperlink} variant="outline" className="w-full">
-                <Plus className="h-4 w-4 mr-2" /> Add Hyperlink
-              </Button>
             </Card>
 
             <Card className="p-4 space-y-4">
-              <h3 className="text-lg font-semibold">Text Styling</h3>
+              <h3 className="text-lg font-semibold">Typography</h3>
               <div className="space-y-2">
-                <Label>Text Color</Label>
-                {renderColorPicker(widget.textColor, (color) => onChange({ textColor: color }), '#374151')}
+                <Label htmlFor="headingFontFamily">Heading Font</Label>
+                <Select
+                  value={widget.headingFontFamily || 'Inter'}
+                  onValueChange={(value) => onChange({ headingFontFamily: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select font" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Inter">Inter</SelectItem>
+                    <SelectItem value="Arial">Arial</SelectItem>
+                    <SelectItem value="Georgia">Georgia</SelectItem>
+                    <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+                    <SelectItem value="Helvetica">Helvetica</SelectItem>
+                    <SelectItem value="Verdana">Verdana</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="textSize">Text Size (px)</Label>
-                <Input
-                  id="textSize"
-                  type="number"
-                  min={14}
-                  max={24}
-                  value={widget.textSize ?? 16}
-                  onChange={(e) => onChange({ textSize: parseInt(e.target.value) })}
-                />
+                <Label htmlFor="textFontFamily">Body Font</Label>
+                <Select
+                  value={widget.textFontFamily || 'Inter'}
+                  onValueChange={(value) => onChange({ textFontFamily: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select font" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Inter">Inter</SelectItem>
+                    <SelectItem value="Arial">Arial</SelectItem>
+                    <SelectItem value="Georgia">Georgia</SelectItem>
+                    <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+                    <SelectItem value="Helvetica">Helvetica</SelectItem>
+                    <SelectItem value="Verdana">Verdana</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </Card>
           </TabsContent>

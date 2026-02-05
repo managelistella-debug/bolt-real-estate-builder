@@ -724,13 +724,11 @@ function createDefaultWidget(type: SectionType): any {
         heading: 'Get in Touch',
         headingColor: '#1f2937',
         headingSize: 36,
-        bodyParagraphs: [
-          'We\'d love to hear from you! Whether you have a question about our services, need a quote, or want to discuss your project, our team is ready to help.',
-        ],
-        bulletPoints: [],
-        hyperlinks: [],
+        headingFontFamily: 'Inter',
+        richTextContent: '<p>We\'d love to hear from you! Whether you have a question about our services, need a quote, or want to discuss your project, our team is ready to help.</p>',
         textColor: '#374151',
         textSize: 16,
+        textFontFamily: 'Inter',
         fields: [
           {
             id: `field-${Date.now()}-1`,

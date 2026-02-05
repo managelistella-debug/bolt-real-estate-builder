@@ -179,67 +179,43 @@ export function ImageTextColumnsEditor({ widget, onChange }: ImageTextColumnsEdi
         {/* Column Items */}
         <Card className="p-4 space-y-4">
           <h3 className="text-lg font-semibold">Column Items</h3>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {(widget.items || []).map((item, index) => (
-              <div key={item.id} className="border rounded-md p-3 bg-muted/20">
-                <div className="flex items-center justify-between">
+              <div key={item.id} className="border rounded-md overflow-hidden bg-muted/20">
+                {/* Collapsed State - Click to expand */}
+                <div
+                  className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/40 transition-colors"
+                  onClick={() => setExpandedItemId(expandedItemId === item.id ? null : item.id)}
+                >
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab flex-shrink-0" />
+                    <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     <span className="font-medium text-sm truncate">
                       {item.subtitle || `Column ${index + 1}`}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => reorderItem(item.id, 'up')}
-                      disabled={index === 0}
-                    >
-                      <ChevronUp className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => reorderItem(item.id, 'down')}
-                      disabled={index === (widget.items || []).length - 1}
-                    >
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setExpandedItemId(expandedItemId === item.id ? null : item.id)}
-                    >
-                      {expandedItemId === item.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeItem(item.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeItem(item.id);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
                 </div>
 
+                {/* Expanded State */}
                 {expandedItemId === item.id && (
-                  <div className="mt-3 space-y-3">
+                  <div className="p-3 pt-0 space-y-3 border-t">
                     <div className="space-y-2">
-                      <Label htmlFor={`image-${item.id}`}>Image</Label>
-                      <ImageUpload
-                        value={item.image}
-                        onChange={(url) => updateItem(item.id, { image: url })}
-                        folder="columns"
-                        maxSizeMB={1}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor={`subtitle-${item.id}`}>Subtitle</Label>
+                      <Label htmlFor={`subtitle-${item.id}`}>Title</Label>
                       <Input
                         id={`subtitle-${item.id}`}
                         value={item.subtitle}
                         onChange={(e) => updateItem(item.id, { subtitle: e.target.value })}
+                        placeholder="Column title"
                       />
                     </div>
                     <div className="space-y-2">
@@ -249,6 +225,16 @@ export function ImageTextColumnsEditor({ widget, onChange }: ImageTextColumnsEdi
                         value={item.description}
                         onChange={(e) => updateItem(item.id, { description: e.target.value })}
                         rows={3}
+                        placeholder="Column description"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`image-${item.id}`}>Image</Label>
+                      <ImageUpload
+                        value={item.image}
+                        onChange={(url) => updateItem(item.id, { image: url })}
+                        folder="columns"
+                        maxSizeMB={1}
                       />
                     </div>
                   </div>

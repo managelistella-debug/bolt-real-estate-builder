@@ -737,11 +737,14 @@ export interface StickyFormWidget {
   heading: string;
   headingColor?: string;
   headingSize?: number;
-  bodyParagraphs: string[]; // Array of paragraph text
-  bulletPoints?: string[]; // Optional bullet list
-  hyperlinks?: Hyperlink[]; // Links that can be inserted in body text
+  headingFontFamily?: string;
+  richTextContent?: string; // HTML content from WYSIWYG editor
+  bodyParagraphs?: string[]; // DEPRECATED: Array of paragraph text (kept for backward compatibility)
+  bulletPoints?: string[]; // DEPRECATED: Optional bullet list
+  hyperlinks?: Hyperlink[]; // DEPRECATED: Links that can be inserted in body text
   textColor?: string;
   textSize?: number;
+  textFontFamily?: string;
   
   // Form Fields (reuse from contact form)
   fields: FormField[];

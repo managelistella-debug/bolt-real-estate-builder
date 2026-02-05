@@ -3554,7 +3554,7 @@ function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
         borderRadius: formBoxed ? `${formBoxBorderRadius}px` : '0',
         padding: formBoxed ? `${formBoxPadding}px` : '0',
         boxShadow: formBoxed && formBoxShadow ? '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' : 'none',
-        ...(deviceView !== 'mobile' && { position: 'sticky', top: '100px' }),
+        ...(deviceView !== 'mobile' && { position: 'sticky', top: '20px', alignSelf: 'flex-start' }),
       }}
     >
       {formHeading && (
@@ -3664,6 +3664,7 @@ function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
             fontSize: `${headingSize}px`,
             fontWeight: 700,
             color: headingColor,
+            fontFamily: widget.headingFontFamily || 'Inter',
             marginBottom: '24px',
           }}
         >
@@ -3671,35 +3672,53 @@ function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
         </h2>
       )}
 
-      {bodyParagraphs.map((paragraph, index) => (
-        <p
-          key={index}
+      {widget.richTextContent ? (
+        <div
+          className="prose prose-sm max-w-none"
           style={{
             fontSize: `${textSize}px`,
             color: textColor,
+            fontFamily: widget.textFontFamily || 'Inter',
             lineHeight: 1.6,
-            marginBottom: '16px',
           }}
-        >
-          {parseTextWithLinks(paragraph)}
-        </p>
-      ))}
-
-      {bulletPoints && bulletPoints.length > 0 && (
-        <ul style={{ marginTop: '16px', paddingLeft: '24px' }}>
-          {bulletPoints.map((bullet, index) => (
-            <li
+          dangerouslySetInnerHTML={{ __html: widget.richTextContent }}
+        />
+      ) : (
+        <>
+          {/* Fallback for old data format */}
+          {bodyParagraphs.map((paragraph, index) => (
+            <p
               key={index}
               style={{
                 fontSize: `${textSize}px`,
                 color: textColor,
-                marginBottom: '8px',
+                fontFamily: widget.textFontFamily || 'Inter',
+                lineHeight: 1.6,
+                marginBottom: '16px',
               }}
             >
-              {bullet}
-            </li>
+              {parseTextWithLinks(paragraph)}
+            </p>
           ))}
-        </ul>
+
+          {bulletPoints && bulletPoints.length > 0 && (
+            <ul style={{ marginTop: '16px', paddingLeft: '24px' }}>
+              {bulletPoints.map((bullet, index) => (
+                <li
+                  key={index}
+                  style={{
+                    fontSize: `${textSize}px`,
+                    color: textColor,
+                    fontFamily: widget.textFontFamily || 'Inter',
+                    marginBottom: '8px',
+                  }}
+                >
+                  {bullet}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
     </div>
   );
