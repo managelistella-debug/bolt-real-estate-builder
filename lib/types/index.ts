@@ -803,9 +803,10 @@ export interface ReviewsSliderWidget {
   // Filters
   filterStars?: boolean; // Show only 4-5 star reviews
   
-  // Auto-scroll
-  autoScroll: boolean;
-  scrollInterval?: number; // seconds
+  // Scroll Settings
+  scrollStyle: 'timer' | 'marquee' | 'manual'; // timer = auto-scroll with interval, marquee = continuous, manual = nav buttons only
+  scrollInterval?: number; // seconds (for timer style)
+  autoScroll?: boolean; // DEPRECATED: kept for backward compatibility
   
   // Display Settings
   desktopCount: number; // 1-4 reviews per row

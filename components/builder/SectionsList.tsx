@@ -803,7 +803,7 @@ function createDefaultWidget(type: SectionType): any {
         source: 'google',
         reviews: [],
         filterStars: false,
-        autoScroll: true,
+        scrollStyle: 'timer',
         scrollInterval: 5,
         desktopCount: 3,
         tabletCount: 2,

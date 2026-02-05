@@ -338,16 +338,24 @@ export function ReviewsSliderEditor({ widget, onChange }: ReviewsSliderEditorPro
             </Card>
 
             <Card className="p-4 space-y-4">
-              <h3 className="text-lg font-semibold">Auto-Scroll</h3>
+              <h3 className="text-lg font-semibold">Scroll Behavior</h3>
               <div className="space-y-2">
-                <Label htmlFor="autoScroll">Enable Auto-Scroll</Label>
-                <Switch
-                  id="autoScroll"
-                  checked={widget.autoScroll ?? true}
-                  onCheckedChange={(checked) => onChange({ autoScroll: checked })}
-                />
+                <Label htmlFor="scrollStyle">Scroll Style</Label>
+                <Select
+                  value={widget.scrollStyle || 'timer'}
+                  onValueChange={(value: 'timer' | 'marquee' | 'manual') => onChange({ scrollStyle: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select style" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="timer">Timer (Auto-scroll with interval)</SelectItem>
+                    <SelectItem value="marquee">Marquee (Continuous scrolling)</SelectItem>
+                    <SelectItem value="manual">Manual (Navigation buttons only)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              {widget.autoScroll && (
+              {widget.scrollStyle === 'timer' && (
                 <div className="space-y-2">
                   <Label htmlFor="scrollInterval">Scroll Interval (seconds)</Label>
                   <Input
@@ -359,6 +367,11 @@ export function ReviewsSliderEditor({ widget, onChange }: ReviewsSliderEditorPro
                     onChange={(e) => onChange({ scrollInterval: parseInt(e.target.value) })}
                   />
                 </div>
+              )}
+              {widget.scrollStyle === 'marquee' && (
+                <p className="text-sm text-muted-foreground">
+                  Reviews will scroll continuously in a loop. Hover to pause.
+                </p>
               )}
             </Card>
 

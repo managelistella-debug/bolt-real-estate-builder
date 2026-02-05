@@ -3554,7 +3554,12 @@ function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
         borderRadius: formBoxed ? `${formBoxBorderRadius}px` : '0',
         padding: formBoxed ? `${formBoxPadding}px` : '0',
         boxShadow: formBoxed && formBoxShadow ? '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' : 'none',
-        ...(deviceView !== 'mobile' && { position: 'sticky', top: '20px', alignSelf: 'flex-start' }),
+        ...(deviceView !== 'mobile' && { 
+          position: 'sticky', 
+          top: '20px',
+          alignSelf: 'start',
+          height: 'fit-content',
+        }),
       }}
     >
       {formHeading && (
@@ -3742,10 +3747,9 @@ function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
       >
         <div
           className={cn(
-            "grid gap-12 items-start",
             deviceView === 'mobile' 
-              ? `grid-cols-1 ${mobileStackOrder === 'form-first' ? 'flex flex-col' : 'flex flex-col-reverse'}`
-              : 'grid-cols-2'
+              ? `flex ${mobileStackOrder === 'form-first' ? 'flex-col' : 'flex-col-reverse'} gap-12`
+              : 'grid grid-cols-2 gap-12 items-start'
           )}
         >
           {(formLayout === 'form-left' && deviceView !== 'mobile') || (mobileStackOrder === 'form-first' && deviceView === 'mobile') ? (
@@ -3773,7 +3777,7 @@ function ReviewsSliderSection({ widget }: { widget: ReviewsSliderWidget }) {
 
   const source = widget.source || 'google';
   const filterStars = widget.filterStars ?? false;
-  const autoScroll = widget.autoScroll ?? true;
+  const scrollStyle = widget.scrollStyle || widget.autoScroll !== undefined ? (widget.autoScroll ? 'timer' : 'manual') : 'timer'; // backward compatibility
   const scrollInterval = (widget.scrollInterval ?? 5) * 1000;
   const desktopCount = widget.desktopCount || 3;
   const tabletCount = widget.tabletCount || 2;
@@ -3848,18 +3852,44 @@ function ReviewsSliderSection({ widget }: { widget: ReviewsSliderWidget }) {
   };
 
   const reviewsPerRow = getReviewsPerRow();
+  const maxOffset = Math.max(0, displayReviews.length - reviewsPerRow);
 
-  // Auto-scroll logic
+  // Timer-based auto-scroll logic
   useEffect(() => {
-    if (!autoScroll || isHovered || displayReviews.length <= reviewsPerRow) return;
+    if (scrollStyle !== 'timer' || isHovered || displayReviews.length <= reviewsPerRow) return;
 
-    const maxOffset = Math.max(0, displayReviews.length - reviewsPerRow);
     const timer = setInterval(() => {
-      setCurrentOffset((prev) => (prev + 1) % (maxOffset + 1));
+      setCurrentOffset((prev) => {
+        const next = prev + 1;
+        return next > maxOffset ? 0 : next;
+      });
     }, scrollInterval);
 
     return () => clearInterval(timer);
-  }, [autoScroll, scrollInterval, isHovered, displayReviews.length, reviewsPerRow]);
+  }, [scrollStyle, scrollInterval, isHovered, displayReviews.length, reviewsPerRow, maxOffset]);
+
+  // Marquee continuous scroll logic
+  useEffect(() => {
+    if (scrollStyle !== 'marquee' || isHovered) return;
+
+    const timer = setInterval(() => {
+      setCurrentOffset((prev) => {
+        const next = prev + 0.5; // Smooth scrolling increment
+        return next >= displayReviews.length ? 0 : next;
+      });
+    }, 50); // Fast interval for smooth animation
+
+    return () => clearInterval(timer);
+  }, [scrollStyle, isHovered, displayReviews.length]);
+
+  // Navigation handlers
+  const handlePrev = () => {
+    setCurrentOffset((prev) => Math.max(0, prev - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentOffset((prev) => Math.min(maxOffset, prev + 1));
+  };
 
   const toggleReadMore = (reviewId: string) => {
     const newExpanded = new Set(expandedReviews);
@@ -3894,7 +3924,108 @@ function ReviewsSliderSection({ widget }: { widget: ReviewsSliderWidget }) {
     return styles;
   };
 
-  const visibleReviews = displayReviews.slice(currentOffset, currentOffset + reviewsPerRow);
+  // Calculate visible reviews based on scroll style
+  const visibleReviews = scrollStyle === 'marquee' 
+    ? displayReviews // Show all for marquee
+    : displayReviews.slice(Math.floor(currentOffset), Math.floor(currentOffset) + reviewsPerRow);
+
+  // Render review card content
+  const renderReviewCard = (review: any, isExpanded: boolean, displayText: string) => (
+    <>
+      {/* Header: Name & Google Logo */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {review.avatar && (
+            <img
+              src={review.avatar}
+              alt={review.name}
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                objectFit: 'cover',
+              }}
+            />
+          )}
+          <span
+            style={{
+              fontSize: `${nameSize}px`,
+              fontWeight: nameFontWeight,
+              color: nameColor,
+            }}
+          >
+            {review.name}
+          </span>
+        </div>
+        {showGoogleLogo && review.source === 'google' && (
+          <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+            <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107"/>
+            <path d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00"/>
+            <path d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0124 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" fill="#4CAF50"/>
+            <path d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 01-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" fill="#1976D2"/>
+          </svg>
+        )}
+      </div>
+
+      {/* Stars */}
+      <div style={{ display: 'flex', gap: '2px', marginBottom: '12px' }}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Star
+            key={i}
+            size={starSize}
+            fill={i < review.rating ? starColor : (starIconStyle === 'filled' ? 'transparent' : 'none')}
+            stroke={starColor}
+            style={{ color: starColor }}
+          />
+        ))}
+      </div>
+
+      {/* Review Text */}
+      <p
+        style={{
+          fontSize: `${textSize}px`,
+          color: textColor,
+          lineHeight: 1.6,
+          marginBottom: '12px',
+          flex: 1,
+        }}
+      >
+        {displayText}
+      </p>
+
+      {/* Read More Button */}
+      {enableReadMore && review.text.length > readMoreLimit && (
+        <button
+          onClick={() => toggleReadMore(review.id)}
+          style={{
+            color: '#3b82f6',
+            fontSize: '14px',
+            fontWeight: 500,
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 0,
+            textAlign: 'left',
+            marginBottom: '8px',
+          }}
+        >
+          {isExpanded ? 'Read less' : 'Read more'}
+        </button>
+      )}
+
+      {/* Date */}
+      {showReviewDate && (
+        <p
+          style={{
+            fontSize: `${dateSize}px`,
+            color: dateColor,
+          }}
+        >
+          {review.date}
+        </p>
+      )}
+    </>
+  );
 
   return (
     <div
@@ -3937,16 +4068,137 @@ function ReviewsSliderSection({ widget }: { widget: ReviewsSliderWidget }) {
           </div>
         )}
 
-        {/* Reviews Grid */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: `repeat(${reviewsPerRow}, 1fr)`,
-            gap: `${gap}px`,
-            marginBottom: showButton ? '32px' : '0',
-          }}
-        >
-          {visibleReviews.map((review) => {
+        {/* Reviews Grid Container */}
+        <div className="relative">
+          {scrollStyle === 'marquee' ? (
+            // Marquee mode: continuous scroll
+            <div className="overflow-hidden">
+              <div
+                style={{
+                  display: 'flex',
+                  gap: `${gap}px`,
+                  transform: `translateX(-${(currentOffset / displayReviews.length) * 100}%)`,
+                  transition: isHovered ? 'none' : 'transform 0.05s linear',
+                }}
+              >
+                {[...displayReviews, ...displayReviews].map((review, index) => {
+                  const isExpanded = expandedReviews.has(review.id);
+                  const shouldTruncate = enableReadMore && review.text.length > readMoreLimit && !isExpanded;
+                  const displayText = shouldTruncate ? review.text.substring(0, readMoreLimit) + '...' : review.text;
+
+                  return (
+                    <div
+                      key={`${review.id}-${index}`}
+                      style={{
+                        backgroundColor: boxBackground,
+                        borderRadius: `${boxBorderRadius}px`,
+                        padding: `${boxPadding}px`,
+                        border: boxBorder ? `${boxBorderWidth}px solid ${boxBorderColor}` : 'none',
+                        boxShadow: boxShadow ? '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' : 'none',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        minWidth: `calc((100% - ${gap * (reviewsPerRow - 1)}px) / ${reviewsPerRow})`,
+                        flex: '0 0 auto',
+                      }}
+                    >
+                      {renderReviewCard(review, isExpanded, displayText)}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            // Timer/Manual mode: discrete pagination
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(${reviewsPerRow}, 1fr)`,
+                gap: `${gap}px`,
+              }}
+            >
+              {visibleReviews.map((review) => {
+                const isExpanded = expandedReviews.has(review.id);
+                const shouldTruncate = enableReadMore && review.text.length > readMoreLimit && !isExpanded;
+                const displayText = shouldTruncate ? review.text.substring(0, readMoreLimit) + '...' : review.text;
+
+                return (
+                  <div
+                    key={review.id}
+                    style={{
+                      backgroundColor: boxBackground,
+                      borderRadius: `${boxBorderRadius}px`,
+                      padding: `${boxPadding}px`,
+                      border: boxBorder ? `${boxBorderWidth}px solid ${boxBorderColor}` : 'none',
+                      boxShadow: boxShadow ? '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' : 'none',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      height: '100%',
+                    }}
+                  >
+                    {renderReviewCard(review, isExpanded, displayText)}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Navigation Buttons for Manual Mode */}
+          {scrollStyle === 'manual' && displayReviews.length > reviewsPerRow && (
+            <>
+              <button
+                onClick={handlePrev}
+                disabled={currentOffset === 0}
+                style={{
+                  position: 'absolute',
+                  left: '-20px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '50%',
+                  width: '40px',
+                  height: '40px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: currentOffset === 0 ? 'not-allowed' : 'pointer',
+                  opacity: currentOffset === 0 ? 0.5 : 1,
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  zIndex: 10,
+                }}
+              >
+                ‹
+              </button>
+              <button
+                onClick={handleNext}
+                disabled={currentOffset >= maxOffset}
+                style={{
+                  position: 'absolute',
+                  right: '-20px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '50%',
+                  width: '40px',
+                  height: '40px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: currentOffset >= maxOffset ? 'not-allowed' : 'pointer',
+                  opacity: currentOffset >= maxOffset ? 0.5 : 1,
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  zIndex: 10,
+                }}
+              >
+                ›
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* CTA Button */}
+        {showButton && buttonText && (
             const isExpanded = expandedReviews.has(review.id);
             const shouldTruncate = enableReadMore && review.text.length > readMoreLimit && !isExpanded;
             const displayText = shouldTruncate ? review.text.substring(0, readMoreLimit) + '...' : review.text;
