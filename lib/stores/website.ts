@@ -19,8 +19,8 @@ interface WebsiteState {
 export const useWebsiteStore = create<WebsiteState>()(
   persist(
     (set, get) => ({
-      currentWebsite: null,
-      websites: [],
+  currentWebsite: null,
+  websites: [],
   
   getCurrentUserWebsite: () => {
     const state = get();

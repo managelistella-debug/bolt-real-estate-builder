@@ -114,9 +114,9 @@ export function SectionsList({ pageId, sections }: SectionsListProps) {
 
   return (
     <>
-      <div className="flex flex-col h-full">
-        <div className="p-4 border-b">
-          <h2 className="font-semibold mb-3">Sections</h2>
+    <div className="flex flex-col h-full">
+      <div className="p-4 border-b">
+        <h2 className="font-semibold mb-3">Sections</h2>
           <Button
             onClick={() => setIsPickerOpen(true)}
             className="w-full"
@@ -125,7 +125,7 @@ export function SectionsList({ pageId, sections }: SectionsListProps) {
             <Plus className="h-4 w-4 mr-2" />
             Add Section
           </Button>
-        </div>
+      </div>
 
       <div className="flex-1 overflow-auto p-4 space-y-2">
         {sections.length === 0 ? (

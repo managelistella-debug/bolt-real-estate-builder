@@ -34,8 +34,8 @@ export default function DashboardLayout({
   useEffect(() => {
     // Only check auth after hydration to avoid false redirects
     if (isHydrated) {
-      if (!isAuthenticated) {
-        router.push('/login');
+    if (!isAuthenticated) {
+      router.push('/login');
       } else if (user) {
         // Initialize user's website if not already done
         initializeUserWebsite(user.id);

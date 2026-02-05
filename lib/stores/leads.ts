@@ -32,9 +32,9 @@ interface LeadsState {
 export const useLeadsStore = create<LeadsState>()(
   persist(
     (set) => ({
-      leads: [],
-      tasks: [],
-      notes: [],
+  leads: [],
+  tasks: [],
+  notes: [],
   
   // Lead operations
   addLead: (lead) => {
