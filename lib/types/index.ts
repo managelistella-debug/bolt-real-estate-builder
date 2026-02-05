@@ -53,7 +53,7 @@ export interface Template {
 }
 
 // Section and Widget Types
-export type SectionType = 'hero' | 'headline' | 'image-text' | 'image-gallery' | 'icon-text' | 'text-section' | 'faq' | 'testimonials' | 'steps' | 'custom-code' | 'image-navigation' | 'contact-form' | 'about' | 'services' | 'contact';
+export type SectionType = 'hero' | 'headline' | 'image-text' | 'image-gallery' | 'icon-text' | 'text-section' | 'faq' | 'testimonials' | 'steps' | 'image-text-columns' | 'sticky-form' | 'reviews-slider' | 'custom-code' | 'image-navigation' | 'contact-form' | 'about' | 'services' | 'contact';
 
 export interface Section {
   id: string;
@@ -62,7 +62,7 @@ export interface Section {
   widget: Widget;
 }
 
-export type Widget = HeroWidget | HeadlineWidget | ImageTextWidget | ImageGalleryWidget | IconTextWidget | TextSectionWidget | FAQWidget | TestimonialWidget | StepsWidget | CustomCodeWidget | ImageNavigationWidget | ContactFormWidget | AboutWidget | ServicesWidget | ContactWidget;
+export type Widget = HeroWidget | HeadlineWidget | ImageTextWidget | ImageGalleryWidget | IconTextWidget | TextSectionWidget | FAQWidget | TestimonialWidget | StepsWidget | ImageTextColumnsWidget | StickyFormWidget | ReviewsSliderWidget | CustomCodeWidget | ImageNavigationWidget | ContactFormWidget | AboutWidget | ServicesWidget | ContactWidget;
 
 // Spacing interface for consistent spacing properties
 export interface SpacingValues {
@@ -663,6 +663,195 @@ export interface StepsWidget {
   stepDescriptionColor?: string;
   stepDescriptionSize?: number;
   stepGap?: number; // gap between steps
+  
+  // Section Layout & Background
+  background: BackgroundConfig;
+  layout: LayoutConfig;
+}
+
+// Multi-Column Image + Text Widget Types
+export interface ImageTextColumnItem {
+  id: string;
+  image: string;
+  subtitle: string;
+  description: string;
+  order: number;
+}
+
+export interface ImageTextColumnsWidget {
+  type: 'image-text-columns';
+  
+  // Section Header
+  sectionHeading?: string;
+  sectionSubheading?: string;
+  sectionHeadingColor?: string;
+  sectionSubheadingColor?: string;
+  sectionHeadingSize?: number;
+  sectionSubheadingSize?: number;
+  
+  // Column Items
+  items: ImageTextColumnItem[];
+  
+  // Layout
+  desktopColumns: number; // 1-4
+  tabletColumns: number; // 1-3
+  mobileColumns: number; // 1-2
+  gap: number; // Gap between columns in px
+  
+  // Image Styling
+  imageAspectRatio?: '1:1' | '3:2' | '4:3' | '16:9';
+  imageBorderRadius?: number;
+  
+  // Text Styling
+  textAlign?: 'left' | 'center' | 'right';
+  subtitleColor?: string;
+  subtitleSize?: number;
+  subtitleFontWeight?: number;
+  descriptionColor?: string;
+  descriptionSize?: number;
+  descriptionFontWeight?: number;
+  
+  // Section Layout & Background
+  background: BackgroundConfig;
+  layout: LayoutConfig;
+}
+
+// Sticky Form + Text Widget Types
+export type StickyFormLayout = 'form-left' | 'form-right';
+export type MobileStackOrder = 'form-first' | 'text-first';
+
+export interface Hyperlink {
+  id: string;
+  text: string;
+  url: string;
+}
+
+export interface StickyFormWidget {
+  type: 'sticky-form';
+  
+  // Layout
+  formLayout: StickyFormLayout;
+  mobileStackOrder: MobileStackOrder;
+  
+  // Text Content
+  heading: string;
+  headingColor?: string;
+  headingSize?: number;
+  bodyParagraphs: string[]; // Array of paragraph text
+  bulletPoints?: string[]; // Optional bullet list
+  hyperlinks?: Hyperlink[]; // Links that can be inserted in body text
+  textColor?: string;
+  textSize?: number;
+  
+  // Form Fields (reuse from contact form)
+  fields: FormField[];
+  formHeading?: string;
+  formDescription?: string;
+  buttonText: string;
+  confirmationMessage: string;
+  
+  // Form Styling (all from contact form)
+  formBoxed?: boolean;
+  formBoxBackground?: string;
+  formBoxBorderRadius?: number;
+  formBoxPadding?: number;
+  formBoxShadow?: boolean;
+  fieldBackgroundColor?: string;
+  fieldTextColor?: string;
+  fieldPlaceholderColor?: string;
+  fieldBorderRadius?: number;
+  fieldBorderWidth?: number;
+  fieldBorderColor?: string;
+  fieldBorderSides?: {
+    top: boolean;
+    right: boolean;
+    bottom: boolean;
+    left: boolean;
+  };
+  buttonFullWidth?: boolean;
+  buttonAlignment?: 'left' | 'center' | 'right';
+  buttonStyle?: ButtonStyleConfig;
+  
+  // Section Layout & Background
+  background: BackgroundConfig;
+  layout: LayoutConfig;
+}
+
+// Google Reviews Slider Widget Types
+export type ReviewSource = 'google' | 'manual';
+
+export interface Review {
+  id: string;
+  name: string;
+  rating: number; // 1-5
+  text: string;
+  date: string;
+  avatar?: string;
+  source: ReviewSource;
+}
+
+export interface ReviewsSliderWidget {
+  type: 'reviews-slider';
+  
+  // Source
+  source: ReviewSource;
+  reviews: Review[]; // For manual entry or fetched from API
+  
+  // Filters
+  filterStars?: boolean; // Show only 4-5 star reviews
+  
+  // Auto-scroll
+  autoScroll: boolean;
+  scrollInterval?: number; // seconds
+  
+  // Display Settings
+  desktopCount: number; // 1-4 reviews per row
+  tabletCount: number; // 1-3 reviews per row
+  mobileCount: number; // 1-2 reviews per row
+  
+  // Read More
+  enableReadMore: boolean;
+  readMoreLimit?: number; // character limit
+  
+  // Star Styling
+  starIconStyle?: 'filled' | 'outlined';
+  starColor?: string;
+  starSize?: number;
+  
+  // Display Options
+  showGoogleLogo: boolean;
+  showReviewDate: boolean;
+  
+  // Box Styling
+  boxBackground?: string;
+  boxBorderRadius?: number;
+  boxBorder?: boolean;
+  boxBorderColor?: string;
+  boxBorderWidth?: number;
+  boxShadow?: boolean;
+  boxPadding?: number;
+  gap?: number; // gap between review cards
+  
+  // Typography
+  nameColor?: string;
+  nameSize?: number;
+  nameFontWeight?: number;
+  textColor?: string;
+  textSize?: number;
+  dateColor?: string;
+  dateSize?: number;
+  
+  // Optional CTA Button
+  showButton?: boolean;
+  buttonText?: string;
+  buttonUrl?: string;
+  buttonStyle?: ButtonStyleConfig;
+  
+  // Section Header
+  sectionHeading?: string;
+  sectionSubheading?: string;
+  sectionHeadingColor?: string;
+  sectionSubheadingColor?: string;
   
   // Section Layout & Background
   background: BackgroundConfig;

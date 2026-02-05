@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Section, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, FAQWidget, TestimonialWidget, StepsWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
+import { Section, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, FAQWidget, TestimonialWidget, StepsWidget, ImageTextColumnsWidget, StickyFormWidget, ReviewsSliderWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
@@ -18,6 +18,9 @@ import { TextSectionEditor } from './section-editors/TextSectionEditor';
 import { FAQEditor } from './section-editors/FAQEditor';
 import { TestimonialsEditor } from './section-editors/TestimonialsEditor';
 import { StepsEditor } from './section-editors/StepsEditor';
+import { ImageTextColumnsEditor } from './section-editors/ImageTextColumnsEditor';
+import { StickyFormEditor } from './section-editors/StickyFormEditor';
+import { ReviewsSliderEditor } from './section-editors/ReviewsSliderEditor';
 import { ContactFormEditor } from './section-editors/ContactFormEditor';
 
 interface SectionEditorProps {
@@ -111,6 +114,24 @@ export function SectionEditor({ pageId, sections }: SectionEditorProps) {
         {section.type === 'steps' && (
           <StepsEditor
             widget={section.widget as StepsWidget}
+            onChange={updateWidget}
+          />
+        )}
+        {section.type === 'image-text-columns' && (
+          <ImageTextColumnsEditor
+            widget={section.widget as ImageTextColumnsWidget}
+            onChange={updateWidget}
+          />
+        )}
+        {section.type === 'sticky-form' && (
+          <StickyFormEditor
+            widget={section.widget as StickyFormWidget}
+            onChange={updateWidget}
+          />
+        )}
+        {section.type === 'reviews-slider' && (
+          <ReviewsSliderEditor
+            widget={section.widget as ReviewsSliderWidget}
             onChange={updateWidget}
           />
         )}

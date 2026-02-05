@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Page, Website, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, FAQWidget, FAQIconStyle, TestimonialWidget, StepsWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
+import { Page, Website, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, FAQWidget, FAQIconStyle, TestimonialWidget, StepsWidget, ImageTextColumnsWidget, StickyFormWidget, ReviewsSliderWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { useImageCollectionsStore } from '@/lib/stores/imageCollections';
 import { cn } from '@/lib/utils';
@@ -84,6 +84,15 @@ export function LivePreview({ page, website }: LivePreviewProps) {
               )}
               {section.type === 'steps' && (
                 <StepsSection widget={section.widget as StepsWidget} />
+              )}
+              {section.type === 'image-text-columns' && (
+                <ImageTextColumnsSection widget={section.widget as ImageTextColumnsWidget} />
+              )}
+              {section.type === 'sticky-form' && (
+                <StickyFormSection widget={section.widget as StickyFormWidget} />
+              )}
+              {section.type === 'reviews-slider' && (
+                <ReviewsSliderSection widget={section.widget as ReviewsSliderWidget} />
               )}
               {section.type === 'custom-code' && (
                 <CustomCodeSection widget={section.widget as CustomCodeWidget} />
@@ -1722,7 +1731,15 @@ function FAQSection({ widget }: { widget: FAQWidget }) {
   };
 
   return (
-    <div className="w-full">
+    <div 
+      className="w-full"
+      style={{
+        paddingTop: '80px',
+        paddingBottom: '80px',
+        paddingLeft: deviceView === 'mobile' ? '16px' : '24px',
+        paddingRight: deviceView === 'mobile' ? '16px' : '24px',
+      }}
+    >
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div style={{ marginBottom: `${headerGap}px` }}>
@@ -3205,6 +3222,848 @@ function StepsSection({ widget }: { widget: StepsWidget }) {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ImageTextColumnsSection({ widget }: { widget: ImageTextColumnsWidget }) {
+  const { deviceView } = useBuilderStore();
+
+  const items = widget.items || [];
+  const desktopColumns = widget.desktopColumns || 3;
+  const tabletColumns = widget.tabletColumns || 2;
+  const mobileColumns = widget.mobileColumns || 1;
+  const gap = widget.gap || 24;
+  const imageAspectRatio = widget.imageAspectRatio || '3:2';
+  const imageBorderRadius = widget.imageBorderRadius ?? 12;
+  const textAlign = widget.textAlign || 'center';
+  const subtitleColor = widget.subtitleColor || '#1f2937';
+  const subtitleSize = widget.subtitleSize ?? 20;
+  const subtitleFontWeight = widget.subtitleFontWeight ?? 600;
+  const descriptionColor = widget.descriptionColor || '#6b7280';
+  const descriptionSize = widget.descriptionSize ?? 16;
+
+  const sectionHeading = widget.sectionHeading;
+  const sectionHeadingColor = widget.sectionHeadingColor || '#1f2937';
+  const sectionHeadingSize = widget.sectionHeadingSize ?? 48;
+  const sectionSubheading = widget.sectionSubheading;
+  const sectionSubheadingColor = widget.sectionSubheadingColor || '#6b7280';
+  const sectionSubheadingSize = widget.sectionSubheadingSize ?? 18;
+
+  const layoutConfig = widget.layout || {
+    fullWidth: true,
+    maxWidth: 1200,
+    paddingTop: 80,
+    paddingBottom: 80,
+    paddingLeft: 24,
+    paddingRight: 24,
+  };
+
+  const backgroundConfig = widget.background || {
+    type: 'color',
+    color: 'transparent',
+    opacity: 100,
+    blur: 0,
+  };
+
+  const getBackgroundStyle = () => {
+    const styles: React.CSSProperties = {};
+    
+    if (backgroundConfig.type === 'color') {
+      const opacity = backgroundConfig.opacity ?? 100;
+      if (backgroundConfig.color === 'transparent') {
+        styles.backgroundColor = 'transparent';
+      } else {
+        const r = parseInt(backgroundConfig.color.slice(1, 3), 16);
+        const g = parseInt(backgroundConfig.color.slice(3, 5), 16);
+        const b = parseInt(backgroundConfig.color.slice(5, 7), 16);
+        styles.backgroundColor = `rgba(${r}, ${g}, ${b}, ${opacity / 100})`;
+      }
+    } else if (backgroundConfig.type === 'image' && backgroundConfig.imageUrl) {
+      styles.backgroundImage = `url(${backgroundConfig.imageUrl})`;
+      styles.backgroundSize = 'cover';
+      styles.backgroundPosition = 'center';
+      styles.backgroundRepeat = 'no-repeat';
+    }
+    
+    return styles;
+  };
+
+  const getAspectRatio = () => {
+    switch (imageAspectRatio) {
+      case '1:1': return '1';
+      case '3:2': return '3/2';
+      case '4:3': return '4/3';
+      case '16:9': return '16/9';
+      default: return '3/2';
+    }
+  };
+
+  const getTextAlignClass = () => {
+    switch (textAlign) {
+      case 'left': return 'text-left';
+      case 'center': return 'text-center';
+      case 'right': return 'text-right';
+      default: return 'text-center';
+    }
+  };
+
+  const getGridColumns = () => {
+    if (deviceView === 'mobile') return mobileColumns;
+    if (deviceView === 'tablet') return tabletColumns;
+    return desktopColumns;
+  };
+
+  return (
+    <div
+      className="relative overflow-hidden"
+      style={{
+        ...getBackgroundStyle(),
+        paddingTop: `${layoutConfig.paddingTop || 80}px`,
+        paddingBottom: `${layoutConfig.paddingBottom || 80}px`,
+        paddingLeft: `${layoutConfig.paddingLeft || 24}px`,
+        paddingRight: `${layoutConfig.paddingRight || 24}px`,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: layoutConfig.fullWidth ? '100%' : `${layoutConfig.maxWidth || 1200}px`,
+          margin: '0 auto',
+        }}
+      >
+        {/* Section Header */}
+        {(sectionHeading || sectionSubheading) && (
+          <div className={cn("mb-12", getTextAlignClass())}>
+            {sectionHeading && (
+              <h2
+                className="font-bold mb-2"
+                style={{
+                  fontSize: `${sectionHeadingSize}px`,
+                  color: sectionHeadingColor,
+                }}
+              >
+                {sectionHeading}
+              </h2>
+            )}
+            {sectionSubheading && (
+              <p
+                style={{
+                  fontSize: `${sectionSubheadingSize}px`,
+                  color: sectionSubheadingColor,
+                }}
+              >
+                {sectionSubheading}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Columns Grid */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${getGridColumns()}, 1fr)`,
+            gap: `${gap}px`,
+          }}
+        >
+          {items.map((item) => (
+            <div key={item.id} className={getTextAlignClass()}>
+              {/* Image */}
+              {item.image && (
+                <div
+                  style={{
+                    aspectRatio: getAspectRatio(),
+                    borderRadius: `${imageBorderRadius}px`,
+                    overflow: 'hidden',
+                    marginBottom: '16px',
+                  }}
+                >
+                  <img
+                    src={item.image}
+                    alt={item.subtitle}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Subtitle */}
+              <h3
+                style={{
+                  fontSize: `${subtitleSize}px`,
+                  fontWeight: subtitleFontWeight,
+                  color: subtitleColor,
+                  marginBottom: '8px',
+                }}
+              >
+                {item.subtitle}
+              </h3>
+
+              {/* Description */}
+              <p
+                style={{
+                  fontSize: `${descriptionSize}px`,
+                  color: descriptionColor,
+                  lineHeight: 1.6,
+                }}
+              >
+                {item.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
+  const { deviceView } = useBuilderStore();
+  const [formData, setFormData] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const formLayout = widget.formLayout || 'form-left';
+  const mobileStackOrder = widget.mobileStackOrder || 'form-first';
+  const heading = widget.heading || '';
+  const headingColor = widget.headingColor || '#1f2937';
+  const headingSize = widget.headingSize ?? 36;
+  const bodyParagraphs = widget.bodyParagraphs || [];
+  const bulletPoints = widget.bulletPoints || [];
+  const hyperlinks = widget.hyperlinks || [];
+  const textColor = widget.textColor || '#374151';
+  const textSize = widget.textSize ?? 16;
+
+  const fields = widget.fields || [];
+  const formHeading = widget.formHeading || '';
+  const formDescription = widget.formDescription || '';
+  const buttonText = widget.buttonText || 'Submit';
+  const confirmationMessage = widget.confirmationMessage || 'Thank you!';
+
+  const formBoxed = widget.formBoxed ?? true;
+  const formBoxBackground = widget.formBoxBackground || '#ffffff';
+  const formBoxBorderRadius = widget.formBoxBorderRadius ?? 12;
+  const formBoxPadding = widget.formBoxPadding ?? 32;
+  const formBoxShadow = widget.formBoxShadow ?? true;
+  const fieldBackgroundColor = widget.fieldBackgroundColor || '#f3f4f6';
+  const fieldTextColor = widget.fieldTextColor || '#1f2937';
+  const fieldPlaceholderColor = widget.fieldPlaceholderColor || '#9ca3af';
+  const fieldBorderRadius = widget.fieldBorderRadius ?? 8;
+  const buttonFullWidth = widget.buttonFullWidth ?? false;
+  const buttonBgColor = widget.buttonStyle?.bgColor || '#10b981';
+  const buttonTextColor = widget.buttonStyle?.textColor || '#ffffff';
+  const buttonRadius = widget.buttonStyle?.radius ?? 8;
+
+  const layoutConfig = widget.layout || {
+    fullWidth: true,
+    maxWidth: 1200,
+    paddingTop: 80,
+    paddingBottom: 80,
+    paddingLeft: 24,
+    paddingRight: 24,
+  };
+
+  const backgroundConfig = widget.background || {
+    type: 'color',
+    color: 'transparent',
+    opacity: 100,
+    blur: 0,
+  };
+
+  const getBackgroundStyle = () => {
+    const styles: React.CSSProperties = {};
+    
+    if (backgroundConfig.type === 'color') {
+      const opacity = backgroundConfig.opacity ?? 100;
+      if (backgroundConfig.color === 'transparent') {
+        styles.backgroundColor = 'transparent';
+      } else {
+        const r = parseInt(backgroundConfig.color.slice(1, 3), 16);
+        const g = parseInt(backgroundConfig.color.slice(3, 5), 16);
+        const b = parseInt(backgroundConfig.color.slice(5, 7), 16);
+        styles.backgroundColor = `rgba(${r}, ${g}, ${b}, ${opacity / 100})`;
+      }
+    } else if (backgroundConfig.type === 'image' && backgroundConfig.imageUrl) {
+      styles.backgroundImage = `url(${backgroundConfig.imageUrl})`;
+      styles.backgroundSize = 'cover';
+      styles.backgroundPosition = 'center';
+      styles.backgroundRepeat = 'no-repeat';
+    }
+    
+    return styles;
+  };
+
+  // Parse hyperlinks in text
+  const parseTextWithLinks = (text: string) => {
+    let parsedText = text;
+    const linkMap: Record<string, { text: string; url: string }> = {};
+    
+    hyperlinks.forEach((link) => {
+      linkMap[link.id] = { text: link.text, url: link.url };
+    });
+
+    const parts: (string | JSX.Element)[] = [];
+    const linkRegex = /\[([^\]]+)\]/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = linkRegex.exec(parsedText)) !== null) {
+      const linkId = match[1];
+      if (linkMap[linkId]) {
+        parts.push(parsedText.substring(lastIndex, match.index));
+        parts.push(
+          <a
+            key={match.index}
+            href={linkMap[linkId].url}
+            style={{ color: '#3b82f6', textDecoration: 'underline' }}
+          >
+            {linkMap[linkId].text}
+          </a>
+        );
+        lastIndex = match.index + match[0].length;
+      }
+    }
+    parts.push(parsedText.substring(lastIndex));
+
+    return parts.length > 1 ? parts : text;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    // Simulate form submission
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    setIsSubmitted(true);
+    setIsSubmitting(false);
+    setTimeout(() => {
+      setIsSubmitted(false);
+      setFormData({});
+    }, 3000);
+  };
+
+  const renderForm = () => (
+    <div
+      style={{
+        backgroundColor: formBoxed ? formBoxBackground : 'transparent',
+        borderRadius: formBoxed ? `${formBoxBorderRadius}px` : '0',
+        padding: formBoxed ? `${formBoxPadding}px` : '0',
+        boxShadow: formBoxed && formBoxShadow ? '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' : 'none',
+        ...(deviceView !== 'mobile' && { position: 'sticky', top: '100px' }),
+      }}
+    >
+      {formHeading && (
+        <h3
+          style={{
+            fontSize: '24px',
+            fontWeight: 600,
+            color: '#1f2937',
+            marginBottom: '8px',
+          }}
+        >
+          {formHeading}
+        </h3>
+      )}
+      {formDescription && (
+        <p
+          style={{
+            fontSize: '14px',
+            color: '#6b7280',
+            marginBottom: '24px',
+          }}
+        >
+          {formDescription}
+        </p>
+      )}
+
+      {isSubmitted ? (
+        <div
+          style={{
+            padding: '24px',
+            backgroundColor: '#d1fae5',
+            borderRadius: '8px',
+            color: '#065f46',
+            textAlign: 'center',
+          }}
+        >
+          {confirmationMessage}
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {fields.map((field) => (
+            <div key={field.id}>
+              {field.type === 'textarea' ? (
+                <textarea
+                  placeholder={field.placeholder || field.label}
+                  required={field.required}
+                  value={formData[field.label] || ''}
+                  onChange={(e) => setFormData({ ...formData, [field.label]: e.target.value })}
+                  rows={4}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    backgroundColor: fieldBackgroundColor,
+                    color: fieldTextColor,
+                    borderRadius: `${fieldBorderRadius}px`,
+                    border: 'none',
+                    fontSize: '16px',
+                  }}
+                />
+              ) : (
+                <input
+                  type={field.type}
+                  placeholder={field.placeholder || field.label}
+                  required={field.required}
+                  value={formData[field.label] || ''}
+                  onChange={(e) => setFormData({ ...formData, [field.label]: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    backgroundColor: fieldBackgroundColor,
+                    color: fieldTextColor,
+                    borderRadius: `${fieldBorderRadius}px`,
+                    border: 'none',
+                    fontSize: '16px',
+                  }}
+                />
+              )}
+            </div>
+          ))}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            style={{
+              backgroundColor: buttonBgColor,
+              color: buttonTextColor,
+              borderRadius: `${buttonRadius}px`,
+              padding: '12px 24px',
+              fontSize: '16px',
+              fontWeight: 600,
+              border: 'none',
+              cursor: 'pointer',
+              width: buttonFullWidth ? '100%' : 'auto',
+            }}
+          >
+            {isSubmitting ? 'Submitting...' : buttonText}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+
+  const renderTextContent = () => (
+    <div>
+      {heading && (
+        <h2
+          style={{
+            fontSize: `${headingSize}px`,
+            fontWeight: 700,
+            color: headingColor,
+            marginBottom: '24px',
+          }}
+        >
+          {heading}
+        </h2>
+      )}
+
+      {bodyParagraphs.map((paragraph, index) => (
+        <p
+          key={index}
+          style={{
+            fontSize: `${textSize}px`,
+            color: textColor,
+            lineHeight: 1.6,
+            marginBottom: '16px',
+          }}
+        >
+          {parseTextWithLinks(paragraph)}
+        </p>
+      ))}
+
+      {bulletPoints && bulletPoints.length > 0 && (
+        <ul style={{ marginTop: '16px', paddingLeft: '24px' }}>
+          {bulletPoints.map((bullet, index) => (
+            <li
+              key={index}
+              style={{
+                fontSize: `${textSize}px`,
+                color: textColor,
+                marginBottom: '8px',
+              }}
+            >
+              {bullet}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+
+  return (
+    <div
+      className="relative overflow-hidden"
+      style={{
+        ...getBackgroundStyle(),
+        paddingTop: `${layoutConfig.paddingTop || 80}px`,
+        paddingBottom: `${layoutConfig.paddingBottom || 80}px`,
+        paddingLeft: `${layoutConfig.paddingLeft || 24}px`,
+        paddingRight: `${layoutConfig.paddingRight || 24}px`,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: layoutConfig.fullWidth ? '100%' : `${layoutConfig.maxWidth || 1200}px`,
+          margin: '0 auto',
+        }}
+      >
+        <div
+          className={cn(
+            "grid gap-12 items-start",
+            deviceView === 'mobile' 
+              ? `grid-cols-1 ${mobileStackOrder === 'form-first' ? 'flex flex-col' : 'flex flex-col-reverse'}`
+              : 'grid-cols-2'
+          )}
+        >
+          {(formLayout === 'form-left' && deviceView !== 'mobile') || (mobileStackOrder === 'form-first' && deviceView === 'mobile') ? (
+            <>
+              {renderForm()}
+              {renderTextContent()}
+            </>
+          ) : (
+            <>
+              {renderTextContent()}
+              {renderForm()}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReviewsSliderSection({ widget }: { widget: ReviewsSliderWidget }) {
+  const { deviceView } = useBuilderStore();
+  const [currentOffset, setCurrentOffset] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const [expandedReviews, setExpandedReviews] = useState<Set<string>>(new Set());
+
+  const source = widget.source || 'google';
+  const filterStars = widget.filterStars ?? false;
+  const autoScroll = widget.autoScroll ?? true;
+  const scrollInterval = (widget.scrollInterval ?? 5) * 1000;
+  const desktopCount = widget.desktopCount || 3;
+  const tabletCount = widget.tabletCount || 2;
+  const mobileCount = widget.mobileCount || 1;
+  const enableReadMore = widget.enableReadMore ?? true;
+  const readMoreLimit = widget.readMoreLimit ?? 150;
+  const starIconStyle = widget.starIconStyle || 'filled';
+  const starColor = widget.starColor || '#f59e0b';
+  const starSize = widget.starSize ?? 20;
+  const showGoogleLogo = widget.showGoogleLogo ?? true;
+  const showReviewDate = widget.showReviewDate ?? true;
+  const boxBackground = widget.boxBackground || '#ffffff';
+  const boxBorderRadius = widget.boxBorderRadius ?? 12;
+  const boxBorder = widget.boxBorder ?? false;
+  const boxBorderColor = widget.boxBorderColor || '#e5e7eb';
+  const boxBorderWidth = widget.boxBorderWidth ?? 1;
+  const boxShadow = widget.boxShadow ?? true;
+  const boxPadding = widget.boxPadding ?? 24;
+  const gap = widget.gap ?? 24;
+  const nameColor = widget.nameColor || '#1f2937';
+  const nameSize = widget.nameSize ?? 16;
+  const nameFontWeight = widget.nameFontWeight ?? 600;
+  const textColor = widget.textColor || '#6b7280';
+  const textSize = widget.textSize ?? 14;
+  const dateColor = widget.dateColor || '#9ca3af';
+  const dateSize = widget.dateSize ?? 12;
+  const showButton = widget.showButton ?? false;
+  const buttonText = widget.buttonText || '';
+  const buttonUrl = widget.buttonUrl || '#';
+  const buttonBgColor = widget.buttonStyle?.bgColor || '#10b981';
+  const buttonTextColor = widget.buttonStyle?.textColor || '#ffffff';
+  const buttonRadius = widget.buttonStyle?.radius ?? 8;
+
+  const sectionHeading = widget.sectionHeading;
+  const sectionHeadingColor = widget.sectionHeadingColor || '#1f2937';
+  const sectionSubheading = widget.sectionSubheading;
+  const sectionSubheadingColor = widget.sectionSubheadingColor || '#6b7280';
+
+  const layoutConfig = widget.layout || {
+    fullWidth: true,
+    maxWidth: 1200,
+    paddingTop: 80,
+    paddingBottom: 80,
+    paddingLeft: 24,
+    paddingRight: 24,
+  };
+
+  const backgroundConfig = widget.background || {
+    type: 'color',
+    color: 'transparent',
+    opacity: 100,
+    blur: 0,
+  };
+
+  // Get reviews (from Google mock data or manual)
+  let allReviews = widget.reviews || [];
+  if (source === 'google') {
+    // Import mock data
+    const { mockGoogleReviews } = require('@/lib/mock-data/reviews');
+    allReviews = mockGoogleReviews;
+  }
+
+  // Filter reviews if needed
+  const displayReviews = filterStars 
+    ? allReviews.filter(review => review.rating >= 4)
+    : allReviews;
+
+  const getReviewsPerRow = () => {
+    if (deviceView === 'mobile') return mobileCount;
+    if (deviceView === 'tablet') return tabletCount;
+    return desktopCount;
+  };
+
+  const reviewsPerRow = getReviewsPerRow();
+
+  // Auto-scroll logic
+  useEffect(() => {
+    if (!autoScroll || isHovered || displayReviews.length <= reviewsPerRow) return;
+
+    const maxOffset = Math.max(0, displayReviews.length - reviewsPerRow);
+    const timer = setInterval(() => {
+      setCurrentOffset((prev) => (prev + 1) % (maxOffset + 1));
+    }, scrollInterval);
+
+    return () => clearInterval(timer);
+  }, [autoScroll, scrollInterval, isHovered, displayReviews.length, reviewsPerRow]);
+
+  const toggleReadMore = (reviewId: string) => {
+    const newExpanded = new Set(expandedReviews);
+    if (newExpanded.has(reviewId)) {
+      newExpanded.delete(reviewId);
+    } else {
+      newExpanded.add(reviewId);
+    }
+    setExpandedReviews(newExpanded);
+  };
+
+  const getBackgroundStyle = () => {
+    const styles: React.CSSProperties = {};
+    
+    if (backgroundConfig.type === 'color') {
+      const opacity = backgroundConfig.opacity ?? 100;
+      if (backgroundConfig.color === 'transparent') {
+        styles.backgroundColor = 'transparent';
+      } else {
+        const r = parseInt(backgroundConfig.color.slice(1, 3), 16);
+        const g = parseInt(backgroundConfig.color.slice(3, 5), 16);
+        const b = parseInt(backgroundConfig.color.slice(5, 7), 16);
+        styles.backgroundColor = `rgba(${r}, ${g}, ${b}, ${opacity / 100})`;
+      }
+    } else if (backgroundConfig.type === 'image' && backgroundConfig.imageUrl) {
+      styles.backgroundImage = `url(${backgroundConfig.imageUrl})`;
+      styles.backgroundSize = 'cover';
+      styles.backgroundPosition = 'center';
+      styles.backgroundRepeat = 'no-repeat';
+    }
+    
+    return styles;
+  };
+
+  const visibleReviews = displayReviews.slice(currentOffset, currentOffset + reviewsPerRow);
+
+  return (
+    <div
+      className="relative overflow-hidden"
+      style={{
+        ...getBackgroundStyle(),
+        paddingTop: `${layoutConfig.paddingTop || 80}px`,
+        paddingBottom: `${layoutConfig.paddingBottom || 80}px`,
+        paddingLeft: `${layoutConfig.paddingLeft || 24}px`,
+        paddingRight: `${layoutConfig.paddingRight || 24}px`,
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div
+        style={{
+          maxWidth: layoutConfig.fullWidth ? '100%' : `${layoutConfig.maxWidth || 1200}px`,
+          margin: '0 auto',
+        }}
+      >
+        {/* Section Header */}
+        {(sectionHeading || sectionSubheading) && (
+          <div className="text-center mb-12">
+            {sectionHeading && (
+              <h2
+                className="text-4xl font-bold mb-2"
+                style={{ color: sectionHeadingColor }}
+              >
+                {sectionHeading}
+              </h2>
+            )}
+            {sectionSubheading && (
+              <p
+                className="text-lg"
+                style={{ color: sectionSubheadingColor }}
+              >
+                {sectionSubheading}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Reviews Grid */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${reviewsPerRow}, 1fr)`,
+            gap: `${gap}px`,
+            marginBottom: showButton ? '32px' : '0',
+          }}
+        >
+          {visibleReviews.map((review) => {
+            const isExpanded = expandedReviews.has(review.id);
+            const shouldTruncate = enableReadMore && review.text.length > readMoreLimit && !isExpanded;
+            const displayText = shouldTruncate ? review.text.substring(0, readMoreLimit) + '...' : review.text;
+
+            return (
+              <div
+                key={review.id}
+                style={{
+                  backgroundColor: boxBackground,
+                  borderRadius: `${boxBorderRadius}px`,
+                  padding: `${boxPadding}px`,
+                  border: boxBorder ? `${boxBorderWidth}px solid ${boxBorderColor}` : 'none',
+                  boxShadow: boxShadow ? '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' : 'none',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                }}
+              >
+                {/* Header: Name & Google Logo */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {review.avatar && (
+                      <img
+                        src={review.avatar}
+                        alt={review.name}
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                    )}
+                    <span
+                      style={{
+                        fontSize: `${nameSize}px`,
+                        fontWeight: nameFontWeight,
+                        color: nameColor,
+                      }}
+                    >
+                      {review.name}
+                    </span>
+                  </div>
+                  {showGoogleLogo && review.source === 'google' && (
+                    <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+                      <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107"/>
+                      <path d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00"/>
+                      <path d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0124 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" fill="#4CAF50"/>
+                      <path d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 01-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" fill="#1976D2"/>
+                    </svg>
+                  )}
+                </div>
+
+                {/* Stars */}
+                <div style={{ display: 'flex', gap: '2px', marginBottom: '12px' }}>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      size={starSize}
+                      fill={i < review.rating ? starColor : (starIconStyle === 'filled' ? 'transparent' : 'none')}
+                      stroke={starColor}
+                      style={{ color: starColor }}
+                    />
+                  ))}
+                </div>
+
+                {/* Review Text */}
+                <p
+                  style={{
+                    fontSize: `${textSize}px`,
+                    color: textColor,
+                    lineHeight: 1.6,
+                    marginBottom: '12px',
+                    flex: 1,
+                  }}
+                >
+                  {displayText}
+                </p>
+
+                {/* Read More Button */}
+                {enableReadMore && review.text.length > readMoreLimit && (
+                  <button
+                    onClick={() => toggleReadMore(review.id)}
+                    style={{
+                      color: '#3b82f6',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      textAlign: 'left',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    {isExpanded ? 'Read less' : 'Read more'}
+                  </button>
+                )}
+
+                {/* Date */}
+                {showReviewDate && (
+                  <p
+                    style={{
+                      fontSize: `${dateSize}px`,
+                      color: dateColor,
+                    }}
+                  >
+                    {review.date}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* CTA Button */}
+        {showButton && buttonText && (
+          <div className="flex justify-center mt-8">
+            <a
+              href={buttonUrl}
+              style={{
+                backgroundColor: buttonBgColor,
+                color: buttonTextColor,
+                borderRadius: `${buttonRadius}px`,
+                padding: '12px 32px',
+                fontSize: '16px',
+                fontWeight: 600,
+                textDecoration: 'none',
+                display: 'inline-block',
+                transition: 'all 0.3s ease',
+              }}
+            >
+              {buttonText}
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );

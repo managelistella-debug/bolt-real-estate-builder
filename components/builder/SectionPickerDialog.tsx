@@ -11,6 +11,9 @@ import {
   HelpCircle,
   Quote,
   ListOrdered,
+  Columns,
+  StickyNote,
+  Star,
   Code, 
   Navigation, 
   Mail 
@@ -87,6 +90,27 @@ const sectionOptions: SectionOption[] = [
     icon: ListOrdered,
     title: 'Steps',
     description: 'Process or steps section with image and numbered steps',
+  },
+  {
+    id: 'image-text-columns',
+    type: 'image-text-columns',
+    icon: Columns,
+    title: 'Multi-Column Image + Text',
+    description: 'Responsive grid with images, subtitles, and descriptions',
+  },
+  {
+    id: 'sticky-form',
+    type: 'sticky-form',
+    icon: StickyNote,
+    title: 'Sticky Form + Text',
+    description: 'Two-column layout with sticky form and rich text content',
+  },
+  {
+    id: 'reviews-slider',
+    type: 'reviews-slider',
+    icon: Star,
+    title: 'Reviews Slider',
+    description: 'Display customer reviews in an auto-scrolling grid',
   },
   {
     id: 'custom-code',
