@@ -6,11 +6,14 @@ import { useWebsiteStore } from '@/lib/stores/website';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { BuilderToolbar } from '@/components/builder/BuilderToolbar';
-import { SectionsList } from '@/components/builder/SectionsList';
+import { SectionPickerSidebar } from '@/components/builder/SectionPickerSidebar';
 import { SectionEditor } from '@/components/builder/SectionEditor';
 import { LivePreview } from '@/components/builder/LivePreview';
-import { LayersPanel } from '@/components/builder/LayersPanel';
-import { Save, ArrowLeft, Layers, Eye } from 'lucide-react';
+import { FloatingLayersPanel } from '@/components/builder/FloatingLayersPanel';
+import { GlobalStylesDialog } from '@/components/builder/GlobalStylesDialog';
+import { Save, ArrowLeft, LayoutGrid, Eye, Palette } from 'lucide-react';
+import { Section, SectionType, GlobalStyles } from '@/lib/types';
+import { createDefaultWidget } from '@/lib/default-widgets';
 import Link from 'next/link';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -19,9 +22,10 @@ export default function PageBuilderPage({ params }: { params: { pageId: string }
   const { toast } = useToast();
   const { user } = useAuthStore();
   
-  const { getCurrentUserWebsite, initializeUserWebsite } = useWebsiteStore();
-  const { setCurrentPage, selectedSectionId, showLayersPanel, setShowLayersPanel } = useBuilderStore();
+  const { getCurrentUserWebsite, initializeUserWebsite, updateWebsite, updatePage } = useWebsiteStore();
+  const { setCurrentPage, selectedSectionId, selectSection, showLayersPanel, setShowLayersPanel } = useBuilderStore();
   const [isSaving, setIsSaving] = useState(false);
+  const [showGlobalStyles, setShowGlobalStyles] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -70,6 +74,37 @@ export default function PageBuilderPage({ params }: { params: { pageId: string }
     window.open(previewUrl, '_blank');
   };
 
+  const addSection = (type: string) => {
+    const newSection: Section = {
+      id: `section-${Date.now()}`,
+      type: type as SectionType,
+      order: currentPage!.sections.length,
+      widget: createDefaultWidget(type as SectionType),
+    };
+
+    const updatedSections = [...currentPage!.sections, newSection];
+    updatePage(pageId, { sections: updatedSections });
+    
+    toast({
+      title: "Section added",
+      description: `${type} section has been added.`,
+    });
+    
+    // Auto-select the new section for editing
+    selectSection(newSection.id);
+  };
+
+  const handleUpdateGlobalStyles = (styleUpdates: Partial<GlobalStyles>) => {
+    updateWebsite(website.id, {
+      globalStyles: { ...website.globalStyles, ...styleUpdates }
+    });
+    
+    toast({
+      title: "Global styles updated",
+      description: "Your global styles have been updated successfully.",
+    });
+  };
+
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Top Toolbar */}
@@ -94,10 +129,18 @@ export default function PageBuilderPage({ params }: { params: { pageId: string }
           <Button
             variant="ghost"
             size="sm"
+            onClick={() => setShowGlobalStyles(true)}
+          >
+            <Palette className="h-4 w-4 mr-2" />
+            Global Styles
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setShowLayersPanel(!showLayersPanel)}
           >
-            <Layers className="h-4 w-4 mr-2" />
-            Layers
+            <LayoutGrid className="h-4 w-4 mr-2" />
+            Structure
           </Button>
           <Button variant="outline" size="sm" onClick={handlePreview}>
             <Eye className="h-4 w-4 mr-2" />
@@ -111,8 +154,8 @@ export default function PageBuilderPage({ params }: { params: { pageId: string }
       </div>
 
       {/* Main Builder Area */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar - Sections & Editor */}
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Left Sidebar - Section Picker or Editor */}
         <div className="w-80 border-r flex flex-col overflow-hidden bg-background">
           {selectedSectionId ? (
             <SectionEditor 
@@ -120,10 +163,7 @@ export default function PageBuilderPage({ params }: { params: { pageId: string }
               sections={currentPage.sections}
             />
           ) : (
-            <SectionsList 
-              pageId={currentPage.id}
-              sections={currentPage.sections}
-            />
+            <SectionPickerSidebar onSelectSection={addSection} />
           )}
         </div>
 
@@ -135,16 +175,23 @@ export default function PageBuilderPage({ params }: { params: { pageId: string }
           />
         </div>
 
-        {/* Right Sidebar - Layers Panel (optional) */}
+        {/* Floating Layers Panel */}
         {showLayersPanel && (
-          <div className="w-64 border-l flex flex-col overflow-hidden bg-background">
-            <LayersPanel
-              sections={currentPage.sections}
-              pageId={currentPage.id}
-            />
-          </div>
+          <FloatingLayersPanel
+            sections={currentPage.sections}
+            pageId={currentPage.id}
+            onClose={() => setShowLayersPanel(false)}
+          />
         )}
       </div>
+
+      {/* Global Styles Dialog */}
+      <GlobalStylesDialog
+        open={showGlobalStyles}
+        onOpenChange={setShowGlobalStyles}
+        globalStyles={website.globalStyles}
+        onUpdate={handleUpdateGlobalStyles}
+      />
     </div>
   );
 }

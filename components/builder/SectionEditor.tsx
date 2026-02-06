@@ -10,18 +10,23 @@ import { useWebsiteStore } from '@/lib/stores/website';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { HeroSectionEditor } from './HeroSectionEditor';
+import { HeroSectionEditorNew } from './HeroSectionEditorNew';
 import { HeadlineEditor } from './section-editors/HeadlineEditor';
+import { HeadlineEditorNew } from './section-editors/HeadlineEditorNew';
+import { TextSectionEditorNew } from './section-editors/TextSectionEditorNew';
 import { ImageTextEditor } from './section-editors/ImageTextEditor';
-import { ImageGalleryEditor as ImageGalleryEditorComponent } from './section-editors/ImageGalleryEditor';
-import { IconTextEditor } from './section-editors/IconTextEditor';
-import { TextSectionEditor } from './section-editors/TextSectionEditor';
-import { FAQEditor } from './section-editors/FAQEditor';
-import { TestimonialsEditor } from './section-editors/TestimonialsEditor';
-import { StepsEditor } from './section-editors/StepsEditor';
-import { ImageTextColumnsEditor } from './section-editors/ImageTextColumnsEditor';
-import { StickyFormEditor } from './section-editors/StickyFormEditor';
-import { ReviewsSliderEditor } from './section-editors/ReviewsSliderEditor';
-import { ContactFormEditor } from './section-editors/ContactFormEditor';
+import { ImageTextEditorNew } from './ImageTextEditorNew';
+import { ImageGalleryEditorNew } from './section-editors/ImageGalleryEditorNew';
+import { IconTextEditorNew } from './section-editors/IconTextEditorNew';
+import { StepsEditorNew } from './section-editors/StepsEditorNew';
+import { TestimonialsEditorNew } from './section-editors/TestimonialsEditorNew';
+import { FAQEditorNew } from './section-editors/FAQEditorNew';
+import { ReviewsSliderEditorNew } from './section-editors/ReviewsSliderEditorNew';
+import { ContactFormEditorNew } from './section-editors/ContactFormEditorNew';
+import { StickyFormEditorNew } from './section-editors/StickyFormEditorNew';
+import { ImageNavigationEditorNew } from './section-editors/ImageNavigationEditorNew';
+import { ImageTextColumnsEditorNew } from './section-editors/ImageTextColumnsEditorNew';
+import { CustomCodeEditorNew } from './SimplifiedEditors';
 
 interface SectionEditorProps {
   pageId: string;
@@ -51,104 +56,92 @@ export function SectionEditor({ pageId, sections }: SectionEditorProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => selectSection(null)}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <h2 className="font-semibold capitalize">Edit {section.type}</h2>
-      </div>
-
-      <div className="flex-1 overflow-auto p-4 space-y-4">
-        {section.type === 'hero' && (
-          <HeroSectionEditor 
+      {section.type === 'hero' && (
+          <HeroSectionEditorNew 
             widget={section.widget as HeroWidget}
             onChange={updateWidget}
           />
         )}
         {section.type === 'headline' && (
-          <HeadlineEditor 
+          <HeadlineEditorNew 
             widget={section.widget as HeadlineWidget}
             onChange={updateWidget}
           />
         )}
         {section.type === 'image-text' && (
-          <ImageTextEditor 
+          <ImageTextEditorNew 
             widget={section.widget as ImageTextWidget}
             onChange={updateWidget}
           />
         )}
         {section.type === 'image-gallery' && (
-          <ImageGalleryEditorComponent 
+          <ImageGalleryEditorNew 
             widget={section.widget as ImageGalleryWidget}
             onChange={updateWidget}
           />
         )}
         {section.type === 'icon-text' && (
-          <IconTextEditor
+          <IconTextEditorNew
             widget={section.widget as IconTextWidget}
             onChange={updateWidget}
           />
         )}
         {section.type === 'text-section' && (
-          <TextSectionEditor
+          <TextSectionEditorNew
             widget={section.widget as TextSectionWidget}
             onChange={updateWidget}
           />
         )}
         {section.type === 'faq' && (
-          <FAQEditor
+          <FAQEditorNew
             widget={section.widget as FAQWidget}
             onChange={updateWidget}
           />
         )}
         {section.type === 'testimonials' && (
-          <TestimonialsEditor
+          <TestimonialsEditorNew
             widget={section.widget as TestimonialWidget}
             onChange={updateWidget}
           />
         )}
         {section.type === 'steps' && (
-          <StepsEditor
+          <StepsEditorNew
             widget={section.widget as StepsWidget}
             onChange={updateWidget}
           />
         )}
         {section.type === 'image-text-columns' && (
-          <ImageTextColumnsEditor
+          <ImageTextColumnsEditorNew
             widget={section.widget as ImageTextColumnsWidget}
             onChange={updateWidget}
           />
         )}
         {section.type === 'sticky-form' && (
-          <StickyFormEditor
+          <StickyFormEditorNew
             widget={section.widget as StickyFormWidget}
             onChange={updateWidget}
           />
         )}
         {section.type === 'reviews-slider' && (
-          <ReviewsSliderEditor
+          <ReviewsSliderEditorNew
             widget={section.widget as ReviewsSliderWidget}
             onChange={updateWidget}
           />
         )}
         {section.type === 'custom-code' && (
-          <CustomCodeEditor 
+          <CustomCodeEditorNew 
             widget={section.widget as CustomCodeWidget}
             onChange={updateWidget}
           />
         )}
         {section.type === 'image-navigation' && (
-          <ImageNavigationEditor 
+          <ImageNavigationEditorNew 
             widget={section.widget as ImageNavigationWidget}
             onChange={updateWidget}
           />
         )}
         {section.type === 'contact-form' && (
-          <ContactFormEditor 
+          <ContactFormEditorNew 
             widget={section.widget as ContactFormWidget}
             onChange={updateWidget}
           />
@@ -171,7 +164,6 @@ export function SectionEditor({ pageId, sections }: SectionEditorProps) {
             onChange={updateWidget}
           />
         )}
-      </div>
     </div>
   );
 }

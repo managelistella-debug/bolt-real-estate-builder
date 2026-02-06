@@ -157,6 +157,8 @@ export interface HeroWidget {
     style: 'solid' | 'dashed' | 'dotted';
     color: string;
   };
+  titleHeaderTag?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'div';
+  subtitleHeaderTag?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'div';
   // Legacy fields for backward compatibility
   headline?: string;
   subheadline?: string;
@@ -172,6 +174,11 @@ export interface HeadlineWidget {
   type: 'headline';
   title: string;
   subtitle?: string;
+  button?: {
+    text: string;
+    url: string;
+    openNewTab?: boolean;
+  };
   background: {
     color: string;
     hasLink: boolean;
@@ -179,6 +186,8 @@ export interface HeadlineWidget {
   };
   textAlign: 'left' | 'center' | 'right';
   padding: SpacingValues;
+  titleHeaderTag?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'div';
+  subtitleHeaderTag?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'div';
   margin?: SpacingValues;
   height?: {
     type: 'auto' | 'vh' | 'percentage' | 'pixels';

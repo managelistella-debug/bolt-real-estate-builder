@@ -3,17 +3,24 @@ import { Section } from '@/lib/types';
 
 type DeviceView = 'mobile' | 'tablet' | 'desktop';
 
+interface LayersPanelPosition {
+  x: number;
+  y: number;
+}
+
 interface BuilderState {
   currentPageId: string | null;
   selectedSectionId: string | null;
   deviceView: DeviceView;
   showLayersPanel: boolean;
+  layersPanelPosition: LayersPanelPosition;
   history: Section[][];
   historyIndex: number;
   setCurrentPage: (pageId: string) => void;
   selectSection: (sectionId: string | null) => void;
   setDeviceView: (view: DeviceView) => void;
   setShowLayersPanel: (show: boolean) => void;
+  setLayersPanelPosition: (position: LayersPanelPosition) => void;
   addToHistory: (sections: Section[]) => void;
   undo: () => void;
   redo: () => void;
@@ -26,6 +33,7 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   selectedSectionId: null,
   deviceView: 'desktop',
   showLayersPanel: false,
+  layersPanelPosition: { x: 20, y: 20 }, // Default top-right position
   history: [],
   historyIndex: -1,
   
@@ -48,6 +56,10 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   
   setShowLayersPanel: (show) => {
     set({ showLayersPanel: show });
+  },
+  
+  setLayersPanelPosition: (position) => {
+    set({ layersPanelPosition: position });
   },
   
   addToHistory: (sections) => {

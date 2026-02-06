@@ -278,31 +278,43 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
           paddingLeft: `${padding.left}px`,
         }}
       >
-        <h1 
-          className="mb-4"
-          style={{ 
-            fontFamily,
-            fontSize: titleSize,
-            fontWeight: titleWeight,
-            lineHeight: titleLineHeight,
-            letterSpacing: titleLetterSpacing,
-            color: textColor,
-          }}
-        >
-          {title}
-        </h1>
-        <p 
-          className="mb-8"
-          style={{ 
-            fontFamily,
-            fontSize: subtitleSize,
-            fontWeight: subtitleWeight,
-            lineHeight: subtitleLineHeight,
-            color: textColor,
-          }}
-        >
-          {subtitle}
-        </p>
+        {/* Dynamic title tag for SEO */}
+        {(() => {
+          const TitleTag = (widget.titleHeaderTag || 'h1') as keyof JSX.IntrinsicElements;
+          return (
+            <TitleTag 
+              className="mb-4"
+              style={{ 
+                fontFamily,
+                fontSize: titleSize,
+                fontWeight: titleWeight,
+                lineHeight: titleLineHeight,
+                letterSpacing: titleLetterSpacing,
+                color: textColor,
+              }}
+            >
+              {title}
+            </TitleTag>
+          );
+        })()}
+        {/* Dynamic subtitle tag for SEO */}
+        {(() => {
+          const SubtitleTag = (widget.subtitleHeaderTag || 'p') as keyof JSX.IntrinsicElements;
+          return (
+            <SubtitleTag 
+              className="mb-8"
+              style={{ 
+                fontFamily,
+                fontSize: subtitleSize,
+                fontWeight: subtitleWeight,
+                lineHeight: subtitleLineHeight,
+                color: textColor,
+              }}
+            >
+              {subtitle}
+            </SubtitleTag>
+          );
+        })()}
         <a
           href={buttonUrl}
           className="inline-block font-medium transition-all hover:opacity-90"
@@ -445,8 +457,34 @@ function HeadlineSection({ widget }: { widget: HeadlineWidget }) {
       }}
     >
       <div className="max-w-4xl mx-auto w-full">
-        <h2 className="text-4xl font-bold mb-3">{widget.title}</h2>
-        {widget.subtitle && <p className="text-xl text-muted-foreground">{widget.subtitle}</p>}
+        {/* Dynamic title tag for SEO */}
+        {(() => {
+          const TitleTag = (widget.titleHeaderTag || 'h2') as keyof JSX.IntrinsicElements;
+          return <TitleTag className="text-4xl font-bold mb-3">{widget.title}</TitleTag>;
+        })()}
+        {/* Dynamic subtitle tag for SEO */}
+        {widget.subtitle && (() => {
+          const SubtitleTag = (widget.subtitleHeaderTag || 'h3') as keyof JSX.IntrinsicElements;
+          return <SubtitleTag className="text-xl text-muted-foreground mb-4">{widget.subtitle}</SubtitleTag>;
+        })()}
+        {/* Button */}
+        {widget.button && widget.button.text && widget.button.url && (
+          <div className={cn(
+            'mt-6',
+            widget.textAlign === 'left' && 'text-left',
+            widget.textAlign === 'center' && 'text-center',
+            widget.textAlign === 'right' && 'text-right'
+          )}>
+            <a
+              href={widget.button.url}
+              target={widget.button.openNewTab ? '_blank' : undefined}
+              rel={widget.button.openNewTab ? 'noopener noreferrer' : undefined}
+              className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity font-medium"
+            >
+              {widget.button.text}
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1049,7 +1087,7 @@ function ImageNavigationSection({ widget }: { widget: ImageNavigationWidget }) {
             gap: `${widget.gap}px`,
           }}
         >
-          {widget.items.map((item) => (
+          {(widget.items || []).map((item) => (
             <a 
               key={item.id} 
               href={item.url}
@@ -1878,7 +1916,7 @@ function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   // Ensure defaults
-  const style = widget.style || 'simple';
+  const style = widget.style || 'standard';
   const layout = widget.layout || 'form-right';
   const fields = widget.fields || widget.formFields || []; // Support legacy formFields
   const formHeading = widget.formHeading || 'Get in Touch';
@@ -2094,7 +2132,7 @@ function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
   
   const renderFormFields = () => (
     <>
-      {fields.sort((a, b) => a.order - b.order).map((field) => {
+      {fields.sort((a, b) => (a.order || 0) - (b.order || 0)).map((field) => {
         const placeholder = field.placeholder || field.label;
         const hasError = errors[field.id];
         const fieldStyles: React.CSSProperties = {
@@ -2275,8 +2313,8 @@ function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
     </div>
   );
   
-  // Simple style - just the form
-  if (style === 'simple') {
+  // Standard style - just the form (same as simple)
+  if (style === 'standard' || style === 'simple') {
     return (
       <div style={{
         ...getBackgroundStyles(),
