@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IconTextWidget, IconTextItem } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -91,33 +91,132 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
 
   const background = widget.background || { type: 'color', color: 'transparent', opacity: 100, blur: 0 };
 
-  // Get typography configs
-  const getSectionHeaderTypography = () => ({
-    fontFamily: (widget as any).headerFontFamily || 'Inter',
-    fontSize: (widget as any).headerFontSize || widget.headingSize || { value: 36, unit: 'px' as const },
-    fontWeight: (widget as any).headerFontWeight || widget.headingWeight || '700',
-    lineHeight: (widget as any).headerLineHeight || '1.2',
-    textTransform: (widget as any).headerTextTransform || 'none' as const,
-    color: widget.headingColor || '#1f2937',
-  });
+  // Migration: Convert old widget format to new format on first render
+  useEffect(() => {
+    let needsUpdate = false;
+    const updates: any = {};
 
-  const getItemTitleTypography = () => ({
-    fontFamily: (widget as any).itemTitleFontFamily || 'Inter',
-    fontSize: (widget as any).itemTitleFontSize || widget.titleFontSize || { value: 20, unit: 'px' as const },
-    fontWeight: (widget as any).itemTitleFontWeight || widget.titleFontWeight || '600',
-    lineHeight: (widget as any).itemTitleLineHeight || '1.4',
-    textTransform: (widget as any).itemTitleTextTransform || 'none' as const,
-    color: widget.titleColor || '#1f2937',
-  });
+    // Helper to migrate font size
+    const migrateFontSize = (rawValue: any) => {
+      if (!rawValue || typeof rawValue === 'object') return null;
+      if (typeof rawValue === 'number') {
+        return { value: rawValue, unit: 'px' as const };
+      } else if (typeof rawValue === 'string') {
+        const match = rawValue.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          return { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+      return null;
+    };
 
-  const getItemDescriptionTypography = () => ({
-    fontFamily: (widget as any).itemDescFontFamily || 'Inter',
-    fontSize: (widget as any).itemDescFontSize || widget.descriptionFontSize || { value: 16, unit: 'px' as const },
-    fontWeight: (widget as any).itemDescFontWeight || widget.descriptionFontWeight || '400',
-    lineHeight: (widget as any).itemDescLineHeight || '1.6',
-    textTransform: (widget as any).itemDescTextTransform || 'none' as const,
-    color: widget.descriptionColor || '#6b7280',
-  });
+    const headerMigrated = migrateFontSize((widget as any).headerFontSize || widget.headingSize);
+    if (headerMigrated) {
+      updates.headerFontSize = headerMigrated;
+      needsUpdate = true;
+    }
+
+    const titleMigrated = migrateFontSize((widget as any).itemTitleFontSize || widget.titleFontSize);
+    if (titleMigrated) {
+      updates.itemTitleFontSize = titleMigrated;
+      needsUpdate = true;
+    }
+
+    const descMigrated = migrateFontSize((widget as any).itemDescFontSize || widget.descriptionFontSize);
+    if (descMigrated) {
+      updates.itemDescFontSize = descMigrated;
+      needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+      onChange(updates);
+    }
+  }, []); // Only run once on mount
+
+  // Get typography configs with proper format handling
+  const getSectionHeaderTypography = () => {
+    let fontSize = { value: 36, unit: 'px' as const };
+    const rawFontSize = (widget as any).headerFontSize || widget.headingSize;
+    
+    if (rawFontSize) {
+      if (typeof rawFontSize === 'object' && rawFontSize.value !== undefined) {
+        fontSize = rawFontSize;
+      } else if (typeof rawFontSize === 'number') {
+        fontSize = { value: rawFontSize, unit: 'px' as const };
+      } else if (typeof rawFontSize === 'string') {
+        const match = rawFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          fontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+    }
+
+    return {
+      fontFamily: (widget as any).headerFontFamily || 'Inter',
+      fontSize,
+      fontWeight: (widget as any).headerFontWeight || widget.headingWeight || '700',
+      lineHeight: (widget as any).headerLineHeight || '1.2',
+      textTransform: (widget as any).headerTextTransform || 'none' as const,
+      letterSpacing: (widget as any).headerLetterSpacing || '0em',
+      color: widget.headingColor || '#1f2937',
+    };
+  };
+
+  const getItemTitleTypography = () => {
+    let fontSize = { value: 20, unit: 'px' as const };
+    const rawFontSize = (widget as any).itemTitleFontSize || widget.titleFontSize;
+    
+    if (rawFontSize) {
+      if (typeof rawFontSize === 'object' && rawFontSize.value !== undefined) {
+        fontSize = rawFontSize;
+      } else if (typeof rawFontSize === 'number') {
+        fontSize = { value: rawFontSize, unit: 'px' as const };
+      } else if (typeof rawFontSize === 'string') {
+        const match = rawFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          fontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+    }
+
+    return {
+      fontFamily: (widget as any).itemTitleFontFamily || 'Inter',
+      fontSize,
+      fontWeight: (widget as any).itemTitleFontWeight || widget.titleFontWeight || '600',
+      lineHeight: (widget as any).itemTitleLineHeight || '1.4',
+      textTransform: (widget as any).itemTitleTextTransform || 'none' as const,
+      letterSpacing: (widget as any).itemTitleLetterSpacing || '0em',
+      color: widget.titleColor || '#1f2937',
+    };
+  };
+
+  const getItemDescriptionTypography = () => {
+    let fontSize = { value: 16, unit: 'px' as const };
+    const rawFontSize = (widget as any).itemDescFontSize || widget.descriptionFontSize;
+    
+    if (rawFontSize) {
+      if (typeof rawFontSize === 'object' && rawFontSize.value !== undefined) {
+        fontSize = rawFontSize;
+      } else if (typeof rawFontSize === 'number') {
+        fontSize = { value: rawFontSize, unit: 'px' as const };
+      } else if (typeof rawFontSize === 'string') {
+        const match = rawFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          fontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+    }
+
+    return {
+      fontFamily: (widget as any).itemDescFontFamily || 'Inter',
+      fontSize,
+      fontWeight: (widget as any).itemDescFontWeight || widget.descriptionFontWeight || '400',
+      lineHeight: (widget as any).itemDescLineHeight || '1.6',
+      textTransform: (widget as any).itemDescTextTransform || 'none' as const,
+      letterSpacing: (widget as any).itemDescLetterSpacing || '0em',
+      color: widget.descriptionColor || '#6b7280',
+    };
+  };
 
   const addItem = () => {
     if (widget.items.length >= 20) return;
@@ -416,18 +515,25 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
           label="Section Header Typography"
           value={getSectionHeaderTypography()}
           onChange={(updates) => {
-            onChange({
-              headerFontFamily: updates.fontFamily,
-              headerFontSize: updates.fontSize as any,
-              headingSize: updates.fontSize, // Keep both for compatibility
-              headerFontWeight: updates.fontWeight,
-              headingWeight: updates.fontWeight, // Keep both for compatibility
-              headerLineHeight: updates.lineHeight,
-              headerTextTransform: updates.textTransform,
-              headingColor: updates.color,
-              sectionHeadingColor: updates.color, // Legacy compatibility
-              sectionHeadingSize: updates.fontSize, // Legacy compatibility
-            } as any);
+            const widgetUpdate: any = {};
+            if (updates.fontFamily !== undefined) widgetUpdate.headerFontFamily = updates.fontFamily;
+            if (updates.fontSize !== undefined) {
+              widgetUpdate.headerFontSize = updates.fontSize;
+              widgetUpdate.headingSize = updates.fontSize; // Keep both for compatibility
+              widgetUpdate.sectionHeadingSize = updates.fontSize; // Legacy compatibility
+            }
+            if (updates.fontWeight !== undefined) {
+              widgetUpdate.headerFontWeight = updates.fontWeight;
+              widgetUpdate.headingWeight = updates.fontWeight; // Keep both for compatibility
+            }
+            if (updates.lineHeight !== undefined) widgetUpdate.headerLineHeight = updates.lineHeight;
+            if (updates.textTransform !== undefined) widgetUpdate.headerTextTransform = updates.textTransform;
+            if (updates.letterSpacing !== undefined) widgetUpdate.headerLetterSpacing = updates.letterSpacing;
+            if (updates.color !== undefined) {
+              widgetUpdate.headingColor = updates.color;
+              widgetUpdate.sectionHeadingColor = updates.color; // Legacy compatibility
+            }
+            onChange(widgetUpdate);
           }}
           showGlobalStyleSelector={true}
           availableGlobalStyles={['h2', 'h3', 'h4']}
@@ -439,18 +545,25 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
         label="Item Title Typography"
         value={getItemTitleTypography()}
         onChange={(updates) => {
-          onChange({
-            itemTitleFontFamily: updates.fontFamily,
-            itemTitleFontSize: updates.fontSize as any,
-            titleFontSize: updates.fontSize, // Keep both for compatibility
-            itemTitleFontWeight: updates.fontWeight,
-            titleFontWeight: updates.fontWeight, // Keep both for compatibility
-            itemTitleLineHeight: updates.lineHeight,
-            itemTitleTextTransform: updates.textTransform,
-            titleColor: updates.color,
-            itemHeadingColor: updates.color, // Legacy compatibility
-            itemHeadingSize: updates.fontSize, // Legacy compatibility
-          } as any);
+          const widgetUpdate: any = {};
+          if (updates.fontFamily !== undefined) widgetUpdate.itemTitleFontFamily = updates.fontFamily;
+          if (updates.fontSize !== undefined) {
+            widgetUpdate.itemTitleFontSize = updates.fontSize;
+            widgetUpdate.titleFontSize = updates.fontSize; // Keep both for compatibility
+            widgetUpdate.itemHeadingSize = updates.fontSize; // Legacy compatibility
+          }
+          if (updates.fontWeight !== undefined) {
+            widgetUpdate.itemTitleFontWeight = updates.fontWeight;
+            widgetUpdate.titleFontWeight = updates.fontWeight; // Keep both for compatibility
+          }
+          if (updates.lineHeight !== undefined) widgetUpdate.itemTitleLineHeight = updates.lineHeight;
+          if (updates.textTransform !== undefined) widgetUpdate.itemTitleTextTransform = updates.textTransform;
+          if (updates.letterSpacing !== undefined) widgetUpdate.itemTitleLetterSpacing = updates.letterSpacing;
+          if (updates.color !== undefined) {
+            widgetUpdate.titleColor = updates.color;
+            widgetUpdate.itemHeadingColor = updates.color; // Legacy compatibility
+          }
+          onChange(widgetUpdate);
         }}
         showGlobalStyleSelector={true}
         availableGlobalStyles={['h3', 'h4', 'h5']}
@@ -461,18 +574,25 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
         label="Item Description Typography"
         value={getItemDescriptionTypography()}
         onChange={(updates) => {
-          onChange({
-            itemDescFontFamily: updates.fontFamily,
-            itemDescFontSize: updates.fontSize as any,
-            descriptionFontSize: updates.fontSize, // Keep both for compatibility
-            itemDescFontWeight: updates.fontWeight,
-            descriptionFontWeight: updates.fontWeight, // Keep both for compatibility
-            itemDescLineHeight: updates.lineHeight,
-            itemDescTextTransform: updates.textTransform,
-            descriptionColor: updates.color,
-            itemSubheadingColor: updates.color, // Legacy compatibility
-            itemSubheadingSize: updates.fontSize, // Legacy compatibility
-          } as any);
+          const widgetUpdate: any = {};
+          if (updates.fontFamily !== undefined) widgetUpdate.itemDescFontFamily = updates.fontFamily;
+          if (updates.fontSize !== undefined) {
+            widgetUpdate.itemDescFontSize = updates.fontSize;
+            widgetUpdate.descriptionFontSize = updates.fontSize; // Keep both for compatibility
+            widgetUpdate.itemSubheadingSize = updates.fontSize; // Legacy compatibility
+          }
+          if (updates.fontWeight !== undefined) {
+            widgetUpdate.itemDescFontWeight = updates.fontWeight;
+            widgetUpdate.descriptionFontWeight = updates.fontWeight; // Keep both for compatibility
+          }
+          if (updates.lineHeight !== undefined) widgetUpdate.itemDescLineHeight = updates.lineHeight;
+          if (updates.textTransform !== undefined) widgetUpdate.itemDescTextTransform = updates.textTransform;
+          if (updates.letterSpacing !== undefined) widgetUpdate.itemDescLetterSpacing = updates.letterSpacing;
+          if (updates.color !== undefined) {
+            widgetUpdate.descriptionColor = updates.color;
+            widgetUpdate.itemSubheadingColor = updates.color; // Legacy compatibility
+          }
+          onChange(widgetUpdate);
         }}
         showGlobalStyleSelector={true}
         availableGlobalStyles={['body']}

@@ -271,10 +271,10 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
           const TitleTag = (widget.titleHeaderTag || 'h1') as keyof JSX.IntrinsicElements;
           return (
             <TitleTag 
-              className="mb-4"
+          className="mb-4"
               style={titleStyles}
-            >
-              {title}
+        >
+          {title}
             </TitleTag>
           );
         })()}
@@ -283,10 +283,10 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
           const SubtitleTag = (widget.subtitleHeaderTag || 'p') as keyof JSX.IntrinsicElements;
           return (
             <SubtitleTag 
-              className="mb-8"
+          className="mb-8"
               style={subtitleStyles}
-            >
-              {subtitle}
+        >
+          {subtitle}
             </SubtitleTag>
           );
         })()}
@@ -1243,6 +1243,50 @@ function ImageNavigationSection({ widget }: { widget: ImageNavigationWidget }) {
 function IconTextSection({ widget }: { widget: IconTextWidget }) {
   const { deviceView } = useBuilderStore();
 
+  // Helper to convert fontSize to CSS
+  const getFontSize = (fontSize: any, fallback: string) => {
+    if (!fontSize) return fallback;
+    if (typeof fontSize === 'object' && fontSize.value !== undefined) {
+      return `${fontSize.value}${fontSize.unit}`;
+    }
+    if (typeof fontSize === 'number') return `${fontSize}px`;
+    return String(fontSize);
+  };
+
+  // Section header typography
+  const headerStyles: React.CSSProperties = {
+    fontFamily: (widget as any).headerFontFamily || 'Inter',
+    fontSize: getFontSize((widget as any).headerFontSize || widget.headingSize, '36px'),
+    fontWeight: (widget as any).headerFontWeight || widget.headingWeight || '700',
+    lineHeight: (widget as any).headerLineHeight || '1.2',
+    textTransform: ((widget as any).headerTextTransform as any) || 'none',
+    letterSpacing: (widget as any).headerLetterSpacing || '0em',
+    color: widget.headingColor || '#1f2937',
+    marginBottom: '48px',
+  };
+
+  // Item title typography
+  const itemTitleStyles: React.CSSProperties = {
+    fontFamily: (widget as any).itemTitleFontFamily || 'Inter',
+    fontSize: getFontSize((widget as any).itemTitleFontSize || widget.titleFontSize, '20px'),
+    fontWeight: (widget as any).itemTitleFontWeight || widget.titleFontWeight || '600',
+    lineHeight: (widget as any).itemTitleLineHeight || '1.4',
+    textTransform: ((widget as any).itemTitleTextTransform as any) || 'none',
+    letterSpacing: (widget as any).itemTitleLetterSpacing || '0em',
+    color: widget.titleColor || '#1f2937',
+  };
+
+  // Item description typography
+  const itemDescStyles: React.CSSProperties = {
+    fontFamily: (widget as any).itemDescFontFamily || 'Inter',
+    fontSize: getFontSize((widget as any).itemDescFontSize || widget.descriptionFontSize, '16px'),
+    fontWeight: (widget as any).itemDescFontWeight || widget.descriptionFontWeight || '400',
+    lineHeight: (widget as any).itemDescLineHeight || '1.6',
+    textTransform: ((widget as any).itemDescTextTransform as any) || 'none',
+    letterSpacing: (widget as any).itemDescLetterSpacing || '0em',
+    color: widget.descriptionColor || '#6b7280',
+  };
+
   // Ensure alignment has a valid value
   const alignment = widget.alignment || 'center';
 
@@ -1394,10 +1438,7 @@ function IconTextSection({ widget }: { widget: IconTextWidget }) {
         {(widget.sectionHeading || widget.sectionSubheading) && (
           <div className="text-center mb-12">
             {widget.sectionHeading && (
-              <h2
-                className="text-4xl font-bold mb-4"
-                style={{ color: widget.sectionHeadingColor || '#1f2937' }}
-              >
+              <h2 style={headerStyles}>
                 {widget.sectionHeading}
               </h2>
             )}
@@ -1442,16 +1483,21 @@ function IconTextSection({ widget }: { widget: IconTextWidget }) {
                   <div className="flex-1">
                     {item.heading && (
                       <h3
-                        className="text-xl font-semibold mb-2"
-                        style={{ color: item.headingColor || '#1f2937' }}
+                        style={{
+                          ...itemTitleStyles,
+                          color: item.headingColor || itemTitleStyles.color,
+                          marginBottom: '8px',
+                        }}
                       >
                         {item.heading}
                       </h3>
                     )}
                     {item.subheading && (
                       <p
-                        className="text-sm leading-relaxed"
-                        style={{ color: item.subheadingColor || '#6b7280' }}
+                        style={{
+                          ...itemDescStyles,
+                          color: item.subheadingColor || itemDescStyles.color,
+                        }}
                       >
                         {item.subheading}
                       </p>
@@ -1478,16 +1524,21 @@ function IconTextSection({ widget }: { widget: IconTextWidget }) {
                   <div>
                     {item.heading && (
                       <h3
-                        className="text-xl font-semibold mb-2"
-                        style={{ color: item.headingColor || '#1f2937' }}
+                        style={{
+                          ...itemTitleStyles,
+                          color: item.headingColor || itemTitleStyles.color,
+                          marginBottom: '8px',
+                        }}
                       >
                         {item.heading}
                       </h3>
                     )}
                     {item.subheading && (
                       <p
-                        className="text-sm leading-relaxed"
-                        style={{ color: item.subheadingColor || '#6b7280' }}
+                        style={{
+                          ...itemDescStyles,
+                          color: item.subheadingColor || itemDescStyles.color,
+                        }}
                       >
                         {item.subheading}
                       </p>
@@ -2153,10 +2204,64 @@ function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
     borderColor: '#000000',
   };
   
+  // Helper to convert fontSize to CSS
+  const getFontSize = (fontSize: any, fallback: string) => {
+    if (!fontSize) return fallback;
+    if (typeof fontSize === 'object' && fontSize.value !== undefined) {
+      return `${fontSize.value}${fontSize.unit}`;
+    }
+    if (typeof fontSize === 'number') return `${fontSize}px`;
+    return String(fontSize);
+  };
+
+  // Typography configs
+  const formHeadingTypography = (widget as any).formHeadingTypography || {
+    fontFamily: 'Inter',
+    fontSize: { value: 2, unit: 'rem' },
+    fontWeight: '700',
+    lineHeight: '1.2',
+    textTransform: 'none',
+    letterSpacing: '0em',
+    color: widget.headingColor || '#1f2937',
+  };
+
+  const formDescriptionTypography = (widget as any).formDescriptionTypography || {
+    fontFamily: 'Inter',
+    fontSize: { value: 1, unit: 'rem' },
+    fontWeight: '400',
+    lineHeight: '1.6',
+    textTransform: 'none',
+    letterSpacing: '0em',
+    color: widget.descriptionColor || '#6b7280',
+  };
+
+  // Heading styles
+  const headingStyles: React.CSSProperties = {
+    fontFamily: formHeadingTypography.fontFamily,
+    fontSize: getFontSize(formHeadingTypography.fontSize, '32px'),
+    fontWeight: formHeadingTypography.fontWeight,
+    lineHeight: formHeadingTypography.lineHeight,
+    textTransform: formHeadingTypography.textTransform as any,
+    letterSpacing: formHeadingTypography.letterSpacing,
+    color: formHeadingTypography.color,
+    marginBottom: '12px',
+  };
+
+  // Description styles
+  const descriptionStyles: React.CSSProperties = {
+    fontFamily: formDescriptionTypography.fontFamily,
+    fontSize: getFontSize(formDescriptionTypography.fontSize, '16px'),
+    fontWeight: formDescriptionTypography.fontWeight,
+    lineHeight: formDescriptionTypography.lineHeight,
+    textTransform: formDescriptionTypography.textTransform as any,
+    letterSpacing: formDescriptionTypography.letterSpacing,
+    color: formDescriptionTypography.color,
+    marginBottom: '24px',
+  };
+  
+  // Keep for responsive calculations
   const headingSize = widget.headingSize ?? 32;
-  const headingColor = widget.headingColor || '#1f2937';
   const descriptionSize = widget.descriptionSize ?? 16;
-  const descriptionColor = widget.descriptionColor || '#6b7280';
   
   const background = widget.background || { type: 'color', color: 'transparent', opacity: 100, blur: 0 };
   const layoutCfg = (widget.layout && typeof widget.layout === 'object' && 'height' in widget.layout)
@@ -2494,11 +2599,11 @@ function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
       {!submitted ? (
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <h2 style={{ fontSize: `${responsiveHeadingSize}px`, color: headingColor, marginBottom: '12px', fontWeight: 700 }}>
+            <h2 style={headingStyles}>
               {formHeading}
             </h2>
             {widget.formDescription && (
-              <p style={{ fontSize: `${responsiveDescriptionSize}px`, color: descriptionColor, marginBottom: '24px' }}>
+              <p style={descriptionStyles}>
                 {widget.formDescription}
               </p>
             )}
@@ -3564,15 +3669,83 @@ function ImageTextColumnsSection({ widget }: { widget: ImageTextColumnsWidget })
   const imageAspectRatio = widget.imageAspectRatio || '3:2';
   const imageBorderRadius = widget.imageBorderRadius ?? 12;
   const textAlign = widget.textAlign || 'center';
-  const subtitleColor = widget.subtitleColor || '#1f2937';
-  const subtitleSize = widget.subtitleSize ?? 20;
-  const subtitleFontWeight = widget.subtitleFontWeight ?? 600;
-  const descriptionColor = widget.descriptionColor || '#6b7280';
-  const descriptionSize = widget.descriptionSize ?? 16;
+  // Helper to convert fontSize to CSS
+  const getFontSize = (fontSize: any, fallback: string) => {
+    if (!fontSize) return fallback;
+    if (typeof fontSize === 'object' && fontSize.value !== undefined) {
+      return `${fontSize.value}${fontSize.unit}`;
+    }
+    if (typeof fontSize === 'number') return `${fontSize}px`;
+    return String(fontSize);
+  };
 
+  // Typography configs
+  const sectionHeaderTypography = (widget as any).sectionHeaderTypography || {
+    fontFamily: 'Inter',
+    fontSize: { value: 3, unit: 'rem' },
+    fontWeight: '700',
+    lineHeight: '1.2',
+    textTransform: 'none',
+    letterSpacing: '0em',
+    color: widget.sectionHeadingColor || '#1f2937',
+  };
+
+  const subtitleTypography = (widget as any).subtitleTypography || {
+    fontFamily: 'Inter',
+    fontSize: { value: 1.25, unit: 'rem' },
+    fontWeight: String(widget.subtitleFontWeight ?? '600'),
+    lineHeight: '1.4',
+    textTransform: 'none',
+    letterSpacing: '0em',
+    color: widget.subtitleColor || '#1f2937',
+  };
+
+  const descriptionTypography = (widget as any).descriptionTypography || {
+    fontFamily: 'Inter',
+    fontSize: { value: 1, unit: 'rem' },
+    fontWeight: '400',
+    lineHeight: '1.6',
+    textTransform: 'none',
+    letterSpacing: '0em',
+    color: widget.descriptionColor || '#6b7280',
+  };
+
+  // Section header styles
+  const sectionHeaderStyles: React.CSSProperties = {
+    fontFamily: sectionHeaderTypography.fontFamily,
+    fontSize: getFontSize(sectionHeaderTypography.fontSize, '48px'),
+    fontWeight: sectionHeaderTypography.fontWeight,
+    lineHeight: sectionHeaderTypography.lineHeight,
+    textTransform: sectionHeaderTypography.textTransform as any,
+    letterSpacing: sectionHeaderTypography.letterSpacing,
+    color: sectionHeaderTypography.color,
+    marginBottom: '8px',
+  };
+
+  // Subtitle styles
+  const subtitleStyles: React.CSSProperties = {
+    fontFamily: subtitleTypography.fontFamily,
+    fontSize: getFontSize(subtitleTypography.fontSize, '20px'),
+    fontWeight: subtitleTypography.fontWeight,
+    lineHeight: subtitleTypography.lineHeight,
+    textTransform: subtitleTypography.textTransform as any,
+    letterSpacing: subtitleTypography.letterSpacing,
+    color: subtitleTypography.color,
+    marginBottom: '12px',
+  };
+
+  // Description styles
+  const descriptionStyles: React.CSSProperties = {
+    fontFamily: descriptionTypography.fontFamily,
+    fontSize: getFontSize(descriptionTypography.fontSize, '16px'),
+    fontWeight: descriptionTypography.fontWeight,
+    lineHeight: descriptionTypography.lineHeight,
+    textTransform: descriptionTypography.textTransform as any,
+    letterSpacing: descriptionTypography.letterSpacing,
+    color: descriptionTypography.color,
+  };
+  
   const sectionHeading = widget.sectionHeading;
-  const sectionHeadingColor = widget.sectionHeadingColor || '#1f2937';
-  const sectionHeadingSize = widget.sectionHeadingSize ?? 48;
   const sectionSubheading = widget.sectionSubheading;
   const sectionSubheadingColor = widget.sectionSubheadingColor || '#6b7280';
   const sectionSubheadingSize = widget.sectionSubheadingSize ?? 18;
@@ -3662,13 +3835,7 @@ function ImageTextColumnsSection({ widget }: { widget: ImageTextColumnsWidget })
         {(sectionHeading || sectionSubheading) && (
           <div className={cn("mb-12", getTextAlignClass())}>
             {sectionHeading && (
-              <h2
-                className="font-bold mb-2"
-                style={{
-                  fontSize: `${sectionHeadingSize}px`,
-                  color: sectionHeadingColor,
-                }}
-              >
+              <h2 style={sectionHeaderStyles}>
                 {sectionHeading}
               </h2>
             )}
@@ -3718,25 +3885,12 @@ function ImageTextColumnsSection({ widget }: { widget: ImageTextColumnsWidget })
               )}
 
               {/* Subtitle */}
-              <h3
-                style={{
-                  fontSize: `${subtitleSize}px`,
-                  fontWeight: subtitleFontWeight,
-                  color: subtitleColor,
-                  marginBottom: '8px',
-                }}
-              >
+              <h3 style={subtitleStyles}>
                 {item.subtitle}
               </h3>
 
               {/* Description */}
-              <p
-                style={{
-                  fontSize: `${descriptionSize}px`,
-                  color: descriptionColor,
-                  lineHeight: 1.6,
-                }}
-              >
+              <p style={descriptionStyles}>
                 {item.description}
               </p>
             </div>
@@ -3755,13 +3909,66 @@ function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
 
   const formLayout = widget.formLayout || 'form-left';
   const mobileStackOrder = widget.mobileStackOrder || 'form-first';
+  
+  // Helper to convert fontSize to CSS
+  const getFontSize = (fontSize: any, fallback: string) => {
+    if (!fontSize) return fallback;
+    if (typeof fontSize === 'object' && fontSize.value !== undefined) {
+      return `${fontSize.value}${fontSize.unit}`;
+    }
+    if (typeof fontSize === 'number') return `${fontSize}px`;
+    return String(fontSize);
+  };
+
+  // Typography configs
+  const headingTypography = (widget as any).headingTypography || {
+    fontFamily: 'Inter',
+    fontSize: { value: 2.25, unit: 'rem' },
+    fontWeight: '700',
+    lineHeight: '1.2',
+    textTransform: 'none',
+    letterSpacing: '0em',
+    color: widget.headingColor || '#1f2937',
+  };
+
+  const descriptionTypography = (widget as any).descriptionTypography || {
+    fontFamily: 'Inter',
+    fontSize: { value: 1, unit: 'rem' },
+    fontWeight: '400',
+    lineHeight: '1.6',
+    textTransform: 'none',
+    letterSpacing: '0em',
+    color: widget.textColor || '#374151',
+  };
+
+  // Heading styles
+  const headingStyles: React.CSSProperties = {
+    fontFamily: headingTypography.fontFamily,
+    fontSize: getFontSize(headingTypography.fontSize, '36px'),
+    fontWeight: headingTypography.fontWeight,
+    lineHeight: headingTypography.lineHeight,
+    textTransform: headingTypography.textTransform as any,
+    letterSpacing: headingTypography.letterSpacing,
+    color: headingTypography.color,
+    marginBottom: '24px',
+  };
+
+  // Description styles
+  const descriptionStyles: React.CSSProperties = {
+    fontFamily: descriptionTypography.fontFamily,
+    fontSize: getFontSize(descriptionTypography.fontSize, '16px'),
+    fontWeight: descriptionTypography.fontWeight,
+    lineHeight: descriptionTypography.lineHeight,
+    textTransform: descriptionTypography.textTransform as any,
+    letterSpacing: descriptionTypography.letterSpacing,
+    color: descriptionTypography.color,
+  };
+  
   const heading = widget.heading || '';
-  const headingColor = widget.headingColor || '#1f2937';
-  const headingSize = widget.headingSize ?? 36;
+  const headingSize = widget.headingSize ?? 36; // Keep for responsive calculations
   const bodyParagraphs = widget.bodyParagraphs || [];
   const bulletPoints = widget.bulletPoints || [];
   const hyperlinks = widget.hyperlinks || [];
-  const textColor = widget.textColor || '#374151';
   const textSize = widget.textSize ?? 16;
 
   const fields = widget.fields || [];
@@ -3889,25 +4096,12 @@ function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
       }}
     >
       {formHeading && (
-        <h3
-          style={{
-            fontSize: '24px',
-            fontWeight: 600,
-            color: '#1f2937',
-            marginBottom: '8px',
-          }}
-        >
+        <h3 style={headingStyles}>
           {formHeading}
         </h3>
       )}
       {formDescription && (
-        <p
-          style={{
-            fontSize: '14px',
-            color: '#6b7280',
-            marginBottom: '24px',
-          }}
-        >
+        <p style={descriptionStyles}>
           {formDescription}
         </p>
       )}
@@ -3990,15 +4184,7 @@ function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
   const renderTextContent = () => (
     <div>
       {heading && (
-        <h2
-          style={{
-            fontSize: `${headingSize}px`,
-            fontWeight: 700,
-            color: headingColor,
-            fontFamily: widget.headingFontFamily || 'Inter',
-            marginBottom: '24px',
-          }}
-        >
+        <h2 style={headingStyles}>
           {heading}
         </h2>
       )}
@@ -4123,13 +4309,103 @@ function ReviewsSliderSection({ widget }: { widget: ReviewsSliderWidget }) {
   const boxShadow = widget.boxShadow ?? true;
   const boxPadding = widget.boxPadding ?? 24;
   const gap = widget.gap ?? 24;
-  const nameColor = widget.nameColor || '#1f2937';
-  const nameSize = widget.nameSize ?? 16;
-  const nameFontWeight = widget.nameFontWeight ?? 600;
-  const textColor = widget.textColor || '#6b7280';
-  const textSize = widget.textSize ?? 14;
-  const dateColor = widget.dateColor || '#9ca3af';
-  const dateSize = widget.dateSize ?? 12;
+  
+  // Helper to convert fontSize to CSS
+  const getFontSize = (fontSize: any, fallback: string) => {
+    if (!fontSize) return fallback;
+    if (typeof fontSize === 'object' && fontSize.value !== undefined) {
+      return `${fontSize.value}${fontSize.unit}`;
+    }
+    if (typeof fontSize === 'number') return `${fontSize}px`;
+    return String(fontSize);
+  };
+
+  // Typography configs
+  const sectionHeaderTypography = (widget as any).sectionHeaderTypography || {
+    fontFamily: 'Inter',
+    fontSize: { value: 2, unit: 'rem' },
+    fontWeight: '700',
+    lineHeight: '1.2',
+    textTransform: 'none',
+    letterSpacing: '0em',
+    color: widget.sectionHeadingColor || '#1f2937',
+  };
+
+  const nameTypography = (widget as any).nameTypography || {
+    fontFamily: 'Inter',
+    fontSize: { value: 1, unit: 'rem' },
+    fontWeight: '600',
+    lineHeight: '1.2',
+    textTransform: 'none',
+    letterSpacing: '0em',
+    color: widget.nameColor || '#1f2937',
+  };
+
+  const reviewTextTypography = (widget as any).reviewTextTypography || {
+    fontFamily: 'Inter',
+    fontSize: { value: 0.875, unit: 'rem' },
+    fontWeight: '400',
+    lineHeight: '1.6',
+    textTransform: 'none',
+    letterSpacing: '0em',
+    color: widget.textColor || '#6b7280',
+  };
+
+  const dateTypography = (widget as any).dateTypography || {
+    fontFamily: 'Inter',
+    fontSize: { value: 0.75, unit: 'rem' },
+    fontWeight: '400',
+    lineHeight: '1.2',
+    textTransform: 'none',
+    letterSpacing: '0em',
+    color: widget.dateColor || '#9ca3af',
+  };
+
+  // Section header styles
+  const sectionHeaderStyles: React.CSSProperties = {
+    fontFamily: sectionHeaderTypography.fontFamily,
+    fontSize: getFontSize(sectionHeaderTypography.fontSize, '48px'),
+    fontWeight: sectionHeaderTypography.fontWeight,
+    lineHeight: sectionHeaderTypography.lineHeight,
+    textTransform: sectionHeaderTypography.textTransform as any,
+    letterSpacing: sectionHeaderTypography.letterSpacing,
+    color: sectionHeaderTypography.color,
+    marginBottom: '8px',
+  };
+
+  // Name styles
+  const nameStyles: React.CSSProperties = {
+    fontFamily: nameTypography.fontFamily,
+    fontSize: getFontSize(nameTypography.fontSize, '16px'),
+    fontWeight: nameTypography.fontWeight,
+    lineHeight: nameTypography.lineHeight,
+    textTransform: nameTypography.textTransform as any,
+    letterSpacing: nameTypography.letterSpacing,
+    color: nameTypography.color,
+  };
+
+  // Review text styles
+  const reviewTextStyles: React.CSSProperties = {
+    fontFamily: reviewTextTypography.fontFamily,
+    fontSize: getFontSize(reviewTextTypography.fontSize, '14px'),
+    fontWeight: reviewTextTypography.fontWeight,
+    lineHeight: reviewTextTypography.lineHeight,
+    textTransform: reviewTextTypography.textTransform as any,
+    letterSpacing: reviewTextTypography.letterSpacing,
+    color: reviewTextTypography.color,
+  };
+
+  // Date styles
+  const dateStyles: React.CSSProperties = {
+    fontFamily: dateTypography.fontFamily,
+    fontSize: getFontSize(dateTypography.fontSize, '12px'),
+    fontWeight: dateTypography.fontWeight,
+    lineHeight: dateTypography.lineHeight,
+    textTransform: dateTypography.textTransform as any,
+    letterSpacing: dateTypography.letterSpacing,
+    color: dateTypography.color,
+  };
+  
   const showButton = widget.showButton ?? false;
   const buttonText = widget.buttonText || '';
   const buttonUrl = widget.buttonUrl || '#';
@@ -4138,7 +4414,6 @@ function ReviewsSliderSection({ widget }: { widget: ReviewsSliderWidget }) {
   const buttonRadius = widget.buttonStyle?.radius ?? 8;
 
   const sectionHeading = widget.sectionHeading;
-  const sectionHeadingColor = widget.sectionHeadingColor || '#1f2937';
   const sectionSubheading = widget.sectionSubheading;
   const sectionSubheadingColor = widget.sectionSubheadingColor || '#6b7280';
 
@@ -4278,10 +4553,7 @@ function ReviewsSliderSection({ widget }: { widget: ReviewsSliderWidget }) {
         {(sectionHeading || sectionSubheading) && (
           <div className="text-center mb-12">
             {sectionHeading && (
-              <h2
-                className="text-4xl font-bold mb-2"
-                style={{ color: sectionHeadingColor }}
-              >
+              <h2 style={sectionHeaderStyles}>
                 {sectionHeading}
               </h2>
             )}
@@ -4339,7 +4611,7 @@ function ReviewsSliderSection({ widget }: { widget: ReviewsSliderWidget }) {
                               style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
                             />
                           )}
-                          <span style={{ fontSize: `${nameSize}px`, fontWeight: nameFontWeight, color: nameColor }}>
+                          <span style={nameStyles}>
                             {review.name}
                           </span>
                         </div>
@@ -4363,19 +4635,19 @@ function ReviewsSliderSection({ widget }: { widget: ReviewsSliderWidget }) {
                           />
                         ))}
                       </div>
-                      <p style={{ fontSize: `${textSize}px`, color: textColor, lineHeight: 1.6, marginBottom: '12px', flex: 1 }}>
+                      <p style={{ ...reviewTextStyles, marginBottom: '12px', flex: 1 }}>
                         {displayText}
                       </p>
                       {enableReadMore && review.text.length > readMoreLimit && (
                         <button
                           onClick={() => toggleReadMore(review.id)}
-                          style={{ color: '#3b82f6', fontSize: '14px', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left', marginBottom: '8px' }}
+                          style={{ color: '#3b82f6', fontSize: reviewTextStyles.fontSize, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left', marginBottom: '8px' }}
                         >
                           {isExpanded ? 'Read less' : 'Read more'}
                         </button>
                       )}
                       {showReviewDate && (
-                        <p style={{ fontSize: `${dateSize}px`, color: dateColor }}>{review.date}</p>
+                        <p style={dateStyles}>{review.date}</p>
                       )}
                     </div>
                   );
@@ -4420,7 +4692,7 @@ function ReviewsSliderSection({ widget }: { widget: ReviewsSliderWidget }) {
                             style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
                           />
                         )}
-                        <span style={{ fontSize: `${nameSize}px`, fontWeight: nameFontWeight, color: nameColor }}>
+                        <span style={nameStyles}>
                           {review.name}
                         </span>
                       </div>
@@ -4444,19 +4716,19 @@ function ReviewsSliderSection({ widget }: { widget: ReviewsSliderWidget }) {
                         />
                       ))}
                     </div>
-                    <p style={{ fontSize: `${textSize}px`, color: textColor, lineHeight: 1.6, marginBottom: '12px', flex: 1 }}>
+                    <p style={{ ...reviewTextStyles, marginBottom: '12px', flex: 1 }}>
                       {displayText}
                     </p>
                     {enableReadMore && review.text.length > readMoreLimit && (
                       <button
                         onClick={() => toggleReadMore(review.id)}
-                        style={{ color: '#3b82f6', fontSize: '14px', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left', marginBottom: '8px' }}
+                        style={{ color: '#3b82f6', fontSize: reviewTextStyles.fontSize, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left', marginBottom: '8px' }}
                       >
                         {isExpanded ? 'Read less' : 'Read more'}
                       </button>
                     )}
                     {showReviewDate && (
-                      <p style={{ fontSize: `${dateSize}px`, color: dateColor }}>{review.date}</p>
+                      <p style={dateStyles}>{review.date}</p>
                     )}
                   </div>
                 );
