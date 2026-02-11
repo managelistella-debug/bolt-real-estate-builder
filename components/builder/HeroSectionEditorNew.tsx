@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,14 +16,14 @@ import {
   AlignVerticalJustifyCenter,
   AlignVerticalJustifyEnd,
   ChevronDown,
-  ChevronRight,
-  Type
+  ChevronRight
 } from 'lucide-react';
 import { ImageUpload } from './ImageUpload';
 import { SectionEditorTabs } from './SectionEditorTabs';
-import { FontSizeInput, fontSizeToCSS, type FontSizeValue } from './FontSizeInput';
-import { cn } from '@/lib/utils';
+import { TypographyControl } from './controls/TypographyControl';
+import { ButtonControl } from './controls/ButtonControl';
 import { useDebouncedInput } from './hooks/useDebouncedInput';
+import { useWebsiteStore } from '@/lib/stores/website';
 
 interface HeroSectionEditorNewProps {
   widget: HeroWidget;
@@ -31,6 +31,78 @@ interface HeroSectionEditorNewProps {
 }
 
 export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewProps) {
+  const { currentWebsite } = useWebsiteStore();
+  const globalStyles = currentWebsite?.globalStyles;
+
+  // Migration: Convert old widget format to new format on first render
+  React.useEffect(() => {
+    let needsUpdate = false;
+    const updates: any = {};
+
+    // Migrate title fontSize if it's in old format
+    if (widget.textStyles?.title && !widget.textStyles.title.fontSize && widget.textStyles.title.size) {
+      if (!updates.textStyles) updates.textStyles = { ...widget.textStyles };
+      updates.textStyles.title = {
+        ...widget.textStyles.title,
+        fontSize: typeof widget.textStyles.title.size === 'number'
+          ? { value: widget.textStyles.title.size, unit: 'px' as const }
+          : { value: 48, unit: 'px' as const },
+      };
+      needsUpdate = true;
+    }
+
+    // Migrate title color if it's using old textColor fallback
+    if (widget.textStyles?.title && !widget.textStyles.title.color && widget.textColor) {
+      if (!updates.textStyles) updates.textStyles = { ...widget.textStyles };
+      if (!updates.textStyles.title) updates.textStyles.title = { ...widget.textStyles.title };
+      updates.textStyles.title = {
+        ...updates.textStyles.title,
+        color: widget.textColor,
+      };
+      needsUpdate = true;
+    }
+
+    // Migrate subtitle fontSize if it's in old format
+    if (widget.textStyles?.subtitle && !widget.textStyles.subtitle.fontSize && widget.textStyles.subtitle.size) {
+      if (!updates.textStyles) updates.textStyles = { ...widget.textStyles };
+      updates.textStyles.subtitle = {
+        ...widget.textStyles.subtitle,
+        fontSize: typeof widget.textStyles.subtitle.size === 'number'
+          ? { value: widget.textStyles.subtitle.size, unit: 'px' as const }
+          : { value: 20, unit: 'px' as const },
+      };
+      needsUpdate = true;
+    }
+
+    // Migrate subtitle color if it's using old textColor fallback
+    if (widget.textStyles?.subtitle && !widget.textStyles.subtitle.color && widget.textColor) {
+      if (!updates.textStyles) updates.textStyles = { ...widget.textStyles };
+      if (!updates.textStyles.subtitle) updates.textStyles.subtitle = { ...widget.textStyles.subtitle };
+      updates.textStyles.subtitle = {
+        ...updates.textStyles.subtitle,
+        color: widget.textColor,
+      };
+      needsUpdate = true;
+    }
+
+    // Migrate button fontSize if needed
+    if (widget.button && !(widget as any).button.fontSize) {
+      needsUpdate = true;
+      updates.button = {
+        ...widget.button,
+        fontSize: { value: 16, unit: 'px' as const },
+        fontFamily: 'Inter',
+        fontWeight: '600',
+        lineHeight: '1.5',
+        textTransform: 'none' as const,
+      };
+    }
+
+    if (needsUpdate) {
+      onChange(updates);
+    }
+  }, []); // Only run once on mount
+
   // Debounced inputs for smooth typing
   const [titleValue, , titleChange, titleBlur] = useDebouncedInput(
     widget.title || widget.headline || '',
@@ -58,7 +130,7 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
     })
   );
 
-  // Collapsible states for Layout tab
+  // Collapsible states
   const [sectionHeightOpen, setSectionHeightOpen] = useState(false);
   const [sectionWidthOpen, setSectionWidthOpen] = useState(false);
   const [paddingOpen, setPaddingOpen] = useState(false);
@@ -66,16 +138,7 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
   const [verticalAlignOpen, setVerticalAlignOpen] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(false);
   const [bgOverlayOpen, setBgOverlayOpen] = useState(false);
-
-  // Collapsible states for Content tab
   const [buttonOpen, setButtonOpen] = useState(false);
-
-  // Collapsible states for Style tab
-  const [typographyOpen, setTypographyOpen] = useState(false);
-  const [headerStyleOpen, setHeaderStyleOpen] = useState(false);
-  const [subtitleStyleOpen, setSubtitleStyleOpen] = useState(false);
-  const [buttonStyleOpen, setButtonStyleOpen] = useState(false);
-  const [buttonStateTab, setButtonStateTab] = useState<'default' | 'hover'>('default');
 
   const CollapsibleSection = ({ 
     title, 
@@ -104,6 +167,96 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
       )}
     </div>
   );
+
+  // Get typography configs - ensuring proper FontSizeValue format
+  const getTitleTypography = () => {
+    let fontSize = { value: 48, unit: 'px' as const };
+    if (widget.textStyles?.title?.fontSize) {
+      // New format: FontSizeValue object
+      fontSize = typeof widget.textStyles.title.fontSize === 'object' 
+        ? widget.textStyles.title.fontSize 
+        : { value: widget.textStyles.title.fontSize as number, unit: 'px' as const };
+    } else if (widget.textStyles?.title?.size) {
+      // Old format: plain number or CSS string
+      const size = widget.textStyles.title.size;
+      if (typeof size === 'number') {
+        fontSize = { value: size, unit: 'px' as const };
+      } else if (typeof size === 'string') {
+        // Parse CSS strings like '3rem' or '48px'
+        const match = size.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          fontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+    }
+    
+    return {
+      fontFamily: widget.textStyles?.title?.fontFamily || 'Inter',
+      fontSize,
+      fontWeight: widget.textStyles?.title?.fontWeight || (widget.textStyles?.title as any)?.weight || '700',
+      lineHeight: widget.textStyles?.title?.lineHeight || '1.2',
+      textTransform: (widget.textStyles?.title as any)?.textTransform || 'none' as const,
+      letterSpacing: (widget.textStyles?.title as any)?.letterSpacing || '-0.02em',
+      color: widget.textStyles?.title?.color || widget.textColor || '#ffffff',
+    };
+  };
+
+  const getSubtitleTypography = () => {
+    let fontSize = { value: 20, unit: 'px' as const };
+    if (widget.textStyles?.subtitle?.fontSize) {
+      // New format: FontSizeValue object
+      fontSize = typeof widget.textStyles.subtitle.fontSize === 'object' 
+        ? widget.textStyles.subtitle.fontSize 
+        : { value: widget.textStyles.subtitle.fontSize as number, unit: 'px' as const };
+    } else if (widget.textStyles?.subtitle?.size) {
+      // Old format: plain number or CSS string
+      const size = widget.textStyles.subtitle.size;
+      if (typeof size === 'number') {
+        fontSize = { value: size, unit: 'px' as const };
+      } else if (typeof size === 'string') {
+        // Parse CSS strings like '1.25rem' or '20px'
+        const match = size.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          fontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+    }
+    
+    return {
+      fontFamily: widget.textStyles?.subtitle?.fontFamily || 'Inter',
+      fontSize,
+      fontWeight: widget.textStyles?.subtitle?.fontWeight || (widget.textStyles?.subtitle as any)?.weight || '400',
+      lineHeight: widget.textStyles?.subtitle?.lineHeight || '1.6',
+      textTransform: (widget.textStyles?.subtitle as any)?.textTransform || 'none' as const,
+      letterSpacing: (widget.textStyles?.subtitle as any)?.letterSpacing || '0em',
+      color: widget.textStyles?.subtitle?.color || widget.textColor || '#ffffff',
+    };
+  };
+
+  // Get button config
+  const getButtonConfig = () => ({
+    text: widget.button?.text || widget.cta?.text || '',
+    url: widget.button?.url || widget.cta?.url || '',
+    openNewTab: widget.button?.openNewTab,
+    width: (widget as any).buttonWidth || 'standard' as const,
+    backgroundColor: widget.button?.backgroundColor || widget.button?.bgColor || '#3b82f6',
+    textColor: widget.button?.textColor || '#ffffff',
+    borderRadius: widget.button?.borderRadius || widget.button?.radius || 8,
+    borderWidth: widget.button?.borderWidth || widget.button?.strokeWidth || 0,
+    borderColor: widget.button?.borderColor || widget.button?.strokeColor,
+    backgroundOpacity: widget.button?.backgroundOpacity || widget.button?.bgOpacity || 100,
+    dropShadow: widget.button?.dropShadow ?? widget.button?.hasShadow !== false,
+    shadowAmount: widget.button?.shadowAmount || 4,
+    blurEffect: widget.button?.blurEffect || widget.button?.blurAmount || 0,
+    fontFamily: (widget as any).buttonFontFamily || 'Inter',
+    fontSize: (widget as any).buttonFontSize || { value: 16, unit: 'px' as const },
+    fontWeight: (widget as any).buttonFontWeight || '600',
+    lineHeight: (widget as any).buttonLineHeight || '1.5',
+    textTransform: (widget as any).buttonTextTransform || 'none' as const,
+    hover: (widget as any).buttonHover || {},
+    useGlobalStyle: (widget as any).buttonUseGlobalStyle,
+    globalStyleId: (widget as any).buttonGlobalStyleId,
+  });
 
   // Content Tab
   const contentTab = (
@@ -188,7 +341,13 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
             />
           </div>
           <div className="flex items-center space-x-2">
-            <Checkbox id="open-new-tab" />
+            <Checkbox 
+              id="open-new-tab"
+              checked={widget.button?.openNewTab || false}
+              onCheckedChange={(checked) => onChange({ 
+                button: { ...widget.button, openNewTab: !!checked } as any
+              })}
+            />
             <Label htmlFor="open-new-tab" className="text-sm font-normal">Open in new tab</Label>
           </div>
         </div>
@@ -625,498 +784,124 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
 
   // Style Tab
   const styleTab = (
-    <div className="space-y-2">
-      {/* Typography */}
-      <CollapsibleSection title="Typography" open={typographyOpen} onToggle={() => setTypographyOpen(!typographyOpen)}>
-        <div className="space-y-3">
-          {/* Header Styles */}
-          <div className="border rounded-lg">
-            <button
-              type="button"
-              className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-              onClick={() => setHeaderStyleOpen(!headerStyleOpen)}
-            >
-              <span className="text-sm font-medium">Header</span>
-              {headerStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </button>
-            {headerStyleOpen && (
-              <div className="p-3 pt-0 space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Family</Label>
-                  <Select
-                    value={widget.textStyles?.title?.fontFamily || 'Inter'}
-                    onValueChange={(value) => onChange({
-                      textStyles: {
-                        ...widget.textStyles,
-                        title: { ...widget.textStyles?.title, fontFamily: value } as any,
-                      } as any
-                    })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Inter">Inter</SelectItem>
-                      <SelectItem value="Arial">Arial</SelectItem>
-                      <SelectItem value="Helvetica">Helvetica</SelectItem>
-                      <SelectItem value="Georgia">Georgia</SelectItem>
-                      <SelectItem value="Times New Roman">Times New Roman</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Size</Label>
-                  <FontSizeInput
-                    value={widget.textStyles?.title?.size || '3rem'}
-                    onChange={(value: FontSizeValue) => onChange({
-                      textStyles: {
-                        ...widget.textStyles,
-                        title: { ...widget.textStyles?.title, size: fontSizeToCSS(value) } as any,
-                      } as any
-                    })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Weight</Label>
-                  <Select
-                    value={widget.textStyles?.title?.weight || '700'}
-                    onValueChange={(value) => onChange({
-                      textStyles: {
-                        ...widget.textStyles,
-                        title: { ...widget.textStyles?.title, weight: value } as any,
-                      } as any
-                    })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="400">Regular</SelectItem>
-                      <SelectItem value="500">Medium</SelectItem>
-                      <SelectItem value="600">Semibold</SelectItem>
-                      <SelectItem value="700">Bold</SelectItem>
-                      <SelectItem value="800">Extra Bold</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Line Height</Label>
-                  <Input
-                    value={widget.textStyles?.title?.lineHeight || '1.2'}
-                    onChange={(e) => onChange({
-                      textStyles: {
-                        ...widget.textStyles,
-                        title: { ...widget.textStyles?.title, lineHeight: e.target.value } as any,
-                      } as any
-                    })}
-                    placeholder="1.2"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Text Transform</Label>
-                  <Select
-                    value={(widget.textStyles?.title as any)?.textTransform || 'none'}
-                    onValueChange={(value) => onChange({
-                      textStyles: {
-                        ...widget.textStyles,
-                        title: { ...widget.textStyles?.title, textTransform: value } as any,
-                      } as any
-                    })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Normal</SelectItem>
-                      <SelectItem value="uppercase">All Caps</SelectItem>
-                      <SelectItem value="capitalize">Capitalize</SelectItem>
-                      <SelectItem value="lowercase">Lowercase</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Letter Spacing</Label>
-                  <Input
-                    value={widget.textStyles?.title?.letterSpacing || '-0.02em'}
-                    onChange={(e) => onChange({
-                      textStyles: {
-                        ...widget.textStyles,
-                        title: { ...widget.textStyles?.title, letterSpacing: e.target.value } as any,
-                      } as any
-                    })}
-                    placeholder="-0.02em"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Color</Label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={widget.textStyles?.title?.color || '#ffffff'}
-                      onChange={(e) => onChange({
-                        textColor: e.target.value,
-                        textStyles: {
-                          ...widget.textStyles,
-                          title: { ...widget.textStyles?.title, color: e.target.value } as any,
-                        } as any
-                      })}
-                      className="h-10 w-16 rounded border cursor-pointer"
-                    />
-                    <Input
-                      value={widget.textStyles?.title?.color || '#ffffff'}
-                      onChange={(e) => onChange({
-                        textColor: e.target.value,
-                        textStyles: {
-                          ...widget.textStyles,
-                          title: { ...widget.textStyles?.title, color: e.target.value } as any,
-                        } as any
-                      })}
-                      placeholder="#FFFFFF"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+    <div className="space-y-3">
+      {/* Title Typography */}
+      <TypographyControl
+        label="Title Typography"
+        value={getTitleTypography()}
+        onChange={(updates) => {
+          const currentTitle = widget.textStyles?.title || {};
+          onChange({
+            textStyles: {
+              ...widget.textStyles,
+              title: {
+                ...currentTitle,
+                ...updates,
+                // Keep old format properties for backward compatibility
+                size: updates.fontSize || currentTitle.fontSize,
+                weight: updates.fontWeight || currentTitle.fontWeight,
+              } as any,
+            } as any,
+          });
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['h1']}
+      />
 
-          {/* Subtitle Styles */}
-          <div className="border rounded-lg">
-            <button
-              type="button"
-              className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-              onClick={() => setSubtitleStyleOpen(!subtitleStyleOpen)}
-            >
-              <span className="text-sm font-medium">Subtitle</span>
-              {subtitleStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </button>
-            {subtitleStyleOpen && (
-              <div className="p-3 pt-0 space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Family</Label>
-                  <Select
-                    value={widget.textStyles?.subtitle?.fontFamily || 'Inter'}
-                    onValueChange={(value) => onChange({
-                      textStyles: {
-                        ...widget.textStyles,
-                        subtitle: { ...widget.textStyles?.subtitle, fontFamily: value } as any,
-                      } as any
-                    })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Inter">Inter</SelectItem>
-                      <SelectItem value="Arial">Arial</SelectItem>
-                      <SelectItem value="Helvetica">Helvetica</SelectItem>
-                      <SelectItem value="Georgia">Georgia</SelectItem>
-                      <SelectItem value="Times New Roman">Times New Roman</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Size</Label>
-                  <FontSizeInput
-                    value={widget.textStyles?.subtitle?.size || '1.25rem'}
-                    onChange={(value: FontSizeValue) => onChange({
-                      textStyles: {
-                        ...widget.textStyles,
-                        subtitle: { ...widget.textStyles?.subtitle, size: fontSizeToCSS(value) } as any,
-                      } as any
-                    })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Weight</Label>
-                  <Select
-                    value={widget.textStyles?.subtitle?.weight || '400'}
-                    onValueChange={(value) => onChange({
-                      textStyles: {
-                        ...widget.textStyles,
-                        subtitle: { ...widget.textStyles?.subtitle, weight: value } as any,
-                      } as any
-                    })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="400">Regular</SelectItem>
-                      <SelectItem value="500">Medium</SelectItem>
-                      <SelectItem value="600">Semibold</SelectItem>
-                      <SelectItem value="700">Bold</SelectItem>
-                      <SelectItem value="800">Extra Bold</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Line Height</Label>
-                  <Input
-                    value={widget.textStyles?.subtitle?.lineHeight || '1.6'}
-                    onChange={(e) => onChange({
-                      textStyles: {
-                        ...widget.textStyles,
-                        subtitle: { ...widget.textStyles?.subtitle, lineHeight: e.target.value } as any,
-                      } as any
-                    })}
-                    placeholder="1.6"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Text Transform</Label>
-                  <Select
-                    value={(widget.textStyles?.subtitle as any)?.textTransform || 'none'}
-                    onValueChange={(value) => onChange({
-                      textStyles: {
-                        ...widget.textStyles,
-                        subtitle: { ...widget.textStyles?.subtitle, textTransform: value } as any,
-                      } as any
-                    })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Normal</SelectItem>
-                      <SelectItem value="uppercase">All Caps</SelectItem>
-                      <SelectItem value="capitalize">Capitalize</SelectItem>
-                      <SelectItem value="lowercase">Lowercase</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Color</Label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={widget.textStyles?.subtitle?.color || '#ffffff'}
-                      onChange={(e) => onChange({
-                        textStyles: {
-                          ...widget.textStyles,
-                          subtitle: { ...widget.textStyles?.subtitle, color: e.target.value } as any,
-                        } as any
-                      })}
-                      className="h-10 w-16 rounded border cursor-pointer"
-                    />
-                    <Input
-                      value={widget.textStyles?.subtitle?.color || '#ffffff'}
-                      onChange={(e) => onChange({
-                        textStyles: {
-                          ...widget.textStyles,
-                          subtitle: { ...widget.textStyles?.subtitle, color: e.target.value } as any,
-                        } as any
-                      })}
-                      placeholder="#FFFFFF"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </CollapsibleSection>
+      {/* Subtitle Typography */}
+      <TypographyControl
+        label="Subtitle Typography"
+        value={getSubtitleTypography()}
+        onChange={(updates) => {
+          const currentSubtitle = widget.textStyles?.subtitle || {};
+          onChange({
+            textStyles: {
+              ...widget.textStyles,
+              subtitle: {
+                ...currentSubtitle,
+                ...updates,
+                // Keep old format properties for backward compatibility
+                size: updates.fontSize || currentSubtitle.fontSize,
+                weight: updates.fontWeight || currentSubtitle.fontWeight,
+              } as any,
+            } as any,
+          });
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['h2', 'h3', 'body']}
+      />
 
-      {/* Button */}
-      <CollapsibleSection title="Button" open={buttonStyleOpen} onToggle={() => setButtonStyleOpen(!buttonStyleOpen)}>
-        <div className="space-y-3">
-          {/* State Tabs */}
-          <div className="flex gap-1 p-1 bg-muted rounded-lg">
-            <button
-              type="button"
-              className={cn(
-                "flex-1 px-3 py-1.5 rounded text-sm font-medium transition-colors",
-                buttonStateTab === 'default' ? 'bg-background shadow-sm' : 'hover:bg-background/50'
-              )}
-              onClick={() => setButtonStateTab('default')}
-            >
-              Default
-            </button>
-            <button
-              type="button"
-              className={cn(
-                "flex-1 px-3 py-1.5 rounded text-sm font-medium transition-colors",
-                buttonStateTab === 'hover' ? 'bg-background shadow-sm' : 'hover:bg-background/50'
-              )}
-              onClick={() => setButtonStateTab('hover')}
-            >
-              Hover
-            </button>
-          </div>
-
-          {buttonStateTab === 'default' && (
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label className="text-xs">Width</Label>
-                <Select defaultValue="standard">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="standard">Standard</SelectItem>
-                    <SelectItem value="full">Full Width</SelectItem>
-                    <SelectItem value="custom">Custom (Pixels)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs">Background Color</Label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    value={widget.button?.bgColor || '#3b82f6'}
-                    onChange={(e) => onChange({
-                      button: { ...widget.button, bgColor: e.target.value } as any
-                    })}
-                    className="h-10 w-16 rounded border cursor-pointer"
-                  />
-                  <Input
-                    value={widget.button?.bgColor || '#3b82f6'}
-                    onChange={(e) => onChange({
-                      button: { ...widget.button, bgColor: e.target.value } as any
-                    })}
-                    placeholder="#3b82f6"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs">Text Color</Label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    value={widget.button?.textColor || '#ffffff'}
-                    onChange={(e) => onChange({
-                      button: { ...widget.button, textColor: e.target.value } as any
-                    })}
-                    className="h-10 w-16 rounded border cursor-pointer"
-                  />
-                  <Input
-                    value={widget.button?.textColor || '#ffffff'}
-                    onChange={(e) => onChange({
-                      button: { ...widget.button, textColor: e.target.value } as any
-                    })}
-                    placeholder="#ffffff"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs">Border Radius: {widget.button?.radius || 8}px</Label>
-                <input
-                  type="range"
-                  min="0"
-                  max="50"
-                  value={widget.button?.radius || 8}
-                  onChange={(e) => onChange({
-                    button: { ...widget.button, radius: parseInt(e.target.value) } as any
-                  })}
-                  className="w-full"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs">Border Width: {widget.button?.strokeWidth || 0}px</Label>
-                <input
-                  type="range"
-                  min="0"
-                  max="10"
-                  value={widget.button?.strokeWidth || 0}
-                  onChange={(e) => onChange({
-                    button: { ...widget.button, strokeWidth: parseInt(e.target.value) } as any
-                  })}
-                  className="w-full"
-                />
-              </div>
-
-              {(widget.button?.strokeWidth || 0) > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-xs">Border Color</Label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={widget.button?.strokeColor || '#000000'}
-                      onChange={(e) => onChange({
-                        button: { ...widget.button, strokeColor: e.target.value } as any
-                      })}
-                      className="h-10 w-16 rounded border cursor-pointer"
-                    />
-                    <Input
-                      value={widget.button?.strokeColor || '#000000'}
-                      onChange={(e) => onChange({
-                        button: { ...widget.button, strokeColor: e.target.value } as any
-                      })}
-                      placeholder="#000000"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    checked={widget.button?.hasShadow || false}
-                    onCheckedChange={(checked) => onChange({
-                      button: { ...widget.button, hasShadow: !!checked } as any
-                    })}
-                    id="button-shadow"
-                  />
-                  <Label htmlFor="button-shadow" className="text-sm">Drop Shadow</Label>
-                </div>
-                {widget.button?.hasShadow && (
-                  <div className="space-y-2">
-                    <Label className="text-xs">Shadow Amount: {widget.button?.shadowAmount || 4}px</Label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="20"
-                      value={widget.button?.shadowAmount || 4}
-                      onChange={(e) => onChange({
-                        button: { ...widget.button, shadowAmount: parseInt(e.target.value) } as any
-                      })}
-                      className="w-full"
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs">Background Opacity: {widget.button?.bgOpacity || 100}%</Label>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={widget.button?.bgOpacity || 100}
-                  onChange={(e) => onChange({
-                    button: { ...widget.button, bgOpacity: parseInt(e.target.value) } as any
-                  })}
-                  className="w-full"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs">Blur Effect: {widget.button?.blurAmount || 0}px</Label>
-                <input
-                  type="range"
-                  min="0"
-                  max="20"
-                  value={widget.button?.blurAmount || 0}
-                  onChange={(e) => onChange({
-                    button: { ...widget.button, blurAmount: parseInt(e.target.value) } as any
-                  })}
-                  className="w-full"
-                />
-              </div>
-            </div>
-          )}
-
-          {buttonStateTab === 'hover' && (
-            <div className="p-4 text-center text-sm text-muted-foreground">
-              Hover state customization coming soon...
-            </div>
-          )}
-        </div>
-      </CollapsibleSection>
+      {/* Button Styling */}
+      <div className="border rounded-lg p-3">
+        <Label className="text-sm font-semibold mb-3 block">Button Styling</Label>
+        <ButtonControl
+          value={getButtonConfig()}
+          onChange={(updates) => {
+            const widgetUpdate: any = {};
+            
+            // Update button object
+            const buttonUpdate: any = { ...widget.button };
+            if (updates.text !== undefined) buttonUpdate.text = updates.text;
+            if (updates.url !== undefined) buttonUpdate.url = updates.url;
+            if (updates.openNewTab !== undefined) buttonUpdate.openNewTab = updates.openNewTab;
+            if (updates.backgroundColor !== undefined) {
+              buttonUpdate.backgroundColor = updates.backgroundColor;
+              buttonUpdate.bgColor = updates.backgroundColor; // Keep both
+            }
+            if (updates.textColor !== undefined) buttonUpdate.textColor = updates.textColor;
+            if (updates.borderRadius !== undefined) {
+              buttonUpdate.borderRadius = updates.borderRadius;
+              buttonUpdate.radius = updates.borderRadius; // Keep both
+            }
+            if (updates.borderWidth !== undefined) {
+              buttonUpdate.borderWidth = updates.borderWidth;
+              buttonUpdate.strokeWidth = updates.borderWidth; // Keep both
+            }
+            if (updates.borderColor !== undefined) {
+              buttonUpdate.borderColor = updates.borderColor;
+              buttonUpdate.strokeColor = updates.borderColor; // Keep both
+            }
+            if (updates.backgroundOpacity !== undefined) {
+              buttonUpdate.backgroundOpacity = updates.backgroundOpacity;
+              buttonUpdate.bgOpacity = updates.backgroundOpacity; // Keep both
+            }
+            if (updates.dropShadow !== undefined) {
+              buttonUpdate.dropShadow = updates.dropShadow;
+              buttonUpdate.hasShadow = updates.dropShadow; // Keep both
+            }
+            if (updates.shadowAmount !== undefined) buttonUpdate.shadowAmount = updates.shadowAmount;
+            if (updates.blurEffect !== undefined) {
+              buttonUpdate.blurEffect = updates.blurEffect;
+              buttonUpdate.blurAmount = updates.blurEffect; // Keep both
+            }
+            
+            widgetUpdate.button = buttonUpdate;
+            
+            // Update typography properties
+            if (updates.fontFamily !== undefined) widgetUpdate.buttonFontFamily = updates.fontFamily;
+            if (updates.fontSize !== undefined) widgetUpdate.buttonFontSize = updates.fontSize;
+            if (updates.fontWeight !== undefined) widgetUpdate.buttonFontWeight = updates.fontWeight;
+            if (updates.lineHeight !== undefined) widgetUpdate.buttonLineHeight = updates.lineHeight;
+            if (updates.textTransform !== undefined) widgetUpdate.buttonTextTransform = updates.textTransform;
+            if (updates.hover !== undefined) widgetUpdate.buttonHover = updates.hover;
+            if (updates.useGlobalStyle !== undefined) widgetUpdate.buttonUseGlobalStyle = updates.useGlobalStyle;
+            if (updates.globalStyleId !== undefined) widgetUpdate.buttonGlobalStyleId = updates.globalStyleId;
+            if (updates.width !== undefined) widgetUpdate.buttonWidth = updates.width;
+            
+            // Also update cta for compatibility
+            if (updates.text !== undefined || updates.url !== undefined) {
+              widgetUpdate.cta = {
+                ...widget.cta,
+                text: updates.text ?? widget.cta?.text,
+                url: updates.url ?? widget.cta?.url,
+              };
+            }
+            
+            onChange(widgetUpdate);
+          }}
+          showGlobalStyleSelector={true}
+        />
+      </div>
     </div>
   );
 

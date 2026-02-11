@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { HeadlineWidget } from '@/lib/types';
@@ -18,9 +17,11 @@ import {
   ChevronRight 
 } from 'lucide-react';
 import { SectionEditorTabs } from '../SectionEditorTabs';
-import { FontSizeInput, fontSizeToCSS, type FontSizeValue } from '../FontSizeInput';
+import { TypographyControl } from '../controls/TypographyControl';
+import { ButtonControl } from '../controls/ButtonControl';
 import { cn } from '@/lib/utils';
 import { useDebouncedInput } from '../hooks/useDebouncedInput';
+import { useWebsiteStore } from '@/lib/stores/website';
 
 interface HeadlineEditorNewProps {
   widget: HeadlineWidget;
@@ -28,6 +29,9 @@ interface HeadlineEditorNewProps {
 }
 
 export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) {
+  const { currentWebsite } = useWebsiteStore();
+  const globalStyles = currentWebsite?.globalStyles;
+
   // Debounced inputs for smooth typing
   const [titleValue, , titleChange, titleBlur] = useDebouncedInput(
     widget.title,
@@ -50,17 +54,12 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
   );
 
   // Collapsible states
-  const [buttonOpen, setButtonOpen] = useState(false);
+  const [backgroundOpen, setBackgroundOpen] = useState(false);
   const [sectionHeightOpen, setSectionHeightOpen] = useState(false);
   const [sectionWidthOpen, setSectionWidthOpen] = useState(false);
   const [paddingOpen, setPaddingOpen] = useState(false);
   const [horizontalAlignOpen, setHorizontalAlignOpen] = useState(false);
   const [verticalAlignOpen, setVerticalAlignOpen] = useState(false);
-  const [typographyOpen, setTypographyOpen] = useState(false);
-  const [headerStyleOpen, setHeaderStyleOpen] = useState(false);
-  const [subtitleStyleOpen, setSubtitleStyleOpen] = useState(false);
-  const [buttonStyleOpen, setButtonStyleOpen] = useState(false);
-  const [buttonStateTab, setButtonStateTab] = useState<'default' | 'hover'>('default');
 
   const CollapsibleSection = ({ 
     title, 
@@ -89,6 +88,160 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
       )}
     </div>
   );
+
+  // Migration: Convert old widget format to new format on first render
+  useEffect(() => {
+    let needsUpdate = false;
+    const updates: any = {};
+
+    // Migrate title fontSize if in old format
+    if (widget.titleSize && typeof widget.titleSize !== 'object') {
+      if (typeof widget.titleSize === 'number') {
+        updates.titleSize = { value: widget.titleSize, unit: 'px' as const };
+        needsUpdate = true;
+      } else if (typeof widget.titleSize === 'string') {
+        const match = widget.titleSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          updates.titleSize = { value: parseFloat(match[1]), unit: match[2] as any };
+          needsUpdate = true;
+        }
+      }
+    }
+
+    // Migrate subtitle fontSize if in old format
+    if (widget.subtitleSize && typeof widget.subtitleSize !== 'object') {
+      if (typeof widget.subtitleSize === 'number') {
+        updates.subtitleSize = { value: widget.subtitleSize, unit: 'px' as const };
+        needsUpdate = true;
+      } else if (typeof widget.subtitleSize === 'string') {
+        const match = widget.subtitleSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          updates.subtitleSize = { value: parseFloat(match[1]), unit: match[2] as any };
+          needsUpdate = true;
+        }
+      }
+    }
+
+    // Migrate button fontSize if in old format
+    if (widget.buttonFontSize && typeof widget.buttonFontSize !== 'object') {
+      if (typeof widget.buttonFontSize === 'number') {
+        updates.buttonFontSize = { value: widget.buttonFontSize, unit: 'px' as const };
+        needsUpdate = true;
+      } else if (typeof widget.buttonFontSize === 'string') {
+        const match = widget.buttonFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          updates.buttonFontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+          needsUpdate = true;
+        }
+      }
+    }
+
+    if (needsUpdate) {
+      onChange(updates);
+    }
+  }, []); // Only run once on mount
+
+  // Get title typography config
+  const getTitleTypography = () => {
+    let fontSize = { value: 48, unit: 'px' as const };
+    const rawFontSize = widget.titleSize;
+    
+    if (rawFontSize) {
+      if (typeof rawFontSize === 'object' && rawFontSize.value !== undefined) {
+        fontSize = rawFontSize;
+      } else if (typeof rawFontSize === 'number') {
+        fontSize = { value: rawFontSize, unit: 'px' as const };
+      } else if (typeof rawFontSize === 'string') {
+        const match = rawFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          fontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+    }
+
+    return {
+      fontFamily: widget.titleFontFamily || 'Inter',
+      fontSize,
+      fontWeight: widget.titleFontWeight || '700',
+      lineHeight: widget.titleLineHeight || '1.2',
+      textTransform: widget.titleTextTransform || 'none' as const,
+      letterSpacing: widget.titleLetterSpacing || '-0.02em',
+      color: widget.titleColor || '#1f2937',
+    };
+  };
+
+  // Get subtitle typography config
+  const getSubtitleTypography = () => {
+    let fontSize = { value: 20, unit: 'px' as const };
+    const rawFontSize = widget.subtitleSize;
+    
+    if (rawFontSize) {
+      if (typeof rawFontSize === 'object' && rawFontSize.value !== undefined) {
+        fontSize = rawFontSize;
+      } else if (typeof rawFontSize === 'number') {
+        fontSize = { value: rawFontSize, unit: 'px' as const };
+      } else if (typeof rawFontSize === 'string') {
+        const match = rawFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          fontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+    }
+
+    return {
+      fontFamily: widget.subtitleFontFamily || 'Inter',
+      fontSize,
+      fontWeight: widget.subtitleFontWeight || '400',
+      lineHeight: widget.subtitleLineHeight || '1.5',
+      textTransform: widget.subtitleTextTransform || 'none' as const,
+      letterSpacing: widget.subtitleLetterSpacing || '0em',
+      color: widget.subtitleColor || '#6b7280',
+    };
+  };
+
+  // Get button config
+  const getButtonConfig = () => {
+    let buttonFontSize = { value: 16, unit: 'px' as const };
+    const rawButtonFontSize = widget.buttonFontSize;
+    
+    if (rawButtonFontSize) {
+      if (typeof rawButtonFontSize === 'object' && rawButtonFontSize.value !== undefined) {
+        buttonFontSize = rawButtonFontSize;
+      } else if (typeof rawButtonFontSize === 'number') {
+        buttonFontSize = { value: rawButtonFontSize, unit: 'px' as const };
+      } else if (typeof rawButtonFontSize === 'string') {
+        const match = rawButtonFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          buttonFontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+    }
+
+    return {
+      text: widget.button?.text || '',
+      url: widget.button?.url || '',
+      openNewTab: widget.button?.openNewTab,
+      width: widget.buttonWidth || 'standard' as const,
+      backgroundColor: widget.buttonBgColor || '#3b82f6',
+      textColor: widget.buttonTextColor || '#ffffff',
+      borderRadius: widget.buttonBorderRadius || 42,
+      borderWidth: widget.buttonBorderWidth || 0,
+      borderColor: widget.buttonBorderColor,
+      backgroundOpacity: widget.buttonBgOpacity || 100,
+      dropShadow: widget.buttonDropShadow !== false,
+      shadowAmount: widget.buttonShadowAmount || 4,
+      blurEffect: widget.buttonBlurEffect || 0,
+      fontFamily: widget.buttonFontFamily || 'Inter',
+      fontSize: buttonFontSize,
+      fontWeight: widget.buttonFontWeight || '600',
+      lineHeight: widget.buttonLineHeight || '1.5',
+      textTransform: widget.buttonTextTransform || 'none' as const,
+      letterSpacing: widget.buttonLetterSpacing || '0em',
+      hover: widget.buttonHover || {},
+      useGlobalStyle: widget.buttonUseGlobalStyle,
+      globalStyleId: widget.buttonGlobalStyleId,
+    };
+  };
 
   // Content Tab
   const contentTab = (
@@ -150,11 +303,12 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
         />
       </div>
 
-      {/* Button Collapsible */}
-      <CollapsibleSection title="Button" open={buttonOpen} onToggle={() => setButtonOpen(!buttonOpen)}>
+      {/* Button */}
+      {widget.button && (
         <div className="space-y-3">
+          <Label className="text-sm font-semibold">Button</Label>
           <div className="space-y-2">
-            <Label>Button Text</Label>
+            <Label className="text-xs">Button Text</Label>
             <Input
               value={buttonTextValue}
               onChange={buttonTextChange}
@@ -163,7 +317,7 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
             />
           </div>
           <div className="space-y-2">
-            <Label>URL</Label>
+            <Label className="text-xs">URL</Label>
             <Input
               value={buttonUrlValue}
               onChange={buttonUrlChange}
@@ -172,15 +326,61 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
             />
           </div>
           <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="headline-btn-new-tab"
+            <Checkbox
+              id="openNewTab"
               checked={widget.button?.openNewTab || false}
               onCheckedChange={(checked) => onChange({
-                button: { ...widget.button, text: widget.button?.text || '', url: widget.button?.url || '', openNewTab: !!checked }
+                button: { ...widget.button, openNewTab: !!checked }
               })}
             />
-            <Label htmlFor="headline-btn-new-tab" className="text-sm font-normal">Open in new tab</Label>
+            <Label htmlFor="openNewTab" className="text-xs">Open in new tab</Label>
           </div>
+        </div>
+      )}
+
+      {/* Background */}
+      <CollapsibleSection title="Background" open={backgroundOpen} onToggle={() => setBackgroundOpen(!backgroundOpen)}>
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <Label className="text-xs">Background Color</Label>
+            <div className="flex gap-2">
+              <input
+                type="color"
+                value={widget.background?.color || '#ffffff'}
+                onChange={(e) => onChange({ background: { ...widget.background, color: e.target.value } })}
+                className="h-9 w-16 rounded border cursor-pointer"
+              />
+              <Input
+                value={widget.background?.color || '#ffffff'}
+                onChange={(e) => onChange({ background: { ...widget.background, color: e.target.value } })}
+                placeholder="#ffffff"
+                className="h-9"
+              />
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="hasLink"
+              checked={widget.background?.hasLink || false}
+              onCheckedChange={(checked) => onChange({
+                background: { ...widget.background, hasLink: !!checked }
+              })}
+            />
+            <Label htmlFor="hasLink" className="text-xs">Link to URL</Label>
+          </div>
+          {widget.background?.hasLink && (
+            <div className="space-y-2">
+              <Label className="text-xs">Link URL</Label>
+              <Input
+                value={widget.background?.linkUrl || ''}
+                onChange={(e) => onChange({
+                  background: { ...widget.background, linkUrl: e.target.value }
+                })}
+                placeholder="https://"
+                className="h-9"
+              />
+            </div>
+          )}
         </div>
       </CollapsibleSection>
     </div>
@@ -188,146 +388,125 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
 
   // Layout Tab
   const layoutTab = (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {/* Section Height */}
       <CollapsibleSection title="Section Height" open={sectionHeightOpen} onToggle={() => setSectionHeightOpen(!sectionHeightOpen)}>
-        <div className="flex gap-2">
+        <div className="space-y-2">
+          <Label className="text-xs">Height Type</Label>
           <Select
             value={widget.height?.type || 'auto'}
-            onValueChange={(value: 'auto' | 'vh' | 'percentage' | 'pixels') => onChange({
+            onValueChange={(value: any) => onChange({
               height: { ...widget.height, type: value }
             })}
           >
-            <SelectTrigger className="flex-1">
+            <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="auto">Auto</SelectItem>
-              <SelectItem value="vh">View Height</SelectItem>
-              <SelectItem value="percentage">Percentage</SelectItem>
+              <SelectItem value="vh">Viewport Height (vh)</SelectItem>
               <SelectItem value="pixels">Pixels</SelectItem>
             </SelectContent>
           </Select>
-          {widget.height?.type !== 'auto' && (
+        </div>
+        {widget.height?.type !== 'auto' && (
+          <div className="space-y-2">
+            <Label className="text-xs">Height Value</Label>
             <Input
               type="number"
-              value={widget.height?.value || 100}
+              value={widget.height?.value || 500}
               onChange={(e) => onChange({
                 height: { ...widget.height, value: parseInt(e.target.value) }
               })}
-              className="w-24"
+              className="h-9"
             />
-          )}
-        </div>
-      </CollapsibleSection>
-
-      {/* Section Width */}
-      <CollapsibleSection title="Section Width" open={sectionWidthOpen} onToggle={() => setSectionWidthOpen(!sectionWidthOpen)}>
-        <Select defaultValue="container">
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="container">Container</SelectItem>
-            <SelectItem value="full">Full Width</SelectItem>
-          </SelectContent>
-        </Select>
+          </div>
+        )}
       </CollapsibleSection>
 
       {/* Padding */}
       <CollapsibleSection title="Padding" open={paddingOpen} onToggle={() => setPaddingOpen(!paddingOpen)}>
-        <div className="grid grid-cols-4 gap-2">
-          <div className="space-y-1">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2">
             <Label className="text-xs">Top</Label>
             <Input
               type="number"
               value={widget.padding?.top || 80}
               onChange={(e) => onChange({
-                padding: { ...widget.padding, top: parseInt(e.target.value) } as any
+                padding: { ...widget.padding, top: parseInt(e.target.value), right: widget.padding?.right || 20, bottom: widget.padding?.bottom || 80, left: widget.padding?.left || 20 }
               })}
+              className="h-9"
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Right</Label>
-            <Input
-              type="number"
-              value={widget.padding?.right || 20}
-              onChange={(e) => onChange({
-                padding: { ...widget.padding, right: parseInt(e.target.value) } as any
-              })}
-            />
-          </div>
-          <div className="space-y-1">
+          <div className="space-y-2">
             <Label className="text-xs">Bottom</Label>
             <Input
               type="number"
               value={widget.padding?.bottom || 80}
               onChange={(e) => onChange({
-                padding: { ...widget.padding, bottom: parseInt(e.target.value) } as any
+                padding: { top: widget.padding?.top || 80, right: widget.padding?.right || 20, bottom: parseInt(e.target.value), left: widget.padding?.left || 20 }
               })}
+              className="h-9"
             />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-2">
             <Label className="text-xs">Left</Label>
             <Input
               type="number"
               value={widget.padding?.left || 20}
               onChange={(e) => onChange({
-                padding: { ...widget.padding, left: parseInt(e.target.value) } as any
+                padding: { top: widget.padding?.top || 80, right: widget.padding?.right || 20, bottom: widget.padding?.bottom || 80, left: parseInt(e.target.value) }
               })}
+              className="h-9"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs">Right</Label>
+            <Input
+              type="number"
+              value={widget.padding?.right || 20}
+              onChange={(e) => onChange({
+                padding: { top: widget.padding?.top || 80, right: parseInt(e.target.value), bottom: widget.padding?.bottom || 80, left: widget.padding?.left || 20 }
+              })}
+              className="h-9"
             />
           </div>
         </div>
       </CollapsibleSection>
 
-      {/* Horizontal Alignment */}
-      <CollapsibleSection title="Horizontal Alignment" open={horizontalAlignOpen} onToggle={() => setHorizontalAlignOpen(!horizontalAlignOpen)}>
-        <div className="grid grid-cols-3 gap-2">
-          <Button
-            variant={widget.textAlign === 'left' ? 'default' : 'outline'}
-            size="sm"
+      {/* Text Alignment */}
+      <CollapsibleSection title="Text Alignment" open={horizontalAlignOpen} onToggle={() => setHorizontalAlignOpen(!horizontalAlignOpen)}>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className={cn(
+              "flex-1 p-2 border rounded hover:bg-muted",
+              widget.textAlign === 'left' && "bg-primary text-primary-foreground"
+            )}
             onClick={() => onChange({ textAlign: 'left' })}
           >
-            <AlignLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={widget.textAlign === 'center' ? 'default' : 'outline'}
-            size="sm"
+            <AlignLeft className="h-4 w-4 mx-auto" />
+          </button>
+          <button
+            type="button"
+            className={cn(
+              "flex-1 p-2 border rounded hover:bg-muted",
+              widget.textAlign === 'center' && "bg-primary text-primary-foreground"
+            )}
             onClick={() => onChange({ textAlign: 'center' })}
           >
-            <AlignCenter className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={widget.textAlign === 'right' ? 'default' : 'outline'}
-            size="sm"
+            <AlignCenter className="h-4 w-4 mx-auto" />
+          </button>
+          <button
+            type="button"
+            className={cn(
+              "flex-1 p-2 border rounded hover:bg-muted",
+              widget.textAlign === 'right' && "bg-primary text-primary-foreground"
+            )}
             onClick={() => onChange({ textAlign: 'right' })}
           >
-            <AlignRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </CollapsibleSection>
-
-      {/* Vertical Alignment */}
-      <CollapsibleSection title="Vertical Alignment" open={verticalAlignOpen} onToggle={() => setVerticalAlignOpen(!verticalAlignOpen)}>
-        <div className="grid grid-cols-3 gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-          >
-            <AlignVerticalJustifyStart className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="default"
-            size="sm"
-          >
-            <AlignVerticalJustifyCenter className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-          >
-            <AlignVerticalJustifyEnd className="h-4 w-4" />
-          </Button>
+            <AlignRight className="h-4 w-4 mx-auto" />
+          </button>
         </div>
       </CollapsibleSection>
     </div>
@@ -335,287 +514,91 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
 
   // Style Tab
   const styleTab = (
-    <div className="space-y-2">
-      {/* Typography */}
-      <CollapsibleSection title="Typography" open={typographyOpen} onToggle={() => setTypographyOpen(!typographyOpen)}>
-        <div className="space-y-3">
-          {/* Header Styles */}
-          <div className="border rounded-lg">
-            <button
-              type="button"
-              className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-              onClick={() => setHeaderStyleOpen(!headerStyleOpen)}
-            >
-              <span className="text-sm font-medium">Header</span>
-              {headerStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </button>
-            {headerStyleOpen && (
-              <div className="p-3 pt-0 space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Font</Label>
-                  <Select defaultValue="inter">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="inter">Inter</SelectItem>
-                      <SelectItem value="arial">Arial</SelectItem>
-                      <SelectItem value="helvetica">Helvetica</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Size</Label>
-                  <FontSizeInput
-                    value={{ value: 2, unit: 'rem' }}
-                    onChange={(value: FontSizeValue) => {
-                      // TODO: Wire up to actual widget state
-                    }}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Line Height</Label>
-                  <Input placeholder="1.2" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Transform</Label>
-                  <Select defaultValue="normal">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="normal">Normal</SelectItem>
-                      <SelectItem value="uppercase">All Caps</SelectItem>
-                      <SelectItem value="capitalize">Capitalize</SelectItem>
-                      <SelectItem value="lowercase">Lowercase</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Color</Label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      defaultValue="#000000"
-                      className="h-10 w-16 rounded border cursor-pointer"
-                    />
-                    <Input placeholder="#000000" />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+    <div className="space-y-3">
+      {/* Title Typography */}
+      <TypographyControl
+        label="Title Typography"
+        value={getTitleTypography()}
+        onChange={(updates) => {
+          const widgetUpdate: any = {};
+          if (updates.fontFamily !== undefined) widgetUpdate.titleFontFamily = updates.fontFamily;
+          if (updates.fontSize !== undefined) widgetUpdate.titleSize = updates.fontSize;
+          if (updates.fontWeight !== undefined) widgetUpdate.titleFontWeight = updates.fontWeight;
+          if (updates.lineHeight !== undefined) widgetUpdate.titleLineHeight = updates.lineHeight;
+          if (updates.textTransform !== undefined) widgetUpdate.titleTextTransform = updates.textTransform;
+          if (updates.letterSpacing !== undefined) widgetUpdate.titleLetterSpacing = updates.letterSpacing;
+          if (updates.color !== undefined) widgetUpdate.titleColor = updates.color;
+          onChange(widgetUpdate);
+        }}
+        showGlobalStyleSelector={true}
+        globalStyles={globalStyles}
+        availableGlobalStyles={['h1', 'h2', 'h3', 'h4']}
+      />
 
-          {/* Subtitle Styles */}
-          <div className="border rounded-lg">
-            <button
-              type="button"
-              className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-              onClick={() => setSubtitleStyleOpen(!subtitleStyleOpen)}
-            >
-              <span className="text-sm font-medium">Subtitle</span>
-              {subtitleStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </button>
-            {subtitleStyleOpen && (
-              <div className="p-3 pt-0 space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Font</Label>
-                  <Select defaultValue="inter">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="inter">Inter</SelectItem>
-                      <SelectItem value="arial">Arial</SelectItem>
-                      <SelectItem value="helvetica">Helvetica</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Size</Label>
-                  <FontSizeInput
-                    value={{ value: 1, unit: 'rem' }}
-                    onChange={(value: FontSizeValue) => {
-                      // TODO: Wire up to actual widget state
-                    }}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Line Height</Label>
-                  <Input placeholder="1.5" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Transform</Label>
-                  <Select defaultValue="normal">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="normal">Normal</SelectItem>
-                      <SelectItem value="uppercase">All Caps</SelectItem>
-                      <SelectItem value="capitalize">Capitalize</SelectItem>
-                      <SelectItem value="lowercase">Lowercase</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Color</Label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      defaultValue="#666666"
-                      className="h-10 w-16 rounded border cursor-pointer"
-                    />
-                    <Input placeholder="#666666" />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+      {/* Subtitle Typography */}
+      <TypographyControl
+        label="Subtitle Typography"
+        value={getSubtitleTypography()}
+        onChange={(updates) => {
+          const widgetUpdate: any = {};
+          if (updates.fontFamily !== undefined) widgetUpdate.subtitleFontFamily = updates.fontFamily;
+          if (updates.fontSize !== undefined) widgetUpdate.subtitleSize = updates.fontSize;
+          if (updates.fontWeight !== undefined) widgetUpdate.subtitleFontWeight = updates.fontWeight;
+          if (updates.lineHeight !== undefined) widgetUpdate.subtitleLineHeight = updates.lineHeight;
+          if (updates.textTransform !== undefined) widgetUpdate.subtitleTextTransform = updates.textTransform;
+          if (updates.letterSpacing !== undefined) widgetUpdate.subtitleLetterSpacing = updates.letterSpacing;
+          if (updates.color !== undefined) widgetUpdate.subtitleColor = updates.color;
+          onChange(widgetUpdate);
+        }}
+        showGlobalStyleSelector={true}
+        globalStyles={globalStyles}
+        availableGlobalStyles={['h3', 'h4', 'h5', 'h6', 'body']}
+      />
+
+      {/* Button Styling */}
+      {widget.button && (
+        <div className="border rounded-lg p-3">
+          <Label className="text-sm font-semibold mb-3 block">Button Styling</Label>
+          <ButtonControl
+            value={getButtonConfig()}
+            onChange={(updates) => {
+              const widgetUpdate: any = {};
+              
+              if (updates.text !== undefined || updates.url !== undefined || updates.openNewTab !== undefined) {
+                widgetUpdate.button = {
+                  text: updates.text ?? widget.button?.text ?? '',
+                  url: updates.url ?? widget.button?.url ?? '',
+                  openNewTab: updates.openNewTab ?? widget.button?.openNewTab,
+                };
+              }
+              
+              if (updates.width !== undefined) widgetUpdate.buttonWidth = updates.width;
+              if (updates.backgroundColor !== undefined) widgetUpdate.buttonBgColor = updates.backgroundColor;
+              if (updates.textColor !== undefined) widgetUpdate.buttonTextColor = updates.textColor;
+              if (updates.borderRadius !== undefined) widgetUpdate.buttonBorderRadius = updates.borderRadius;
+              if (updates.borderWidth !== undefined) widgetUpdate.buttonBorderWidth = updates.borderWidth;
+              if (updates.borderColor !== undefined) widgetUpdate.buttonBorderColor = updates.borderColor;
+              if (updates.backgroundOpacity !== undefined) widgetUpdate.buttonBgOpacity = updates.backgroundOpacity;
+              if (updates.dropShadow !== undefined) widgetUpdate.buttonDropShadow = updates.dropShadow;
+              if (updates.shadowAmount !== undefined) widgetUpdate.buttonShadowAmount = updates.shadowAmount;
+              if (updates.blurEffect !== undefined) widgetUpdate.buttonBlurEffect = updates.blurEffect;
+              if (updates.fontFamily !== undefined) widgetUpdate.buttonFontFamily = updates.fontFamily;
+              if (updates.fontSize !== undefined) widgetUpdate.buttonFontSize = updates.fontSize;
+              if (updates.fontWeight !== undefined) widgetUpdate.buttonFontWeight = updates.fontWeight;
+              if (updates.lineHeight !== undefined) widgetUpdate.buttonLineHeight = updates.lineHeight;
+              if (updates.textTransform !== undefined) widgetUpdate.buttonTextTransform = updates.textTransform;
+              if (updates.letterSpacing !== undefined) widgetUpdate.buttonLetterSpacing = updates.letterSpacing;
+              if (updates.hover !== undefined) widgetUpdate.buttonHover = updates.hover;
+              if (updates.useGlobalStyle !== undefined) widgetUpdate.buttonUseGlobalStyle = updates.useGlobalStyle;
+              if (updates.globalStyleId !== undefined) widgetUpdate.buttonGlobalStyleId = updates.globalStyleId;
+              
+              onChange(widgetUpdate);
+            }}
+            showGlobalStyleSelector={true}
+            globalStyles={globalStyles}
+          />
         </div>
-      </CollapsibleSection>
-
-      {/* Button */}
-      <CollapsibleSection title="Button" open={buttonStyleOpen} onToggle={() => setButtonStyleOpen(!buttonStyleOpen)}>
-        <div className="space-y-3">
-          {/* State Tabs */}
-          <div className="flex gap-1 p-1 bg-muted rounded-lg">
-            <button
-              type="button"
-              className={cn(
-                "flex-1 px-3 py-1.5 rounded text-sm font-medium transition-colors",
-                buttonStateTab === 'default' ? 'bg-background shadow-sm' : 'hover:bg-background/50'
-              )}
-              onClick={() => setButtonStateTab('default')}
-            >
-              Default
-            </button>
-            <button
-              type="button"
-              className={cn(
-                "flex-1 px-3 py-1.5 rounded text-sm font-medium transition-colors",
-                buttonStateTab === 'hover' ? 'bg-background shadow-sm' : 'hover:bg-background/50'
-              )}
-              onClick={() => setButtonStateTab('hover')}
-            >
-              Hover
-            </button>
-          </div>
-
-          {buttonStateTab === 'default' && (
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label className="text-xs">Width</Label>
-                <Select defaultValue="standard">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="standard">Standard</SelectItem>
-                    <SelectItem value="full">Full Width</SelectItem>
-                    <SelectItem value="custom">Custom (Pixels)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs font-medium">Font</Label>
-                <div className="space-y-2 pl-2 border-l-2">
-                  <div>
-                    <Label className="text-xs">Font Family</Label>
-                    <Select defaultValue="inter">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="inter">Inter</SelectItem>
-                        <SelectItem value="arial">Arial</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Size</Label>
-                    <FontSizeInput
-                      value={{ value: 1, unit: 'rem' }}
-                      onChange={(value: FontSizeValue) => {
-                        // TODO: Wire up to actual widget state
-                      }}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Line Height</Label>
-                    <Input placeholder="1.5" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Transform</Label>
-                    <Select defaultValue="normal">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="normal">Normal</SelectItem>
-                        <SelectItem value="uppercase">All Caps</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Color</Label>
-                    <div className="flex gap-2">
-                      <input type="color" defaultValue="#ffffff" className="h-10 w-16 rounded border cursor-pointer" />
-                      <Input placeholder="#ffffff" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs font-medium">Button Background</Label>
-                <div className="space-y-2 pl-2 border-l-2">
-                  <div>
-                    <Label className="text-xs">Color</Label>
-                    <div className="flex gap-2">
-                      <input type="color" defaultValue="#3b82f6" className="h-10 w-16 rounded border cursor-pointer" />
-                      <Input placeholder="#3b82f6" />
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Opacity: 100%</Label>
-                    <input type="range" min="0" max="100" defaultValue="100" className="w-full" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Border Weight: 0px</Label>
-                    <input type="range" min="0" max="10" defaultValue="0" className="w-full" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Padding: 12px</Label>
-                    <input type="range" min="4" max="32" defaultValue="12" className="w-full" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs font-medium">Effects</Label>
-                <div className="space-y-2 pl-2 border-l-2">
-                  <div>
-                    <Label className="text-xs">Blur Background: 0px</Label>
-                    <input type="range" min="0" max="20" defaultValue="0" className="w-full" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Drop Shadow: 4px</Label>
-                    <input type="range" min="0" max="20" defaultValue="4" className="w-full" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {buttonStateTab === 'hover' && (
-            <div className="p-4 text-center text-sm text-muted-foreground">
-              Hover state customization coming soon...
-            </div>
-          )}
-        </div>
-      </CollapsibleSection>
+      )}
     </div>
   );
 

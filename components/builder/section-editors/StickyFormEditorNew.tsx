@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { StickyFormWidget } from '@/lib/types';
+import { StickyFormWidget, TypographyConfig, ButtonStyleConfig } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,6 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { SectionEditorTabs } from '../SectionEditorTabs';
 import { FontSizeInput, type FontSizeValue } from '../FontSizeInput';
+import { TypographyControl } from '../controls/TypographyControl';
+import { ButtonControl } from '../controls/ButtonControl';
+import { useWebsiteStore } from '@/lib/stores/website';
 
 interface StickyFormEditorNewProps {
   widget: StickyFormWidget;
@@ -16,11 +19,64 @@ interface StickyFormEditorNewProps {
 }
 
 export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewProps) {
+  const { website } = useWebsiteStore();
   const [contentOpen, setContentOpen] = useState(true);
   const [positionOpen, setPositionOpen] = useState(false);
   const [typographyOpen, setTypographyOpen] = useState(false);
   const [buttonStyleOpen, setButtonStyleOpen] = useState(false);
   const [cardStyleOpen, setCardStyleOpen] = useState(false);
+
+  // Helper functions to get typography configs
+  const getHeadingTypography = (): TypographyConfig => {
+    return (widget as any).headingTypography || {
+      fontFamily: 'Inter',
+      fontSize: { value: 1.25, unit: 'rem' },
+      fontWeight: '700',
+      lineHeight: '1.2',
+      textTransform: 'none',
+      letterSpacing: '0em',
+      color: '#1f2937',
+    };
+  };
+
+  const getDescriptionTypography = (): TypographyConfig => {
+    return (widget as any).descriptionTypography || {
+      fontFamily: 'Inter',
+      fontSize: { value: 0.875, unit: 'rem' },
+      fontWeight: '400',
+      lineHeight: '1.5',
+      textTransform: 'none',
+      letterSpacing: '0em',
+      color: '#6b7280',
+    };
+  };
+
+  const getSubmitButton = (): ButtonStyleConfig => {
+    return (widget as any).submitButton || {
+      text: widget.buttonText || 'Submit',
+      url: '',
+      width: 'full',
+      backgroundColor: '#10b981',
+      textColor: '#ffffff',
+      borderRadius: 8,
+      borderWidth: 0,
+      backgroundOpacity: 100,
+      dropShadow: true,
+      shadowAmount: 4,
+      blurEffect: 0,
+      fontFamily: 'Inter',
+      fontSize: { value: 14, unit: 'px' },
+      fontWeight: '500',
+      lineHeight: '1.2',
+      textTransform: 'none',
+      hover: {
+        backgroundColor: '#059669',
+        textColor: '#ffffff',
+        dropShadow: true,
+        shadowAmount: 6,
+      },
+    };
+  };
 
   const CollapsibleSection = ({ title, open, onToggle, children }: any) => (
     <div className="border rounded-lg">
@@ -94,40 +150,54 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
 
   const styleTab = (
     <div className="space-y-2">
-      <CollapsibleSection title="Typography" open={typographyOpen} onToggle={() => setTypographyOpen(!typographyOpen)}>
-        <div className="space-y-3">
-          <div className="space-y-2">
-            <Label className="text-xs">Heading Font Size</Label>
-            <FontSizeInput value={(widget as any).headingSize || 20} onChange={(value: FontSizeValue) => onChange({ headingSize: value.value } as any)} />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-xs">Heading Color</Label>
-            <div className="flex gap-2">
-              <input type="color" value={(widget as any).headingColor || '#1f2937'} onChange={(e) => onChange({ headingColor: e.target.value } as any)} className="h-10 w-16 rounded border cursor-pointer" />
-              <Input value={(widget as any).headingColor || '#1f2937'} onChange={(e) => onChange({ headingColor: e.target.value } as any)} placeholder="#1f2937" />
-            </div>
-          </div>
-        </div>
-      </CollapsibleSection>
+      {/* Heading Typography */}
+      <TypographyControl
+        label="Heading Typography"
+        value={getHeadingTypography()}
+        onChange={(updates) => {
+          onChange({
+            headingTypography: {
+              ...getHeadingTypography(),
+              ...updates,
+            } as any,
+          });
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['h3', 'h4']}
+      />
 
-      <CollapsibleSection title="Button Style" open={buttonStyleOpen} onToggle={() => setButtonStyleOpen(!buttonStyleOpen)}>
-        <div className="space-y-3">
-          <div className="space-y-2">
-            <Label>Background Color</Label>
-            <div className="flex gap-2">
-              <input type="color" value={(widget as any).buttonBackgroundColor || '#10b981'} onChange={(e) => onChange({ buttonBackgroundColor: e.target.value } as any)} className="h-10 w-16 rounded border cursor-pointer" />
-              <Input value={(widget as any).buttonBackgroundColor || '#10b981'} onChange={(e) => onChange({ buttonBackgroundColor: e.target.value } as any)} placeholder="#10b981" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Text Color</Label>
-            <div className="flex gap-2">
-              <input type="color" value={(widget as any).buttonTextColor || '#ffffff'} onChange={(e) => onChange({ buttonTextColor: e.target.value } as any)} className="h-10 w-16 rounded border cursor-pointer" />
-              <Input value={(widget as any).buttonTextColor || '#ffffff'} onChange={(e) => onChange({ buttonTextColor: e.target.value } as any)} placeholder="#ffffff" />
-            </div>
-          </div>
-        </div>
-      </CollapsibleSection>
+      {/* Description Typography */}
+      <TypographyControl
+        label="Description Typography"
+        value={getDescriptionTypography()}
+        onChange={(updates) => {
+          onChange({
+            descriptionTypography: {
+              ...getDescriptionTypography(),
+              ...updates,
+            } as any,
+          });
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['body']}
+      />
+
+      {/* Submit Button */}
+      <ButtonControl
+        label="Submit Button"
+        value={getSubmitButton()}
+        onChange={(updates) => {
+          const currentButton = getSubmitButton();
+          onChange({
+            submitButton: {
+              ...currentButton,
+              ...updates,
+            } as any,
+            buttonText: updates.text || currentButton.text,
+          });
+        }}
+        showGlobalStyleSelector={true}
+      />
 
       <CollapsibleSection title="Card Style" open={cardStyleOpen} onToggle={() => setCardStyleOpen(!cardStyleOpen)}>
         <div className="space-y-3">

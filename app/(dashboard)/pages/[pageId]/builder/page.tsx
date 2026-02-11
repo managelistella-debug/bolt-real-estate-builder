@@ -178,10 +178,10 @@ export default function PageBuilderPage({ params }: { params: { pageId: string }
         {/* Floating Layers Panel */}
         {showLayersPanel && (
           <FloatingLayersPanel
-            sections={currentPage.sections}
-            pageId={currentPage.id}
+              sections={currentPage.sections}
+              pageId={currentPage.id}
             onClose={() => setShowLayersPanel(false)}
-          />
+            />
         )}
       </div>
 

@@ -7,8 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GlobalStyles, FontPair } from '@/lib/types';
+import { GlobalStyles, FontPair, FontSizeValue } from '@/lib/types';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { TypographyControl } from './controls/TypographyControl';
+import { ButtonControl } from './controls/ButtonControl';
 
 interface GlobalStylesDialogProps {
   open: boolean;
@@ -30,14 +32,67 @@ const FONT_PAIRS: FontPair[] = [
 
 export function GlobalStylesDialog({ open, onOpenChange, globalStyles, onUpdate }: GlobalStylesDialogProps) {
   const [activeTab, setActiveTab] = useState('colors');
-  const [h1Expanded, setH1Expanded] = useState(false);
-  const [h2Expanded, setH2Expanded] = useState(false);
-  const [h3Expanded, setH3Expanded] = useState(false);
-  const [bodyExpanded, setBodyExpanded] = useState(false);
+  const [button1Expanded, setButton1Expanded] = useState(true);
+  const [button2Expanded, setButton2Expanded] = useState(false);
+
+  // Ensure buttons structure exists
+  const ensureButtons = () => {
+    if (!globalStyles.buttons) {
+      return {
+        button1: createDefaultButton(),
+        button2: createDefaultButton('#10b981', '#ffffff'),
+      };
+    }
+    return globalStyles.buttons;
+  };
+
+  const createDefaultButton = (bgColor = '#3b82f6', textColor = '#ffffff') => ({
+    width: 'standard' as const,
+    backgroundColor: bgColor,
+    textColor: textColor,
+    borderRadius: 42,
+    borderWidth: 0,
+    backgroundOpacity: 100,
+    dropShadow: true,
+    shadowAmount: 4,
+    blurEffect: 0,
+    fontFamily: 'Inter',
+    fontSize: { value: 16, unit: 'px' as const } as FontSizeValue,
+    fontWeight: '600',
+    lineHeight: '1.5',
+    textTransform: 'none' as const,
+    hover: {
+      backgroundOpacity: 90,
+    },
+  });
+
+  // Ensure all headings exist (H1-H6)
+  const ensureHeadings = () => {
+    const defaultHeading = (size: number, weight: string) => ({
+      fontFamily: globalStyles.fontPair.heading,
+      fontSize: { value: size, unit: 'px' as const } as FontSizeValue,
+      fontWeight: weight,
+      lineHeight: '1.2',
+      textTransform: 'none' as const,
+      color: '#1f2937',
+    });
+
+    return {
+      h1: globalStyles.headings.h1 || defaultHeading(48, '700'),
+      h2: globalStyles.headings.h2 || defaultHeading(36, '700'),
+      h3: globalStyles.headings.h3 || defaultHeading(30, '600'),
+      h4: globalStyles.headings.h4 || defaultHeading(24, '600'),
+      h5: globalStyles.headings.h5 || defaultHeading(20, '600'),
+      h6: globalStyles.headings.h6 || defaultHeading(18, '600'),
+    };
+  };
+
+  const buttons = ensureButtons();
+  const headings = ensureHeadings();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Global Styles</DialogTitle>
           <p className="text-sm text-muted-foreground">
@@ -148,309 +203,129 @@ export function GlobalStylesDialog({ open, onOpenChange, globalStyles, onUpdate 
               </p>
             </div>
 
-            <div className="space-y-2">
-              {/* H1 Heading */}
-              <div className="border rounded-lg">
-                <button
-                  className="w-full flex items-center justify-between p-3 hover:bg-muted/50"
-                  onClick={() => setH1Expanded(!h1Expanded)}
-                >
-                  <span className="font-medium">H1 - Main Title (Hero)</span>
-                  {h1Expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                </button>
-                {h1Expanded && (
-                  <div className="p-4 border-t space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-xs">Font Size</Label>
-                        <Input
-                          value={globalStyles.headings.h1.fontSize}
-                          onChange={(e) => onUpdate({
-                            headings: {
-                              ...globalStyles.headings,
-                              h1: { ...globalStyles.headings.h1, fontSize: e.target.value }
-                            }
-                          })}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Font Weight</Label>
-                        <Select
-                          value={globalStyles.headings.h1.fontWeight}
-                          onValueChange={(value) => onUpdate({
-                            headings: {
-                              ...globalStyles.headings,
-                              h1: { ...globalStyles.headings.h1, fontWeight: value }
-                            }
-                          })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="400">Regular (400)</SelectItem>
-                            <SelectItem value="500">Medium (500)</SelectItem>
-                            <SelectItem value="600">Semibold (600)</SelectItem>
-                            <SelectItem value="700">Bold (700)</SelectItem>
-                            <SelectItem value="800">Extra Bold (800)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="text-muted-foreground text-xs">
-                      Used for: Hero section main titles
-                    </div>
-                  </div>
-                )}
-              </div>
+            <div className="space-y-3">
+              {/* H1 */}
+              <TypographyControl
+                label="H1 - Main Title (Hero)"
+                value={headings.h1}
+                onChange={(updates) => onUpdate({
+                  headings: { ...headings, h1: { ...headings.h1, ...updates } }
+                })}
+                showGlobalStyleSelector={false}
+              />
 
-              {/* H2 Heading */}
-              <div className="border rounded-lg">
-                <button
-                  className="w-full flex items-center justify-between p-3 hover:bg-muted/50"
-                  onClick={() => setH2Expanded(!h2Expanded)}
-                >
-                  <span className="font-medium">H2 - Section Headers</span>
-                  {h2Expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                </button>
-                {h2Expanded && (
-                  <div className="p-4 border-t space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-xs">Font Size</Label>
-                        <Input
-                          value={globalStyles.headings.h2.fontSize}
-                          onChange={(e) => onUpdate({
-                            headings: {
-                              ...globalStyles.headings,
-                              h2: { ...globalStyles.headings.h2, fontSize: e.target.value }
-                            }
-                          })}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Font Weight</Label>
-                        <Select
-                          value={globalStyles.headings.h2.fontWeight}
-                          onValueChange={(value) => onUpdate({
-                            headings: {
-                              ...globalStyles.headings,
-                              h2: { ...globalStyles.headings.h2, fontWeight: value }
-                            }
-                          })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="400">Regular (400)</SelectItem>
-                            <SelectItem value="500">Medium (500)</SelectItem>
-                            <SelectItem value="600">Semibold (600)</SelectItem>
-                            <SelectItem value="700">Bold (700)</SelectItem>
-                            <SelectItem value="800">Extra Bold (800)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="text-muted-foreground text-xs">
-                      Used for: Main headers in all sections (default)
-                    </div>
-                  </div>
-                )}
-              </div>
+              {/* H2 */}
+              <TypographyControl
+                label="H2 - Section Headers"
+                value={headings.h2}
+                onChange={(updates) => onUpdate({
+                  headings: { ...headings, h2: { ...headings.h2, ...updates } }
+                })}
+                showGlobalStyleSelector={false}
+              />
 
-              {/* H3 Heading */}
-              <div className="border rounded-lg">
-                <button
-                  className="w-full flex items-center justify-between p-3 hover:bg-muted/50"
-                  onClick={() => setH3Expanded(!h3Expanded)}
-                >
-                  <span className="font-medium">H3 - Subheaders</span>
-                  {h3Expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                </button>
-                {h3Expanded && (
-                  <div className="p-4 border-t space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-xs">Font Size</Label>
-                        <Input
-                          value={globalStyles.headings.h3.fontSize}
-                          onChange={(e) => onUpdate({
-                            headings: {
-                              ...globalStyles.headings,
-                              h3: { ...globalStyles.headings.h3, fontSize: e.target.value }
-                            }
-                          })}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Font Weight</Label>
-                        <Select
-                          value={globalStyles.headings.h3.fontWeight}
-                          onValueChange={(value) => onUpdate({
-                            headings: {
-                              ...globalStyles.headings,
-                              h3: { ...globalStyles.headings.h3, fontWeight: value }
-                            }
-                          })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="400">Regular (400)</SelectItem>
-                            <SelectItem value="500">Medium (500)</SelectItem>
-                            <SelectItem value="600">Semibold (600)</SelectItem>
-                            <SelectItem value="700">Bold (700)</SelectItem>
-                            <SelectItem value="800">Extra Bold (800)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="text-muted-foreground text-xs">
-                      Used for: Subheaders within sections
-                    </div>
-                  </div>
-                )}
-              </div>
+              {/* H3 */}
+              <TypographyControl
+                label="H3 - Subheaders"
+                value={headings.h3}
+                onChange={(updates) => onUpdate({
+                  headings: { ...headings, h3: { ...headings.h3, ...updates } }
+                })}
+                showGlobalStyleSelector={false}
+              />
 
-              {/* Body Text */}
-              <div className="border rounded-lg">
-                <button
-                  className="w-full flex items-center justify-between p-3 hover:bg-muted/50"
-                  onClick={() => setBodyExpanded(!bodyExpanded)}
-                >
-                  <span className="font-medium">Body Text</span>
-                  {bodyExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                </button>
-                {bodyExpanded && (
-                  <div className="p-4 border-t space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-xs">Font Size</Label>
-                        <Input
-                          value={globalStyles.body.fontSize}
-                          onChange={(e) => onUpdate({
-                            body: { ...globalStyles.body, fontSize: e.target.value }
-                          })}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Font Weight</Label>
-                        <Select
-                          value={globalStyles.body.fontWeight}
-                          onValueChange={(value) => onUpdate({
-                            body: { ...globalStyles.body, fontWeight: value }
-                          })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="400">Regular (400)</SelectItem>
-                            <SelectItem value="500">Medium (500)</SelectItem>
-                            <SelectItem value="600">Semibold (600)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="text-muted-foreground text-xs">
-                      Used for: Paragraphs and body content
-                    </div>
-                  </div>
-                )}
-              </div>
+              {/* H4 */}
+              <TypographyControl
+                label="H4 - Small Headers"
+                value={headings.h4}
+                onChange={(updates) => onUpdate({
+                  headings: { ...headings, h4: { ...headings.h4, ...updates } }
+                })}
+                showGlobalStyleSelector={false}
+              />
+
+              {/* H5 */}
+              <TypographyControl
+                label="H5 - Minor Headers"
+                value={headings.h5}
+                onChange={(updates) => onUpdate({
+                  headings: { ...headings, h5: { ...headings.h5, ...updates } }
+                })}
+                showGlobalStyleSelector={false}
+              />
+
+              {/* H6 */}
+              <TypographyControl
+                label="H6 - Smallest Headers"
+                value={headings.h6}
+                onChange={(updates) => onUpdate({
+                  headings: { ...headings, h6: { ...headings.h6, ...updates } }
+                })}
+                showGlobalStyleSelector={false}
+              />
+
+              {/* Body */}
+              <TypographyControl
+                label="Body Text"
+                value={globalStyles.body}
+                onChange={(updates) => onUpdate({
+                  body: { ...globalStyles.body, ...updates }
+                })}
+                showGlobalStyleSelector={false}
+              />
             </div>
           </TabsContent>
 
           {/* Buttons Tab */}
           <TabsContent value="buttons" className="space-y-4 pt-4">
-            <div>
-              <Label>Button Variant</Label>
-              <Select
-                value={globalStyles.button.variant}
-                onValueChange={(value: 'solid' | 'outline' | 'ghost') => onUpdate({
-                  button: { ...globalStyles.button, variant: value }
-                })}
+            <p className="text-sm text-muted-foreground">
+              Create two button presets that can be used across all sections.
+            </p>
+
+            {/* Button Style 1 */}
+            <div className="border rounded-lg">
+              <button
+                type="button"
+                className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
+                onClick={() => setButton1Expanded(!button1Expanded)}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="solid">Solid</SelectItem>
-                  <SelectItem value="outline">Outline</SelectItem>
-                  <SelectItem value="ghost">Ghost</SelectItem>
-                </SelectContent>
-              </Select>
+                <span className="font-medium">Button Style 1</span>
+                {button1Expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </button>
+              {button1Expanded && (
+                <div className="p-4 border-t">
+                  <ButtonControl
+                    value={buttons.button1}
+                    onChange={(updates) => onUpdate({
+                      buttons: { ...buttons, button1: { ...buttons.button1, ...updates } }
+                    })}
+                    showGlobalStyleSelector={false}
+                  />
+                </div>
+              )}
             </div>
 
-            <div>
-              <Label>Button Roundness</Label>
-              <Select
-                value={globalStyles.button.rounded}
-                onValueChange={(value: 'none' | 'sm' | 'md' | 'lg' | 'full') => onUpdate({
-                  button: { ...globalStyles.button, rounded: value }
-                })}
+            {/* Button Style 2 */}
+            <div className="border rounded-lg">
+              <button
+                type="button"
+                className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
+                onClick={() => setButton2Expanded(!button2Expanded)}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None (Square)</SelectItem>
-                  <SelectItem value="sm">Small (4px)</SelectItem>
-                  <SelectItem value="md">Medium (8px)</SelectItem>
-                  <SelectItem value="lg">Large (12px)</SelectItem>
-                  <SelectItem value="full">Full (Pill)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="p-4 border rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground mb-3">Button Preview</p>
-              <div className="flex gap-3 flex-wrap">
-                <Button
-                  className={`
-                    ${globalStyles.button.variant === 'solid' ? 'bg-primary text-white' : ''}
-                    ${globalStyles.button.variant === 'outline' ? 'border-2 border-primary bg-transparent text-primary' : ''}
-                    ${globalStyles.button.variant === 'ghost' ? 'bg-transparent text-primary' : ''}
-                    ${globalStyles.button.rounded === 'none' ? 'rounded-none' : ''}
-                    ${globalStyles.button.rounded === 'sm' ? 'rounded-sm' : ''}
-                    ${globalStyles.button.rounded === 'md' ? 'rounded-md' : ''}
-                    ${globalStyles.button.rounded === 'lg' ? 'rounded-lg' : ''}
-                    ${globalStyles.button.rounded === 'full' ? 'rounded-full' : ''}
-                  `}
-                  style={{ 
-                    backgroundColor: globalStyles.button.variant === 'solid' ? globalStyles.colors.primary : 'transparent',
-                    borderColor: globalStyles.button.variant !== 'solid' ? globalStyles.colors.primary : undefined,
-                    color: globalStyles.button.variant === 'solid' ? '#ffffff' : globalStyles.colors.primary,
-                  }}
-                >
-                  Primary Button
-                </Button>
-                <Button
-                  className={`
-                    ${globalStyles.button.variant === 'solid' ? 'bg-secondary text-white' : ''}
-                    ${globalStyles.button.variant === 'outline' ? 'border-2 border-secondary bg-transparent text-secondary' : ''}
-                    ${globalStyles.button.variant === 'ghost' ? 'bg-transparent text-secondary' : ''}
-                    ${globalStyles.button.rounded === 'none' ? 'rounded-none' : ''}
-                    ${globalStyles.button.rounded === 'sm' ? 'rounded-sm' : ''}
-                    ${globalStyles.button.rounded === 'md' ? 'rounded-md' : ''}
-                    ${globalStyles.button.rounded === 'lg' ? 'rounded-lg' : ''}
-                    ${globalStyles.button.rounded === 'full' ? 'rounded-full' : ''}
-                  `}
-                  style={{ 
-                    backgroundColor: globalStyles.button.variant === 'solid' ? globalStyles.colors.secondary : 'transparent',
-                    borderColor: globalStyles.button.variant !== 'solid' ? globalStyles.colors.secondary : undefined,
-                    color: globalStyles.button.variant === 'solid' ? '#ffffff' : globalStyles.colors.secondary,
-                  }}
-                >
-                  Secondary Button
-                </Button>
-              </div>
-            </div>
-
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900">
-              <strong>Note:</strong> These button styles will be applied by default to all buttons in sections. You can still override them individually in each section's editor.
+                <span className="font-medium">Button Style 2</span>
+                {button2Expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </button>
+              {button2Expanded && (
+                <div className="p-4 border-t">
+                  <ButtonControl
+                    value={buttons.button2}
+                    onChange={(updates) => onUpdate({
+                      buttons: { ...buttons, button2: { ...buttons.button2, ...updates } }
+                    })}
+                    showGlobalStyleSelector={false}
+                  />
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>

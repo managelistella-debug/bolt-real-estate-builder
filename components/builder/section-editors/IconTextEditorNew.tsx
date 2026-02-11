@@ -10,8 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Trash2, ChevronDown, ChevronRight, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 import { SectionEditorTabs } from '../SectionEditorTabs';
 import { FontSizeInput, type FontSizeValue } from '../FontSizeInput';
+import { TypographyControl } from '../controls/TypographyControl';
+import { ButtonControl } from '../controls/ButtonControl';
 import { IconPicker } from '../IconPicker';
 import { cn } from '@/lib/utils';
+import { useWebsiteStore } from '@/lib/stores/website';
 
 interface IconTextEditorNewProps {
   widget: IconTextWidget;
@@ -19,6 +22,9 @@ interface IconTextEditorNewProps {
 }
 
 export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) {
+  const { currentWebsite } = useWebsiteStore();
+  const globalStyles = currentWebsite?.globalStyles;
+
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -84,6 +90,34 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
     : defaultLayout;
 
   const background = widget.background || { type: 'color', color: 'transparent', opacity: 100, blur: 0 };
+
+  // Get typography configs
+  const getSectionHeaderTypography = () => ({
+    fontFamily: (widget as any).headerFontFamily || 'Inter',
+    fontSize: (widget as any).headerFontSize || widget.headingSize || { value: 36, unit: 'px' as const },
+    fontWeight: (widget as any).headerFontWeight || widget.headingWeight || '700',
+    lineHeight: (widget as any).headerLineHeight || '1.2',
+    textTransform: (widget as any).headerTextTransform || 'none' as const,
+    color: widget.headingColor || '#1f2937',
+  });
+
+  const getItemTitleTypography = () => ({
+    fontFamily: (widget as any).itemTitleFontFamily || 'Inter',
+    fontSize: (widget as any).itemTitleFontSize || widget.titleFontSize || { value: 20, unit: 'px' as const },
+    fontWeight: (widget as any).itemTitleFontWeight || widget.titleFontWeight || '600',
+    lineHeight: (widget as any).itemTitleLineHeight || '1.4',
+    textTransform: (widget as any).itemTitleTextTransform || 'none' as const,
+    color: widget.titleColor || '#1f2937',
+  });
+
+  const getItemDescriptionTypography = () => ({
+    fontFamily: (widget as any).itemDescFontFamily || 'Inter',
+    fontSize: (widget as any).itemDescFontSize || widget.descriptionFontSize || { value: 16, unit: 'px' as const },
+    fontWeight: (widget as any).itemDescFontWeight || widget.descriptionFontWeight || '400',
+    lineHeight: (widget as any).itemDescLineHeight || '1.6',
+    textTransform: (widget as any).itemDescTextTransform || 'none' as const,
+    color: widget.descriptionColor || '#6b7280',
+  });
 
   const addItem = () => {
     if (widget.items.length >= 20) return;
@@ -376,129 +410,73 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
   // Style Tab
   const styleTab = (
     <div className="space-y-2">
-      {/* Typography */}
-      <CollapsibleSection title="Typography" open={typographyOpen} onToggle={() => setTypographyOpen(!typographyOpen)}>
-        <div className="space-y-3">
-          {/* Section Header Style */}
-          {widget.sectionHeading && (
-            <div className="border rounded-lg">
-              <button
-                type="button"
-                className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-                onClick={() => setSectionHeaderStyleOpen(!sectionHeaderStyleOpen)}
-              >
-                <span className="text-sm font-medium">Section Header</span>
-                {sectionHeaderStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-              </button>
-              {sectionHeaderStyleOpen && (
-                <div className="p-3 pt-0 space-y-3">
-                  <div className="space-y-2">
-                    <Label className="text-xs">Font Size</Label>
-                    <FontSizeInput
-                      value={(widget as any).sectionHeadingSize || 32}
-                      onChange={(value: FontSizeValue) => onChange({ sectionHeadingSize: value.value } as any)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Color</Label>
-                    <div className="flex gap-2">
-                      <input
-                        type="color"
-                        value={widget.sectionHeadingColor || '#1f2937'}
-                        onChange={(e) => onChange({ sectionHeadingColor: e.target.value })}
-                        className="h-10 w-16 rounded border cursor-pointer"
-                      />
-                      <Input
-                        value={widget.sectionHeadingColor || '#1f2937'}
-                        onChange={(e) => onChange({ sectionHeadingColor: e.target.value })}
-                        placeholder="#1f2937"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+      {/* Section Header Typography */}
+      {widget.sectionHeading && (
+        <TypographyControl
+          label="Section Header Typography"
+          value={getSectionHeaderTypography()}
+          onChange={(updates) => {
+            onChange({
+              headerFontFamily: updates.fontFamily,
+              headerFontSize: updates.fontSize as any,
+              headingSize: updates.fontSize, // Keep both for compatibility
+              headerFontWeight: updates.fontWeight,
+              headingWeight: updates.fontWeight, // Keep both for compatibility
+              headerLineHeight: updates.lineHeight,
+              headerTextTransform: updates.textTransform,
+              headingColor: updates.color,
+              sectionHeadingColor: updates.color, // Legacy compatibility
+              sectionHeadingSize: updates.fontSize, // Legacy compatibility
+            } as any);
+          }}
+          showGlobalStyleSelector={true}
+          availableGlobalStyles={['h2', 'h3', 'h4']}
+        />
+      )}
 
-          {/* Item Heading Style */}
-          <div className="border rounded-lg">
-            <button
-              type="button"
-              className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-              onClick={() => setItemHeadingStyleOpen(!itemHeadingStyleOpen)}
-            >
-              <span className="text-sm font-medium">Item Heading</span>
-              {itemHeadingStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </button>
-            {itemHeadingStyleOpen && (
-              <div className="p-3 pt-0 space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Size</Label>
-                  <FontSizeInput
-                    value={(widget as any).itemHeadingSize || 18}
-                    onChange={(value: FontSizeValue) => onChange({ itemHeadingSize: value.value } as any)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Default Color</Label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={(widget as any).itemHeadingColor || '#1f2937'}
-                      onChange={(e) => onChange({ itemHeadingColor: e.target.value } as any)}
-                      className="h-10 w-16 rounded border cursor-pointer"
-                    />
-                    <Input
-                      value={(widget as any).itemHeadingColor || '#1f2937'}
-                      onChange={(e) => onChange({ itemHeadingColor: e.target.value } as any)}
-                      placeholder="#1f2937"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+      {/* Item Title Typography */}
+      <TypographyControl
+        label="Item Title Typography"
+        value={getItemTitleTypography()}
+        onChange={(updates) => {
+          onChange({
+            itemTitleFontFamily: updates.fontFamily,
+            itemTitleFontSize: updates.fontSize as any,
+            titleFontSize: updates.fontSize, // Keep both for compatibility
+            itemTitleFontWeight: updates.fontWeight,
+            titleFontWeight: updates.fontWeight, // Keep both for compatibility
+            itemTitleLineHeight: updates.lineHeight,
+            itemTitleTextTransform: updates.textTransform,
+            titleColor: updates.color,
+            itemHeadingColor: updates.color, // Legacy compatibility
+            itemHeadingSize: updates.fontSize, // Legacy compatibility
+          } as any);
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['h3', 'h4', 'h5']}
+      />
 
-          {/* Item Subheading Style */}
-          <div className="border rounded-lg">
-            <button
-              type="button"
-              className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-              onClick={() => setItemSubheadingStyleOpen(!itemSubheadingStyleOpen)}
-            >
-              <span className="text-sm font-medium">Item Subheading</span>
-              {itemSubheadingStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </button>
-            {itemSubheadingStyleOpen && (
-              <div className="p-3 pt-0 space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Size</Label>
-                  <FontSizeInput
-                    value={(widget as any).itemSubheadingSize || 14}
-                    onChange={(value: FontSizeValue) => onChange({ itemSubheadingSize: value.value } as any)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Default Color</Label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={(widget as any).itemSubheadingColor || '#6b7280'}
-                      onChange={(e) => onChange({ itemSubheadingColor: e.target.value } as any)}
-                      className="h-10 w-16 rounded border cursor-pointer"
-                    />
-                    <Input
-                      value={(widget as any).itemSubheadingColor || '#6b7280'}
-                      onChange={(e) => onChange({ itemSubheadingColor: e.target.value } as any)}
-                      placeholder="#6b7280"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </CollapsibleSection>
+      {/* Item Description Typography */}
+      <TypographyControl
+        label="Item Description Typography"
+        value={getItemDescriptionTypography()}
+        onChange={(updates) => {
+          onChange({
+            itemDescFontFamily: updates.fontFamily,
+            itemDescFontSize: updates.fontSize as any,
+            descriptionFontSize: updates.fontSize, // Keep both for compatibility
+            itemDescFontWeight: updates.fontWeight,
+            descriptionFontWeight: updates.fontWeight, // Keep both for compatibility
+            itemDescLineHeight: updates.lineHeight,
+            itemDescTextTransform: updates.textTransform,
+            descriptionColor: updates.color,
+            itemSubheadingColor: updates.color, // Legacy compatibility
+            itemSubheadingSize: updates.fontSize, // Legacy compatibility
+          } as any);
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['body']}
+      />
 
       {/* Icon Style */}
       <CollapsibleSection title="Icon Style" open={iconStyleOpen} onToggle={() => setIconStyleOpen(!iconStyleOpen)}>

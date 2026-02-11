@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { Lightbox } from './Lightbox';
 import { getIcon } from '@/lib/icons/iconLibrary';
 import { ChevronRight, ChevronLeft, ChevronDown, Plus, Minus, ArrowRight, Star } from 'lucide-react';
+import { typographyToCSS, buttonToCSS, getButtonWidthStyle, fontSizeToCSS } from '@/lib/typography-utils';
 
 interface LivePreviewProps {
   page: Page;
@@ -163,25 +164,32 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
   const bgOpacity = (widget.background?.opacity || 100) / 100;
   const bgBlur = widget.background?.blur || 0;
   
-  const textColor = widget.textColor || widget.textStyles?.title?.color || '#ffffff';
-  const fontFamily = widget.textStyles?.title?.fontFamily || widget.textStyles?.subtitle?.fontFamily || 'Inter';
-  const titleSize = widget.textStyles?.title?.size || '3rem';
-  const titleWeight = widget.textStyles?.title?.weight || '700';
-  const titleLineHeight = widget.textStyles?.title?.lineHeight || '1.2';
-  const titleLetterSpacing = widget.textStyles?.title?.letterSpacing || '-0.02em';
-  const subtitleSize = widget.textStyles?.subtitle?.size || '1.25rem';
-  const subtitleWeight = widget.textStyles?.subtitle?.weight || '400';
-  const subtitleLineHeight = widget.textStyles?.subtitle?.lineHeight || '1.6';
+  // Get typography styles using the new TypographyConfig structure
+  const titleStyles = widget.textStyles?.title 
+    ? typographyToCSS(widget.textStyles.title)
+    : {
+        fontFamily: 'Inter',
+        fontSize: '3rem',
+        fontWeight: '700',
+        lineHeight: '1.2',
+        letterSpacing: '-0.02em',
+        color: widget.textColor || '#ffffff',
+      };
   
-  const buttonRadius = widget.button?.radius || 8;
-  const buttonBgColor = widget.button?.bgColor || '#3b82f6';
-  const buttonTextColor = widget.button?.textColor || '#ffffff';
-  const buttonBgOpacity = widget.button?.bgOpacity !== undefined ? widget.button.bgOpacity / 100 : 1;
-  const buttonBlurAmount = widget.button?.blurAmount || 0;
-  const buttonHasShadow = widget.button?.hasShadow || false;
-  const buttonShadowAmount = widget.button?.shadowAmount || 4;
-  const buttonStrokeWidth = widget.button?.strokeWidth || 0;
-  const buttonStrokeColor = widget.button?.strokeColor || '#000000';
+  const subtitleStyles = widget.textStyles?.subtitle
+    ? typographyToCSS(widget.textStyles.subtitle)
+    : {
+        fontFamily: 'Inter',
+        fontSize: '1.25rem',
+        fontWeight: '400',
+        lineHeight: '1.6',
+        color: widget.textColor || '#ffffff',
+      };
+
+  // Get button styles using the new ButtonStyleConfig structure
+  const buttonStyles = widget.button ? buttonToCSS(widget.button, false) : {};
+  const buttonHoverStyles = widget.button ? buttonToCSS(widget.button, true) : {};
+  const buttonWidthStyles = widget.button ? getButtonWidthStyle(widget.button) : {};
 
   const getBackgroundStyle = () => {
     if (bgType === 'gradient' && widget.background?.gradient?.enabled) {
@@ -191,25 +199,6 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
       return `linear-gradient(${angle}deg, ${colorStart}, ${colorEnd})`;
     }
     return bgColor;
-  };
-
-  // Helper to convert hex color to rgba
-  const hexToRgba = (hex: string, alpha: number) => {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  };
-
-  const buttonStyle: React.CSSProperties = {
-    borderRadius: `${buttonRadius}px`,
-    backgroundColor: hexToRgba(buttonBgColor, buttonBgOpacity),
-    color: buttonTextColor,
-    padding: '12px 32px',
-    border: buttonStrokeWidth > 0 ? `${buttonStrokeWidth}px solid ${buttonStrokeColor}` : 'none',
-    boxShadow: buttonHasShadow ? `0 ${buttonShadowAmount}px ${buttonShadowAmount * 2}px rgba(0,0,0,0.1)` : 'none',
-    backdropFilter: buttonBlurAmount > 0 ? `blur(${buttonBlurAmount}px)` : 'none',
-    WebkitBackdropFilter: buttonBlurAmount > 0 ? `blur(${buttonBlurAmount}px)` : 'none',
   };
 
   return (
@@ -271,7 +260,6 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
           horizontal === 'right' && 'text-right'
         )}
         style={{
-          color: textColor,
           paddingTop: `${padding.top}px`,
           paddingRight: `${padding.right}px`,
           paddingBottom: `${padding.bottom}px`,
@@ -284,14 +272,7 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
           return (
             <TitleTag 
               className="mb-4"
-              style={{ 
-                fontFamily,
-                fontSize: titleSize,
-                fontWeight: titleWeight,
-                lineHeight: titleLineHeight,
-                letterSpacing: titleLetterSpacing,
-                color: textColor,
-              }}
+              style={titleStyles}
             >
               {title}
             </TitleTag>
@@ -303,13 +284,7 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
           return (
             <SubtitleTag 
               className="mb-8"
-              style={{ 
-                fontFamily,
-                fontSize: subtitleSize,
-                fontWeight: subtitleWeight,
-                lineHeight: subtitleLineHeight,
-                color: textColor,
-              }}
+              style={subtitleStyles}
             >
               {subtitle}
             </SubtitleTag>
@@ -317,8 +292,19 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
         })()}
         <a
           href={buttonUrl}
-          className="inline-block font-medium transition-all hover:opacity-90"
-          style={buttonStyle}
+          className="inline-block"
+          style={{
+            ...buttonStyles,
+            ...buttonWidthStyles,
+            padding: '12px 32px',
+            transition: 'all 0.3s ease',
+          }}
+          onMouseEnter={(e) => {
+            Object.assign(e.currentTarget.style, buttonHoverStyles);
+          }}
+          onMouseLeave={(e) => {
+            Object.assign(e.currentTarget.style, { ...buttonStyles, ...buttonWidthStyles, padding: '12px 32px' });
+          }}
         >
           {buttonText}
         </a>
@@ -440,6 +426,48 @@ function HeadlineSection({ widget }: { widget: HeadlineWidget }) {
   else if (heightType === 'percentage') height = `${heightValue}%`;
   else if (heightType === 'pixels') height = `${heightValue}px`;
   
+  // Get title typography
+  const getTitleFontSize = () => {
+    const fontSize = widget.titleSize || (widget as any).titleFontSize;
+    if (!fontSize) return '48px';
+    if (typeof fontSize === 'object' && fontSize.value !== undefined) {
+      return `${fontSize.value}${fontSize.unit}`;
+    }
+    if (typeof fontSize === 'number') return `${fontSize}px`;
+    return String(fontSize);
+  };
+
+  const titleStyles: React.CSSProperties = {
+    fontFamily: widget.titleFontFamily || 'Inter',
+    fontSize: getTitleFontSize(),
+    fontWeight: widget.titleFontWeight || '700',
+    lineHeight: widget.titleLineHeight || '1.2',
+    textTransform: (widget.titleTextTransform as any) || 'none',
+    letterSpacing: widget.titleLetterSpacing || '-0.02em',
+    color: widget.titleColor || '#1f2937',
+  };
+
+  // Get subtitle typography
+  const getSubtitleFontSize = () => {
+    const fontSize = widget.subtitleSize || (widget as any).subtitleFontSize;
+    if (!fontSize) return '20px';
+    if (typeof fontSize === 'object' && fontSize.value !== undefined) {
+      return `${fontSize.value}${fontSize.unit}`;
+    }
+    if (typeof fontSize === 'number') return `${fontSize}px`;
+    return String(fontSize);
+  };
+
+  const subtitleStyles: React.CSSProperties = {
+    fontFamily: widget.subtitleFontFamily || 'Inter',
+    fontSize: getSubtitleFontSize(),
+    fontWeight: widget.subtitleFontWeight || '400',
+    lineHeight: widget.subtitleLineHeight || '1.5',
+    textTransform: (widget.subtitleTextTransform as any) || 'none',
+    letterSpacing: widget.subtitleLetterSpacing || '0em',
+    color: widget.subtitleColor || '#6b7280',
+  };
+  
   return (
     <div 
       className={cn('flex items-center', `text-${widget.textAlign || 'center'}`)}
@@ -460,31 +488,98 @@ function HeadlineSection({ widget }: { widget: HeadlineWidget }) {
         {/* Dynamic title tag for SEO */}
         {(() => {
           const TitleTag = (widget.titleHeaderTag || 'h2') as keyof JSX.IntrinsicElements;
-          return <TitleTag className="text-4xl font-bold mb-3">{widget.title}</TitleTag>;
+          return <TitleTag className="mb-3" style={titleStyles}>{widget.title}</TitleTag>;
         })()}
         {/* Dynamic subtitle tag for SEO */}
         {widget.subtitle && (() => {
           const SubtitleTag = (widget.subtitleHeaderTag || 'h3') as keyof JSX.IntrinsicElements;
-          return <SubtitleTag className="text-xl text-muted-foreground mb-4">{widget.subtitle}</SubtitleTag>;
+          return <SubtitleTag className="mb-4" style={subtitleStyles}>{widget.subtitle}</SubtitleTag>;
         })()}
         {/* Button */}
-        {widget.button && widget.button.text && widget.button.url && (
-          <div className={cn(
-            'mt-6',
-            widget.textAlign === 'left' && 'text-left',
-            widget.textAlign === 'center' && 'text-center',
-            widget.textAlign === 'right' && 'text-right'
-          )}>
-            <a
-              href={widget.button.url}
-              target={widget.button.openNewTab ? '_blank' : undefined}
-              rel={widget.button.openNewTab ? 'noopener noreferrer' : undefined}
-              className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity font-medium"
-            >
-              {widget.button.text}
-            </a>
-          </div>
-        )}
+        {widget.button && widget.button.text && widget.button.url && (() => {
+          // Helper to convert hex color to rgba
+          const hexToRgba = (hex: string, alpha: number) => {
+            if (!hex || !hex.startsWith('#')) return hex;
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+          };
+
+          const buttonBgColor = widget.buttonBgColor || '#3b82f6';
+          const buttonTextColor = widget.buttonTextColor || '#ffffff';
+          const buttonBgOpacity = (widget.buttonBgOpacity !== undefined ? widget.buttonBgOpacity : 100) / 100;
+          const buttonBorderRadius = widget.buttonBorderRadius || 42;
+          const buttonBorderWidth = widget.buttonBorderWidth || 0;
+          const buttonDropShadow = widget.buttonDropShadow !== false;
+          const buttonShadowAmount = widget.buttonShadowAmount || 4;
+          const buttonBlurEffect = widget.buttonBlurEffect || 0;
+
+          const hover = widget.buttonHover;
+
+          // Get button font size
+          const getButtonFontSize = () => {
+            const fontSize = widget.buttonFontSize;
+            if (!fontSize) return '16px';
+            if (typeof fontSize === 'object' && fontSize.value !== undefined) {
+              return `${fontSize.value}${fontSize.unit}`;
+            }
+            if (typeof fontSize === 'number') return `${fontSize}px`;
+            return String(fontSize);
+          };
+
+          const buttonStyle: React.CSSProperties = {
+            borderRadius: `${buttonBorderRadius}px`,
+            backgroundColor: hexToRgba(buttonBgColor, buttonBgOpacity),
+            color: buttonTextColor,
+            padding: '12px 32px',
+            border: buttonBorderWidth > 0 ? `${buttonBorderWidth}px solid ${widget.buttonBorderColor || '#000000'}` : 'none',
+            boxShadow: buttonDropShadow ? `0 ${buttonShadowAmount}px ${buttonShadowAmount * 2}px rgba(0,0,0,0.1)` : 'none',
+            backdropFilter: buttonBlurEffect > 0 ? `blur(${buttonBlurEffect}px)` : 'none',
+            WebkitBackdropFilter: buttonBlurEffect > 0 ? `blur(${buttonBlurEffect}px)` : 'none',
+            transition: 'all 0.3s ease',
+            display: 'inline-block',
+            fontFamily: widget.buttonFontFamily || 'Inter',
+            fontSize: getButtonFontSize(),
+            fontWeight: widget.buttonFontWeight || '600',
+            lineHeight: widget.buttonLineHeight || '1.5',
+            textTransform: (widget.buttonTextTransform as any) || 'none',
+            letterSpacing: widget.buttonLetterSpacing || '0em',
+          };
+
+          const buttonHoverStyle: React.CSSProperties = hover ? {
+            backgroundColor: hover.backgroundColor ? hexToRgba(hover.backgroundColor, hover.backgroundOpacity !== undefined ? hover.backgroundOpacity / 100 : buttonBgOpacity) : undefined,
+            color: hover.textColor || undefined,
+            borderColor: hover.borderColor || undefined,
+            boxShadow: hover.dropShadow !== undefined ? (hover.dropShadow ? `0 ${hover.shadowAmount || buttonShadowAmount}px ${(hover.shadowAmount || buttonShadowAmount) * 2}px rgba(0,0,0,0.1)` : 'none') : undefined,
+            backdropFilter: hover.blurEffect !== undefined ? `blur(${hover.blurEffect}px)` : undefined,
+          } : {};
+
+          return (
+            <div className={cn(
+              'mt-6',
+              widget.textAlign === 'left' && 'text-left',
+              widget.textAlign === 'center' && 'text-center',
+              widget.textAlign === 'right' && 'text-right'
+            )}>
+              <a
+                href={widget.button.url}
+                target={widget.button.openNewTab ? '_blank' : undefined}
+                rel={widget.button.openNewTab ? 'noopener noreferrer' : undefined}
+                className="font-medium"
+                style={buttonStyle}
+                onMouseEnter={(e) => {
+                  Object.assign(e.currentTarget.style, buttonHoverStyle);
+                }}
+                onMouseLeave={(e) => {
+                  Object.assign(e.currentTarget.style, buttonStyle);
+                }}
+              >
+                {widget.button.text}
+              </a>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
@@ -599,6 +694,40 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
   const buttonStrokeWidth = widget.buttonStyles?.strokeWidth || 0;
   const buttonStrokeColor = widget.buttonStyles?.strokeColor || '#000000';
 
+  // Get typography helpers
+  const getFontSize = (fontSize: any, fallback: string) => {
+    if (!fontSize) return fallback;
+    if (typeof fontSize === 'object' && fontSize.value !== undefined) {
+      return `${fontSize.value}${fontSize.unit}`;
+    }
+    if (typeof fontSize === 'number') return `${fontSize}px`;
+    return String(fontSize);
+  };
+
+  // Title typography
+  const titleStyles: React.CSSProperties = {
+    fontFamily: (widget as any).titleFontFamily || 'Inter',
+    fontSize: getFontSize((widget as any).titleFontSize, '36px'),
+    fontWeight: (widget as any).titleFontWeight || '700',
+    lineHeight: (widget as any).titleLineHeight || '1.2',
+    textTransform: ((widget as any).titleTextTransform as any) || 'none',
+    letterSpacing: (widget as any).titleLetterSpacing || '-0.02em',
+    color: (widget as any).titleColor || '#1f2937',
+  };
+
+  // Content typography
+  const contentStyles: React.CSSProperties = {
+    fontFamily: (widget as any).contentFontFamily || 'Inter',
+    fontSize: getFontSize((widget as any).contentFontSize, '16px'),
+    fontWeight: (widget as any).contentFontWeight || '400',
+    lineHeight: (widget as any).contentLineHeight || '1.6',
+    textTransform: ((widget as any).contentTextTransform as any) || 'none',
+    letterSpacing: (widget as any).contentLetterSpacing || '0em',
+    color: (widget as any).contentColor || '#6b7280',
+    whiteSpace: 'pre-wrap',
+  };
+
+  // Button typography and style
   const buttonStyle: React.CSSProperties = {
     borderRadius: `${buttonRadius}px`,
     backgroundColor: hexToRgba(buttonBgColor, buttonBgOpacity),
@@ -609,6 +738,12 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
     backdropFilter: buttonBlurAmount > 0 ? `blur(${buttonBlurAmount}px)` : 'none',
     WebkitBackdropFilter: buttonBlurAmount > 0 ? `blur(${buttonBlurAmount}px)` : 'none',
     alignSelf: textAlign === 'center' ? 'center' : textAlign === 'right' ? 'flex-end' : 'flex-start',
+    fontFamily: (widget as any).buttonFontFamily || 'Inter',
+    fontSize: getFontSize((widget as any).buttonFontSize, '16px'),
+    fontWeight: (widget as any).buttonFontWeight || '600',
+    lineHeight: (widget as any).buttonLineHeight || '1.5',
+    textTransform: ((widget as any).buttonTextTransform as any) || 'none',
+    letterSpacing: (widget as any).buttonLetterSpacing || '0em',
   };
 
   const textComponent = (
@@ -619,8 +754,8 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
         justifyContent: textVerticalAlign === 'top' ? 'flex-start' : textVerticalAlign === 'bottom' ? 'flex-end' : 'center',
       }}
     >
-      {widget.title && <h2 className="text-3xl font-bold mb-4">{widget.title}</h2>}
-      <p className="text-lg leading-relaxed whitespace-pre-wrap">{widget.content}</p>
+      {widget.title && <h2 className="mb-4" style={titleStyles}>{widget.title}</h2>}
+      <p style={contentStyles}>{widget.content}</p>
       {widget.cta && (
         <a 
           href={widget.cta.url} 
@@ -1485,18 +1620,66 @@ function TextSectionComponent({ widget }: { widget: TextSectionWidget }) {
     }
   };
 
-  // Responsive font sizes
-  const responsiveHeadingSize = deviceView === 'mobile' ? Math.min(headingSize, 32) : deviceView === 'tablet' ? Math.min(headingSize, 36) : headingSize;
-  const responsiveBodySize = deviceView === 'mobile' ? Math.min(bodySize, 14) : bodySize;
+  // Get typography helpers
+  const getFontSize = (fontSize: any, fallback: string) => {
+    if (!fontSize) return fallback;
+    if (typeof fontSize === 'object' && fontSize.value !== undefined) {
+      return `${fontSize.value}${fontSize.unit}`;
+    }
+    if (typeof fontSize === 'number') return `${fontSize}px`;
+    return String(fontSize);
+  };
+
+  // Heading typography
+  const headingStyles: React.CSSProperties = {
+    fontFamily: (widget as any).headingFontFamily || 'Inter',
+    fontSize: getFontSize((widget as any).headingFontSize, `${headingSize}px`),
+    fontWeight: (widget as any).headingFontWeight || '700',
+    lineHeight: (widget as any).headingLineHeight || '1.2',
+    textTransform: ((widget as any).headingTextTransform as any) || 'none',
+    letterSpacing: (widget as any).headingLetterSpacing || '-0.02em',
+    color: widget.headingColor || '#1f2937',
+  };
+
+  // Tagline typography
+  const taglineStyles: React.CSSProperties = {
+    fontFamily: (widget as any).taglineFontFamily || 'Inter',
+    fontSize: getFontSize((widget as any).taglineFontSize, `${taglineSize}px`),
+    fontWeight: (widget as any).taglineFontWeight || '600',
+    lineHeight: (widget as any).taglineLineHeight || '1.4',
+    textTransform: ((widget as any).taglineTextTransform as any) || 'uppercase',
+    letterSpacing: (widget as any).taglineLetterSpacing || '0.05em',
+    color: widget.taglineColor || '#10b981',
+  };
+
+  // Body typography
+  const bodyStyles: React.CSSProperties = {
+    fontFamily: (widget as any).bodyFontFamily || 'Inter',
+    fontSize: getFontSize((widget as any).bodyFontSize, `${bodySize}px`),
+    fontWeight: (widget as any).bodyFontWeight || '400',
+    lineHeight: (widget as any).bodyLineHeight || '1.6',
+    textTransform: ((widget as any).bodyTextTransform as any) || 'none',
+    letterSpacing: (widget as any).bodyLetterSpacing || '0em',
+    color: widget.bodyTextColor || '#6b7280',
+    maxWidth: bodyAlignment === 'center' ? '65ch' : 'none',
+    margin: bodyAlignment === 'center' ? '0 auto' : '0',
+  };
+
+  // Button typography
+  const buttonFontStyles: React.CSSProperties = {
+    fontFamily: (widget as any).buttonFontFamily || 'Inter',
+    fontSize: getFontSize((widget as any).buttonFontSize, '16px'),
+    fontWeight: (widget as any).buttonFontWeight || '600',
+    lineHeight: (widget as any).buttonLineHeight || '1.5',
+    textTransform: ((widget as any).buttonTextTransform as any) || 'none',
+    letterSpacing: (widget as any).buttonLetterSpacing || '0em',
+  };
 
   // Tagline component (subheader - appears under heading)
   const taglineElement = widget.tagline && (
     <div
-      className={`font-semibold uppercase tracking-wide mt-3 ${getAlignmentClass(headingAlignment)}`}
-      style={{
-        color: widget.taglineColor || '#10b981',
-        fontSize: `${taglineSize}px`,
-      }}
+      className={`mt-3 ${getAlignmentClass(headingAlignment)}`}
+      style={taglineStyles}
     >
       {widget.tagline}
     </div>
@@ -1505,12 +1688,8 @@ function TextSectionComponent({ widget }: { widget: TextSectionWidget }) {
   // Heading component
   const headingElement = (
     <h2
-      className={`font-bold ${getAlignmentClass(headingAlignment)}`}
-      style={{
-        color: widget.headingColor || '#1f2937',
-        fontSize: `${responsiveHeadingSize}px`,
-        lineHeight: '1.2',
-      }}
+      className={getAlignmentClass(headingAlignment)}
+      style={headingStyles}
     >
       {widget.heading}
     </h2>
@@ -1519,14 +1698,8 @@ function TextSectionComponent({ widget }: { widget: TextSectionWidget }) {
   // Body component
   const bodyElement = (
     <div
-      className={`${getAlignmentClass(bodyAlignment)}`}
-      style={{
-        color: widget.bodyTextColor || '#6b7280',
-        fontSize: `${responsiveBodySize}px`,
-        lineHeight: '1.6',
-        maxWidth: bodyAlignment === 'center' ? '65ch' : 'none',
-        margin: bodyAlignment === 'center' ? '0 auto' : '0',
-      }}
+      className={getAlignmentClass(bodyAlignment)}
+      style={bodyStyles}
     >
       {widget.bodyText}
     </div>
@@ -1537,8 +1710,8 @@ function TextSectionComponent({ widget }: { widget: TextSectionWidget }) {
     <div className={`mt-6 ${getAlignmentClass(bodyAlignment)}`}>
       <a
         href={widget.buttonUrl || '#'}
-        className="inline-block px-6 py-3 font-medium transition-all hover:scale-105"
-        style={buttonContainerStyle}
+        className="inline-block px-6 py-3 transition-all hover:scale-105"
+        style={{...buttonContainerStyle, ...buttonFontStyles}}
       >
         {widget.buttonText}
       </a>
@@ -1655,28 +1828,65 @@ function FAQSection({ widget }: { widget: FAQWidget }) {
   const { deviceView } = useBuilderStore();
   const [openItemId, setOpenItemId] = useState<string | null>(null);
 
+  // Helper to convert fontSize to CSS
+  const getFontSize = (fontSize: any, fallback: string) => {
+    if (!fontSize) return fallback;
+    if (typeof fontSize === 'object' && fontSize.value !== undefined) {
+      return `${fontSize.value}${fontSize.unit}`;
+    }
+    if (typeof fontSize === 'number') return `${fontSize}px`;
+    return String(fontSize);
+  };
+
   // Ensure defaults
   const heading = widget.heading || 'Have Questions?';
-  const headingColor = widget.headingColor || '#1f2937';
-  const headingSize = widget.headingSize || 48;
   const headingAlignment = widget.headingAlignment || 'center';
+  
+  // Heading typography
+  const headingStyles: React.CSSProperties = {
+    fontFamily: (widget as any).headingFontFamily || 'Inter',
+    fontSize: getFontSize((widget as any).headingFontSize || widget.headingSize, '48px'),
+    fontWeight: (widget as any).headingFontWeight || widget.headingWeight || '700',
+    lineHeight: (widget as any).headingLineHeight || '1.2',
+    textTransform: ((widget as any).headingTextTransform as any) || 'none',
+    letterSpacing: (widget as any).headingLetterSpacing || '-0.02em',
+    color: widget.headingColor || '#1f2937',
+  };
   
   const subheading = widget.subheading || '';
   const subheadingColor = widget.subheadingColor || '#6b7280';
   const subheadingSize = widget.subheadingSize || 18;
   const subheadingAlignment = widget.subheadingAlignment || 'center';
   
+  // Extract heading size for responsive calculations
+  const headingSize = widget.headingSize ?? 48;
+  
   const items = widget.items || [];
   
-  const questionFontSize = widget.questionFontSize || 18;
-  const questionColor = widget.questionColor || '#1f2937';
-  const questionAlignment = widget.questionAlignment || 'left';
-  const questionFontWeight = widget.questionFontWeight || 600;
+  // Question typography
+  const questionStyles: React.CSSProperties = {
+    fontFamily: (widget as any).questionFontFamily || 'Inter',
+    fontSize: getFontSize((widget as any).questionFontSizeObj || widget.questionFontSize, '18px'),
+    fontWeight: (widget as any).questionFontWeightStr || String(widget.questionFontWeight || '600'),
+    lineHeight: (widget as any).questionLineHeight || '1.5',
+    textTransform: ((widget as any).questionTextTransform as any) || 'none',
+    letterSpacing: (widget as any).questionLetterSpacing || '0em',
+    color: widget.questionColor || '#1f2937',
+  };
   
-  const answerFontSize = widget.answerFontSize || 16;
-  const answerColor = widget.answerColor || '#6b7280';
+  // Answer typography
+  const answerStyles: React.CSSProperties = {
+    fontFamily: (widget as any).answerFontFamily || 'Inter',
+    fontSize: getFontSize((widget as any).answerFontSizeObj || widget.answerFontSize, '16px'),
+    fontWeight: (widget as any).answerFontWeightStr || String(widget.answerFontWeight || '400'),
+    lineHeight: (widget as any).answerLineHeight || '1.6',
+    textTransform: ((widget as any).answerTextTransform as any) || 'none',
+    letterSpacing: (widget as any).answerLetterSpacing || '0em',
+    color: widget.answerColor || '#6b7280',
+  };
+  
+  const questionAlignment = widget.questionAlignment || 'left';
   const answerAlignment = widget.answerAlignment || 'left';
-  const answerFontWeight = widget.answerFontWeight || 400;
   
   const iconStyle = widget.iconStyle || 'chevron';
   const iconColor = widget.iconColor || '#10b981';
@@ -1782,11 +1992,9 @@ function FAQSection({ widget }: { widget: FAQWidget }) {
         {/* Header */}
         <div style={{ marginBottom: `${headerGap}px` }}>
           <h2
-            className={`font-bold ${getAlignmentClass(headingAlignment)}`}
+            className={getAlignmentClass(headingAlignment)}
             style={{
-              color: headingColor,
-              fontSize: `${responsiveHeadingSize}px`,
-              lineHeight: '1.2',
+              ...headingStyles,
               marginBottom: subheading ? '12px' : '0',
             }}
           >
@@ -1847,9 +2055,7 @@ function FAQSection({ widget }: { widget: FAQWidget }) {
                     <h3
                       className={getAlignmentClass(questionAlignment)}
                       style={{
-                        color: questionColor,
-                        fontSize: `${questionFontSize}px`,
-                        fontWeight: questionFontWeight,
+                        ...questionStyles,
                         margin: 0,
                       }}
                     >
@@ -1890,11 +2096,8 @@ function FAQSection({ widget }: { widget: FAQWidget }) {
                     <p
                       className={getAlignmentClass(answerAlignment)}
                       style={{
-                        color: answerColor,
-                        fontSize: `${answerFontSize}px`,
-                        fontWeight: answerFontWeight,
+                        ...answerStyles,
                         margin: 0,
-                        lineHeight: '1.6',
                       }}
                     >
                       {item.answer}
@@ -2610,6 +2813,61 @@ function TestimonialsSection({ widget }: { widget: TestimonialWidget }) {
   
   const currentTestimonial = testimonials[currentIndex];
   
+  // Helper to convert fontSize to CSS
+  const getFontSize = (fontSize: any, fallback: string) => {
+    if (!fontSize) return fallback;
+    if (typeof fontSize === 'object' && fontSize.value !== undefined) {
+      return `${fontSize.value}${fontSize.unit}`;
+    }
+    if (typeof fontSize === 'number') return `${fontSize}px`;
+    return String(fontSize);
+  };
+  
+  // Section header typography
+  const headerStyles: React.CSSProperties = {
+    fontFamily: (widget as any).headerFontFamily || 'Inter',
+    fontSize: getFontSize((widget as any).headerFontSize || widget.headerSize, '48px'),
+    fontWeight: (widget as any).headerFontWeight || widget.headerWeight || '700',
+    lineHeight: (widget as any).headerLineHeight || '1.2',
+    textTransform: ((widget as any).headerTextTransform as any) || 'none',
+    letterSpacing: (widget as any).headerLetterSpacing || '-0.02em',
+    color: widget.headerColor || widget.sectionHeadingColor || '#ffffff',
+    marginBottom: '16px',
+  };
+
+  // Name typography
+  const nameStyles: React.CSSProperties = {
+    fontFamily: (widget as any).nameFontFamily || 'Inter',
+    fontSize: getFontSize((widget as any).nameFontSizeObj || widget.nameFontSize, '24px'),
+    fontWeight: (widget as any).nameFontWeightStr || String(widget.nameFontWeight || '700'),
+    lineHeight: (widget as any).nameLineHeight || '1.4',
+    textTransform: ((widget as any).nameTextTransform as any) || 'none',
+    letterSpacing: (widget as any).nameLetterSpacing || '0em',
+    color: widget.nameColor || '#ffffff',
+  };
+
+  // Title typography
+  const titleStyles: React.CSSProperties = {
+    fontFamily: (widget as any).titleFontFamily || 'Inter',
+    fontSize: getFontSize((widget as any).titleFontSizeObj || widget.titleFontSize, '16px'),
+    fontWeight: (widget as any).titleFontWeightStr || String(widget.titleFontWeight || '400'),
+    lineHeight: (widget as any).titleLineHeight || '1.4',
+    textTransform: ((widget as any).titleTextTransform as any) || 'none',
+    letterSpacing: (widget as any).titleLetterSpacing || '0em',
+    color: widget.titleColor || '#cbd5e1',
+  };
+
+  // Quote typography
+  const quoteStyles: React.CSSProperties = {
+    fontFamily: (widget as any).quoteFontFamily || 'Inter',
+    fontSize: getFontSize((widget as any).quoteFontSizeObj || widget.quoteFontSize, '20px'),
+    fontWeight: (widget as any).quoteFontWeightStr || String(widget.quoteFontWeight || '400'),
+    lineHeight: (widget as any).quoteLineHeight || '1.6',
+    textTransform: ((widget as any).quoteTextTransform as any) || 'none',
+    letterSpacing: (widget as any).quoteLetterSpacing || '0em',
+    color: widget.quoteColor || '#ffffff',
+  };
+  
   // Ensure defaults
   const showAvatar = widget.showAvatar ?? true;
   const avatarShape = widget.avatarShape || 'circle';
@@ -2621,14 +2879,6 @@ function TestimonialsSection({ widget }: { widget: TestimonialWidget }) {
   const starColor = widget.starColor || '#f59e0b';
   const starSize = widget.starSize ?? 24;
   
-  const nameFontSize = widget.nameFontSize ?? 24;
-  const nameColor = widget.nameColor || '#ffffff';
-  const nameFontWeight = widget.nameFontWeight ?? 700;
-  const titleFontSize = widget.titleFontSize ?? 16;
-  const titleColor = widget.titleColor || '#cbd5e1';
-  const quoteFontSize = widget.quoteFontSize ?? 20;
-  const quoteColor = widget.quoteColor || '#ffffff';
-  const quoteLineHeight = widget.quoteLineHeight ?? 1.6;
   const quoteMaxWidth = widget.quoteMaxWidth ?? 700;
   
   const arrowStyle = widget.arrowStyle || 'circle';
@@ -2641,7 +2891,6 @@ function TestimonialsSection({ widget }: { widget: TestimonialWidget }) {
   const dotSize = widget.dotSize ?? 10;
   
   const sectionHeading = widget.sectionHeading || '';
-  const sectionHeadingColor = widget.sectionHeadingColor || '#ffffff';
   const sectionSubheading = widget.sectionSubheading || '';
   const sectionSubheadingColor = widget.sectionSubheadingColor || '#cbd5e1';
   
@@ -2900,12 +3149,7 @@ function TestimonialsSection({ widget }: { widget: TestimonialWidget }) {
             marginBottom: '48px',
           }}>
             {sectionHeading && (
-              <h2 style={{
-                fontSize: '48px',
-                fontWeight: 700,
-                color: sectionHeadingColor,
-                marginBottom: '16px',
-              }}>
+              <h2 style={headerStyles}>
                 {sectionHeading}
               </h2>
             )}
@@ -2934,18 +3178,13 @@ function TestimonialsSection({ widget }: { widget: TestimonialWidget }) {
               {renderAvatar()}
               <div style={{ marginBottom: '16px' }}>
                 <h3 style={{
-                  fontSize: `${nameFontSize}px`,
-                  fontWeight: nameFontWeight,
-                  color: nameColor,
+                  ...nameStyles,
                   marginBottom: '8px',
                 }}>
                   {currentTestimonial.name}
                 </h3>
                 {currentTestimonial.title && (
-                  <p style={{
-                    fontSize: `${titleFontSize}px`,
-                    color: titleColor,
-                  }}>
+                  <p style={titleStyles}>
                     {currentTestimonial.title}
                   </p>
                 )}
@@ -2955,9 +3194,7 @@ function TestimonialsSection({ widget }: { widget: TestimonialWidget }) {
           )}
           
           <p style={{
-            fontSize: `${quoteFontSize}px`,
-            color: quoteColor,
-            lineHeight: quoteLineHeight,
+            ...quoteStyles,
             marginBottom: namePosition === 'below-quote' ? '24px' : 0,
           }}>
             "{currentTestimonial.quote}"
@@ -2968,18 +3205,13 @@ function TestimonialsSection({ widget }: { widget: TestimonialWidget }) {
               {renderStars()}
               <div style={{ marginTop: '16px' }}>
                 <h3 style={{
-                  fontSize: `${nameFontSize}px`,
-                  fontWeight: nameFontWeight,
-                  color: nameColor,
+                  ...nameStyles,
                   marginBottom: '8px',
                 }}>
                   {currentTestimonial.name}
                 </h3>
                 {currentTestimonial.title && (
-                  <p style={{
-                    fontSize: `${titleFontSize}px`,
-                    color: titleColor,
-                  }}>
+                  <p style={titleStyles}>
                     {currentTestimonial.title}
                   </p>
                 )}
@@ -3029,22 +3261,110 @@ function StepsSection({ widget }: { widget: StepsWidget }) {
     blur: 0,
   };
   
-  const stepLabelBackground = widget.stepLabelBackground || '#d1fae5';
-  const stepLabelColor = widget.stepLabelColor || '#065f46';
-  const stepLabelFontSize = widget.stepLabelFontSize ?? 12;
-  const stepLabelBorderRadius = widget.stepLabelBorderRadius ?? 4;
-  const stepLabelPadding = widget.stepLabelPadding ?? 6;
+  // Helper to convert fontSize to CSS
+  const getFontSize = (fontSize: any, fallback: string) => {
+    if (!fontSize) return fallback;
+    if (typeof fontSize === 'object' && fontSize.value !== undefined) {
+      return `${fontSize.value}${fontSize.unit}`;
+    }
+    if (typeof fontSize === 'number') return `${fontSize}px`;
+    return String(fontSize);
+  };
   
-  const stepHeadingColor = widget.stepHeadingColor || '#000000';
-  const stepHeadingSize = widget.stepHeadingSize ?? 24;
-  const stepHeadingFontWeight = widget.stepHeadingFontWeight ?? 600;
-  const stepDescriptionColor = widget.stepDescriptionColor || '#6b7280';
-  const stepDescriptionSize = widget.stepDescriptionSize ?? 16;
+  // Typography configs
+  const sectionHeaderTypography = (widget as any).sectionHeaderTypography || {
+    fontFamily: 'Inter',
+    fontSize: { value: 2, unit: 'rem' },
+    fontWeight: '700',
+    lineHeight: '1.2',
+    textTransform: 'none',
+    letterSpacing: '0em',
+    color: '#1f2937',
+  };
+
+  const stepLabelTypography = (widget as any).stepLabelTypography || {
+    fontFamily: 'Inter',
+    fontSize: { value: 0.75, unit: 'rem' },
+    fontWeight: '600',
+    lineHeight: '1.2',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    color: widget.stepLabelColor || '#065f46',
+  };
+
+  const stepHeadingTypography = (widget as any).stepHeadingTypography || {
+    fontFamily: 'Inter',
+    fontSize: { value: 1.5, unit: 'rem' },
+    fontWeight: '700',
+    lineHeight: '1.3',
+    textTransform: 'none',
+    letterSpacing: '0em',
+    color: widget.stepHeadingColor || '#1f2937',
+  };
+
+  const stepDescriptionTypography = (widget as any).stepDescriptionTypography || {
+    fontFamily: 'Inter',
+    fontSize: { value: 1, unit: 'rem' },
+    fontWeight: '400',
+    lineHeight: '1.6',
+    textTransform: 'none',
+    letterSpacing: '0em',
+    color: widget.stepDescriptionColor || '#6b7280',
+  };
+
+  // Section header styles
+  const sectionHeaderStyles: React.CSSProperties = {
+    fontFamily: sectionHeaderTypography.fontFamily,
+    fontSize: getFontSize(sectionHeaderTypography.fontSize, '48px'),
+    fontWeight: sectionHeaderTypography.fontWeight,
+    lineHeight: sectionHeaderTypography.lineHeight,
+    textTransform: sectionHeaderTypography.textTransform as any,
+    letterSpacing: sectionHeaderTypography.letterSpacing,
+    color: sectionHeaderTypography.color || widget.sectionHeadingColor || '#000000',
+    marginBottom: '48px',
+  };
+
+  // Step label styles
+  const stepLabelStyles: React.CSSProperties = {
+    fontFamily: stepLabelTypography.fontFamily,
+    fontSize: getFontSize(stepLabelTypography.fontSize, '12px'),
+    fontWeight: stepLabelTypography.fontWeight,
+    lineHeight: stepLabelTypography.lineHeight,
+    textTransform: stepLabelTypography.textTransform as any,
+    letterSpacing: stepLabelTypography.letterSpacing,
+    color: stepLabelTypography.color,
+    backgroundColor: widget.stepLabelBackground || '#d1fae5',
+    padding: `${widget.stepLabelPadding ?? 6}px ${(widget.stepLabelPadding ?? 6) * 2}px`,
+    borderRadius: `${widget.stepLabelBorderRadius ?? 4}px`,
+    marginBottom: '12px',
+    display: 'inline-block',
+  };
+
+  // Step heading styles
+  const stepHeadingStyles: React.CSSProperties = {
+    fontFamily: stepHeadingTypography.fontFamily,
+    fontSize: getFontSize(stepHeadingTypography.fontSize, '24px'),
+    fontWeight: stepHeadingTypography.fontWeight,
+    lineHeight: stepHeadingTypography.lineHeight,
+    textTransform: stepHeadingTypography.textTransform as any,
+    letterSpacing: stepHeadingTypography.letterSpacing,
+    color: stepHeadingTypography.color,
+    marginBottom: '8px',
+  };
+
+  // Step description styles
+  const stepDescriptionStyles: React.CSSProperties = {
+    fontFamily: stepDescriptionTypography.fontFamily,
+    fontSize: getFontSize(stepDescriptionTypography.fontSize, '16px'),
+    fontWeight: stepDescriptionTypography.fontWeight,
+    lineHeight: stepDescriptionTypography.lineHeight,
+    textTransform: stepDescriptionTypography.textTransform as any,
+    letterSpacing: stepDescriptionTypography.letterSpacing,
+    color: stepDescriptionTypography.color,
+  };
+  
   const stepGap = widget.stepGap ?? 32;
-  
   const sectionHeading = widget.sectionHeading || '';
-  const sectionHeadingColor = widget.sectionHeadingColor || '#000000';
-  const sectionHeadingSize = widget.sectionHeadingSize ?? 48;
   
   const buttonVisible = widget.buttonVisible ?? true;
   const buttonText = widget.buttonText || 'Get in Touch';
@@ -3111,13 +3431,7 @@ function StepsSection({ widget }: { widget: StepsWidget }) {
           deviceView === 'mobile' && 'flex-col items-start gap-4'
         )}>
           {sectionHeading && (
-            <h2
-              style={{
-                fontSize: `${sectionHeadingSize}px`,
-                fontWeight: 700,
-                color: sectionHeadingColor,
-              }}
-            >
+            <h2 style={sectionHeaderStyles}>
               {sectionHeading}
             </h2>
           )}
@@ -3194,43 +3508,17 @@ function StepsSection({ widget }: { widget: StepsWidget }) {
             {steps.map((step) => (
               <div key={step.id}>
                 {/* Step Label */}
-                <div
-                  style={{
-                    display: 'inline-block',
-                    backgroundColor: stepLabelBackground,
-                    color: stepLabelColor,
-                    fontSize: `${stepLabelFontSize}px`,
-                    fontWeight: 600,
-                    padding: `${stepLabelPadding}px ${stepLabelPadding * 2}px`,
-                    borderRadius: `${stepLabelBorderRadius}px`,
-                    marginBottom: '12px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                  }}
-                >
+                <div style={stepLabelStyles}>
                   {step.label}
                 </div>
 
                 {/* Step Heading */}
-                <h3
-                  style={{
-                    fontSize: `${stepHeadingSize}px`,
-                    fontWeight: stepHeadingFontWeight,
-                    color: stepHeadingColor,
-                    marginBottom: '8px',
-                  }}
-                >
+                <h3 style={stepHeadingStyles}>
                   {step.heading}
                 </h3>
 
                 {/* Step Description */}
-                <p
-                  style={{
-                    fontSize: `${stepDescriptionSize}px`,
-                    color: stepDescriptionColor,
-                    lineHeight: 1.6,
-                  }}
-                >
+                <p style={stepDescriptionStyles}>
                   {step.description}
                 </p>
               </div>

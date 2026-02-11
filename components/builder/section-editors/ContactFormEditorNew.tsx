@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ContactFormWidget, FormField } from '@/lib/types';
+import { ContactFormWidget, FormField, TypographyConfig, ButtonStyleConfig } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,6 +11,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { SectionEditorTabs } from '../SectionEditorTabs';
 import { FontSizeInput, type FontSizeValue } from '../FontSizeInput';
+import { TypographyControl } from '../controls/TypographyControl';
+import { ButtonControl } from '../controls/ButtonControl';
+import { useWebsiteStore } from '@/lib/stores/website';
 
 interface ContactFormEditorNewProps {
   widget: ContactFormWidget;
@@ -18,6 +21,7 @@ interface ContactFormEditorNewProps {
 }
 
 export function ContactFormEditorNew({ widget, onChange }: ContactFormEditorNewProps) {
+  const { website } = useWebsiteStore();
   const [formContentOpen, setFormContentOpen] = useState(true);
   const [fieldsOpen, setFieldsOpen] = useState(false);
   const [columnContentOpen, setColumnContentOpen] = useState(false);
@@ -26,6 +30,58 @@ export function ContactFormEditorNew({ widget, onChange }: ContactFormEditorNewP
   const [typographyOpen, setTypographyOpen] = useState(false);
   const [buttonStyleOpen, setButtonStyleOpen] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(false);
+
+  // Helper functions to get typography configs
+  const getFormHeadingTypography = (): TypographyConfig => {
+    return (widget as any).formHeadingTypography || {
+      fontFamily: 'Inter',
+      fontSize: { value: 2, unit: 'rem' },
+      fontWeight: '700',
+      lineHeight: '1.2',
+      textTransform: 'none',
+      letterSpacing: '0em',
+      color: '#1f2937',
+    };
+  };
+
+  const getFormDescriptionTypography = (): TypographyConfig => {
+    return (widget as any).formDescriptionTypography || {
+      fontFamily: 'Inter',
+      fontSize: { value: 1, unit: 'rem' },
+      fontWeight: '400',
+      lineHeight: '1.6',
+      textTransform: 'none',
+      letterSpacing: '0em',
+      color: '#6b7280',
+    };
+  };
+
+  const getSubmitButton = (): ButtonStyleConfig => {
+    return (widget as any).submitButton || {
+      text: widget.buttonText || 'Submit',
+      url: '',
+      width: 'full',
+      backgroundColor: '#10b981',
+      textColor: '#ffffff',
+      borderRadius: 8,
+      borderWidth: 0,
+      backgroundOpacity: 100,
+      dropShadow: true,
+      shadowAmount: 4,
+      blurEffect: 0,
+      fontFamily: 'Inter',
+      fontSize: { value: 16, unit: 'px' },
+      fontWeight: '500',
+      lineHeight: '1.2',
+      textTransform: 'none',
+      hover: {
+        backgroundColor: '#059669',
+        textColor: '#ffffff',
+        dropShadow: true,
+        shadowAmount: 6,
+      },
+    };
+  };
 
   const CollapsibleSection = ({ title, open, onToggle, children }: any) => (
     <div className="border rounded-lg">
@@ -188,40 +244,54 @@ export function ContactFormEditorNew({ widget, onChange }: ContactFormEditorNewP
 
   const styleTab = (
     <div className="space-y-2">
-      <CollapsibleSection title="Typography" open={typographyOpen} onToggle={() => setTypographyOpen(!typographyOpen)}>
-        <div className="space-y-3">
-          <div className="space-y-2">
-            <Label className="text-xs">Heading Font Size</Label>
-            <FontSizeInput value={(widget as any).headingSize || 32} onChange={(value: FontSizeValue) => onChange({ headingSize: value.value } as any)} />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-xs">Heading Color</Label>
-            <div className="flex gap-2">
-              <input type="color" value={(widget as any).headingColor || '#1f2937'} onChange={(e) => onChange({ headingColor: e.target.value } as any)} className="h-10 w-16 rounded border cursor-pointer" />
-              <Input value={(widget as any).headingColor || '#1f2937'} onChange={(e) => onChange({ headingColor: e.target.value } as any)} placeholder="#1f2937" />
-            </div>
-          </div>
-        </div>
-      </CollapsibleSection>
+      {/* Form Heading Typography */}
+      <TypographyControl
+        label="Form Heading Typography"
+        value={getFormHeadingTypography()}
+        onChange={(updates) => {
+          onChange({
+            formHeadingTypography: {
+              ...getFormHeadingTypography(),
+              ...updates,
+            } as any,
+          });
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['h2', 'h3']}
+      />
 
-      <CollapsibleSection title="Button Style" open={buttonStyleOpen} onToggle={() => setButtonStyleOpen(!buttonStyleOpen)}>
-        <div className="space-y-3">
-          <div className="space-y-2">
-            <Label>Background Color</Label>
-            <div className="flex gap-2">
-              <input type="color" value={(widget as any).buttonBackgroundColor || '#10b981'} onChange={(e) => onChange({ buttonBackgroundColor: e.target.value } as any)} className="h-10 w-16 rounded border cursor-pointer" />
-              <Input value={(widget as any).buttonBackgroundColor || '#10b981'} onChange={(e) => onChange({ buttonBackgroundColor: e.target.value } as any)} placeholder="#10b981" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Text Color</Label>
-            <div className="flex gap-2">
-              <input type="color" value={(widget as any).buttonTextColor || '#ffffff'} onChange={(e) => onChange({ buttonTextColor: e.target.value } as any)} className="h-10 w-16 rounded border cursor-pointer" />
-              <Input value={(widget as any).buttonTextColor || '#ffffff'} onChange={(e) => onChange({ buttonTextColor: e.target.value } as any)} placeholder="#ffffff" />
-            </div>
-          </div>
-        </div>
-      </CollapsibleSection>
+      {/* Form Description Typography */}
+      <TypographyControl
+        label="Form Description Typography"
+        value={getFormDescriptionTypography()}
+        onChange={(updates) => {
+          onChange({
+            formDescriptionTypography: {
+              ...getFormDescriptionTypography(),
+              ...updates,
+            } as any,
+          });
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['body']}
+      />
+
+      {/* Submit Button */}
+      <ButtonControl
+        label="Submit Button"
+        value={getSubmitButton()}
+        onChange={(updates) => {
+          const currentButton = getSubmitButton();
+          onChange({
+            submitButton: {
+              ...currentButton,
+              ...updates,
+            } as any,
+            buttonText: updates.text || currentButton.text,
+          });
+        }}
+        showGlobalStyleSelector={true}
+      />
 
       <CollapsibleSection title="Background" open={backgroundOpen} onToggle={() => setBackgroundOpen(!backgroundOpen)}>
         <div className="space-y-2">

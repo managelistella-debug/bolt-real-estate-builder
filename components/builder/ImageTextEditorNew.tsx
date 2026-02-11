@@ -1,14 +1,19 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ImageTextWidget } from '@/lib/types';
-import { AlignLeft, AlignCenter, AlignRight, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd } from 'lucide-react';
+import { AlignLeft, AlignCenter, AlignRight, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, ChevronDown, ChevronRight } from 'lucide-react';
 import { ImageUpload } from './ImageUpload';
 import { SectionEditorTabs } from './SectionEditorTabs';
+import { TypographyControl } from './controls/TypographyControl';
+import { ButtonControl } from './controls/ButtonControl';
+import { useDebouncedInput } from './hooks/useDebouncedInput';
+import { useWebsiteStore } from '@/lib/stores/website';
 
 interface ImageTextEditorNewProps {
   widget: ImageTextWidget;
@@ -16,6 +21,217 @@ interface ImageTextEditorNewProps {
 }
 
 export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps) {
+  const { currentWebsite } = useWebsiteStore();
+  const globalStyles = currentWebsite?.globalStyles;
+
+  // Debounced inputs
+  const [titleValue, , titleChange, titleBlur] = useDebouncedInput(
+    widget.title || '',
+    (value) => onChange({ title: value })
+  );
+
+  const [contentValue, , contentChange, contentBlur] = useDebouncedInput(
+    widget.content,
+    (value) => onChange({ content: value })
+  );
+
+  const [buttonTextValue, , buttonTextChange, buttonTextBlur] = useDebouncedInput(
+    widget.cta?.text || '',
+    (value) => onChange({ cta: { ...widget.cta, text: value, url: widget.cta?.url || '' } })
+  );
+
+  const [buttonUrlValue, , buttonUrlChange, buttonUrlBlur] = useDebouncedInput(
+    widget.cta?.url || '',
+    (value) => onChange({ cta: { ...widget.cta, url: value } })
+  );
+
+  const [backgroundOpen, setBackgroundOpen] = useState(false);
+  const [imageStyleOpen, setImageStyleOpen] = useState(false);
+
+  const CollapsibleSection = ({ 
+    title, 
+    open, 
+    onToggle, 
+    children 
+  }: { 
+    title: string; 
+    open: boolean; 
+    onToggle: () => void; 
+    children: React.ReactNode;
+  }) => (
+    <div className="border rounded-lg">
+      <button
+        type="button"
+        className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
+        onClick={onToggle}
+      >
+        <span className="font-medium text-sm">{title}</span>
+        {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+      </button>
+      {open && (
+        <div className="p-4 pt-0 space-y-3">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+
+  // Migration: Convert old widget format to new format on first render
+  useEffect(() => {
+    let needsUpdate = false;
+    const updates: any = {};
+
+    // Migrate title fontSize if in old format (number or CSS string)
+    const titleFontSize = (widget as any).titleFontSize;
+    if (titleFontSize && typeof titleFontSize !== 'object') {
+      if (typeof titleFontSize === 'number') {
+        updates.titleFontSize = { value: titleFontSize, unit: 'px' as const };
+        needsUpdate = true;
+      } else if (typeof titleFontSize === 'string') {
+        const match = titleFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          updates.titleFontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+          needsUpdate = true;
+        }
+      }
+    }
+
+    // Migrate content fontSize if in old format
+    const contentFontSize = (widget as any).contentFontSize;
+    if (contentFontSize && typeof contentFontSize !== 'object') {
+      if (typeof contentFontSize === 'number') {
+        updates.contentFontSize = { value: contentFontSize, unit: 'px' as const };
+        needsUpdate = true;
+      } else if (typeof contentFontSize === 'string') {
+        const match = contentFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          updates.contentFontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+          needsUpdate = true;
+        }
+      }
+    }
+
+    // Migrate button fontSize if in old format
+    const buttonFontSize = (widget as any).buttonFontSize;
+    if (buttonFontSize && typeof buttonFontSize !== 'object') {
+      if (typeof buttonFontSize === 'number') {
+        updates.buttonFontSize = { value: buttonFontSize, unit: 'px' as const };
+        needsUpdate = true;
+      } else if (typeof buttonFontSize === 'string') {
+        const match = buttonFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          updates.buttonFontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+          needsUpdate = true;
+        }
+      }
+    }
+
+    if (needsUpdate) {
+      onChange(updates);
+    }
+  }, []); // Only run once on mount
+
+  // Get typography configs
+  const getTitleTypography = () => {
+    let fontSize = { value: 36, unit: 'px' as const };
+    const rawFontSize = (widget as any).titleFontSize;
+    
+    if (rawFontSize) {
+      if (typeof rawFontSize === 'object' && rawFontSize.value !== undefined) {
+        fontSize = rawFontSize;
+      } else if (typeof rawFontSize === 'number') {
+        fontSize = { value: rawFontSize, unit: 'px' as const };
+      } else if (typeof rawFontSize === 'string') {
+        const match = rawFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          fontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+    }
+
+    return {
+      fontFamily: (widget as any).titleFontFamily || 'Inter',
+      fontSize,
+      fontWeight: (widget as any).titleFontWeight || '700',
+      lineHeight: (widget as any).titleLineHeight || '1.2',
+      textTransform: (widget as any).titleTextTransform || 'none' as const,
+      letterSpacing: (widget as any).titleLetterSpacing || '-0.02em',
+      color: (widget as any).titleColor || '#1f2937',
+    };
+  };
+
+  const getContentTypography = () => {
+    let fontSize = { value: 16, unit: 'px' as const };
+    const rawFontSize = (widget as any).contentFontSize;
+    
+    if (rawFontSize) {
+      if (typeof rawFontSize === 'object' && rawFontSize.value !== undefined) {
+        fontSize = rawFontSize;
+      } else if (typeof rawFontSize === 'number') {
+        fontSize = { value: rawFontSize, unit: 'px' as const };
+      } else if (typeof rawFontSize === 'string') {
+        const match = rawFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          fontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+    }
+
+    return {
+      fontFamily: (widget as any).contentFontFamily || 'Inter',
+      fontSize,
+      fontWeight: (widget as any).contentFontWeight || '400',
+      lineHeight: (widget as any).contentLineHeight || '1.6',
+      textTransform: (widget as any).contentTextTransform || 'none' as const,
+      letterSpacing: (widget as any).contentLetterSpacing || '0em',
+      color: (widget as any).contentColor || '#6b7280',
+    };
+  };
+
+  // Get button config
+  const getButtonConfig = () => {
+    const buttonStyles = widget.buttonStyles || {};
+    let buttonFontSize = { value: 16, unit: 'px' as const };
+    const rawButtonFontSize = (widget as any).buttonFontSize;
+    
+    if (rawButtonFontSize) {
+      if (typeof rawButtonFontSize === 'object' && rawButtonFontSize.value !== undefined) {
+        buttonFontSize = rawButtonFontSize;
+      } else if (typeof rawButtonFontSize === 'number') {
+        buttonFontSize = { value: rawButtonFontSize, unit: 'px' as const };
+      } else if (typeof rawButtonFontSize === 'string') {
+        const match = rawButtonFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          buttonFontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+    }
+
+    return {
+      text: widget.cta?.text || '',
+      url: widget.cta?.url || '',
+      openNewTab: widget.cta?.openNewTab,
+      width: (widget as any).buttonWidth || 'standard' as const,
+      backgroundColor: buttonStyles.bgColor || '#3b82f6',
+      textColor: buttonStyles.textColor || '#ffffff',
+      borderRadius: buttonStyles.radius || 8,
+      borderWidth: buttonStyles.strokeWidth || 0,
+      borderColor: buttonStyles.strokeColor,
+      backgroundOpacity: buttonStyles.bgOpacity || 100,
+      dropShadow: buttonStyles.hasShadow !== false,
+      shadowAmount: buttonStyles.shadowAmount || 4,
+      blurEffect: buttonStyles.blurAmount || 0,
+      fontFamily: (widget as any).buttonFontFamily || 'Inter',
+      fontSize: buttonFontSize,
+      fontWeight: (widget as any).buttonFontWeight || '600',
+      lineHeight: (widget as any).buttonLineHeight || '1.5',
+      textTransform: (widget as any).buttonTextTransform || 'none' as const,
+      letterSpacing: (widget as any).buttonLetterSpacing || '0em',
+      hover: (widget as any).buttonHover || {},
+      useGlobalStyle: (widget as any).buttonUseGlobalStyle,
+      globalStyleId: (widget as any).buttonGlobalStyleId,
+    };
+  };
   
   // Content Tab
   const contentTab = (
@@ -30,8 +246,9 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
       <div className="space-y-2">
         <Label>Title (Optional)</Label>
         <Input
-          value={widget.title || ''}
-          onChange={(e) => onChange({ title: e.target.value })}
+          value={titleValue}
+          onChange={titleChange}
+          onBlur={titleBlur}
           placeholder="Section title"
         />
       </div>
@@ -39,8 +256,9 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
       <div className="space-y-2">
         <Label>Content</Label>
         <Textarea
-          value={widget.content}
-          onChange={(e) => onChange({ content: e.target.value })}
+          value={contentValue}
+          onChange={contentChange}
+          onBlur={contentBlur}
           placeholder="Add your content here..."
           rows={5}
         />
@@ -49,8 +267,9 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
       <div className="space-y-2">
         <Label>Button Text (Optional)</Label>
         <Input
-          value={widget.cta?.text || ''}
-          onChange={(e) => onChange({ cta: { ...widget.cta, text: e.target.value, url: widget.cta?.url || '' } })}
+          value={buttonTextValue}
+          onChange={buttonTextChange}
+          onBlur={buttonTextBlur}
           placeholder="Learn More"
         />
       </div>
@@ -59,18 +278,13 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
         <div className="space-y-2">
           <Label>Button URL</Label>
           <Input
-            value={widget.cta?.url || ''}
-            onChange={(e) => onChange({ cta: { ...widget.cta, url: e.target.value } })}
+            value={buttonUrlValue}
+            onChange={buttonUrlChange}
+            onBlur={buttonUrlBlur}
             placeholder="https://..."
           />
         </div>
       )}
-
-      {/* Effects Placeholder */}
-      <div className="pt-4 border-t">
-        <Label className="text-sm text-muted-foreground">Animation Effects</Label>
-        <p className="text-xs text-muted-foreground mt-1">Coming soon...</p>
-      </div>
     </div>
   );
 
@@ -243,194 +457,184 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
 
   // Style Tab
   const styleTab = (
-    <div className="space-y-4">
-      {/* Section Background */}
-      <div className="space-y-4 pb-4 border-b">
-        <h3 className="font-semibold text-sm">Section Background</h3>
-        <div className="space-y-2">
-          <Label>Background Type</Label>
-          <Select
-            value={widget.background?.type || 'none'}
-            onValueChange={(value: 'none' | 'color' | 'image' | 'video') => onChange({
-              background: { ...widget.background, type: value }
-            })}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">None (Transparent)</SelectItem>
-              <SelectItem value="color">Color</SelectItem>
-              <SelectItem value="image">Image</SelectItem>
-              <SelectItem value="video">Video</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+    <div className="space-y-3">
+      {/* Title Typography */}
+      {widget.title && (
+        <TypographyControl
+          label="Title Typography"
+          value={getTitleTypography()}
+          onChange={(updates) => {
+            const widgetUpdate: any = {};
+            if (updates.fontFamily !== undefined) widgetUpdate.titleFontFamily = updates.fontFamily;
+            if (updates.fontSize !== undefined) widgetUpdate.titleFontSize = updates.fontSize;
+            if (updates.fontWeight !== undefined) widgetUpdate.titleFontWeight = updates.fontWeight;
+            if (updates.lineHeight !== undefined) widgetUpdate.titleLineHeight = updates.lineHeight;
+            if (updates.textTransform !== undefined) widgetUpdate.titleTextTransform = updates.textTransform;
+            if (updates.letterSpacing !== undefined) widgetUpdate.titleLetterSpacing = updates.letterSpacing;
+            if (updates.color !== undefined) widgetUpdate.titleColor = updates.color;
+            onChange(widgetUpdate);
+          }}
+          showGlobalStyleSelector={true}
+          globalStyles={globalStyles}
+          availableGlobalStyles={['h2', 'h3', 'h4']}
+        />
+      )}
 
-        {widget.background?.type === 'color' && (
+      {/* Content Typography */}
+      <TypographyControl
+        label="Content Typography"
+        value={getContentTypography()}
+        onChange={(updates) => {
+          const widgetUpdate: any = {};
+          if (updates.fontFamily !== undefined) widgetUpdate.contentFontFamily = updates.fontFamily;
+          if (updates.fontSize !== undefined) widgetUpdate.contentFontSize = updates.fontSize;
+          if (updates.fontWeight !== undefined) widgetUpdate.contentFontWeight = updates.fontWeight;
+          if (updates.lineHeight !== undefined) widgetUpdate.contentLineHeight = updates.lineHeight;
+          if (updates.textTransform !== undefined) widgetUpdate.contentTextTransform = updates.textTransform;
+          if (updates.letterSpacing !== undefined) widgetUpdate.contentLetterSpacing = updates.letterSpacing;
+          if (updates.color !== undefined) widgetUpdate.contentColor = updates.color;
+          onChange(widgetUpdate);
+        }}
+        showGlobalStyleSelector={true}
+        globalStyles={globalStyles}
+        availableGlobalStyles={['body']}
+      />
+
+      {/* Background */}
+      <CollapsibleSection title="Background" open={backgroundOpen} onToggle={() => setBackgroundOpen(!backgroundOpen)}>
+        <div className="space-y-3">
           <div className="space-y-2">
-            <Label>Background Color</Label>
-            <div className="flex gap-2">
-              <input
-                type="color"
-                value={widget.background?.color || '#ffffff'}
-                onChange={(e) => onChange({
-                  background: { ...widget.background, color: e.target.value }
-                })}
-                className="h-10 w-16 rounded border cursor-pointer"
-              />
-              <Input
-                value={widget.background?.color || '#ffffff'}
-                onChange={(e) => onChange({
-                  background: { ...widget.background, color: e.target.value }
-                })}
-                placeholder="#ffffff"
-                className="flex-1"
-              />
-            </div>
+            <Label>Background Type</Label>
+            <Select
+              value={widget.background?.type || 'none'}
+              onValueChange={(value: 'none' | 'color' | 'image' | 'video') => onChange({
+                background: { ...widget.background, type: value }
+              })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None (Transparent)</SelectItem>
+                <SelectItem value="color">Color</SelectItem>
+                <SelectItem value="image">Image</SelectItem>
+                <SelectItem value="video">Video</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        )}
-      </div>
+
+          {widget.background?.type === 'color' && (
+            <div className="space-y-2">
+              <Label>Background Color</Label>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={widget.background?.color || '#ffffff'}
+                  onChange={(e) => onChange({
+                    background: { ...widget.background, color: e.target.value }
+                  })}
+                  className="h-10 w-16 rounded border cursor-pointer"
+                />
+                <Input
+                  value={widget.background?.color || '#ffffff'}
+                  onChange={(e) => onChange({
+                    background: { ...widget.background, color: e.target.value }
+                  })}
+                  placeholder="#ffffff"
+                  className="flex-1"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </CollapsibleSection>
 
       {/* Image Styling */}
-      <div className="space-y-4 pb-4 border-b">
-        <h3 className="font-semibold text-sm">Image Styling</h3>
-        
-        <div className="space-y-2">
-          <Label>Border Radius: {widget.imageBorderRadius || 0}px</Label>
-          <input
-            type="range"
-            min="0"
-            max="50"
-            value={widget.imageBorderRadius || 0}
-            onChange={(e) => onChange({ imageBorderRadius: parseInt(e.target.value) })}
-            className="w-full"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Image Fit</Label>
-          <Select
-            value={widget.imageObjectFit || 'cover'}
-            onValueChange={(value: 'cover' | 'contain' | 'fill') => onChange({ imageObjectFit: value })}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="cover">Cover (default)</SelectItem>
-              <SelectItem value="contain">Contain</SelectItem>
-              <SelectItem value="fill">Fill</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Button Style */}
-      {widget.cta?.text && (
-        <div className="space-y-4">
-          <h3 className="font-semibold text-sm">Button Style</h3>
-          
+      <CollapsibleSection title="Image Styling" open={imageStyleOpen} onToggle={() => setImageStyleOpen(!imageStyleOpen)}>
+        <div className="space-y-3">
           <div className="space-y-2">
-            <Label>Border Radius: {widget.buttonStyles?.radius || 8}px</Label>
+            <Label>Border Radius: {widget.imageBorderRadius || 0}px</Label>
             <input
               type="range"
               min="0"
               max="50"
-              value={widget.buttonStyles?.radius || 8}
-              onChange={(e) => onChange({
-                buttonStyles: { 
-                  ...widget.buttonStyles, 
-                  radius: parseInt(e.target.value),
-                  bgColor: widget.buttonStyles?.bgColor || '#3b82f6',
-                  textColor: widget.buttonStyles?.textColor || '#ffffff',
-                  hasShadow: widget.buttonStyles?.hasShadow ?? true,
-                  shadowAmount: widget.buttonStyles?.shadowAmount || 4,
-                  strokeWidth: widget.buttonStyles?.strokeWidth || 0,
-                  strokeColor: widget.buttonStyles?.strokeColor || '#000000',
-                }
-              })}
+              value={widget.imageBorderRadius || 0}
+              onChange={(e) => onChange({ imageBorderRadius: parseInt(e.target.value) })}
               className="w-full"
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Background Color</Label>
-            <div className="flex gap-2">
-              <input
-                type="color"
-                value={widget.buttonStyles?.bgColor || '#3b82f6'}
-                onChange={(e) => onChange({
-                  buttonStyles: { 
-                    ...widget.buttonStyles, 
-                    bgColor: e.target.value,
-                    radius: widget.buttonStyles?.radius || 8,
-                    textColor: widget.buttonStyles?.textColor || '#ffffff',
-                    hasShadow: widget.buttonStyles?.hasShadow ?? true,
-                    shadowAmount: widget.buttonStyles?.shadowAmount || 4,
-                    strokeWidth: widget.buttonStyles?.strokeWidth || 0,
-                    strokeColor: widget.buttonStyles?.strokeColor || '#000000',
-                  }
-                })}
-                className="h-10 w-16 rounded border cursor-pointer"
-              />
-              <Input
-                value={widget.buttonStyles?.bgColor || '#3b82f6'}
-                onChange={(e) => onChange({
-                  buttonStyles: { 
-                    ...widget.buttonStyles, 
-                    bgColor: e.target.value,
-                    radius: widget.buttonStyles?.radius || 8,
-                    textColor: widget.buttonStyles?.textColor || '#ffffff',
-                    hasShadow: widget.buttonStyles?.hasShadow ?? true,
-                    shadowAmount: widget.buttonStyles?.shadowAmount || 4,
-                    strokeWidth: widget.buttonStyles?.strokeWidth || 0,
-                    strokeColor: widget.buttonStyles?.strokeColor || '#000000',
-                  }
-                })}
-                className="flex-1"
-              />
-            </div>
+            <Label>Image Fit</Label>
+            <Select
+              value={widget.imageObjectFit || 'cover'}
+              onValueChange={(value: 'cover' | 'contain' | 'fill') => onChange({ imageObjectFit: value })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cover">Cover (default)</SelectItem>
+                <SelectItem value="contain">Contain</SelectItem>
+                <SelectItem value="fill">Fill</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+        </div>
+      </CollapsibleSection>
 
-          <div className="space-y-2">
-            <Label>Text Color</Label>
-            <div className="flex gap-2">
-              <input
-                type="color"
-                value={widget.buttonStyles?.textColor || '#ffffff'}
-                onChange={(e) => onChange({
-                  buttonStyles: { 
-                    ...widget.buttonStyles, 
-                    textColor: e.target.value,
-                    radius: widget.buttonStyles?.radius || 8,
-                    bgColor: widget.buttonStyles?.bgColor || '#3b82f6',
-                    hasShadow: widget.buttonStyles?.hasShadow ?? true,
-                    shadowAmount: widget.buttonStyles?.shadowAmount || 4,
-                    strokeWidth: widget.buttonStyles?.strokeWidth || 0,
-                    strokeColor: widget.buttonStyles?.strokeColor || '#000000',
-                  }
-                })}
-                className="h-10 w-16 rounded border cursor-pointer"
-              />
-              <Input
-                value={widget.buttonStyles?.textColor || '#ffffff'}
-                onChange={(e) => onChange({
-                  buttonStyles: { 
-                    ...widget.buttonStyles, 
-                    textColor: e.target.value,
-                    radius: widget.buttonStyles?.radius || 8,
-                    bgColor: widget.buttonStyles?.bgColor || '#3b82f6',
-                    hasShadow: widget.buttonStyles?.hasShadow ?? true,
-                    shadowAmount: widget.buttonStyles?.shadowAmount || 4,
-                    strokeWidth: widget.buttonStyles?.strokeWidth || 0,
-                    strokeColor: widget.buttonStyles?.strokeColor || '#000000',
-                  }
-                })}
-                className="flex-1"
-              />
-            </div>
-          </div>
+      {/* Button Styling */}
+      {widget.cta?.text && (
+        <div className="border rounded-lg p-3">
+          <Label className="text-sm font-semibold mb-3 block">Button Styling</Label>
+          <ButtonControl
+            value={getButtonConfig()}
+            onChange={(updates) => {
+              const widgetUpdate: any = {};
+              
+              // Update CTA text and URL
+              if (updates.text !== undefined || updates.url !== undefined || updates.openNewTab !== undefined) {
+                widgetUpdate.cta = { 
+                  ...widget.cta, 
+                  text: updates.text ?? widget.cta?.text,
+                  url: updates.url ?? widget.cta?.url,
+                  openNewTab: updates.openNewTab ?? widget.cta?.openNewTab,
+                };
+              }
+              
+              // Update button width and typography
+              if (updates.width !== undefined) widgetUpdate.buttonWidth = updates.width;
+              if (updates.fontFamily !== undefined) widgetUpdate.buttonFontFamily = updates.fontFamily;
+              if (updates.fontSize !== undefined) widgetUpdate.buttonFontSize = updates.fontSize;
+              if (updates.fontWeight !== undefined) widgetUpdate.buttonFontWeight = updates.fontWeight;
+              if (updates.lineHeight !== undefined) widgetUpdate.buttonLineHeight = updates.lineHeight;
+              if (updates.textTransform !== undefined) widgetUpdate.buttonTextTransform = updates.textTransform;
+              if (updates.letterSpacing !== undefined) widgetUpdate.buttonLetterSpacing = updates.letterSpacing;
+              if (updates.hover !== undefined) widgetUpdate.buttonHover = updates.hover;
+              if (updates.useGlobalStyle !== undefined) widgetUpdate.buttonUseGlobalStyle = updates.useGlobalStyle;
+              if (updates.globalStyleId !== undefined) widgetUpdate.buttonGlobalStyleId = updates.globalStyleId;
+              
+              // Update buttonStyles object
+              const buttonStylesUpdate: any = {};
+              if (updates.backgroundColor !== undefined) buttonStylesUpdate.bgColor = updates.backgroundColor;
+              if (updates.textColor !== undefined) buttonStylesUpdate.textColor = updates.textColor;
+              if (updates.borderRadius !== undefined) buttonStylesUpdate.radius = updates.borderRadius;
+              if (updates.borderWidth !== undefined) buttonStylesUpdate.strokeWidth = updates.borderWidth;
+              if (updates.borderColor !== undefined) buttonStylesUpdate.strokeColor = updates.borderColor;
+              if (updates.backgroundOpacity !== undefined) buttonStylesUpdate.bgOpacity = updates.backgroundOpacity;
+              if (updates.dropShadow !== undefined) buttonStylesUpdate.hasShadow = updates.dropShadow;
+              if (updates.shadowAmount !== undefined) buttonStylesUpdate.shadowAmount = updates.shadowAmount;
+              if (updates.blurEffect !== undefined) buttonStylesUpdate.blurAmount = updates.blurEffect;
+              
+              if (Object.keys(buttonStylesUpdate).length > 0) {
+                widgetUpdate.buttonStyles = { ...widget.buttonStyles, ...buttonStylesUpdate };
+              }
+              
+              onChange(widgetUpdate);
+            }}
+            showGlobalStyleSelector={true}
+            globalStyles={globalStyles}
+          />
         </div>
       )}
     </div>

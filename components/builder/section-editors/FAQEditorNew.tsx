@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FAQWidget, FAQItem } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash2, ChevronDown, ChevronRight, ChevronUp, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 import { SectionEditorTabs } from '../SectionEditorTabs';
 import { FontSizeInput, type FontSizeValue } from '../FontSizeInput';
+import { TypographyControl } from '../controls/TypographyControl';
+import { useWebsiteStore } from '@/lib/stores/website';
 
 interface FAQEditorNewProps {
   widget: FAQWidget;
@@ -18,6 +20,9 @@ interface FAQEditorNewProps {
 }
 
 export function FAQEditorNew({ widget, onChange }: FAQEditorNewProps) {
+  const { currentWebsite } = useWebsiteStore();
+  const globalStyles = currentWebsite?.globalStyles;
+
   const [expandedItemIds, setExpandedItemIds] = useState<Set<string>>(new Set());
   
   // Collapsible states
@@ -83,6 +88,146 @@ export function FAQEditorNew({ widget, onChange }: FAQEditorNewProps) {
   const items = widget.items || [];
 
   const generateId = () => Math.random().toString(36).substring(2, 11);
+
+  // Migration: Convert old widget format to new format on first render
+  useEffect(() => {
+    let needsUpdate = false;
+    const updates: any = {};
+
+    // Migrate heading fontSize
+    const headingFontSize = (widget as any).headingFontSize || widget.headingSize;
+    if (headingFontSize && typeof headingFontSize !== 'object') {
+      if (typeof headingFontSize === 'number') {
+        updates.headingFontSize = { value: headingFontSize, unit: 'px' as const };
+        needsUpdate = true;
+      } else if (typeof headingFontSize === 'string') {
+        const match = headingFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          updates.headingFontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+          needsUpdate = true;
+        }
+      }
+    }
+
+    // Migrate question fontSize
+    const questionFontSize = widget.questionFontSize;
+    if (questionFontSize && typeof questionFontSize !== 'object') {
+      if (typeof questionFontSize === 'number') {
+        updates.questionFontSizeObj = { value: questionFontSize, unit: 'px' as const };
+        needsUpdate = true;
+      } else if (typeof questionFontSize === 'string') {
+        const match = questionFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          updates.questionFontSizeObj = { value: parseFloat(match[1]), unit: match[2] as any };
+          needsUpdate = true;
+        }
+      }
+    }
+
+    // Migrate answer fontSize
+    const answerFontSize = widget.answerFontSize;
+    if (answerFontSize && typeof answerFontSize !== 'object') {
+      if (typeof answerFontSize === 'number') {
+        updates.answerFontSizeObj = { value: answerFontSize, unit: 'px' as const };
+        needsUpdate = true;
+      } else if (typeof answerFontSize === 'string') {
+        const match = answerFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          updates.answerFontSizeObj = { value: parseFloat(match[1]), unit: match[2] as any };
+          needsUpdate = true;
+        }
+      }
+    }
+
+    if (needsUpdate) {
+      onChange(updates);
+    }
+  }, []); // Only run once on mount
+
+  // Get typography configs with proper format handling
+  const getSectionHeaderTypography = () => {
+    let fontSize = { value: 48, unit: 'px' as const };
+    const rawFontSize = (widget as any).headingFontSize || widget.headingSize;
+    
+    if (rawFontSize) {
+      if (typeof rawFontSize === 'object' && rawFontSize.value !== undefined) {
+        fontSize = rawFontSize;
+      } else if (typeof rawFontSize === 'number') {
+        fontSize = { value: rawFontSize, unit: 'px' as const };
+      } else if (typeof rawFontSize === 'string') {
+        const match = rawFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          fontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+    }
+
+    return {
+      fontFamily: (widget as any).headingFontFamily || 'Inter',
+      fontSize,
+      fontWeight: (widget as any).headingFontWeight || widget.headingWeight || '700',
+      lineHeight: (widget as any).headingLineHeight || '1.2',
+      textTransform: (widget as any).headingTextTransform || 'none' as const,
+      letterSpacing: (widget as any).headingLetterSpacing || '-0.02em',
+      color: widget.headingColor || '#1f2937',
+    };
+  };
+
+  const getQuestionTypography = () => {
+    let fontSize = { value: 18, unit: 'px' as const };
+    const rawFontSize = (widget as any).questionFontSizeObj || widget.questionFontSize;
+    
+    if (rawFontSize) {
+      if (typeof rawFontSize === 'object' && rawFontSize.value !== undefined) {
+        fontSize = rawFontSize;
+      } else if (typeof rawFontSize === 'number') {
+        fontSize = { value: rawFontSize, unit: 'px' as const };
+      } else if (typeof rawFontSize === 'string') {
+        const match = rawFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          fontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+    }
+
+    return {
+      fontFamily: (widget as any).questionFontFamily || 'Inter',
+      fontSize,
+      fontWeight: (widget as any).questionFontWeightStr || String(widget.questionFontWeight || '600'),
+      lineHeight: (widget as any).questionLineHeight || '1.5',
+      textTransform: (widget as any).questionTextTransform || 'none' as const,
+      letterSpacing: (widget as any).questionLetterSpacing || '0em',
+      color: widget.questionColor || '#1f2937',
+    };
+  };
+
+  const getAnswerTypography = () => {
+    let fontSize = { value: 16, unit: 'px' as const };
+    const rawFontSize = (widget as any).answerFontSizeObj || widget.answerFontSize;
+    
+    if (rawFontSize) {
+      if (typeof rawFontSize === 'object' && rawFontSize.value !== undefined) {
+        fontSize = rawFontSize;
+      } else if (typeof rawFontSize === 'number') {
+        fontSize = { value: rawFontSize, unit: 'px' as const };
+      } else if (typeof rawFontSize === 'string') {
+        const match = rawFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          fontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+    }
+
+    return {
+      fontFamily: (widget as any).answerFontFamily || 'Inter',
+      fontSize,
+      fontWeight: (widget as any).answerFontWeightStr || String(widget.answerFontWeight || '400'),
+      lineHeight: (widget as any).answerLineHeight || '1.6',
+      textTransform: (widget as any).answerTextTransform || 'none' as const,
+      letterSpacing: (widget as any).answerLetterSpacing || '0em',
+      color: widget.answerColor || '#6b7280',
+    };
+  };
 
   const addItem = () => {
     const newItem: FAQItem = {
@@ -370,285 +515,108 @@ export function FAQEditorNew({ widget, onChange }: FAQEditorNewProps) {
   // Style Tab
   const styleTab = (
     <div className="space-y-2">
-      {/* Typography */}
-      <CollapsibleSection title="Typography" open={typographyOpen} onToggle={() => setTypographyOpen(!typographyOpen)}>
-        <div className="space-y-3">
-          {/* Section Header Style */}
-          <div className="border rounded-lg">
-            <button
-              type="button"
-              className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-              onClick={() => setSectionHeaderStyleOpen(!sectionHeaderStyleOpen)}
-            >
-              <span className="text-sm font-medium">Section Header</span>
-              {sectionHeaderStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </button>
-            {sectionHeaderStyleOpen && (
-              <div className="p-3 pt-0 space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Family</Label>
-                  <Select defaultValue="Inter">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Inter">Inter</SelectItem>
-                      <SelectItem value="Arial">Arial</SelectItem>
-                      <SelectItem value="Helvetica">Helvetica</SelectItem>
-                      <SelectItem value="Georgia">Georgia</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Size</Label>
-                  <FontSizeInput
-                    value={widget.headingSize || 48}
-                    onChange={(value: FontSizeValue) => onChange({ headingSize: value.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Weight</Label>
-                  <Select
-                    value={String(widget.headingWeight || 700)}
-                    onValueChange={(value) => onChange({ headingWeight: parseInt(value) } as any)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="400">Regular</SelectItem>
-                      <SelectItem value="500">Medium</SelectItem>
-                      <SelectItem value="600">Semibold</SelectItem>
-                      <SelectItem value="700">Bold</SelectItem>
-                      <SelectItem value="800">Extra Bold</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Line Height</Label>
-                  <Input
-                    value={(widget as any).headingLineHeight || '1.2'}
-                    onChange={(e) => onChange({ headingLineHeight: e.target.value } as any)}
-                    placeholder="1.2"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Text Transform</Label>
-                  <Select
-                    value={(widget as any).headingTextTransform || 'none'}
-                    onValueChange={(value) => onChange({ headingTextTransform: value } as any)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Normal</SelectItem>
-                      <SelectItem value="uppercase">All Caps</SelectItem>
-                      <SelectItem value="capitalize">Capitalize</SelectItem>
-                      <SelectItem value="lowercase">Lowercase</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Color</Label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={widget.headingColor || '#1f2937'}
-                      onChange={(e) => onChange({ headingColor: e.target.value })}
-                      className="h-10 w-16 rounded border cursor-pointer"
-                    />
-                    <Input
-                      value={widget.headingColor || '#1f2937'}
-                      onChange={(e) => onChange({ headingColor: e.target.value })}
-                      placeholder="#1f2937"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Alignment</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Button
-                      variant={widget.headingAlignment === 'left' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => onChange({ headingAlignment: 'left' })}
-                    >
-                      <AlignLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant={widget.headingAlignment === 'center' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => onChange({ headingAlignment: 'center' })}
-                    >
-                      <AlignCenter className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant={widget.headingAlignment === 'right' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => onChange({ headingAlignment: 'right' })}
-                    >
-                      <AlignRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+      {/* Section Header Typography */}
+      <TypographyControl
+        label="Section Header Typography"
+        value={getSectionHeaderTypography()}
+        onChange={(updates) => {
+          const widgetUpdate: any = {};
+          if (updates.fontFamily !== undefined) widgetUpdate.headingFontFamily = updates.fontFamily;
+          if (updates.fontSize !== undefined) {
+            widgetUpdate.headingFontSize = updates.fontSize;
+            widgetUpdate.headingSize = updates.fontSize; // Keep both for compatibility
+          }
+          if (updates.fontWeight !== undefined) {
+            widgetUpdate.headingFontWeight = updates.fontWeight;
+            widgetUpdate.headingWeight = updates.fontWeight; // Keep both for compatibility
+          }
+          if (updates.lineHeight !== undefined) widgetUpdate.headingLineHeight = updates.lineHeight;
+          if (updates.textTransform !== undefined) widgetUpdate.headingTextTransform = updates.textTransform;
+          if (updates.letterSpacing !== undefined) widgetUpdate.headingLetterSpacing = updates.letterSpacing;
+          if (updates.color !== undefined) widgetUpdate.headingColor = updates.color;
+          onChange(widgetUpdate);
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['h2', 'h3', 'h4']}
+      />
 
-          {/* Question Style */}
-          <div className="border rounded-lg">
-            <button
-              type="button"
-              className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-              onClick={() => setQuestionStyleOpen(!questionStyleOpen)}
-            >
-              <span className="text-sm font-medium">Questions</span>
-              {questionStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </button>
-            {questionStyleOpen && (
-              <div className="p-3 pt-0 space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Family</Label>
-                  <Select defaultValue="Inter">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Inter">Inter</SelectItem>
-                      <SelectItem value="Arial">Arial</SelectItem>
-                      <SelectItem value="Helvetica">Helvetica</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Size</Label>
-                  <FontSizeInput
-                    value={widget.questionFontSize || 18}
-                    onChange={(value: FontSizeValue) => onChange({ questionFontSize: value.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Weight</Label>
-                  <Select
-                    value={String(widget.questionFontWeight || 600)}
-                    onValueChange={(value) => onChange({ questionFontWeight: parseInt(value) })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="400">Regular</SelectItem>
-                      <SelectItem value="500">Medium</SelectItem>
-                      <SelectItem value="600">Semibold</SelectItem>
-                      <SelectItem value="700">Bold</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Line Height</Label>
-                  <Input
-                    value={(widget as any).questionLineHeight || '1.5'}
-                    onChange={(e) => onChange({ questionLineHeight: e.target.value } as any)}
-                    placeholder="1.5"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Color</Label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={widget.questionColor || '#1f2937'}
-                      onChange={(e) => onChange({ questionColor: e.target.value })}
-                      className="h-10 w-16 rounded border cursor-pointer"
-                    />
-                    <Input
-                      value={widget.questionColor || '#1f2937'}
-                      onChange={(e) => onChange({ questionColor: e.target.value })}
-                      placeholder="#1f2937"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Answer Style */}
-          <div className="border rounded-lg">
-            <button
-              type="button"
-              className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-              onClick={() => setAnswerStyleOpen(!answerStyleOpen)}
-            >
-              <span className="text-sm font-medium">Answers</span>
-              {answerStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </button>
-            {answerStyleOpen && (
-              <div className="p-3 pt-0 space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Family</Label>
-                  <Select defaultValue="Inter">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Inter">Inter</SelectItem>
-                      <SelectItem value="Arial">Arial</SelectItem>
-                      <SelectItem value="Helvetica">Helvetica</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Size</Label>
-                  <FontSizeInput
-                    value={widget.answerFontSize || 16}
-                    onChange={(value: FontSizeValue) => onChange({ answerFontSize: value.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Weight</Label>
-                  <Select
-                    value={String(widget.answerFontWeight || 400)}
-                    onValueChange={(value) => onChange({ answerFontWeight: parseInt(value) })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="400">Regular</SelectItem>
-                      <SelectItem value="500">Medium</SelectItem>
-                      <SelectItem value="600">Semibold</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Line Height</Label>
-                  <Input
-                    value={(widget as any).answerLineHeight || '1.6'}
-                    onChange={(e) => onChange({ answerLineHeight: e.target.value } as any)}
-                    placeholder="1.6"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Color</Label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={widget.answerColor || '#6b7280'}
-                      onChange={(e) => onChange({ answerColor: e.target.value })}
-                      className="h-10 w-16 rounded border cursor-pointer"
-                    />
-                    <Input
-                      value={widget.answerColor || '#6b7280'}
-                      onChange={(e) => onChange({ answerColor: e.target.value })}
-                      placeholder="#6b7280"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+      {/* Section Header Alignment */}
+      <div className="border rounded-lg p-3">
+        <Label className="text-sm font-medium mb-2 block">Section Header Alignment</Label>
+        <div className="grid grid-cols-3 gap-2">
+          <Button
+            variant={widget.headingAlignment === 'left' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => onChange({ headingAlignment: 'left' })}
+          >
+            <AlignLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={widget.headingAlignment === 'center' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => onChange({ headingAlignment: 'center' })}
+          >
+            <AlignCenter className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={widget.headingAlignment === 'right' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => onChange({ headingAlignment: 'right' })}
+          >
+            <AlignRight className="h-4 w-4" />
+          </Button>
         </div>
-      </CollapsibleSection>
+      </div>
+
+      {/* Question Typography */}
+      <TypographyControl
+        label="Question Typography"
+        value={getQuestionTypography()}
+        onChange={(updates) => {
+          const widgetUpdate: any = {};
+          if (updates.fontFamily !== undefined) widgetUpdate.questionFontFamily = updates.fontFamily;
+          if (updates.fontSize !== undefined) {
+            widgetUpdate.questionFontSizeObj = updates.fontSize;
+            widgetUpdate.questionFontSize = updates.fontSize; // Keep both for compatibility
+          }
+          if (updates.fontWeight !== undefined) {
+            widgetUpdate.questionFontWeightStr = updates.fontWeight;
+            widgetUpdate.questionFontWeight = parseInt(String(updates.fontWeight)); // Keep both for compatibility
+          }
+          if (updates.lineHeight !== undefined) widgetUpdate.questionLineHeight = updates.lineHeight;
+          if (updates.textTransform !== undefined) widgetUpdate.questionTextTransform = updates.textTransform;
+          if (updates.letterSpacing !== undefined) widgetUpdate.questionLetterSpacing = updates.letterSpacing;
+          if (updates.color !== undefined) widgetUpdate.questionColor = updates.color;
+          onChange(widgetUpdate);
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['h3', 'h4', 'h5', 'body']}
+      />
+
+      {/* Answer Typography */}
+      <TypographyControl
+        label="Answer Typography"
+        value={getAnswerTypography()}
+        onChange={(updates) => {
+          const widgetUpdate: any = {};
+          if (updates.fontFamily !== undefined) widgetUpdate.answerFontFamily = updates.fontFamily;
+          if (updates.fontSize !== undefined) {
+            widgetUpdate.answerFontSizeObj = updates.fontSize;
+            widgetUpdate.answerFontSize = updates.fontSize; // Keep both for compatibility
+          }
+          if (updates.fontWeight !== undefined) {
+            widgetUpdate.answerFontWeightStr = updates.fontWeight;
+            widgetUpdate.answerFontWeight = parseInt(String(updates.fontWeight)); // Keep both for compatibility
+          }
+          if (updates.lineHeight !== undefined) widgetUpdate.answerLineHeight = updates.lineHeight;
+          if (updates.textTransform !== undefined) widgetUpdate.answerTextTransform = updates.textTransform;
+          if (updates.letterSpacing !== undefined) widgetUpdate.answerLetterSpacing = updates.letterSpacing;
+          if (updates.color !== undefined) widgetUpdate.answerColor = updates.color;
+          onChange(widgetUpdate);
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['body']}
+      />
 
       {/* Icon Style */}
       <CollapsibleSection title="Icon Style" open={iconStyleOpen} onToggle={() => setIconStyleOpen(!iconStyleOpen)}>

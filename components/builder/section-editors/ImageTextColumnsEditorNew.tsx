@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ImageTextColumnsWidget, ImageTextColumnItem, LayoutConfig, BackgroundConfig } from '@/lib/types';
+import { ImageTextColumnsWidget, ImageTextColumnItem, LayoutConfig, BackgroundConfig, TypographyConfig } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,6 +16,8 @@ import { ImageUpload } from '../ImageUpload';
 import { Switch } from '@/components/ui/switch';
 import { SectionEditorTabs } from '../SectionEditorTabs';
 import { cn } from '@/lib/utils';
+import { TypographyControl } from '../controls/TypographyControl';
+import { useWebsiteStore } from '@/lib/stores/website';
 
 interface ImageTextColumnsEditorNewProps {
   widget: ImageTextColumnsWidget;
@@ -23,9 +25,47 @@ interface ImageTextColumnsEditorNewProps {
 }
 
 export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumnsEditorNewProps) {
+  const { website } = useWebsiteStore();
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [sectionHeaderOpen, setSectionHeaderOpen] = useState(false);
   const [columnItemsOpen, setColumnItemsOpen] = useState(true);
+
+  // Helper functions to get typography configs
+  const getSectionHeaderTypography = (): TypographyConfig => {
+    return (widget as any).sectionHeaderTypography || {
+      fontFamily: 'Inter',
+      fontSize: { value: 2, unit: 'rem' },
+      fontWeight: '700',
+      lineHeight: '1.2',
+      textTransform: 'none',
+      letterSpacing: '0em',
+      color: '#1f2937',
+    };
+  };
+
+  const getSubtitleTypography = (): TypographyConfig => {
+    return (widget as any).subtitleTypography || {
+      fontFamily: 'Inter',
+      fontSize: { value: 1.25, unit: 'rem' },
+      fontWeight: '600',
+      lineHeight: '1.3',
+      textTransform: 'none',
+      letterSpacing: '0em',
+      color: '#1f2937',
+    };
+  };
+
+  const getDescriptionTypography = (): TypographyConfig => {
+    return (widget as any).descriptionTypography || {
+      fontFamily: 'Inter',
+      fontSize: { value: 1, unit: 'rem' },
+      fontWeight: '400',
+      lineHeight: '1.6',
+      textTransform: 'none',
+      letterSpacing: '0em',
+      color: '#6b7280',
+    };
+  };
 
   const layoutConfig = widget.layout || {
     fullWidth: true,
@@ -406,65 +446,65 @@ export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumns
         </div>
       </div>
 
-      {/* Text Styling */}
+      {/* Text Alignment */}
       <div className="border rounded-lg p-3 space-y-3">
-        <h4 className="font-medium text-sm">Text Styling</h4>
-        <div className="space-y-2">
-          <Label>Text Alignment</Label>
-          <div className="flex gap-2">
-            {getAlignmentButton('left', <AlignLeft className="h-4 w-4" />)}
-            {getAlignmentButton('center', <AlignCenter className="h-4 w-4" />)}
-            {getAlignmentButton('right', <AlignRight className="h-4 w-4" />)}
-          </div>
-        </div>
-        <div className="space-y-2">
-          <Label>Subtitle Color</Label>
-          {renderColorPicker(widget.subtitleColor, (color) => onChange({ subtitleColor: color }), '#1f2937')}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="subtitleSize">Subtitle Size (px)</Label>
-          <Input
-            id="subtitleSize"
-            type="number"
-            min={14}
-            max={32}
-            value={widget.subtitleSize ?? 20}
-            onChange={(e) => onChange({ subtitleSize: parseInt(e.target.value) })}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="subtitleFontWeight">Subtitle Font Weight</Label>
-          <Select
-            value={String(widget.subtitleFontWeight ?? 600)}
-            onValueChange={(value) => onChange({ subtitleFontWeight: parseInt(value) })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select weight" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="400">Normal</SelectItem>
-              <SelectItem value="500">Medium</SelectItem>
-              <SelectItem value="600">Semibold</SelectItem>
-              <SelectItem value="700">Bold</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Description Color</Label>
-          {renderColorPicker(widget.descriptionColor, (color) => onChange({ descriptionColor: color }), '#6b7280')}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="descriptionSize">Description Size (px)</Label>
-          <Input
-            id="descriptionSize"
-            type="number"
-            min={12}
-            max={24}
-            value={widget.descriptionSize ?? 16}
-            onChange={(e) => onChange({ descriptionSize: parseInt(e.target.value) })}
-          />
+        <h4 className="font-medium text-sm">Text Alignment</h4>
+        <div className="flex gap-2">
+          {getAlignmentButton('left', <AlignLeft className="h-4 w-4" />)}
+          {getAlignmentButton('center', <AlignCenter className="h-4 w-4" />)}
+          {getAlignmentButton('right', <AlignRight className="h-4 w-4" />)}
         </div>
       </div>
+
+      {/* Section Header Typography (optional) */}
+      {widget.sectionHeading && (
+        <TypographyControl
+          label="Section Header Typography"
+          value={getSectionHeaderTypography()}
+          onChange={(updates) => {
+            onChange({
+              sectionHeaderTypography: {
+                ...getSectionHeaderTypography(),
+                ...updates,
+              } as any,
+            });
+          }}
+          showGlobalStyleSelector={true}
+          availableGlobalStyles={['h2', 'h3']}
+        />
+      )}
+
+      {/* Subtitle Typography */}
+      <TypographyControl
+        label="Subtitle Typography"
+        value={getSubtitleTypography()}
+        onChange={(updates) => {
+          onChange({
+            subtitleTypography: {
+              ...getSubtitleTypography(),
+              ...updates,
+            } as any,
+          });
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['h4', 'body']}
+      />
+
+      {/* Description Typography */}
+      <TypographyControl
+        label="Description Typography"
+        value={getDescriptionTypography()}
+        onChange={(updates) => {
+          onChange({
+            descriptionTypography: {
+              ...getDescriptionTypography(),
+              ...updates,
+            } as any,
+          });
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['body']}
+      />
 
       {/* Background */}
       <div className="border rounded-lg p-3">

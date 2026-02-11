@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TestimonialWidget, Testimonial } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +12,8 @@ import { Plus, Trash2, ChevronDown, ChevronRight, ChevronUp, Star } from 'lucide
 import { SectionEditorTabs } from '../SectionEditorTabs';
 import { FontSizeInput, type FontSizeValue } from '../FontSizeInput';
 import { ImageUpload } from '../ImageUpload';
+import { TypographyControl } from '../controls/TypographyControl';
+import { useWebsiteStore } from '@/lib/stores/website';
 
 interface TestimonialsEditorNewProps {
   widget: TestimonialWidget;
@@ -19,6 +21,9 @@ interface TestimonialsEditorNewProps {
 }
 
 export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNewProps) {
+  const { currentWebsite } = useWebsiteStore();
+  const globalStyles = currentWebsite?.globalStyles;
+
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   
   // Collapsible states
@@ -101,6 +106,167 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
     const [removed] = items.splice(index, 1);
     items.splice(newIndex, 0, removed);
     onChange({ testimonials: items });
+  };
+
+  // Migration: Convert old widget format to new format on first render
+  useEffect(() => {
+    let needsUpdate = false;
+    const updates: any = {};
+
+    // Helper to migrate font size
+    const migrateFontSize = (rawValue: any) => {
+      if (!rawValue || typeof rawValue === 'object') return null;
+      if (typeof rawValue === 'number') {
+        return { value: rawValue, unit: 'px' as const };
+      } else if (typeof rawValue === 'string') {
+        const match = rawValue.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          return { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+      return null;
+    };
+
+    const headerMigrated = migrateFontSize((widget as any).headerFontSize || widget.headerSize);
+    if (headerMigrated) {
+      updates.headerFontSize = headerMigrated;
+      needsUpdate = true;
+    }
+
+    const nameMigrated = migrateFontSize(widget.nameFontSize);
+    if (nameMigrated) {
+      updates.nameFontSizeObj = nameMigrated;
+      needsUpdate = true;
+    }
+
+    const titleMigrated = migrateFontSize(widget.titleFontSize);
+    if (titleMigrated) {
+      updates.titleFontSizeObj = titleMigrated;
+      needsUpdate = true;
+    }
+
+    const quoteMigrated = migrateFontSize(widget.quoteFontSize);
+    if (quoteMigrated) {
+      updates.quoteFontSizeObj = quoteMigrated;
+      needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+      onChange(updates);
+    }
+  }, []); // Only run once on mount
+
+  // Get typography configs with proper format handling
+  const getSectionHeaderTypography = () => {
+    let fontSize = { value: 36, unit: 'px' as const };
+    const rawFontSize = (widget as any).headerFontSize || widget.headerSize;
+    
+    if (rawFontSize) {
+      if (typeof rawFontSize === 'object' && rawFontSize.value !== undefined) {
+        fontSize = rawFontSize;
+      } else if (typeof rawFontSize === 'number') {
+        fontSize = { value: rawFontSize, unit: 'px' as const };
+      } else if (typeof rawFontSize === 'string') {
+        const match = rawFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          fontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+    }
+
+    return {
+      fontFamily: (widget as any).headerFontFamily || 'Inter',
+      fontSize,
+      fontWeight: (widget as any).headerFontWeight || widget.headerWeight || '700',
+      lineHeight: (widget as any).headerLineHeight || '1.2',
+      textTransform: (widget as any).headerTextTransform || 'none' as const,
+      letterSpacing: (widget as any).headerLetterSpacing || '-0.02em',
+      color: widget.headerColor || '#1f2937',
+    };
+  };
+
+  const getNameTypography = () => {
+    let fontSize = { value: 18, unit: 'px' as const };
+    const rawFontSize = (widget as any).nameFontSizeObj || widget.nameFontSize;
+    
+    if (rawFontSize) {
+      if (typeof rawFontSize === 'object' && rawFontSize.value !== undefined) {
+        fontSize = rawFontSize;
+      } else if (typeof rawFontSize === 'number') {
+        fontSize = { value: rawFontSize, unit: 'px' as const };
+      } else if (typeof rawFontSize === 'string') {
+        const match = rawFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          fontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+    }
+
+    return {
+      fontFamily: (widget as any).nameFontFamily || 'Inter',
+      fontSize,
+      fontWeight: (widget as any).nameFontWeightStr || String(widget.nameFontWeight || '600'),
+      lineHeight: (widget as any).nameLineHeight || '1.4',
+      textTransform: (widget as any).nameTextTransform || 'none' as const,
+      letterSpacing: (widget as any).nameLetterSpacing || '0em',
+      color: widget.nameColor || '#1f2937',
+    };
+  };
+
+  const getTitleTypography = () => {
+    let fontSize = { value: 14, unit: 'px' as const };
+    const rawFontSize = (widget as any).titleFontSizeObj || widget.titleFontSize;
+    
+    if (rawFontSize) {
+      if (typeof rawFontSize === 'object' && rawFontSize.value !== undefined) {
+        fontSize = rawFontSize;
+      } else if (typeof rawFontSize === 'number') {
+        fontSize = { value: rawFontSize, unit: 'px' as const };
+      } else if (typeof rawFontSize === 'string') {
+        const match = rawFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          fontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+    }
+
+    return {
+      fontFamily: (widget as any).titleFontFamily || 'Inter',
+      fontSize,
+      fontWeight: (widget as any).titleFontWeightStr || String(widget.titleFontWeight || '400'),
+      lineHeight: (widget as any).titleLineHeight || '1.4',
+      textTransform: (widget as any).titleTextTransform || 'none' as const,
+      letterSpacing: (widget as any).titleLetterSpacing || '0em',
+      color: widget.titleColor || '#6b7280',
+    };
+  };
+
+  const getQuoteTypography = () => {
+    let fontSize = { value: 16, unit: 'px' as const };
+    const rawFontSize = (widget as any).quoteFontSizeObj || widget.quoteFontSize;
+    
+    if (rawFontSize) {
+      if (typeof rawFontSize === 'object' && rawFontSize.value !== undefined) {
+        fontSize = rawFontSize;
+      } else if (typeof rawFontSize === 'number') {
+        fontSize = { value: rawFontSize, unit: 'px' as const };
+      } else if (typeof rawFontSize === 'string') {
+        const match = rawFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          fontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+    }
+
+    return {
+      fontFamily: (widget as any).quoteFontFamily || 'Inter',
+      fontSize,
+      fontWeight: (widget as any).quoteFontWeightStr || String(widget.quoteFontWeight || '400'),
+      lineHeight: (widget as any).quoteLineHeight || '1.6',
+      textTransform: (widget as any).quoteTextTransform || 'none' as const,
+      letterSpacing: (widget as any).quoteLetterSpacing || '0em',
+      color: widget.quoteColor || '#4b5563',
+    };
   };
 
   // Content Tab
@@ -359,167 +525,111 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
   const styleTab = (
     <div className="space-y-2">
       {/* Typography */}
-      <CollapsibleSection title="Typography" open={typographyOpen} onToggle={() => setTypographyOpen(!typographyOpen)}>
-        <div className="space-y-3">
-          {/* Section Header Style */}
-          {widget.sectionHeading && (
-            <div className="border rounded-lg">
-              <button
-                type="button"
-                className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-                onClick={() => setSectionHeaderStyleOpen(!sectionHeaderStyleOpen)}
-              >
-                <span className="text-sm font-medium">Section Header</span>
-                {sectionHeaderStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-              </button>
-              {sectionHeaderStyleOpen && (
-                <div className="p-3 pt-0 space-y-3">
-                  <div className="space-y-2">
-                    <Label className="text-xs">Font Size</Label>
-                    <FontSizeInput
-                      value={(widget as any).sectionHeadingSize || 32}
-                      onChange={(value: FontSizeValue) => onChange({ sectionHeadingSize: value.value } as any)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Color</Label>
-                    <div className="flex gap-2">
-                      <input
-                        type="color"
-                        value={widget.sectionHeadingColor || '#1f2937'}
-                        onChange={(e) => onChange({ sectionHeadingColor: e.target.value })}
-                        className="h-10 w-16 rounded border cursor-pointer"
-                      />
-                      <Input
-                        value={widget.sectionHeadingColor || '#1f2937'}
-                        onChange={(e) => onChange({ sectionHeadingColor: e.target.value })}
-                        placeholder="#1f2937"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+      {/* Section Header Typography */}
+      {widget.sectionHeading && (
+        <TypographyControl
+          label="Section Header Typography"
+          value={getSectionHeaderTypography()}
+          onChange={(updates) => {
+            const widgetUpdate: any = {};
+            if (updates.fontFamily !== undefined) widgetUpdate.headerFontFamily = updates.fontFamily;
+            if (updates.fontSize !== undefined) {
+              widgetUpdate.headerFontSize = updates.fontSize;
+              widgetUpdate.headerSize = updates.fontSize; // Keep both for compatibility
+              widgetUpdate.sectionHeadingSize = updates.fontSize; // Legacy compatibility
+            }
+            if (updates.fontWeight !== undefined) {
+              widgetUpdate.headerFontWeight = updates.fontWeight;
+              widgetUpdate.headerWeight = updates.fontWeight; // Keep both for compatibility
+            }
+            if (updates.lineHeight !== undefined) widgetUpdate.headerLineHeight = updates.lineHeight;
+            if (updates.textTransform !== undefined) widgetUpdate.headerTextTransform = updates.textTransform;
+            if (updates.letterSpacing !== undefined) widgetUpdate.headerLetterSpacing = updates.letterSpacing;
+            if (updates.color !== undefined) {
+              widgetUpdate.headerColor = updates.color;
+              widgetUpdate.sectionHeadingColor = updates.color; // Legacy compatibility
+            }
+            onChange(widgetUpdate);
+          }}
+          showGlobalStyleSelector={true}
+          availableGlobalStyles={['h2', 'h3', 'h4']}
+        />
+      )}
 
-          {/* Name Style */}
-          <div className="border rounded-lg">
-            <button
-              type="button"
-              className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-              onClick={() => setNameStyleOpen(!nameStyleOpen)}
-            >
-              <span className="text-sm font-medium">Name</span>
-              {nameStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </button>
-            {nameStyleOpen && (
-              <div className="p-3 pt-0 space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Size</Label>
-                  <FontSizeInput
-                    value={(widget as any).nameSize || 18}
-                    onChange={(value: FontSizeValue) => onChange({ nameSize: value.value } as any)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Color</Label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={widget.nameColor || '#1f2937'}
-                      onChange={(e) => onChange({ nameColor: e.target.value })}
-                      className="h-10 w-16 rounded border cursor-pointer"
-                    />
-                    <Input
-                      value={widget.nameColor || '#1f2937'}
-                      onChange={(e) => onChange({ nameColor: e.target.value })}
-                      placeholder="#1f2937"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+      {/* Name Typography */}
+      <TypographyControl
+        label="Name Typography"
+        value={getNameTypography()}
+        onChange={(updates) => {
+          const widgetUpdate: any = {};
+          if (updates.fontFamily !== undefined) widgetUpdate.nameFontFamily = updates.fontFamily;
+          if (updates.fontSize !== undefined) {
+            widgetUpdate.nameFontSizeObj = updates.fontSize;
+            widgetUpdate.nameFontSize = updates.fontSize; // Keep both for compatibility
+          }
+          if (updates.fontWeight !== undefined) {
+            widgetUpdate.nameFontWeightStr = updates.fontWeight;
+            widgetUpdate.nameFontWeight = parseInt(String(updates.fontWeight)); // Keep both for compatibility
+          }
+          if (updates.lineHeight !== undefined) widgetUpdate.nameLineHeight = updates.lineHeight;
+          if (updates.textTransform !== undefined) widgetUpdate.nameTextTransform = updates.textTransform;
+          if (updates.letterSpacing !== undefined) widgetUpdate.nameLetterSpacing = updates.letterSpacing;
+          if (updates.color !== undefined) widgetUpdate.nameColor = updates.color;
+          onChange(widgetUpdate);
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['h4', 'h5', 'body']}
+      />
 
-          {/* Title Style */}
-          <div className="border rounded-lg">
-            <button
-              type="button"
-              className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-              onClick={() => setTitleStyleOpen(!titleStyleOpen)}
-            >
-              <span className="text-sm font-medium">Title/Position</span>
-              {titleStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </button>
-            {titleStyleOpen && (
-              <div className="p-3 pt-0 space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Size</Label>
-                  <FontSizeInput
-                    value={(widget as any).titleSize || 14}
-                    onChange={(value: FontSizeValue) => onChange({ titleSize: value.value } as any)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Color</Label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={widget.titleColor || '#6b7280'}
-                      onChange={(e) => onChange({ titleColor: e.target.value })}
-                      className="h-10 w-16 rounded border cursor-pointer"
-                    />
-                    <Input
-                      value={widget.titleColor || '#6b7280'}
-                      onChange={(e) => onChange({ titleColor: e.target.value })}
-                      placeholder="#6b7280"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+      {/* Title/Position Typography */}
+      <TypographyControl
+        label="Title/Position Typography"
+        value={getTitleTypography()}
+        onChange={(updates) => {
+          const widgetUpdate: any = {};
+          if (updates.fontFamily !== undefined) widgetUpdate.titleFontFamily = updates.fontFamily;
+          if (updates.fontSize !== undefined) {
+            widgetUpdate.titleFontSizeObj = updates.fontSize;
+            widgetUpdate.titleFontSize = updates.fontSize; // Keep both for compatibility
+          }
+          if (updates.fontWeight !== undefined) {
+            widgetUpdate.titleFontWeightStr = updates.fontWeight;
+            widgetUpdate.titleFontWeight = parseInt(String(updates.fontWeight)); // Keep both for compatibility
+          }
+          if (updates.lineHeight !== undefined) widgetUpdate.titleLineHeight = updates.lineHeight;
+          if (updates.textTransform !== undefined) widgetUpdate.titleTextTransform = updates.textTransform;
+          if (updates.letterSpacing !== undefined) widgetUpdate.titleLetterSpacing = updates.letterSpacing;
+          if (updates.color !== undefined) widgetUpdate.titleColor = updates.color;
+          onChange(widgetUpdate);
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['h5', 'h6', 'body']}
+      />
 
-          {/* Quote Style */}
-          <div className="border rounded-lg">
-            <button
-              type="button"
-              className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-              onClick={() => setQuoteStyleOpen(!quoteStyleOpen)}
-            >
-              <span className="text-sm font-medium">Quote</span>
-              {quoteStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </button>
-            {quoteStyleOpen && (
-              <div className="p-3 pt-0 space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Size</Label>
-                  <FontSizeInput
-                    value={(widget as any).quoteSize || 16}
-                    onChange={(value: FontSizeValue) => onChange({ quoteSize: value.value } as any)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Color</Label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={widget.quoteColor || '#374151'}
-                      onChange={(e) => onChange({ quoteColor: e.target.value })}
-                      className="h-10 w-16 rounded border cursor-pointer"
-                    />
-                    <Input
-                      value={widget.quoteColor || '#374151'}
-                      onChange={(e) => onChange({ quoteColor: e.target.value })}
-                      placeholder="#374151"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </CollapsibleSection>
+      {/* Quote Typography */}
+      <TypographyControl
+        label="Quote Typography"
+        value={getQuoteTypography()}
+        onChange={(updates) => {
+          const widgetUpdate: any = {};
+          if (updates.fontFamily !== undefined) widgetUpdate.quoteFontFamily = updates.fontFamily;
+          if (updates.fontSize !== undefined) {
+            widgetUpdate.quoteFontSizeObj = updates.fontSize;
+            widgetUpdate.quoteFontSize = updates.fontSize; // Keep both for compatibility
+          }
+          if (updates.fontWeight !== undefined) {
+            widgetUpdate.quoteFontWeightStr = updates.fontWeight;
+            widgetUpdate.quoteFontWeight = parseInt(String(updates.fontWeight)); // Keep both for compatibility
+          }
+          if (updates.lineHeight !== undefined) widgetUpdate.quoteLineHeight = updates.lineHeight;
+          if (updates.textTransform !== undefined) widgetUpdate.quoteTextTransform = updates.textTransform;
+          if (updates.letterSpacing !== undefined) widgetUpdate.quoteLetterSpacing = updates.letterSpacing;
+          if (updates.color !== undefined) widgetUpdate.quoteColor = updates.color;
+          onChange(widgetUpdate);
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['body']}
+      />
 
       {/* Card Style */}
       <CollapsibleSection title="Card Style" open={cardStyleOpen} onToggle={() => setCardStyleOpen(!cardStyleOpen)}>

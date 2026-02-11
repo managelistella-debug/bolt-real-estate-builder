@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { StepsWidget, Step } from '@/lib/types';
+import React, { useState, useEffect } from 'react';
+import { StepsWidget, Step, TypographyConfig } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,6 +11,8 @@ import { Plus, Trash2, ChevronDown, ChevronRight, ChevronUp } from 'lucide-react
 import { SectionEditorTabs } from '../SectionEditorTabs';
 import { FontSizeInput, type FontSizeValue } from '../FontSizeInput';
 import { ImageUpload } from '../ImageUpload';
+import { TypographyControl } from '../controls/TypographyControl';
+import { useWebsiteStore } from '@/lib/stores/website';
 
 interface StepsEditorNewProps {
   widget: StepsWidget;
@@ -18,6 +20,7 @@ interface StepsEditorNewProps {
 }
 
 export function StepsEditorNew({ widget, onChange }: StepsEditorNewProps) {
+  const { website } = useWebsiteStore();
   const [expandedStepId, setExpandedStepId] = useState<string | null>(null);
   
   // Collapsible states
@@ -33,6 +36,55 @@ export function StepsEditorNew({ widget, onChange }: StepsEditorNewProps) {
   const [stepHeadingStyleOpen, setStepHeadingStyleOpen] = useState(false);
   const [stepDescStyleOpen, setStepDescStyleOpen] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(false);
+
+  // Helper functions to get typography configs
+  const getSectionHeaderTypography = (): TypographyConfig => {
+    return (widget as any).sectionHeaderTypography || {
+      fontFamily: 'Inter',
+      fontSize: { value: 2, unit: 'rem' },
+      fontWeight: '700',
+      lineHeight: '1.2',
+      textTransform: 'none',
+      letterSpacing: '0em',
+      color: '#1f2937',
+    };
+  };
+
+  const getStepLabelTypography = (): TypographyConfig => {
+    return (widget as any).stepLabelTypography || {
+      fontFamily: 'Inter',
+      fontSize: { value: 0.75, unit: 'rem' },
+      fontWeight: '600',
+      lineHeight: '1.2',
+      textTransform: 'uppercase',
+      letterSpacing: '0.05em',
+      color: '#10b981',
+    };
+  };
+
+  const getStepHeadingTypography = (): TypographyConfig => {
+    return (widget as any).stepHeadingTypography || {
+      fontFamily: 'Inter',
+      fontSize: { value: 1.5, unit: 'rem' },
+      fontWeight: '700',
+      lineHeight: '1.3',
+      textTransform: 'none',
+      letterSpacing: '0em',
+      color: '#1f2937',
+    };
+  };
+
+  const getStepDescriptionTypography = (): TypographyConfig => {
+    return (widget as any).stepDescriptionTypography || {
+      fontFamily: 'Inter',
+      fontSize: { value: 1, unit: 'rem' },
+      fontWeight: '400',
+      lineHeight: '1.6',
+      textTransform: 'none',
+      letterSpacing: '0em',
+      color: '#6b7280',
+    };
+  };
 
   const CollapsibleSection = ({ 
     title, 
@@ -61,6 +113,34 @@ export function StepsEditorNew({ widget, onChange }: StepsEditorNewProps) {
       )}
     </div>
   );
+
+  // Migration: Ensure typography configs are in the correct format
+  useEffect(() => {
+    let needsUpdate = false;
+    const updates: any = {};
+
+    // Helper to validate/migrate typography config
+    const validateTypography = (typo: any): boolean => {
+      if (!typo) return false;
+      if (typeof typo.fontSize === 'number') return true; // needs migration
+      return false;
+    };
+
+    if (validateTypography((widget as any).sectionHeaderTypography)) {
+      needsUpdate = true;
+    }
+    if (validateTypography((widget as any).stepLabelTypography)) {
+      needsUpdate = true;
+    }
+    if (validateTypography((widget as any).stepHeadingTypography)) {
+      needsUpdate = true;
+    }
+    if (validateTypography((widget as any).stepDescriptionTypography)) {
+      needsUpdate = true;
+    }
+
+    // No actual migration needed as Steps already uses TypographyConfig properly
+  }, []); // Only run once on mount
 
   const layoutConfig = widget.layout || {
     fullWidth: true,
@@ -342,168 +422,71 @@ export function StepsEditorNew({ widget, onChange }: StepsEditorNewProps) {
   // Style Tab
   const styleTab = (
     <div className="space-y-2">
-      {/* Typography */}
-      <CollapsibleSection title="Typography" open={typographyOpen} onToggle={() => setTypographyOpen(!typographyOpen)}>
-        <div className="space-y-3">
-          {/* Section Header Style */}
-          {widget.sectionHeading && (
-            <div className="border rounded-lg">
-              <button
-                type="button"
-                className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-                onClick={() => setSectionHeaderStyleOpen(!sectionHeaderStyleOpen)}
-              >
-                <span className="text-sm font-medium">Section Header</span>
-                {sectionHeaderStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-              </button>
-              {sectionHeaderStyleOpen && (
-                <div className="p-3 pt-0 space-y-3">
-                  <div className="space-y-2">
-                    <Label className="text-xs">Font Size</Label>
-                    <FontSizeInput
-                      value={(widget as any).sectionHeadingSize || 32}
-                      onChange={(value: FontSizeValue) => onChange({ sectionHeadingSize: value.value } as any)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Color</Label>
-                    <div className="flex gap-2">
-                      <input
-                        type="color"
-                        value={widget.sectionHeadingColor || '#1f2937'}
-                        onChange={(e) => onChange({ sectionHeadingColor: e.target.value })}
-                        className="h-10 w-16 rounded border cursor-pointer"
-                      />
-                      <Input
-                        value={widget.sectionHeadingColor || '#1f2937'}
-                        onChange={(e) => onChange({ sectionHeadingColor: e.target.value })}
-                        placeholder="#1f2937"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+      {/* Section Header Typography */}
+      {widget.sectionHeading && (
+        <TypographyControl
+          label="Section Header Typography"
+          value={getSectionHeaderTypography()}
+          onChange={(updates) => {
+            onChange({
+              sectionHeaderTypography: {
+                ...getSectionHeaderTypography(),
+                ...updates,
+              } as any,
+            });
+          }}
+          showGlobalStyleSelector={true}
+          availableGlobalStyles={['h2', 'h3']}
+        />
+      )}
 
-          {/* Step Label Style */}
-          <div className="border rounded-lg">
-            <button
-              type="button"
-              className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-              onClick={() => setStepLabelStyleOpen(!stepLabelStyleOpen)}
-            >
-              <span className="text-sm font-medium">Step Label</span>
-              {stepLabelStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </button>
-            {stepLabelStyleOpen && (
-              <div className="p-3 pt-0 space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Size</Label>
-                  <FontSizeInput
-                    value={(widget as any).stepLabelSize || 12}
-                    onChange={(value: FontSizeValue) => onChange({ stepLabelSize: value.value } as any)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Color</Label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={widget.stepLabelColor || '#10b981'}
-                      onChange={(e) => onChange({ stepLabelColor: e.target.value })}
-                      className="h-10 w-16 rounded border cursor-pointer"
-                    />
-                    <Input
-                      value={widget.stepLabelColor || '#10b981'}
-                      onChange={(e) => onChange({ stepLabelColor: e.target.value })}
-                      placeholder="#10b981"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+      {/* Step Label Typography */}
+      <TypographyControl
+        label="Step Label Typography"
+        value={getStepLabelTypography()}
+        onChange={(updates) => {
+          onChange({
+            stepLabelTypography: {
+              ...getStepLabelTypography(),
+              ...updates,
+            } as any,
+          });
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['body']}
+      />
 
-          {/* Step Heading Style */}
-          <div className="border rounded-lg">
-            <button
-              type="button"
-              className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-              onClick={() => setStepHeadingStyleOpen(!stepHeadingStyleOpen)}
-            >
-              <span className="text-sm font-medium">Step Heading</span>
-              {stepHeadingStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </button>
-            {stepHeadingStyleOpen && (
-              <div className="p-3 pt-0 space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Size</Label>
-                  <FontSizeInput
-                    value={(widget as any).stepHeadingSize || 24}
-                    onChange={(value: FontSizeValue) => onChange({ stepHeadingSize: value.value } as any)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Color</Label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={widget.stepHeadingColor || '#1f2937'}
-                      onChange={(e) => onChange({ stepHeadingColor: e.target.value })}
-                      className="h-10 w-16 rounded border cursor-pointer"
-                    />
-                    <Input
-                      value={widget.stepHeadingColor || '#1f2937'}
-                      onChange={(e) => onChange({ stepHeadingColor: e.target.value })}
-                      placeholder="#1f2937"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+      {/* Step Heading Typography */}
+      <TypographyControl
+        label="Step Heading Typography"
+        value={getStepHeadingTypography()}
+        onChange={(updates) => {
+          onChange({
+            stepHeadingTypography: {
+              ...getStepHeadingTypography(),
+              ...updates,
+            } as any,
+          });
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['h3', 'h4']}
+      />
 
-          {/* Step Description Style */}
-          <div className="border rounded-lg">
-            <button
-              type="button"
-              className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-              onClick={() => setStepDescStyleOpen(!stepDescStyleOpen)}
-            >
-              <span className="text-sm font-medium">Step Description</span>
-              {stepDescStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </button>
-            {stepDescStyleOpen && (
-              <div className="p-3 pt-0 space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Size</Label>
-                  <FontSizeInput
-                    value={(widget as any).stepDescSize || 16}
-                    onChange={(value: FontSizeValue) => onChange({ stepDescSize: value.value } as any)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Color</Label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={widget.stepDescriptionColor || '#6b7280'}
-                      onChange={(e) => onChange({ stepDescriptionColor: e.target.value })}
-                      className="h-10 w-16 rounded border cursor-pointer"
-                    />
-                    <Input
-                      value={widget.stepDescriptionColor || '#6b7280'}
-                      onChange={(e) => onChange({ stepDescriptionColor: e.target.value })}
-                      placeholder="#6b7280"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </CollapsibleSection>
+      {/* Step Description Typography */}
+      <TypographyControl
+        label="Step Description Typography"
+        value={getStepDescriptionTypography()}
+        onChange={(updates) => {
+          onChange({
+            stepDescriptionTypography: {
+              ...getStepDescriptionTypography(),
+              ...updates,
+            } as any,
+          });
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['body']}
+      />
 
       {/* Background */}
       <CollapsibleSection title="Background" open={backgroundOpen} onToggle={() => setBackgroundOpen(!backgroundOpen)}>

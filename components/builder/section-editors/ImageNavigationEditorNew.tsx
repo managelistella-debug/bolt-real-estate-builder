@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ImageNavigationWidget, ImageNavigationItem } from '@/lib/types';
+import { ImageNavigationWidget, ImageNavigationItem, TypographyConfig } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,8 @@ import { Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { SectionEditorTabs } from '../SectionEditorTabs';
 import { FontSizeInput, type FontSizeValue } from '../FontSizeInput';
 import { ImageUpload } from '../ImageUpload';
+import { TypographyControl } from '../controls/TypographyControl';
+import { useWebsiteStore } from '@/lib/stores/website';
 
 interface ImageNavigationEditorNewProps {
   widget: ImageNavigationWidget;
@@ -16,11 +18,25 @@ interface ImageNavigationEditorNewProps {
 }
 
 export function ImageNavigationEditorNew({ widget, onChange }: ImageNavigationEditorNewProps) {
+  const { website } = useWebsiteStore();
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [itemsOpen, setItemsOpen] = useState(true);
   const [columnsOpen, setColumnsOpen] = useState(false);
   const [typographyOpen, setTypographyOpen] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(false);
+
+  // Helper function to get typography config
+  const getTitleTypography = (): TypographyConfig => {
+    return (widget as any).titleTypography || {
+      fontFamily: 'Inter',
+      fontSize: { value: 1.125, unit: 'rem' },
+      fontWeight: '600',
+      lineHeight: '1.3',
+      textTransform: 'none',
+      letterSpacing: '0em',
+      color: '#1f2937',
+    };
+  };
 
   const CollapsibleSection = ({ title, open, onToggle, children }: any) => (
     <div className="border rounded-lg">
@@ -109,21 +125,21 @@ export function ImageNavigationEditorNew({ widget, onChange }: ImageNavigationEd
 
   const styleTab = (
     <div className="space-y-2">
-      <CollapsibleSection title="Typography" open={typographyOpen} onToggle={() => setTypographyOpen(!typographyOpen)}>
-        <div className="space-y-3">
-          <div className="space-y-2">
-            <Label className="text-xs">Title Font Size</Label>
-            <FontSizeInput value={(widget as any).titleSize || 18} onChange={(value: FontSizeValue) => onChange({ titleSize: value.value } as any)} />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-xs">Title Color</Label>
-            <div className="flex gap-2">
-              <input type="color" value={(widget as any).titleColor || '#1f2937'} onChange={(e) => onChange({ titleColor: e.target.value } as any)} className="h-10 w-16 rounded border cursor-pointer" />
-              <Input value={(widget as any).titleColor || '#1f2937'} onChange={(e) => onChange({ titleColor: e.target.value } as any)} placeholder="#1f2937" />
-            </div>
-          </div>
-        </div>
-      </CollapsibleSection>
+      {/* Title Typography */}
+      <TypographyControl
+        label="Title Typography"
+        value={getTitleTypography()}
+        onChange={(updates) => {
+          onChange({
+            titleTypography: {
+              ...getTitleTypography(),
+              ...updates,
+            } as any,
+          });
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['h4', 'body']}
+      />
 
       <CollapsibleSection title="Background" open={backgroundOpen} onToggle={() => setBackgroundOpen(!backgroundOpen)}>
         <div className="space-y-2">

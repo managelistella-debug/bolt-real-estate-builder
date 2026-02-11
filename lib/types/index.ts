@@ -98,30 +98,80 @@ export interface BackgroundConfig {
   };
 }
 
+// Font size value with unit support
+export interface FontSizeValue {
+  value: number;
+  unit: 'rem' | 'px' | 'em' | '%';
+}
+
 // Button style configuration
 export interface ButtonStyleConfig {
   text: string;
   url: string;
-  radius: number;
-  bgColor: string;
-  textColor: string;
-  bgOpacity?: number; // 0-100
-  blurAmount?: number; // 0-20px
-  hasBlur?: boolean; // Legacy - kept for backward compatibility
-  hasShadow: boolean;
-  shadowAmount: number;
-  strokeWidth: number;
-  strokeColor: string;
+  openNewTab?: boolean;
+  
+  // Default state
+  width?: 'standard' | 'full' | 'custom';
+  customWidth?: number;
+  backgroundColor?: string;
+  textColor?: string;
+  borderRadius?: number;  // px
+  borderWidth?: number;   // px
+  borderColor?: string;
+  backgroundOpacity?: number;  // 0-100 (stored as percentage)
+  dropShadow?: boolean;
+  shadowAmount?: number;  // px
+  blurEffect?: number;    // px
+  
+  // Typography for button text
+  fontFamily?: string;
+  fontSize?: FontSizeValue | string | number;  // Support legacy formats
+  fontWeight?: '300' | '400' | '500' | '600' | '700' | '800' | '900' | 'normal' | 'bold';
+  lineHeight?: string;
+  textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  
+  // Hover state
+  hover?: {
+    backgroundColor?: string;
+    textColor?: string;
+    borderColor?: string;
+    backgroundOpacity?: number;
+    dropShadow?: boolean;
+    shadowAmount?: number;
+    blurEffect?: number;
+  };
+  
+  // Global style linking
+  useGlobalStyle?: boolean;
+  globalStyleId?: string;  // e.g., 'button1', 'button2'
+  
+  // Legacy fields - kept for backward compatibility
+  radius?: number;
+  bgColor?: string;
+  bgOpacity?: number;
+  blurAmount?: number;
+  hasBlur?: boolean;
+  hasShadow?: boolean;
+  strokeWidth?: number;
+  strokeColor?: string;
 }
 
 // Typography configuration
 export interface TypographyConfig {
   fontFamily: string;
-  size: string;
-  weight: string;
+  fontSize: FontSizeValue | string | number;  // Support legacy formats
+  fontWeight: '300' | '400' | '500' | '600' | '700' | '800' | '900' | 'normal' | 'bold' | string;
   lineHeight: string;
+  textTransform: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
   letterSpacing?: string;
   color: string;
+  // For global style linking
+  useGlobalStyle?: boolean;
+  globalStyleId?: string;  // e.g., 'h1', 'h2', 'body'
+  
+  // Legacy field
+  size?: string;  // Deprecated - use fontSize
+  weight?: string;  // Deprecated - use fontWeight
 }
 
 // Layout configuration
@@ -911,13 +961,22 @@ export interface GlobalStyles {
     accent: string;
   };
   fontPair: FontPair;
-  button: ButtonStyle;
+  buttons: {
+    button1: GlobalButtonStyle;
+    button2: GlobalButtonStyle;
+  };
   headings: {
     h1: TypographyStyle;
     h2: TypographyStyle;
     h3: TypographyStyle;
+    h4: TypographyStyle;
+    h5: TypographyStyle;
+    h6: TypographyStyle;
   };
   body: TypographyStyle;
+  
+  // Legacy field for backward compatibility
+  button?: ButtonStyle;
 }
 
 export interface FontPair {
@@ -932,10 +991,41 @@ export interface ButtonStyle {
   rounded: 'none' | 'sm' | 'md' | 'lg' | 'full';
 }
 
-export interface TypographyStyle {
-  fontSize: string;
+export interface GlobalButtonStyle {
+  width: 'standard' | 'full' | 'custom';
+  customWidth?: number;
+  backgroundColor: string;
+  textColor: string;
+  borderRadius: number;
+  borderWidth: number;
+  borderColor?: string;
+  backgroundOpacity: number;
+  dropShadow: boolean;
+  shadowAmount: number;
+  blurEffect: number;
+  fontFamily: string;
+  fontSize: FontSizeValue;
   fontWeight: string;
   lineHeight: string;
+  textTransform: string;
+  hover: {
+    backgroundColor?: string;
+    textColor?: string;
+    borderColor?: string;
+    backgroundOpacity?: number;
+    dropShadow?: boolean;
+    shadowAmount?: number;
+    blurEffect?: number;
+  };
+}
+
+export interface TypographyStyle {
+  fontFamily: string;
+  fontSize: FontSizeValue | string;  // Support legacy string format
+  fontWeight: string;
+  lineHeight: string;
+  textTransform: string;
+  color: string;
   letterSpacing?: string;
 }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ReviewsSliderWidget, Review } from '@/lib/types';
+import { ReviewsSliderWidget, Review, TypographyConfig } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,6 +12,8 @@ import { Plus, Trash2, ChevronDown, ChevronRight, ChevronUp, Star } from 'lucide
 import { SectionEditorTabs } from '../SectionEditorTabs';
 import { FontSizeInput, type FontSizeValue } from '../FontSizeInput';
 import { ImageUpload } from '../ImageUpload';
+import { TypographyControl } from '../controls/TypographyControl';
+import { useWebsiteStore } from '@/lib/stores/website';
 
 interface ReviewsSliderEditorNewProps {
   widget: ReviewsSliderWidget;
@@ -19,6 +21,7 @@ interface ReviewsSliderEditorNewProps {
 }
 
 export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditorNewProps) {
+  const { website } = useWebsiteStore();
   const [expandedReviewId, setExpandedReviewId] = useState<string | null>(null);
   
   // Collapsible states
@@ -36,6 +39,55 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
   const [cardStyleOpen, setCardStyleOpen] = useState(false);
   const [starStyleOpen, setStarStyleOpen] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(false);
+
+  // Helper functions to get typography configs
+  const getSectionHeaderTypography = (): TypographyConfig => {
+    return (widget as any).sectionHeaderTypography || {
+      fontFamily: 'Inter',
+      fontSize: { value: 2, unit: 'rem' },
+      fontWeight: '700',
+      lineHeight: '1.2',
+      textTransform: 'none',
+      letterSpacing: '0em',
+      color: '#1f2937',
+    };
+  };
+
+  const getNameTypography = (): TypographyConfig => {
+    return (widget as any).nameTypography || {
+      fontFamily: 'Inter',
+      fontSize: { value: 1, unit: 'rem' },
+      fontWeight: '600',
+      lineHeight: '1.2',
+      textTransform: 'none',
+      letterSpacing: '0em',
+      color: '#1f2937',
+    };
+  };
+
+  const getReviewTextTypography = (): TypographyConfig => {
+    return (widget as any).reviewTextTypography || {
+      fontFamily: 'Inter',
+      fontSize: { value: 0.875, unit: 'rem' },
+      fontWeight: '400',
+      lineHeight: '1.6',
+      textTransform: 'none',
+      letterSpacing: '0em',
+      color: '#6b7280',
+    };
+  };
+
+  const getDateTypography = (): TypographyConfig => {
+    return (widget as any).dateTypography || {
+      fontFamily: 'Inter',
+      fontSize: { value: 0.75, unit: 'rem' },
+      fontWeight: '400',
+      lineHeight: '1.2',
+      textTransform: 'none',
+      letterSpacing: '0em',
+      color: '#9ca3af',
+    };
+  };
 
   const CollapsibleSection = ({ 
     title, 
@@ -387,168 +439,71 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
   // Style Tab
   const styleTab = (
     <div className="space-y-2">
-      {/* Typography */}
-      <CollapsibleSection title="Typography" open={typographyOpen} onToggle={() => setTypographyOpen(!typographyOpen)}>
-        <div className="space-y-3">
-          {/* Section Header Style */}
-          {widget.sectionHeading && (
-            <div className="border rounded-lg">
-              <button
-                type="button"
-                className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-                onClick={() => setSectionHeaderStyleOpen(!sectionHeaderStyleOpen)}
-              >
-                <span className="text-sm font-medium">Section Header</span>
-                {sectionHeaderStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-              </button>
-              {sectionHeaderStyleOpen && (
-                <div className="p-3 pt-0 space-y-3">
-                  <div className="space-y-2">
-                    <Label className="text-xs">Font Size</Label>
-                    <FontSizeInput
-                      value={(widget as any).sectionHeadingSize || 32}
-                      onChange={(value: FontSizeValue) => onChange({ sectionHeadingSize: value.value } as any)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Color</Label>
-                    <div className="flex gap-2">
-                      <input
-                        type="color"
-                        value={widget.sectionHeadingColor || '#1f2937'}
-                        onChange={(e) => onChange({ sectionHeadingColor: e.target.value })}
-                        className="h-10 w-16 rounded border cursor-pointer"
-                      />
-                      <Input
-                        value={widget.sectionHeadingColor || '#1f2937'}
-                        onChange={(e) => onChange({ sectionHeadingColor: e.target.value })}
-                        placeholder="#1f2937"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+      {/* Section Header Typography */}
+      {widget.sectionHeading && (
+        <TypographyControl
+          label="Section Header Typography"
+          value={getSectionHeaderTypography()}
+          onChange={(updates) => {
+            onChange({
+              sectionHeaderTypography: {
+                ...getSectionHeaderTypography(),
+                ...updates,
+              } as any,
+            });
+          }}
+          showGlobalStyleSelector={true}
+          availableGlobalStyles={['h2', 'h3']}
+        />
+      )}
 
-          {/* Name Style */}
-          <div className="border rounded-lg">
-            <button
-              type="button"
-              className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-              onClick={() => setNameStyleOpen(!nameStyleOpen)}
-            >
-              <span className="text-sm font-medium">Name</span>
-              {nameStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </button>
-            {nameStyleOpen && (
-              <div className="p-3 pt-0 space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Size</Label>
-                  <FontSizeInput
-                    value={(widget as any).nameSize || 16}
-                    onChange={(value: FontSizeValue) => onChange({ nameSize: value.value } as any)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Color</Label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={widget.nameColor || '#1f2937'}
-                      onChange={(e) => onChange({ nameColor: e.target.value })}
-                      className="h-10 w-16 rounded border cursor-pointer"
-                    />
-                    <Input
-                      value={widget.nameColor || '#1f2937'}
-                      onChange={(e) => onChange({ nameColor: e.target.value })}
-                      placeholder="#1f2937"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+      {/* Name Typography */}
+      <TypographyControl
+        label="Name Typography"
+        value={getNameTypography()}
+        onChange={(updates) => {
+          onChange({
+            nameTypography: {
+              ...getNameTypography(),
+              ...updates,
+            } as any,
+          });
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['h4', 'body']}
+      />
 
-          {/* Review Text Style */}
-          <div className="border rounded-lg">
-            <button
-              type="button"
-              className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-              onClick={() => setTextStyleOpen(!textStyleOpen)}
-            >
-              <span className="text-sm font-medium">Review Text</span>
-              {textStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </button>
-            {textStyleOpen && (
-              <div className="p-3 pt-0 space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Size</Label>
-                  <FontSizeInput
-                    value={(widget as any).textSize || 14}
-                    onChange={(value: FontSizeValue) => onChange({ textSize: value.value } as any)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Color</Label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={widget.textColor || '#6b7280'}
-                      onChange={(e) => onChange({ textColor: e.target.value })}
-                      className="h-10 w-16 rounded border cursor-pointer"
-                    />
-                    <Input
-                      value={widget.textColor || '#6b7280'}
-                      onChange={(e) => onChange({ textColor: e.target.value })}
-                      placeholder="#6b7280"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+      {/* Review Text Typography */}
+      <TypographyControl
+        label="Review Text Typography"
+        value={getReviewTextTypography()}
+        onChange={(updates) => {
+          onChange({
+            reviewTextTypography: {
+              ...getReviewTextTypography(),
+              ...updates,
+            } as any,
+          });
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['body']}
+      />
 
-          {/* Date Style */}
-          <div className="border rounded-lg">
-            <button
-              type="button"
-              className="w-full flex items-center justify-between p-2 hover:bg-muted/50"
-              onClick={() => setDateStyleOpen(!dateStyleOpen)}
-            >
-              <span className="text-sm font-medium">Date</span>
-              {dateStyleOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </button>
-            {dateStyleOpen && (
-              <div className="p-3 pt-0 space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Font Size</Label>
-                  <FontSizeInput
-                    value={(widget as any).dateSize || 12}
-                    onChange={(value: FontSizeValue) => onChange({ dateSize: value.value } as any)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Color</Label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={widget.dateColor || '#9ca3af'}
-                      onChange={(e) => onChange({ dateColor: e.target.value })}
-                      className="h-10 w-16 rounded border cursor-pointer"
-                    />
-                    <Input
-                      value={widget.dateColor || '#9ca3af'}
-                      onChange={(e) => onChange({ dateColor: e.target.value })}
-                      placeholder="#9ca3af"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </CollapsibleSection>
+      {/* Date Typography */}
+      <TypographyControl
+        label="Date Typography"
+        value={getDateTypography()}
+        onChange={(updates) => {
+          onChange({
+            dateTypography: {
+              ...getDateTypography(),
+              ...updates,
+            } as any,
+          });
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['body']}
+      />
 
       {/* Card Style */}
       <CollapsibleSection title="Card Style" open={cardStyleOpen} onToggle={() => setCardStyleOpen(!cardStyleOpen)}>
