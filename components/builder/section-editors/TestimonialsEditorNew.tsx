@@ -209,7 +209,7 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
       lineHeight: (widget as any).nameLineHeight || '1.4',
       textTransform: (widget as any).nameTextTransform || 'none' as const,
       letterSpacing: (widget as any).nameLetterSpacing || '0em',
-      color: widget.nameColor || '#1f2937',
+      color: widget.nameColor || '#ffffff',
     };
   };
 
@@ -237,7 +237,7 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
       lineHeight: (widget as any).titleLineHeight || '1.4',
       textTransform: (widget as any).titleTextTransform || 'none' as const,
       letterSpacing: (widget as any).titleLetterSpacing || '0em',
-      color: widget.titleColor || '#6b7280',
+      color: widget.titleColor || '#cbd5e1',
     };
   };
 
@@ -265,7 +265,7 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
       lineHeight: (widget as any).quoteLineHeight || '1.6',
       textTransform: (widget as any).quoteTextTransform || 'none' as const,
       letterSpacing: (widget as any).quoteLetterSpacing || '0em',
-      color: widget.quoteColor || '#4b5563',
+      color: widget.quoteColor || '#ffffff',
     };
   };
 

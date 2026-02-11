@@ -2948,7 +2948,7 @@ function TestimonialsSection({ widget }: { widget: TestimonialWidget }) {
     lineHeight: (widget as any).nameLineHeight || '1.4',
     textTransform: ((widget as any).nameTextTransform as any) || 'none',
     letterSpacing: (widget as any).nameLetterSpacing || '0em',
-    color: widget.nameColor || '#1f2937',
+    color: widget.nameColor || '#ffffff',
   };
 
   // Title typography - match editor getter exactly
@@ -2959,7 +2959,7 @@ function TestimonialsSection({ widget }: { widget: TestimonialWidget }) {
     lineHeight: (widget as any).titleLineHeight || '1.4',
     textTransform: ((widget as any).titleTextTransform as any) || 'none',
     letterSpacing: (widget as any).titleLetterSpacing || '0em',
-    color: widget.titleColor || '#6b7280',
+    color: widget.titleColor || '#cbd5e1',
   };
 
   // Quote typography - match editor getter exactly
@@ -2970,7 +2970,7 @@ function TestimonialsSection({ widget }: { widget: TestimonialWidget }) {
     lineHeight: (widget as any).quoteLineHeight || '1.6',
     textTransform: ((widget as any).quoteTextTransform as any) || 'none',
     letterSpacing: (widget as any).quoteLetterSpacing || '0em',
-    color: widget.quoteColor || '#4b5563',
+    color: widget.quoteColor || '#ffffff',
   };
   
   // Ensure defaults
