@@ -291,6 +291,46 @@ export function createDefaultWidget(type: SectionType): any {
         ],
       };
     
+    case 'testimonials':
+      return {
+        type: 'testimonials',
+        sectionHeading: 'What Our Clients Say',
+        showSectionHeading: true,
+        testimonials: [
+          {
+            id: `testimonial_${timestamp}_1`,
+            name: 'John Doe',
+            title: 'CEO, Company Inc',
+            quote: 'This service exceeded our expectations. Highly recommended!',
+            image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100',
+          },
+          {
+            id: `testimonial_${timestamp}_2`,
+            name: 'Jane Smith',
+            title: 'Marketing Director',
+            quote: 'Professional, reliable, and results-driven. A pleasure to work with!',
+            image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100',
+          },
+        ],
+        // Light colors for dark background (default #0f4c75)
+        nameFontSizeObj: { value: 18, unit: 'px' as const },
+        nameColor: '#ffffff', // White for visibility on dark background
+        nameFontWeight: '600',
+        titleFontSizeObj: { value: 14, unit: 'px' as const },
+        titleColor: '#cbd5e1', // Light gray for secondary text
+        titleFontWeight: '400',
+        quoteFontSizeObj: { value: 16, unit: 'px' as const },
+        quoteColor: '#ffffff', // White for visibility on dark background
+        quoteFontWeight: '400',
+        cardStyle: 'gradient',
+        cardBgColor: '#1e3a8a',
+        cardBorderRadius: 16,
+        cardShadow: true,
+        bgColor: '#0f4c75', // Dark blue background
+        padding: DEFAULT_PADDING,
+        margin: DEFAULT_MARGIN,
+      };
+    
     // Add more section types as needed - for brevity, returning basic structure
     default:
       return {
