@@ -151,6 +151,26 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
       needsUpdate = true;
     }
 
+    // MIGRATE OLD DARK COLORS TO LIGHT COLORS (for dark background compatibility)
+    // Old defaults: #1f2937 (name), #6b7280 (title), #4b5563 (quote)
+    // New defaults: #ffffff (name), #cbd5e1 (title), #ffffff (quote)
+    const OLD_DARK_COLORS = ['#1f2937', '#6b7280', '#4b5563'];
+    
+    if (widget.nameColor && OLD_DARK_COLORS.includes(widget.nameColor.toLowerCase())) {
+      updates.nameColor = '#ffffff';
+      needsUpdate = true;
+    }
+    
+    if (widget.titleColor && OLD_DARK_COLORS.includes(widget.titleColor.toLowerCase())) {
+      updates.titleColor = '#cbd5e1';
+      needsUpdate = true;
+    }
+    
+    if (widget.quoteColor && OLD_DARK_COLORS.includes(widget.quoteColor.toLowerCase())) {
+      updates.quoteColor = '#ffffff';
+      needsUpdate = true;
+    }
+
     if (needsUpdate) {
       onChange(updates);
     }
