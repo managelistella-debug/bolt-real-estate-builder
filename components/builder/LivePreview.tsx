@@ -2928,49 +2928,49 @@ function TestimonialsSection({ widget }: { widget: TestimonialWidget }) {
     return String(fontSize);
   };
   
-  // Section header typography
+  // Section header typography - match editor getter exactly
   const headerStyles: React.CSSProperties = {
     fontFamily: (widget as any).headerFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).headerFontSize || widget.headerSize, '48px'),
+    fontSize: getFontSize((widget as any).headerFontSize || widget.headerSize || { value: 36, unit: 'px' }, '36px'),
     fontWeight: (widget as any).headerFontWeight || widget.headerWeight || '700',
     lineHeight: (widget as any).headerLineHeight || '1.2',
     textTransform: ((widget as any).headerTextTransform as any) || 'none',
     letterSpacing: (widget as any).headerLetterSpacing || '-0.02em',
-    color: widget.headerColor || widget.sectionHeadingColor || '#ffffff',
+    color: widget.headerColor || '#1f2937',
     marginBottom: '16px',
   };
 
-  // Name typography
+  // Name typography - match editor getter exactly
   const nameStyles: React.CSSProperties = {
     fontFamily: (widget as any).nameFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).nameFontSizeObj || widget.nameFontSize, '24px'),
-    fontWeight: (widget as any).nameFontWeightStr || String(widget.nameFontWeight || '700'),
+    fontSize: getFontSize((widget as any).nameFontSizeObj || widget.nameFontSize || { value: 18, unit: 'px' }, '18px'),
+    fontWeight: (widget as any).nameFontWeightStr || String(widget.nameFontWeight || '600'),
     lineHeight: (widget as any).nameLineHeight || '1.4',
     textTransform: ((widget as any).nameTextTransform as any) || 'none',
     letterSpacing: (widget as any).nameLetterSpacing || '0em',
-    color: widget.nameColor || '#ffffff',
+    color: widget.nameColor || '#1f2937',
   };
 
-  // Title typography
+  // Title typography - match editor getter exactly
   const titleStyles: React.CSSProperties = {
     fontFamily: (widget as any).titleFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).titleFontSizeObj || widget.titleFontSize, '16px'),
+    fontSize: getFontSize((widget as any).titleFontSizeObj || widget.titleFontSize || { value: 14, unit: 'px' }, '14px'),
     fontWeight: (widget as any).titleFontWeightStr || String(widget.titleFontWeight || '400'),
     lineHeight: (widget as any).titleLineHeight || '1.4',
     textTransform: ((widget as any).titleTextTransform as any) || 'none',
     letterSpacing: (widget as any).titleLetterSpacing || '0em',
-    color: widget.titleColor || '#cbd5e1',
+    color: widget.titleColor || '#6b7280',
   };
 
-  // Quote typography
+  // Quote typography - match editor getter exactly
   const quoteStyles: React.CSSProperties = {
     fontFamily: (widget as any).quoteFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).quoteFontSizeObj || widget.quoteFontSize, '20px'),
+    fontSize: getFontSize((widget as any).quoteFontSizeObj || widget.quoteFontSize || { value: 16, unit: 'px' }, '16px'),
     fontWeight: (widget as any).quoteFontWeightStr || String(widget.quoteFontWeight || '400'),
     lineHeight: (widget as any).quoteLineHeight || '1.6',
     textTransform: ((widget as any).quoteTextTransform as any) || 'none',
     letterSpacing: (widget as any).quoteLetterSpacing || '0em',
-    color: widget.quoteColor || '#ffffff',
+    color: widget.quoteColor || '#4b5563',
   };
   
   // Ensure defaults
