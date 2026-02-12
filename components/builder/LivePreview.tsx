@@ -3931,6 +3931,16 @@ function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
     color: widget.headingColor || '#1f2937',
   };
 
+  const formHeadingTypography = (widget as any).formHeadingTypography || {
+    fontFamily: 'Inter',
+    fontSize: { value: 1.25, unit: 'rem' },
+    fontWeight: '700',
+    lineHeight: '1.2',
+    textTransform: 'none',
+    letterSpacing: '0em',
+    color: '#1f2937',
+  };
+
   const descriptionTypography = (widget as any).descriptionTypography || {
     fontFamily: 'Inter',
     fontSize: { value: 1, unit: 'rem' },
@@ -3951,6 +3961,18 @@ function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
     letterSpacing: headingTypography.letterSpacing,
     color: headingTypography.color,
     marginBottom: '24px',
+  };
+
+  // Form heading styles
+  const formHeadingStyles: React.CSSProperties = {
+    fontFamily: formHeadingTypography.fontFamily,
+    fontSize: getFontSize(formHeadingTypography.fontSize, '20px'),
+    fontWeight: formHeadingTypography.fontWeight,
+    lineHeight: formHeadingTypography.lineHeight,
+    textTransform: formHeadingTypography.textTransform as any,
+    letterSpacing: formHeadingTypography.letterSpacing,
+    color: formHeadingTypography.color,
+    marginBottom: '16px',
   };
 
   // Description styles
@@ -4096,7 +4118,7 @@ function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
       }}
     >
       {formHeading && (
-        <h3 style={headingStyles}>
+        <h3 style={formHeadingStyles}>
           {formHeading}
         </h3>
       )}

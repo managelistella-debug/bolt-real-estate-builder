@@ -21,6 +21,7 @@ interface StickyFormEditorNewProps {
 export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewProps) {
   const { website } = useWebsiteStore();
   const [contentOpen, setContentOpen] = useState(true);
+  const [formSettingsOpen, setFormSettingsOpen] = useState(false);
   const [positionOpen, setPositionOpen] = useState(false);
   const [typographyOpen, setTypographyOpen] = useState(false);
   const [buttonStyleOpen, setButtonStyleOpen] = useState(false);
@@ -29,6 +30,18 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
   // Helper functions to get typography configs
   const getHeadingTypography = (): TypographyConfig => {
     return (widget as any).headingTypography || {
+      fontFamily: 'Inter',
+      fontSize: { value: 2.25, unit: 'rem' },
+      fontWeight: '700',
+      lineHeight: '1.2',
+      textTransform: 'none',
+      letterSpacing: '0em',
+      color: '#1f2937',
+    };
+  };
+
+  const getFormHeadingTypography = (): TypographyConfig => {
+    return (widget as any).formHeadingTypography || {
       fontFamily: 'Inter',
       fontSize: { value: 1.25, unit: 'rem' },
       fontWeight: '700',
@@ -42,12 +55,12 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
   const getDescriptionTypography = (): TypographyConfig => {
     return (widget as any).descriptionTypography || {
       fontFamily: 'Inter',
-      fontSize: { value: 0.875, unit: 'rem' },
+      fontSize: { value: 1, unit: 'rem' },
       fontWeight: '400',
-      lineHeight: '1.5',
+      lineHeight: '1.6',
       textTransform: 'none',
       letterSpacing: '0em',
-      color: '#6b7280',
+      color: '#374151',
     };
   };
 
@@ -90,15 +103,28 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
 
   const contentTab = (
     <div className="space-y-3">
-      <CollapsibleSection title="Form Content" open={contentOpen} onToggle={() => setContentOpen(!contentOpen)}>
+      <CollapsibleSection title="Text Content" open={contentOpen} onToggle={() => setContentOpen(!contentOpen)}>
         <div className="space-y-3">
           <div className="space-y-2">
-            <Label>Heading</Label>
-            <Input value={widget.heading} onChange={(e) => onChange({ heading: e.target.value })} />
+            <Label>Main Heading (Text Side)</Label>
+            <Input value={widget.heading || ''} onChange={(e) => onChange({ heading: e.target.value })} />
           </div>
           <div className="space-y-2">
             <Label>Description (Optional)</Label>
             <Textarea value={widget.description || ''} onChange={(e) => onChange({ description: e.target.value })} rows={2} />
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Form Settings" open={formSettingsOpen} onToggle={() => setFormSettingsOpen(!formSettingsOpen)}>
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <Label>Form Heading (Form Box)</Label>
+            <Input 
+              value={(widget as any).formHeading || ''} 
+              onChange={(e) => onChange({ formHeading: e.target.value } as any)} 
+              placeholder="e.g., Contact Us"
+            />
           </div>
           <div className="space-y-2">
             <Label>Button Text</Label>
@@ -150,20 +176,40 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
 
   const styleTab = (
     <div className="space-y-2">
-      {/* Heading Typography */}
+      {/* Main Heading Typography (Text Side) */}
       <TypographyControl
-        label="Heading Typography"
+        label="Main Heading Typography"
         value={getHeadingTypography()}
         onChange={(updates) => {
-          onChange({
-            headingTypography: {
-              ...getHeadingTypography(),
-              ...updates,
-            } as any,
-          });
+          if (Object.keys(updates).length > 0) {
+            onChange({
+              headingTypography: {
+                ...getHeadingTypography(),
+                ...updates,
+              } as any,
+            });
+          }
         }}
         showGlobalStyleSelector={true}
-        availableGlobalStyles={['h3', 'h4']}
+        availableGlobalStyles={['h2', 'h3', 'h4']}
+      />
+
+      {/* Form Heading Typography (Form Box) */}
+      <TypographyControl
+        label="Form Heading Typography"
+        value={getFormHeadingTypography()}
+        onChange={(updates) => {
+          if (Object.keys(updates).length > 0) {
+            onChange({
+              formHeadingTypography: {
+                ...getFormHeadingTypography(),
+                ...updates,
+              } as any,
+            });
+          }
+        }}
+        showGlobalStyleSelector={true}
+        availableGlobalStyles={['h3', 'h4', 'h5']}
       />
 
       {/* Description Typography */}
@@ -171,12 +217,14 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
         label="Description Typography"
         value={getDescriptionTypography()}
         onChange={(updates) => {
-          onChange({
-            descriptionTypography: {
-              ...getDescriptionTypography(),
-              ...updates,
-            } as any,
-          });
+          if (Object.keys(updates).length > 0) {
+            onChange({
+              descriptionTypography: {
+                ...getDescriptionTypography(),
+                ...updates,
+              } as any,
+            });
+          }
         }}
         showGlobalStyleSelector={true}
         availableGlobalStyles={['body']}
