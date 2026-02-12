@@ -4194,7 +4194,7 @@ function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
           className="prose prose-sm max-w-none"
           style={{
             fontSize: `${textSize}px`,
-            color: textColor,
+            color: descriptionTypography.color,
             fontFamily: widget.textFontFamily || 'Inter',
             lineHeight: 1.6,
           }}
@@ -4208,7 +4208,7 @@ function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
               key={index}
               style={{
                 fontSize: `${textSize}px`,
-                color: textColor,
+                color: descriptionTypography.color,
                 fontFamily: widget.textFontFamily || 'Inter',
                 lineHeight: 1.6,
                 marginBottom: '16px',
@@ -4225,7 +4225,7 @@ function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
                   key={index}
                   style={{
                     fontSize: `${textSize}px`,
-                    color: textColor,
+                    color: descriptionTypography.color,
                     fontFamily: widget.textFontFamily || 'Inter',
                     marginBottom: '8px',
                   }}
