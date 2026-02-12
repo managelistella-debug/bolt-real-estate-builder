@@ -391,6 +391,117 @@ export function createDefaultWidget(type: SectionType): any {
         },
       };
     
+    case 'reviews-slider':
+      return {
+        type: 'reviews-slider',
+        sectionHeading: 'Customer Reviews',
+        showSectionHeading: true,
+        reviews: [
+          {
+            id: `review_${timestamp}_1`,
+            author: 'Sarah Johnson',
+            rating: 5,
+            text: 'Excellent service! Highly recommend to anyone looking for quality work.',
+            date: new Date().toISOString(),
+            source: 'google',
+          },
+          {
+            id: `review_${timestamp}_2`,
+            author: 'Michael Chen',
+            rating: 5,
+            text: 'Professional, reliable, and exceeded expectations. Will definitely work with them again!',
+            date: new Date().toISOString(),
+            source: 'google',
+          },
+          {
+            id: `review_${timestamp}_3`,
+            author: 'Emma Davis',
+            rating: 5,
+            text: 'Great experience from start to finish. The team was responsive and delivered on time.',
+            date: new Date().toISOString(),
+            source: 'google',
+          },
+        ],
+        // Typography using nested objects (new format)
+        sectionHeaderTypography: {
+          fontFamily: 'Inter',
+          fontSize: { value: 2, unit: 'rem' as const },
+          fontWeight: '700',
+          lineHeight: '1.2',
+          textTransform: 'none' as const,
+          letterSpacing: '0em',
+          color: '#1f2937',
+        },
+        nameTypography: {
+          fontFamily: 'Inter',
+          fontSize: { value: 1, unit: 'rem' as const },
+          fontWeight: '600',
+          lineHeight: '1.2',
+          textTransform: 'none' as const,
+          letterSpacing: '0em',
+          color: '#1f2937',
+        },
+        reviewTextTypography: {
+          fontFamily: 'Inter',
+          fontSize: { value: 0.875, unit: 'rem' as const },
+          fontWeight: '400',
+          lineHeight: '1.6',
+          textTransform: 'none' as const,
+          letterSpacing: '0em',
+          color: '#6b7280',
+        },
+        dateTypography: {
+          fontFamily: 'Inter',
+          fontSize: { value: 0.75, unit: 'rem' as const },
+          fontWeight: '400',
+          lineHeight: '1.2',
+          textTransform: 'none' as const,
+          letterSpacing: '0em',
+          color: '#9ca3af',
+        },
+        // Display settings
+        source: 'google',
+        scrollStyle: 'timer',
+        scrollInterval: 5,
+        desktopCount: 3,
+        tabletCount: 2,
+        mobileCount: 1,
+        enableReadMore: true,
+        readMoreLimit: 150,
+        // Star styling
+        starIconStyle: 'filled',
+        starColor: '#f59e0b',
+        starSize: 20,
+        // Box styling
+        boxBackground: '#ffffff',
+        boxBorderRadius: 12,
+        boxBorder: false,
+        boxBorderColor: '#e5e7eb',
+        boxBorderWidth: 1,
+        boxShadow: true,
+        boxPadding: 24,
+        gap: 24,
+        // Additional settings
+        showGoogleLogo: true,
+        showReviewDate: true,
+        filterStars: false,
+        minStars: 4,
+        // Layout
+        layout: {
+          fullWidth: true,
+          maxWidth: 1200,
+          paddingTop: 80,
+          paddingBottom: 80,
+          paddingLeft: 24,
+          paddingRight: 24,
+        },
+        background: {
+          type: 'color',
+          color: '#f9fafb',
+          opacity: 100,
+        },
+      };
+    
     // Add more section types as needed - for brevity, returning basic structure
     default:
       return {
