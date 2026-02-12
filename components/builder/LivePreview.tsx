@@ -2613,7 +2613,7 @@ function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
         </form>
       ) : (
         <div style={{ padding: '40px', textAlign: 'center' }}>
-          <p style={{ fontSize: `${responsiveDescriptionSize}px`, color: headingColor }}>
+          <p style={{ fontSize: `${responsiveDescriptionSize}px`, color: formHeadingTypography.color }}>
             {confirmationMessage}
           </p>
         </div>
@@ -2760,7 +2760,7 @@ function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
                   </svg>
                 </div>
               )}
-              <a href={`tel:${widget.phone}`} style={{ fontSize: `${responsiveDescriptionSize}px`, color: headingColor, textDecoration: 'none' }}>
+              <a href={`tel:${widget.phone}`} style={{ fontSize: `${responsiveDescriptionSize}px`, color: formDescriptionTypography.color, textDecoration: 'none' }}>
                 {widget.phone}
               </a>
             </div>
@@ -2784,7 +2784,7 @@ function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
                   </svg>
                 </div>
               )}
-              <a href={`mailto:${widget.email}`} style={{ fontSize: `${responsiveDescriptionSize}px`, color: headingColor, textDecoration: 'none' }}>
+              <a href={`mailto:${widget.email}`} style={{ fontSize: `${responsiveDescriptionSize}px`, color: formDescriptionTypography.color, textDecoration: 'none' }}>
                 {widget.email}
               </a>
             </div>
@@ -2809,7 +2809,7 @@ function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
                   </svg>
                 </div>
               )}
-              <a href={`https://${widget.website.replace(/^https?:\/\//, '')}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: `${responsiveDescriptionSize}px`, color: headingColor, textDecoration: 'none' }}>
+              <a href={`https://${widget.website.replace(/^https?:\/\//, '')}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: `${responsiveDescriptionSize}px`, color: formDescriptionTypography.color, textDecoration: 'none' }}>
                 {widget.website}
               </a>
             </div>
