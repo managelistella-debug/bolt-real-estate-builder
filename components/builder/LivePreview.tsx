@@ -2644,12 +2644,12 @@ function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
     const textColumn = (
       <div>
         {widget.columnHeading && (
-          <h2 style={{ fontSize: `${responsiveHeadingSize}px`, color: headingColor, marginBottom: '16px', fontWeight: 700 }}>
+          <h2 style={{ fontSize: `${responsiveHeadingSize}px`, color: formHeadingTypography.color, marginBottom: '16px', fontWeight: 700 }}>
             {widget.columnHeading}
           </h2>
         )}
         {widget.columnDescription && (
-          <p style={{ fontSize: `${responsiveDescriptionSize}px`, color: descriptionColor, marginBottom: '24px', lineHeight: 1.6 }}>
+          <p style={{ fontSize: `${responsiveDescriptionSize}px`, color: formDescriptionTypography.color, marginBottom: '24px', lineHeight: 1.6 }}>
             {widget.columnDescription}
           </p>
         )}
@@ -2732,12 +2732,12 @@ function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
     const contactDetailsColumn = (
       <div>
         {widget.columnHeading && (
-          <h2 style={{ fontSize: `${responsiveHeadingSize}px`, color: headingColor, marginBottom: '16px', fontWeight: 700 }}>
+          <h2 style={{ fontSize: `${responsiveHeadingSize}px`, color: formHeadingTypography.color, marginBottom: '16px', fontWeight: 700 }}>
             {widget.columnHeading}
           </h2>
         )}
         {widget.columnDescription && (
-          <p style={{ fontSize: `${responsiveDescriptionSize}px`, color: descriptionColor, marginBottom: '32px', lineHeight: 1.6 }}>
+          <p style={{ fontSize: `${responsiveDescriptionSize}px`, color: formDescriptionTypography.color, marginBottom: '32px', lineHeight: 1.6 }}>
             {widget.columnDescription}
           </p>
         )}
