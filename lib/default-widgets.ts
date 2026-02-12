@@ -250,6 +250,48 @@ export function createDefaultWidget(type: SectionType): any {
         ],
         buttonText: 'Send Message',
         confirmationMessage: 'Thank you for your message! We\'ll be in touch soon.',
+        // Typography using nested objects (new format)
+        formHeadingTypography: {
+          fontFamily: 'Inter',
+          fontSize: { value: 2, unit: 'rem' as const },
+          fontWeight: '700',
+          lineHeight: '1.2',
+          textTransform: 'none' as const,
+          letterSpacing: '0em',
+          color: '#1f2937',
+        },
+        formDescriptionTypography: {
+          fontFamily: 'Inter',
+          fontSize: { value: 1, unit: 'rem' as const },
+          fontWeight: '400',
+          lineHeight: '1.6',
+          textTransform: 'none' as const,
+          letterSpacing: '0em',
+          color: '#6b7280',
+        },
+        // Submit button configuration
+        submitButton: {
+          text: 'Send Message',
+          url: '',
+          width: 'full' as const,
+          backgroundColor: '#10b981',
+          textColor: '#ffffff',
+          borderRadius: 8,
+          borderWidth: 0,
+          borderColor: '#000000',
+          backgroundOpacity: 100,
+          dropShadow: true,
+          shadowAmount: 4,
+          blurEffect: 0,
+          fontFamily: 'Inter',
+          fontSize: { value: 16, unit: 'px' as const },
+          fontWeight: '600',
+          lineHeight: '1.5',
+          textTransform: 'none' as const,
+          hover: {
+            backgroundOpacity: 90,
+          },
+        },
       };
       
     case 'sticky-form':
