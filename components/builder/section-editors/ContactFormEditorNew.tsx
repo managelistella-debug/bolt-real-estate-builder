@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ContactFormWidget, FormField, TypographyConfig, ButtonStyleConfig } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,6 +30,39 @@ export function ContactFormEditorNew({ widget, onChange }: ContactFormEditorNewP
   const [typographyOpen, setTypographyOpen] = useState(false);
   const [buttonStyleOpen, setButtonStyleOpen] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(false);
+
+  // Migration: Initialize submitButton for existing widgets
+  useEffect(() => {
+    if (!(widget as any).submitButton) {
+      const updates: any = {
+        submitButton: {
+          text: widget.buttonText || 'Submit',
+          url: '',
+          width: 'full',
+          backgroundColor: '#10b981',
+          textColor: '#ffffff',
+          borderRadius: 8,
+          borderWidth: 0,
+          backgroundOpacity: 100,
+          dropShadow: true,
+          shadowAmount: 4,
+          blurEffect: 0,
+          fontFamily: 'Inter',
+          fontSize: { value: 16, unit: 'px' },
+          fontWeight: '500',
+          lineHeight: '1.2',
+          textTransform: 'none',
+          hover: {
+            backgroundColor: '#059669',
+            textColor: '#ffffff',
+            dropShadow: true,
+            shadowAmount: 6,
+          },
+        },
+      };
+      onChange(updates);
+    }
+  }, []);
 
   // Helper functions to get typography configs
   const getFormHeadingTypography = (): TypographyConfig => {
@@ -281,14 +314,16 @@ export function ContactFormEditorNew({ widget, onChange }: ContactFormEditorNewP
         label="Submit Button"
         value={getSubmitButton()}
         onChange={(updates) => {
-          const currentButton = getSubmitButton();
-          onChange({
-            submitButton: {
-              ...currentButton,
-              ...updates,
-            } as any,
-            buttonText: updates.text || currentButton.text,
-          });
+          if (Object.keys(updates).length > 0) {
+            const currentButton = getSubmitButton();
+            onChange({
+              submitButton: {
+                ...currentButton,
+                ...updates,
+              } as any,
+              buttonText: updates.text || currentButton.text,
+            });
+          }
         }}
         showGlobalStyleSelector={true}
       />
