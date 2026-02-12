@@ -297,7 +297,8 @@ export function createDefaultWidget(type: SectionType): any {
     case 'sticky-form':
       return {
         type: 'sticky-form',
-        heading: 'Quick Contact',
+        heading: 'Get in Touch',
+        formHeading: 'Contact Us',
         description: 'Get a free consultation',
         buttonText: 'Submit',
         nameLabel: 'Name',
@@ -307,6 +308,15 @@ export function createDefaultWidget(type: SectionType): any {
         offset: 20,
         // Typography using nested objects (new format)
         headingTypography: {
+          fontFamily: 'Inter',
+          fontSize: { value: 2.25, unit: 'rem' as const },
+          fontWeight: '700',
+          lineHeight: '1.2',
+          textTransform: 'none' as const,
+          letterSpacing: '0em',
+          color: '#1f2937',
+        },
+        formHeadingTypography: {
           fontFamily: 'Inter',
           fontSize: { value: 1.25, unit: 'rem' as const },
           fontWeight: '700',
