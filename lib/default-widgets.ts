@@ -305,6 +305,48 @@ export function createDefaultWidget(type: SectionType): any {
         phoneLabel: 'Phone',
         position: 'bottom-right',
         offset: 20,
+        // Typography using nested objects (new format)
+        headingTypography: {
+          fontFamily: 'Inter',
+          fontSize: { value: 1.25, unit: 'rem' as const },
+          fontWeight: '700',
+          lineHeight: '1.2',
+          textTransform: 'none' as const,
+          letterSpacing: '0em',
+          color: '#1f2937',
+        },
+        descriptionTypography: {
+          fontFamily: 'Inter',
+          fontSize: { value: 0.875, unit: 'rem' as const },
+          fontWeight: '400',
+          lineHeight: '1.5',
+          textTransform: 'none' as const,
+          letterSpacing: '0em',
+          color: '#6b7280',
+        },
+        // Submit button configuration
+        submitButton: {
+          text: 'Submit',
+          url: '',
+          width: 'full' as const,
+          backgroundColor: '#10b981',
+          textColor: '#ffffff',
+          borderRadius: 8,
+          borderWidth: 0,
+          borderColor: '#000000',
+          backgroundOpacity: 100,
+          dropShadow: true,
+          shadowAmount: 4,
+          blurEffect: 0,
+          fontFamily: 'Inter',
+          fontSize: { value: 14, unit: 'px' as const },
+          fontWeight: '600',
+          lineHeight: '1.5',
+          textTransform: 'none' as const,
+          hover: {
+            backgroundOpacity: 90,
+          },
+        },
       };
       
     case 'image-navigation':
