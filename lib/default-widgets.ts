@@ -586,6 +586,91 @@ export function createDefaultWidget(type: SectionType): any {
         },
       };
     
+    case 'image-text-columns':
+      return {
+        type: 'image-text-columns',
+        sectionHeader: 'Our Services',
+        showSectionHeader: true,
+        columns: [
+          {
+            id: `column_${timestamp}_1`,
+            image: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=400&h=300',
+            subtitle: 'Service One',
+            description: 'Description of your first service offering',
+            buttonText: '',
+            buttonUrl: '',
+          },
+          {
+            id: `column_${timestamp}_2`,
+            image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=400&h=300',
+            subtitle: 'Service Two',
+            description: 'Description of your second service offering',
+            buttonText: '',
+            buttonUrl: '',
+          },
+          {
+            id: `column_${timestamp}_3`,
+            image: 'https://images.unsplash.com/photo-1556761175-4b46a572b786?w=400&h=300',
+            subtitle: 'Service Three',
+            description: 'Description of your third service offering',
+            buttonText: '',
+            buttonUrl: '',
+          },
+        ],
+        // Typography using nested objects (new format)
+        sectionHeaderTypography: {
+          fontFamily: 'Inter',
+          fontSize: { value: 2, unit: 'rem' as const },
+          fontWeight: '700',
+          lineHeight: '1.2',
+          textTransform: 'none' as const,
+          letterSpacing: '0em',
+          color: '#1f2937',
+        },
+        subtitleTypography: {
+          fontFamily: 'Inter',
+          fontSize: { value: 1.25, unit: 'rem' as const },
+          fontWeight: '600',
+          lineHeight: '1.3',
+          textTransform: 'none' as const,
+          letterSpacing: '0em',
+          color: '#1f2937',
+        },
+        descriptionTypography: {
+          fontFamily: 'Inter',
+          fontSize: { value: 1, unit: 'rem' as const },
+          fontWeight: '400',
+          lineHeight: '1.6',
+          textTransform: 'none' as const,
+          letterSpacing: '0em',
+          color: '#6b7280',
+        },
+        // Layout settings
+        layout: {
+          fullWidth: true,
+          maxWidth: 1200,
+          paddingTop: 80,
+          paddingBottom: 80,
+          paddingLeft: 24,
+          paddingRight: 24,
+        },
+        // Column settings
+        desktopColumns: 3,
+        tabletColumns: 2,
+        mobileColumns: 1,
+        gap: 32,
+        // Image styling
+        imageHeight: 200,
+        imageFit: 'cover',
+        imageRadius: 8,
+        // Background
+        background: {
+          type: 'color',
+          color: '#ffffff',
+          opacity: 100,
+        },
+      };
+    
     // Add more section types as needed - for brevity, returning basic structure
     default:
       return {
