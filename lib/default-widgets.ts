@@ -331,6 +331,66 @@ export function createDefaultWidget(type: SectionType): any {
         margin: DEFAULT_MARGIN,
       };
     
+    case 'icon-text':
+      return {
+        type: 'icon-text',
+        sectionHeading: 'Our Features',
+        showSectionHeading: true,
+        items: [
+          {
+            id: `item_${timestamp}_1`,
+            icon: 'Star',
+            heading: 'Feature One',
+            subheading: 'Description of your first amazing feature',
+          },
+          {
+            id: `item_${timestamp}_2`,
+            icon: 'Target',
+            heading: 'Feature Two',
+            subheading: 'Description of your second amazing feature',
+          },
+          {
+            id: `item_${timestamp}_3`,
+            icon: 'Zap',
+            heading: 'Feature Three',
+            subheading: 'Description of your third amazing feature',
+          },
+        ],
+        columns: 3,
+        alignment: 'center',
+        iconSize: 'md',
+        gap: 24,
+        // Typography defaults (dark text for light background)
+        headerFontSize: { value: 36, unit: 'px' as const },
+        headingColor: '#1f2937',
+        headingWeight: '700',
+        itemTitleFontSize: { value: 20, unit: 'px' as const },
+        titleColor: '#1f2937',
+        titleFontWeight: '600',
+        itemDescFontSize: { value: 16, unit: 'px' as const },
+        descriptionColor: '#6b7280',
+        descriptionFontWeight: '400',
+        // Box styling
+        boxed: false,
+        boxBackground: '#ffffff',
+        boxBorderRadius: 12,
+        boxPadding: 24,
+        boxShadow: true,
+        // Layout
+        layout: {
+          height: { type: 'auto' as const },
+          width: 'container' as const,
+          padding: DEFAULT_PADDING,
+          margin: DEFAULT_MARGIN,
+        },
+        background: {
+          type: 'color',
+          color: 'transparent',
+          opacity: 100,
+          blur: 0,
+        },
+      };
+    
     // Add more section types as needed - for brevity, returning basic structure
     default:
       return {

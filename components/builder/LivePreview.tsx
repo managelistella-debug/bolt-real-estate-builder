@@ -2613,7 +2613,7 @@ function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
         </form>
       ) : (
         <div style={{ padding: '40px', textAlign: 'center' }}>
-          <p style={{ fontSize: `${responsiveDescriptionSize}px`, color: formHeadingTypography.color }}>
+          <p style={{ fontSize: `${responsiveDescriptionSize}px`, color: headingColor }}>
             {confirmationMessage}
           </p>
         </div>
@@ -2760,7 +2760,7 @@ function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
                   </svg>
                 </div>
               )}
-              <a href={`tel:${widget.phone}`} style={{ fontSize: `${responsiveDescriptionSize}px`, color: formDescriptionTypography.color, textDecoration: 'none' }}>
+              <a href={`tel:${widget.phone}`} style={{ fontSize: `${responsiveDescriptionSize}px`, color: headingColor, textDecoration: 'none' }}>
                 {widget.phone}
               </a>
             </div>
@@ -2784,7 +2784,7 @@ function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
                   </svg>
                 </div>
               )}
-              <a href={`mailto:${widget.email}`} style={{ fontSize: `${responsiveDescriptionSize}px`, color: formDescriptionTypography.color, textDecoration: 'none' }}>
+              <a href={`mailto:${widget.email}`} style={{ fontSize: `${responsiveDescriptionSize}px`, color: headingColor, textDecoration: 'none' }}>
                 {widget.email}
               </a>
             </div>
@@ -2809,7 +2809,7 @@ function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
                   </svg>
                 </div>
               )}
-              <a href={`https://${widget.website.replace(/^https?:\/\//, '')}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: `${responsiveDescriptionSize}px`, color: formDescriptionTypography.color, textDecoration: 'none' }}>
+              <a href={`https://${widget.website.replace(/^https?:\/\//, '')}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: `${responsiveDescriptionSize}px`, color: headingColor, textDecoration: 'none' }}>
                 {widget.website}
               </a>
             </div>
@@ -4194,7 +4194,7 @@ function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
           className="prose prose-sm max-w-none"
           style={{
             fontSize: `${textSize}px`,
-            color: descriptionTypography.color,
+            color: textColor,
             fontFamily: widget.textFontFamily || 'Inter',
             lineHeight: 1.6,
           }}
@@ -4208,7 +4208,7 @@ function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
               key={index}
               style={{
                 fontSize: `${textSize}px`,
-                color: descriptionTypography.color,
+                color: textColor,
                 fontFamily: widget.textFontFamily || 'Inter',
                 lineHeight: 1.6,
                 marginBottom: '16px',
@@ -4225,7 +4225,7 @@ function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
                   key={index}
                   style={{
                     fontSize: `${textSize}px`,
-                    color: descriptionTypography.color,
+                    color: textColor,
                     fontFamily: widget.textFontFamily || 'Inter',
                     marginBottom: '8px',
                   }}
