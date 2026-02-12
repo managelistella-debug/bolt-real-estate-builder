@@ -128,6 +128,22 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
       needsUpdate = true;
     }
 
+    // Initialize colors if they're undefined (for existing widgets created before defaults were added)
+    if (!widget.headingColor) {
+      updates.headingColor = '#1f2937';
+      needsUpdate = true;
+    }
+    
+    if (!widget.titleColor) {
+      updates.titleColor = '#1f2937';
+      needsUpdate = true;
+    }
+    
+    if (!widget.descriptionColor) {
+      updates.descriptionColor = '#6b7280';
+      needsUpdate = true;
+    }
+
     if (needsUpdate) {
       onChange(updates);
     }
@@ -533,7 +549,9 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
               widgetUpdate.headingColor = updates.color;
               widgetUpdate.sectionHeadingColor = updates.color; // Legacy compatibility
             }
-            onChange(widgetUpdate);
+            if (Object.keys(widgetUpdate).length > 0) {
+              onChange(widgetUpdate);
+            }
           }}
           showGlobalStyleSelector={true}
           availableGlobalStyles={['h2', 'h3', 'h4']}
@@ -563,7 +581,9 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
             widgetUpdate.titleColor = updates.color;
             widgetUpdate.itemHeadingColor = updates.color; // Legacy compatibility
           }
-          onChange(widgetUpdate);
+          if (Object.keys(widgetUpdate).length > 0) {
+            onChange(widgetUpdate);
+          }
         }}
         showGlobalStyleSelector={true}
         availableGlobalStyles={['h3', 'h4', 'h5']}
@@ -592,7 +612,9 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
             widgetUpdate.descriptionColor = updates.color;
             widgetUpdate.itemSubheadingColor = updates.color; // Legacy compatibility
           }
-          onChange(widgetUpdate);
+          if (Object.keys(widgetUpdate).length > 0) {
+            onChange(widgetUpdate);
+          }
         }}
         showGlobalStyleSelector={true}
         availableGlobalStyles={['body']}
