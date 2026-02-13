@@ -290,24 +290,83 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
             </SubtitleTag>
           );
         })()}
-        <a
-          href={buttonUrl}
-          className="inline-block"
+        <div 
           style={{
-            ...buttonStyles,
+            display: widget.button?.width === 'full' ? 'block' : 'inline-block',
             ...buttonWidthStyles,
-            padding: '12px 32px',
-            transition: 'all 0.3s ease',
-          }}
-          onMouseEnter={(e) => {
-            Object.assign(e.currentTarget.style, buttonHoverStyles);
-          }}
-          onMouseLeave={(e) => {
-            Object.assign(e.currentTarget.style, { ...buttonStyles, ...buttonWidthStyles, padding: '12px 32px' });
           }}
         >
-          {buttonText}
-        </a>
+          <a
+            href={buttonUrl}
+            className="relative overflow-hidden"
+            style={{
+              display: 'block',
+              padding: '12px 32px',
+              transition: 'all 0.3s ease',
+              cursor: 'pointer',
+              position: 'relative',
+              color: buttonStyles.color,
+              fontFamily: buttonStyles.fontFamily,
+              fontSize: buttonStyles.fontSize,
+              fontWeight: buttonStyles.fontWeight,
+              lineHeight: buttonStyles.lineHeight,
+              textTransform: buttonStyles.textTransform,
+              textDecoration: 'none',
+              borderRadius: buttonStyles.borderRadius,
+              borderWidth: buttonStyles.borderWidth,
+              borderStyle: buttonStyles.borderStyle,
+              borderColor: buttonStyles.borderColor,
+              boxShadow: buttonStyles.boxShadow,
+              textAlign: 'center',
+            }}
+            onMouseEnter={(e) => {
+              const target = e.currentTarget;
+              const bg = target.querySelector('.button-bg') as HTMLElement;
+              if (bg) {
+                Object.assign(bg.style, {
+                  backgroundColor: buttonHoverStyles.backgroundColor,
+                  filter: widget.button?.hover?.blurEffect ? `blur(${widget.button.hover.blurEffect}px)` : (widget.button?.blurEffect ? `blur(${widget.button.blurEffect}px)` : 'none'),
+                });
+              }
+              Object.assign(target.style, {
+                color: buttonHoverStyles.color,
+                borderColor: buttonHoverStyles.borderColor,
+                boxShadow: buttonHoverStyles.boxShadow,
+              });
+            }}
+            onMouseLeave={(e) => {
+              const target = e.currentTarget;
+              const bg = target.querySelector('.button-bg') as HTMLElement;
+              if (bg) {
+                Object.assign(bg.style, {
+                  backgroundColor: buttonStyles.backgroundColor,
+                  filter: widget.button?.blurEffect ? `blur(${widget.button.blurEffect}px)` : 'none',
+                });
+              }
+              Object.assign(target.style, {
+                color: buttonStyles.color,
+                borderColor: buttonStyles.borderColor,
+                boxShadow: buttonStyles.boxShadow,
+              });
+            }}
+          >
+            {/* Background layer with blur */}
+            <div 
+              className="button-bg"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundColor: buttonStyles.backgroundColor,
+                borderRadius: buttonStyles.borderRadius,
+                filter: widget.button?.blurEffect ? `blur(${widget.button.blurEffect}px)` : 'none',
+                transition: 'all 0.3s ease',
+                zIndex: -1,
+              }}
+            />
+            {/* Text content */}
+            <span style={{ position: 'relative', zIndex: 1 }}>{buttonText}</span>
+          </a>
+        </div>
       </div>
     </div>
   );
