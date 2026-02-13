@@ -742,10 +742,38 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
     </div>
   );
 
-  // Get button styles using the new ButtonStyleConfig structure
-  const buttonStyles = widget.button ? buttonToCSS(widget.button, false) : {};
-  const buttonHoverStyles = widget.button ? buttonToCSS(widget.button, true) : {};
-  const buttonWidthStyles = widget.button ? getButtonWidthStyle(widget.button) : {};
+  // Get button config with fallback to old structure
+  const getButtonForRendering = () => {
+    if (widget.button) return widget.button;
+    
+    // Fallback to old structure
+    const buttonStyles = widget.buttonStyles || {};
+    return {
+      text: widget.cta?.text || '',
+      url: widget.cta?.url || '',
+      width: (widget as any).buttonWidth || 'standard',
+      backgroundColor: buttonStyles.bgColor || '#3b82f6',
+      textColor: buttonStyles.textColor || '#ffffff',
+      borderRadius: buttonStyles.radius || 8,
+      borderWidth: buttonStyles.strokeWidth || 0,
+      borderColor: buttonStyles.strokeColor || '#000000',
+      backgroundOpacity: buttonStyles.bgOpacity || 100,
+      dropShadow: buttonStyles.hasShadow ?? true,
+      shadowAmount: buttonStyles.shadowAmount || 4,
+      blurEffect: buttonStyles.blurAmount || 0,
+      fontFamily: (widget as any).buttonFontFamily || 'Inter',
+      fontSize: (widget as any).buttonFontSize || { value: 16, unit: 'px' },
+      fontWeight: (widget as any).buttonFontWeight || '600',
+      lineHeight: (widget as any).buttonLineHeight || '1.5',
+      textTransform: (widget as any).buttonTextTransform || 'none',
+      hover: (widget as any).buttonHover || {},
+    };
+  };
+
+  const buttonForRendering = getButtonForRendering();
+  const buttonStyles = buttonToCSS(buttonForRendering, false);
+  const buttonHoverStyles = buttonToCSS(buttonForRendering, true);
+  const buttonWidthStyles = getButtonWidthStyle(buttonForRendering);
 
   // Get typography helpers
   const getFontSize = (fontSize: any, fallback: string) => {
@@ -790,7 +818,7 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
     >
       {widget.title && <h2 className="mb-4" style={titleStyles}>{widget.title}</h2>}
       <p style={contentStyles}>{widget.content}</p>
-      {(widget.cta || widget.button) && (
+      {(widget.cta || buttonForRendering) && (
         <div 
           className="mt-6"
           style={{
@@ -800,13 +828,13 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
         >
           <div 
             style={{
-              display: widget.button?.width === 'full' ? 'block' : 'inline-block',
+              display: buttonForRendering.width === 'full' ? 'block' : 'inline-block',
               ...buttonWidthStyles,
-              width: widget.button?.width === 'full' ? '100%' : buttonWidthStyles.width,
+              width: buttonForRendering.width === 'full' ? '100%' : buttonWidthStyles.width,
             }}
           >
             <a
-              href={widget.cta?.url || widget.button?.url || '#'}
+              href={widget.cta?.url || buttonForRendering.url || '#'}
               className="relative overflow-hidden"
               style={{
                 display: 'block',
@@ -834,7 +862,7 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
                 if (bg) {
                   Object.assign(bg.style, {
                     backgroundColor: buttonHoverStyles.backgroundColor,
-                    filter: widget.button?.hover?.blurEffect ? `blur(${widget.button.hover.blurEffect}px)` : (widget.button?.blurEffect ? `blur(${widget.button.blurEffect}px)` : 'none'),
+                    filter: buttonForRendering.hover?.blurEffect ? `blur(${buttonForRendering.hover.blurEffect}px)` : (buttonForRendering.blurEffect ? `blur(${buttonForRendering.blurEffect}px)` : 'none'),
                   });
                 }
                 Object.assign(target.style, {
@@ -849,7 +877,7 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
                 if (bg) {
                   Object.assign(bg.style, {
                     backgroundColor: buttonStyles.backgroundColor,
-                    filter: widget.button?.blurEffect ? `blur(${widget.button.blurEffect}px)` : 'none',
+                    filter: buttonForRendering.blurEffect ? `blur(${buttonForRendering.blurEffect}px)` : 'none',
                   });
                 }
                 Object.assign(target.style, {
@@ -867,14 +895,14 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
                   inset: 0,
                   backgroundColor: buttonStyles.backgroundColor,
                   borderRadius: buttonStyles.borderRadius,
-                  filter: widget.button?.blurEffect ? `blur(${widget.button.blurEffect}px)` : 'none',
+                  filter: buttonForRendering.blurEffect ? `blur(${buttonForRendering.blurEffect}px)` : 'none',
                   transition: 'all 0.3s ease',
                   zIndex: -1,
                 }}
               />
               {/* Text content */}
               <span style={{ position: 'relative', zIndex: 1 }}>
-                {widget.cta?.text || widget.button?.text || 'Click here'}
+                {widget.cta?.text || buttonForRendering.text || 'Click here'}
               </span>
             </a>
           </div>

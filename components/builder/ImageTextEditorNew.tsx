@@ -24,6 +24,38 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
   const { currentWebsite } = useWebsiteStore();
   const globalStyles = currentWebsite?.globalStyles;
 
+  // Migration: Initialize widget.button from old structure
+  useEffect(() => {
+    if (!widget.button) {
+      const buttonStyles = widget.buttonStyles || {};
+      const updates: any = {
+        button: {
+          text: widget.cta?.text || '',
+          url: widget.cta?.url || '',
+          openNewTab: widget.cta?.openNewTab,
+          width: (widget as any).buttonWidth || 'standard',
+          backgroundColor: buttonStyles.bgColor || '#3b82f6',
+          textColor: buttonStyles.textColor || '#ffffff',
+          borderRadius: buttonStyles.radius || 8,
+          borderWidth: buttonStyles.strokeWidth || 0,
+          borderColor: buttonStyles.strokeColor || '#000000',
+          backgroundOpacity: buttonStyles.bgOpacity || 100,
+          dropShadow: buttonStyles.hasShadow ?? true,
+          shadowAmount: buttonStyles.shadowAmount || 4,
+          blurEffect: buttonStyles.blurAmount || 0,
+          fontFamily: (widget as any).buttonFontFamily || 'Inter',
+          fontSize: (widget as any).buttonFontSize || { value: 16, unit: 'px' },
+          fontWeight: (widget as any).buttonFontWeight || '600',
+          lineHeight: (widget as any).buttonLineHeight || '1.5',
+          textTransform: (widget as any).buttonTextTransform || 'none',
+          letterSpacing: (widget as any).buttonLetterSpacing || '0em',
+          hover: (widget as any).buttonHover || {},
+        },
+      };
+      onChange(updates);
+    }
+  }, []);
+
   // Debounced inputs
   const [titleValue, , titleChange, titleBlur] = useDebouncedInput(
     widget.title || '',
