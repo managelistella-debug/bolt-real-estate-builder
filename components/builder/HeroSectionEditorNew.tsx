@@ -85,16 +85,40 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
       needsUpdate = true;
     }
 
-    // Migrate button fontSize if needed
-    if (widget.button && !(widget as any).button.fontSize) {
+    // Migrate button - create from old structure if doesn't exist
+    if (!widget.button) {
+      needsUpdate = true;
+      updates.button = {
+        text: widget.cta?.text || '',
+        url: widget.cta?.url || '',
+        openNewTab: widget.cta?.openNewTab,
+        width: (widget as any).buttonWidth || 'standard',
+        backgroundColor: (widget as any).buttonStyles?.bgColor || '#3b82f6',
+        textColor: (widget as any).buttonStyles?.textColor || '#ffffff',
+        borderRadius: (widget as any).buttonStyles?.radius || 8,
+        borderWidth: (widget as any).buttonStyles?.strokeWidth || 0,
+        borderColor: (widget as any).buttonStyles?.strokeColor || '#000000',
+        backgroundOpacity: (widget as any).buttonStyles?.bgOpacity || 100,
+        dropShadow: (widget as any).buttonStyles?.hasShadow ?? true,
+        shadowAmount: (widget as any).buttonStyles?.shadowAmount || 4,
+        blurEffect: (widget as any).buttonStyles?.blurAmount || 0,
+        fontFamily: (widget as any).buttonFontFamily || 'Inter',
+        fontSize: (widget as any).buttonFontSize || { value: 16, unit: 'px' },
+        fontWeight: (widget as any).buttonFontWeight || '600',
+        lineHeight: (widget as any).buttonLineHeight || '1.5',
+        textTransform: (widget as any).buttonTextTransform || 'none',
+        hover: (widget as any).buttonHover || {},
+      };
+    } else if (!(widget as any).button.fontSize) {
+      // Partial migration if button exists but missing properties
       needsUpdate = true;
       updates.button = {
         ...widget.button,
         fontSize: { value: 16, unit: 'px' as const },
-        fontFamily: 'Inter',
-        fontWeight: '600',
-        lineHeight: '1.5',
-        textTransform: 'none' as const,
+        fontFamily: widget.button.fontFamily || 'Inter',
+        fontWeight: widget.button.fontWeight || '600',
+        lineHeight: widget.button.lineHeight || '1.5',
+        textTransform: widget.button.textTransform || 'none' as const,
       };
     }
 
