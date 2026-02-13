@@ -238,24 +238,25 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
     text: widget.button?.text || widget.cta?.text || '',
     url: widget.button?.url || widget.cta?.url || '',
     openNewTab: widget.button?.openNewTab,
-    width: (widget as any).buttonWidth || 'standard' as const,
+    width: widget.button?.width || (widget as any).buttonWidth || 'standard' as const,
+    customWidth: widget.button?.customWidth,
     backgroundColor: widget.button?.backgroundColor || widget.button?.bgColor || '#3b82f6',
     textColor: widget.button?.textColor || '#ffffff',
     borderRadius: widget.button?.borderRadius || widget.button?.radius || 8,
     borderWidth: widget.button?.borderWidth || widget.button?.strokeWidth || 0,
-    borderColor: widget.button?.borderColor || widget.button?.strokeColor,
+    borderColor: widget.button?.borderColor || widget.button?.strokeColor || '#000000',
     backgroundOpacity: widget.button?.backgroundOpacity || widget.button?.bgOpacity || 100,
     dropShadow: widget.button?.dropShadow ?? widget.button?.hasShadow !== false,
     shadowAmount: widget.button?.shadowAmount || 4,
     blurEffect: widget.button?.blurEffect || widget.button?.blurAmount || 0,
-    fontFamily: (widget as any).buttonFontFamily || 'Inter',
-    fontSize: (widget as any).buttonFontSize || { value: 16, unit: 'px' as const },
-    fontWeight: (widget as any).buttonFontWeight || '600',
-    lineHeight: (widget as any).buttonLineHeight || '1.5',
-    textTransform: (widget as any).buttonTextTransform || 'none' as const,
-    hover: (widget as any).buttonHover || {},
-    useGlobalStyle: (widget as any).buttonUseGlobalStyle,
-    globalStyleId: (widget as any).buttonGlobalStyleId,
+    fontFamily: widget.button?.fontFamily || (widget as any).buttonFontFamily || 'Inter',
+    fontSize: widget.button?.fontSize || (widget as any).buttonFontSize || { value: 16, unit: 'px' as const },
+    fontWeight: widget.button?.fontWeight || (widget as any).buttonFontWeight || '600',
+    lineHeight: widget.button?.lineHeight || (widget as any).buttonLineHeight || '1.5',
+    textTransform: widget.button?.textTransform || (widget as any).buttonTextTransform || 'none' as const,
+    hover: widget.button?.hover || (widget as any).buttonHover || {},
+    useGlobalStyle: widget.button?.useGlobalStyle || (widget as any).buttonUseGlobalStyle,
+    globalStyleId: widget.button?.globalStyleId || (widget as any).buttonGlobalStyleId,
   });
 
   // Content Tab
@@ -837,56 +838,67 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
         <ButtonControl
           value={getButtonConfig()}
           onChange={(updates) => {
+            if (Object.keys(updates).length === 0) return;
+            
             const widgetUpdate: any = {};
             
-            // Update button object
+            // Update button object with ALL properties
             const buttonUpdate: any = { ...widget.button };
+            
+            // Basic properties
             if (updates.text !== undefined) buttonUpdate.text = updates.text;
             if (updates.url !== undefined) buttonUpdate.url = updates.url;
             if (updates.openNewTab !== undefined) buttonUpdate.openNewTab = updates.openNewTab;
+            
+            // Style properties
             if (updates.backgroundColor !== undefined) {
               buttonUpdate.backgroundColor = updates.backgroundColor;
-              buttonUpdate.bgColor = updates.backgroundColor; // Keep both
+              buttonUpdate.bgColor = updates.backgroundColor; // Keep both for backward compatibility
             }
             if (updates.textColor !== undefined) buttonUpdate.textColor = updates.textColor;
             if (updates.borderRadius !== undefined) {
               buttonUpdate.borderRadius = updates.borderRadius;
-              buttonUpdate.radius = updates.borderRadius; // Keep both
+              buttonUpdate.radius = updates.borderRadius;
             }
             if (updates.borderWidth !== undefined) {
               buttonUpdate.borderWidth = updates.borderWidth;
-              buttonUpdate.strokeWidth = updates.borderWidth; // Keep both
+              buttonUpdate.strokeWidth = updates.borderWidth;
             }
             if (updates.borderColor !== undefined) {
               buttonUpdate.borderColor = updates.borderColor;
-              buttonUpdate.strokeColor = updates.borderColor; // Keep both
+              buttonUpdate.strokeColor = updates.borderColor;
             }
             if (updates.backgroundOpacity !== undefined) {
               buttonUpdate.backgroundOpacity = updates.backgroundOpacity;
-              buttonUpdate.bgOpacity = updates.backgroundOpacity; // Keep both
+              buttonUpdate.bgOpacity = updates.backgroundOpacity;
             }
             if (updates.dropShadow !== undefined) {
               buttonUpdate.dropShadow = updates.dropShadow;
-              buttonUpdate.hasShadow = updates.dropShadow; // Keep both
+              buttonUpdate.hasShadow = updates.dropShadow;
             }
             if (updates.shadowAmount !== undefined) buttonUpdate.shadowAmount = updates.shadowAmount;
             if (updates.blurEffect !== undefined) {
               buttonUpdate.blurEffect = updates.blurEffect;
-              buttonUpdate.blurAmount = updates.blurEffect; // Keep both
+              buttonUpdate.blurAmount = updates.blurEffect;
             }
             
-            widgetUpdate.button = buttonUpdate;
+            // Typography properties - SAVE TO widget.button, not root level
+            if (updates.fontFamily !== undefined) buttonUpdate.fontFamily = updates.fontFamily;
+            if (updates.fontSize !== undefined) buttonUpdate.fontSize = updates.fontSize;
+            if (updates.fontWeight !== undefined) buttonUpdate.fontWeight = updates.fontWeight;
+            if (updates.lineHeight !== undefined) buttonUpdate.lineHeight = updates.lineHeight;
+            if (updates.textTransform !== undefined) buttonUpdate.textTransform = updates.textTransform;
+            if (updates.width !== undefined) buttonUpdate.width = updates.width;
+            if (updates.customWidth !== undefined) buttonUpdate.customWidth = updates.customWidth;
             
-            // Update typography properties
-            if (updates.fontFamily !== undefined) widgetUpdate.buttonFontFamily = updates.fontFamily;
-            if (updates.fontSize !== undefined) widgetUpdate.buttonFontSize = updates.fontSize;
-            if (updates.fontWeight !== undefined) widgetUpdate.buttonFontWeight = updates.fontWeight;
-            if (updates.lineHeight !== undefined) widgetUpdate.buttonLineHeight = updates.lineHeight;
-            if (updates.textTransform !== undefined) widgetUpdate.buttonTextTransform = updates.textTransform;
-            if (updates.hover !== undefined) widgetUpdate.buttonHover = updates.hover;
-            if (updates.useGlobalStyle !== undefined) widgetUpdate.buttonUseGlobalStyle = updates.useGlobalStyle;
-            if (updates.globalStyleId !== undefined) widgetUpdate.buttonGlobalStyleId = updates.globalStyleId;
-            if (updates.width !== undefined) widgetUpdate.buttonWidth = updates.width;
+            // Hover state
+            if (updates.hover !== undefined) buttonUpdate.hover = updates.hover;
+            
+            // Global style linking
+            if (updates.useGlobalStyle !== undefined) buttonUpdate.useGlobalStyle = updates.useGlobalStyle;
+            if (updates.globalStyleId !== undefined) buttonUpdate.globalStyleId = updates.globalStyleId;
+            
+            widgetUpdate.button = buttonUpdate;
             
             // Also update cta for compatibility
             if (updates.text !== undefined || updates.url !== undefined) {
