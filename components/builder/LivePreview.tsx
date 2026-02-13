@@ -326,7 +326,7 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
         >
           <a
             href={buttonUrl}
-            className="relative overflow-hidden"
+            className="relative"
             style={{
               display: 'block',
               padding: '12px 32px',
@@ -346,6 +346,7 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
               borderColor: buttonStyles.borderColor,
               boxShadow: buttonStyles.boxShadow,
               textAlign: 'center',
+              overflow: 'hidden',
             }}
             onMouseEnter={(e) => {
               const target = e.currentTarget;
@@ -863,7 +864,7 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
           >
             <a
               href={widget.cta?.url || buttonForRendering.url || '#'}
-              className="relative overflow-hidden"
+              className="relative"
               style={{
                 display: 'block',
                 padding: '12px 32px',
@@ -883,6 +884,7 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
                 borderColor: buttonStyles.borderColor,
                 boxShadow: buttonStyles.boxShadow,
                 textAlign: 'center',
+                overflow: 'hidden',
               }}
               onMouseEnter={(e) => {
                 const target = e.currentTarget;
