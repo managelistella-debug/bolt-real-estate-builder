@@ -219,6 +219,14 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
   const buttonHoverStyles = buttonToCSS(buttonForRendering, true);
   const buttonWidthStyles = getButtonWidthStyle(buttonForRendering);
 
+  // Calculate inner border radius for background (outer radius - border width)
+  const getInnerBorderRadius = () => {
+    const outerRadius = buttonForRendering.borderRadius || 8;
+    const borderWidth = buttonForRendering.borderWidth || 0;
+    const innerRadius = Math.max(0, outerRadius - borderWidth);
+    return `${innerRadius}px`;
+  };
+
   const getBackgroundStyle = () => {
     if (bgType === 'gradient' && widget.background?.gradient?.enabled) {
       const angle = widget.background.gradient.angle || 45;
@@ -386,7 +394,7 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
                 position: 'absolute',
                 inset: 0,
                 backgroundColor: buttonStyles.backgroundColor,
-                borderRadius: buttonStyles.borderRadius,
+                borderRadius: getInnerBorderRadius(),
                 filter: buttonForRendering.blurEffect ? `blur(${buttonForRendering.blurEffect}px)` : 'none',
                 transition: 'all 0.3s ease',
                 zIndex: -1,
@@ -804,6 +812,14 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
   const buttonHoverStyles = buttonToCSS(buttonForRendering, true);
   const buttonWidthStyles = getButtonWidthStyle(buttonForRendering);
 
+  // Calculate inner border radius for background (outer radius - border width)
+  const getInnerBorderRadius = () => {
+    const outerRadius = buttonForRendering.borderRadius || 8;
+    const borderWidth = buttonForRendering.borderWidth || 0;
+    const innerRadius = Math.max(0, outerRadius - borderWidth);
+    return `${innerRadius}px`;
+  };
+
   // Get typography helpers
   const getFontSize = (fontSize: any, fallback: string) => {
     if (!fontSize) return fallback;
@@ -924,7 +940,7 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
                   position: 'absolute',
                   inset: 0,
                   backgroundColor: buttonStyles.backgroundColor,
-                  borderRadius: buttonStyles.borderRadius,
+                  borderRadius: getInnerBorderRadius(),
                   filter: buttonForRendering.blurEffect ? `blur(${buttonForRendering.blurEffect}px)` : 'none',
                   transition: 'all 0.3s ease',
                   zIndex: -1,
