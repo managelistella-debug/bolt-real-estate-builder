@@ -742,16 +742,10 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
     </div>
   );
 
-  // Button styling
-  const buttonRadius = widget.buttonStyles?.radius || 8;
-  const buttonBgColor = widget.buttonStyles?.bgColor || '#3b82f6';
-  const buttonTextColor = widget.buttonStyles?.textColor || '#ffffff';
-  const buttonBgOpacity = widget.buttonStyles?.bgOpacity !== undefined ? widget.buttonStyles.bgOpacity / 100 : 1;
-  const buttonBlurAmount = widget.buttonStyles?.blurAmount || 0;
-  const buttonHasShadow = widget.buttonStyles?.hasShadow ?? true;
-  const buttonShadowAmount = widget.buttonStyles?.shadowAmount || 4;
-  const buttonStrokeWidth = widget.buttonStyles?.strokeWidth || 0;
-  const buttonStrokeColor = widget.buttonStyles?.strokeColor || '#000000';
+  // Get button styles using the new ButtonStyleConfig structure
+  const buttonStyles = widget.button ? buttonToCSS(widget.button, false) : {};
+  const buttonHoverStyles = widget.button ? buttonToCSS(widget.button, true) : {};
+  const buttonWidthStyles = widget.button ? getButtonWidthStyle(widget.button) : {};
 
   // Get typography helpers
   const getFontSize = (fontSize: any, fallback: string) => {
@@ -786,25 +780,6 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
     whiteSpace: 'pre-wrap',
   };
 
-  // Button typography and style
-  const buttonStyle: React.CSSProperties = {
-    borderRadius: `${buttonRadius}px`,
-    backgroundColor: hexToRgba(buttonBgColor, buttonBgOpacity),
-    color: buttonTextColor,
-    padding: '12px 32px',
-    border: buttonStrokeWidth > 0 ? `${buttonStrokeWidth}px solid ${buttonStrokeColor}` : 'none',
-    boxShadow: buttonHasShadow ? `0 ${buttonShadowAmount}px ${buttonShadowAmount * 2}px rgba(0,0,0,0.1)` : 'none',
-    backdropFilter: buttonBlurAmount > 0 ? `blur(${buttonBlurAmount}px)` : 'none',
-    WebkitBackdropFilter: buttonBlurAmount > 0 ? `blur(${buttonBlurAmount}px)` : 'none',
-    alignSelf: textAlign === 'center' ? 'center' : textAlign === 'right' ? 'flex-end' : 'flex-start',
-    fontFamily: (widget as any).buttonFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).buttonFontSize, '16px'),
-    fontWeight: (widget as any).buttonFontWeight || '600',
-    lineHeight: (widget as any).buttonLineHeight || '1.5',
-    textTransform: ((widget as any).buttonTextTransform as any) || 'none',
-    letterSpacing: (widget as any).buttonLetterSpacing || '0em',
-  };
-
   const textComponent = (
     <div 
       className={cn('flex flex-col h-full')}
@@ -815,14 +790,95 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
     >
       {widget.title && <h2 className="mb-4" style={titleStyles}>{widget.title}</h2>}
       <p style={contentStyles}>{widget.content}</p>
-      {widget.cta && (
-        <a 
-          href={widget.cta.url} 
-          className="inline-block mt-6"
-          style={buttonStyle}
+      {(widget.cta || widget.button) && (
+        <div 
+          className="mt-6"
+          style={{
+            display: 'flex',
+            justifyContent: textAlign === 'center' ? 'center' : textAlign === 'right' ? 'flex-end' : 'flex-start',
+          }}
         >
-          {widget.cta.text}
-        </a>
+          <div 
+            style={{
+              display: widget.button?.width === 'full' ? 'block' : 'inline-block',
+              ...buttonWidthStyles,
+              width: widget.button?.width === 'full' ? '100%' : buttonWidthStyles.width,
+            }}
+          >
+            <a
+              href={widget.cta?.url || widget.button?.url || '#'}
+              className="relative overflow-hidden"
+              style={{
+                display: 'block',
+                padding: '12px 32px',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                position: 'relative',
+                color: buttonStyles.color,
+                fontFamily: buttonStyles.fontFamily,
+                fontSize: buttonStyles.fontSize,
+                fontWeight: buttonStyles.fontWeight,
+                lineHeight: buttonStyles.lineHeight,
+                textTransform: buttonStyles.textTransform,
+                textDecoration: 'none',
+                borderRadius: buttonStyles.borderRadius,
+                borderWidth: buttonStyles.borderWidth,
+                borderStyle: buttonStyles.borderStyle,
+                borderColor: buttonStyles.borderColor,
+                boxShadow: buttonStyles.boxShadow,
+                textAlign: 'center',
+              }}
+              onMouseEnter={(e) => {
+                const target = e.currentTarget;
+                const bg = target.querySelector('.button-bg') as HTMLElement;
+                if (bg) {
+                  Object.assign(bg.style, {
+                    backgroundColor: buttonHoverStyles.backgroundColor,
+                    filter: widget.button?.hover?.blurEffect ? `blur(${widget.button.hover.blurEffect}px)` : (widget.button?.blurEffect ? `blur(${widget.button.blurEffect}px)` : 'none'),
+                  });
+                }
+                Object.assign(target.style, {
+                  color: buttonHoverStyles.color,
+                  borderColor: buttonHoverStyles.borderColor,
+                  boxShadow: buttonHoverStyles.boxShadow,
+                });
+              }}
+              onMouseLeave={(e) => {
+                const target = e.currentTarget;
+                const bg = target.querySelector('.button-bg') as HTMLElement;
+                if (bg) {
+                  Object.assign(bg.style, {
+                    backgroundColor: buttonStyles.backgroundColor,
+                    filter: widget.button?.blurEffect ? `blur(${widget.button.blurEffect}px)` : 'none',
+                  });
+                }
+                Object.assign(target.style, {
+                  color: buttonStyles.color,
+                  borderColor: buttonStyles.borderColor,
+                  boxShadow: buttonStyles.boxShadow,
+                });
+              }}
+            >
+              {/* Background layer with blur */}
+              <div 
+                className="button-bg"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundColor: buttonStyles.backgroundColor,
+                  borderRadius: buttonStyles.borderRadius,
+                  filter: widget.button?.blurEffect ? `blur(${widget.button.blurEffect}px)` : 'none',
+                  transition: 'all 0.3s ease',
+                  zIndex: -1,
+                }}
+              />
+              {/* Text content */}
+              <span style={{ position: 'relative', zIndex: 1 }}>
+                {widget.cta?.text || widget.button?.text || 'Click here'}
+              </span>
+            </a>
+          </div>
+        </div>
       )}
     </div>
   );

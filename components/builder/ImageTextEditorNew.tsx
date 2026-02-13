@@ -192,7 +192,7 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
   const getButtonConfig = () => {
     const buttonStyles = widget.buttonStyles || {};
     let buttonFontSize = { value: 16, unit: 'px' as const };
-    const rawButtonFontSize = (widget as any).buttonFontSize;
+    const rawButtonFontSize = widget.button?.fontSize || (widget as any).buttonFontSize;
     
     if (rawButtonFontSize) {
       if (typeof rawButtonFontSize === 'object' && rawButtonFontSize.value !== undefined) {
@@ -208,28 +208,29 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
     }
 
     return {
-      text: widget.cta?.text || '',
-      url: widget.cta?.url || '',
-      openNewTab: widget.cta?.openNewTab,
-      width: (widget as any).buttonWidth || 'standard' as const,
-      backgroundColor: buttonStyles.bgColor || '#3b82f6',
-      textColor: buttonStyles.textColor || '#ffffff',
-      borderRadius: buttonStyles.radius || 8,
-      borderWidth: buttonStyles.strokeWidth || 0,
-      borderColor: buttonStyles.strokeColor,
-      backgroundOpacity: buttonStyles.bgOpacity || 100,
-      dropShadow: buttonStyles.hasShadow !== false,
-      shadowAmount: buttonStyles.shadowAmount || 4,
-      blurEffect: buttonStyles.blurAmount || 0,
-      fontFamily: (widget as any).buttonFontFamily || 'Inter',
+      text: widget.cta?.text || widget.button?.text || '',
+      url: widget.cta?.url || widget.button?.url || '',
+      openNewTab: widget.cta?.openNewTab || widget.button?.openNewTab,
+      width: widget.button?.width || (widget as any).buttonWidth || 'standard' as const,
+      customWidth: widget.button?.customWidth,
+      backgroundColor: widget.button?.backgroundColor || buttonStyles.bgColor || '#3b82f6',
+      textColor: widget.button?.textColor || buttonStyles.textColor || '#ffffff',
+      borderRadius: widget.button?.borderRadius || buttonStyles.radius || 8,
+      borderWidth: widget.button?.borderWidth || buttonStyles.strokeWidth || 0,
+      borderColor: widget.button?.borderColor || buttonStyles.strokeColor || '#000000',
+      backgroundOpacity: widget.button?.backgroundOpacity || buttonStyles.bgOpacity || 100,
+      dropShadow: widget.button?.dropShadow ?? buttonStyles.hasShadow ?? true,
+      shadowAmount: widget.button?.shadowAmount || buttonStyles.shadowAmount || 4,
+      blurEffect: widget.button?.blurEffect || buttonStyles.blurAmount || 0,
+      fontFamily: widget.button?.fontFamily || (widget as any).buttonFontFamily || 'Inter',
       fontSize: buttonFontSize,
-      fontWeight: (widget as any).buttonFontWeight || '600',
-      lineHeight: (widget as any).buttonLineHeight || '1.5',
-      textTransform: (widget as any).buttonTextTransform || 'none' as const,
-      letterSpacing: (widget as any).buttonLetterSpacing || '0em',
-      hover: (widget as any).buttonHover || {},
-      useGlobalStyle: (widget as any).buttonUseGlobalStyle,
-      globalStyleId: (widget as any).buttonGlobalStyleId,
+      fontWeight: widget.button?.fontWeight || (widget as any).buttonFontWeight || '600',
+      lineHeight: widget.button?.lineHeight || (widget as any).buttonLineHeight || '1.5',
+      textTransform: widget.button?.textTransform || (widget as any).buttonTextTransform || 'none' as const,
+      letterSpacing: widget.button?.letterSpacing || (widget as any).buttonLetterSpacing || '0em',
+      hover: widget.button?.hover || (widget as any).buttonHover || {},
+      useGlobalStyle: widget.button?.useGlobalStyle || (widget as any).buttonUseGlobalStyle,
+      globalStyleId: widget.button?.globalStyleId || (widget as any).buttonGlobalStyleId,
     };
   };
   
@@ -590,44 +591,56 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
           <ButtonControl
             value={getButtonConfig()}
             onChange={(updates) => {
+              if (Object.keys(updates).length === 0) return;
+              
               const widgetUpdate: any = {};
               
-              // Update CTA text and URL
-              if (updates.text !== undefined || updates.url !== undefined || updates.openNewTab !== undefined) {
-                widgetUpdate.cta = { 
-                  ...widget.cta, 
+              // Update button object with ALL properties
+              const buttonUpdate: any = { ...widget.button };
+              
+              // Basic properties
+              if (updates.text !== undefined) buttonUpdate.text = updates.text;
+              if (updates.url !== undefined) buttonUpdate.url = updates.url;
+              if (updates.openNewTab !== undefined) buttonUpdate.openNewTab = updates.openNewTab;
+              
+              // Style properties
+              if (updates.backgroundColor !== undefined) buttonUpdate.backgroundColor = updates.backgroundColor;
+              if (updates.textColor !== undefined) buttonUpdate.textColor = updates.textColor;
+              if (updates.borderRadius !== undefined) buttonUpdate.borderRadius = updates.borderRadius;
+              if (updates.borderWidth !== undefined) buttonUpdate.borderWidth = updates.borderWidth;
+              if (updates.borderColor !== undefined) buttonUpdate.borderColor = updates.borderColor;
+              if (updates.backgroundOpacity !== undefined) buttonUpdate.backgroundOpacity = updates.backgroundOpacity;
+              if (updates.dropShadow !== undefined) buttonUpdate.dropShadow = updates.dropShadow;
+              if (updates.shadowAmount !== undefined) buttonUpdate.shadowAmount = updates.shadowAmount;
+              if (updates.blurEffect !== undefined) buttonUpdate.blurEffect = updates.blurEffect;
+              
+              // Typography properties - SAVE TO widget.button
+              if (updates.fontFamily !== undefined) buttonUpdate.fontFamily = updates.fontFamily;
+              if (updates.fontSize !== undefined) buttonUpdate.fontSize = updates.fontSize;
+              if (updates.fontWeight !== undefined) buttonUpdate.fontWeight = updates.fontWeight;
+              if (updates.lineHeight !== undefined) buttonUpdate.lineHeight = updates.lineHeight;
+              if (updates.textTransform !== undefined) buttonUpdate.textTransform = updates.textTransform;
+              if (updates.letterSpacing !== undefined) buttonUpdate.letterSpacing = updates.letterSpacing;
+              if (updates.width !== undefined) buttonUpdate.width = updates.width;
+              if (updates.customWidth !== undefined) buttonUpdate.customWidth = updates.customWidth;
+              
+              // Hover state
+              if (updates.hover !== undefined) buttonUpdate.hover = updates.hover;
+              
+              // Global style linking
+              if (updates.useGlobalStyle !== undefined) buttonUpdate.useGlobalStyle = updates.useGlobalStyle;
+              if (updates.globalStyleId !== undefined) buttonUpdate.globalStyleId = updates.globalStyleId;
+              
+              widgetUpdate.button = buttonUpdate;
+              
+              // Also update cta for compatibility
+              if (updates.text !== undefined || updates.url !== undefined) {
+                widgetUpdate.cta = {
+                  ...widget.cta,
                   text: updates.text ?? widget.cta?.text,
                   url: updates.url ?? widget.cta?.url,
                   openNewTab: updates.openNewTab ?? widget.cta?.openNewTab,
                 };
-              }
-              
-              // Update button width and typography
-              if (updates.width !== undefined) widgetUpdate.buttonWidth = updates.width;
-              if (updates.fontFamily !== undefined) widgetUpdate.buttonFontFamily = updates.fontFamily;
-              if (updates.fontSize !== undefined) widgetUpdate.buttonFontSize = updates.fontSize;
-              if (updates.fontWeight !== undefined) widgetUpdate.buttonFontWeight = updates.fontWeight;
-              if (updates.lineHeight !== undefined) widgetUpdate.buttonLineHeight = updates.lineHeight;
-              if (updates.textTransform !== undefined) widgetUpdate.buttonTextTransform = updates.textTransform;
-              if (updates.letterSpacing !== undefined) widgetUpdate.buttonLetterSpacing = updates.letterSpacing;
-              if (updates.hover !== undefined) widgetUpdate.buttonHover = updates.hover;
-              if (updates.useGlobalStyle !== undefined) widgetUpdate.buttonUseGlobalStyle = updates.useGlobalStyle;
-              if (updates.globalStyleId !== undefined) widgetUpdate.buttonGlobalStyleId = updates.globalStyleId;
-              
-              // Update buttonStyles object
-              const buttonStylesUpdate: any = {};
-              if (updates.backgroundColor !== undefined) buttonStylesUpdate.bgColor = updates.backgroundColor;
-              if (updates.textColor !== undefined) buttonStylesUpdate.textColor = updates.textColor;
-              if (updates.borderRadius !== undefined) buttonStylesUpdate.radius = updates.borderRadius;
-              if (updates.borderWidth !== undefined) buttonStylesUpdate.strokeWidth = updates.borderWidth;
-              if (updates.borderColor !== undefined) buttonStylesUpdate.strokeColor = updates.borderColor;
-              if (updates.backgroundOpacity !== undefined) buttonStylesUpdate.bgOpacity = updates.backgroundOpacity;
-              if (updates.dropShadow !== undefined) buttonStylesUpdate.hasShadow = updates.dropShadow;
-              if (updates.shadowAmount !== undefined) buttonStylesUpdate.shadowAmount = updates.shadowAmount;
-              if (updates.blurEffect !== undefined) buttonStylesUpdate.blurAmount = updates.blurEffect;
-              
-              if (Object.keys(buttonStylesUpdate).length > 0) {
-                widgetUpdate.buttonStyles = { ...widget.buttonStyles, ...buttonStylesUpdate };
               }
               
               onChange(widgetUpdate);
