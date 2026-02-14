@@ -14,6 +14,7 @@ import { FontSizeInput, type FontSizeValue } from '../FontSizeInput';
 import { TypographyControl } from '../controls/TypographyControl';
 import { ButtonControl } from '../controls/ButtonControl';
 import { useWebsiteStore } from '@/lib/stores/website';
+import { GlobalColorInput } from '../controls/GlobalColorInput';
 
 interface ContactFormEditorNewProps {
   widget: ContactFormWidget;
@@ -34,29 +35,38 @@ export function ContactFormEditorNew({ widget, onChange }: ContactFormEditorNewP
   // Migration: Initialize submitButton for existing widgets
   useEffect(() => {
     if (!(widget as any).submitButton) {
+      // Read from existing buttonStyle if it exists
+      const existingStyle = widget.buttonStyle || {};
+      
       const updates: any = {
         submitButton: {
           text: widget.buttonText || 'Submit',
           url: '',
-          width: 'full',
-          backgroundColor: '#10b981',
-          textColor: '#ffffff',
-          borderRadius: 8,
-          borderWidth: 0,
-          backgroundOpacity: 100,
-          dropShadow: true,
-          shadowAmount: 4,
-          blurEffect: 0,
+          useGlobalStyle: true,
+          globalStyleId: 'button1',
+          width: widget.buttonFullWidth ? 'full' : 'auto',
+          customWidth: undefined,
+          backgroundColor: existingStyle.backgroundColor || '#10b981',
+          textColor: existingStyle.textColor || '#ffffff',
+          borderRadius: existingStyle.borderRadius ?? 8,
+          borderWidth: existingStyle.borderWidth ?? 0,
+          borderColor: existingStyle.borderColor || '#000000',
+          backgroundOpacity: existingStyle.backgroundOpacity ?? 100,
+          dropShadow: existingStyle.shadow !== false,
+          shadowAmount: (existingStyle as any).shadowAmount || 4,
+          blurEffect: existingStyle.blur || 0,
           fontFamily: 'Inter',
-          fontSize: { value: 16, unit: 'px' },
+          fontSize: { value: 16, unit: 'px' as const },
           fontWeight: '500',
           lineHeight: '1.2',
-          textTransform: 'none',
+          textTransform: 'none' as const,
+          letterSpacing: '0em',
           hover: {
-            backgroundColor: '#059669',
-            textColor: '#ffffff',
-            dropShadow: true,
-            shadowAmount: 6,
+            backgroundColor: widget.buttonHoverBackground || undefined,
+            textColor: widget.buttonHoverColor || undefined,
+            borderColor: undefined,
+            backgroundOpacity: undefined,
+            scale: 1.02,
           },
         },
       };
@@ -90,28 +100,40 @@ export function ContactFormEditorNew({ widget, onChange }: ContactFormEditorNewP
   };
 
   const getSubmitButton = (): ButtonStyleConfig => {
-    return (widget as any).submitButton || {
+    if ((widget as any).submitButton) {
+      return (widget as any).submitButton;
+    }
+    
+    // Fallback: read from existing buttonStyle if it exists
+    const existingStyle = widget.buttonStyle || {};
+    return {
       text: widget.buttonText || 'Submit',
       url: '',
-      width: 'full',
-      backgroundColor: '#10b981',
-      textColor: '#ffffff',
-      borderRadius: 8,
-      borderWidth: 0,
-      backgroundOpacity: 100,
-      dropShadow: true,
-      shadowAmount: 4,
-      blurEffect: 0,
+      useGlobalStyle: true,
+      globalStyleId: 'button1',
+      width: widget.buttonFullWidth ? 'full' : 'auto',
+      customWidth: undefined,
+      backgroundColor: existingStyle.backgroundColor || '#10b981',
+      textColor: existingStyle.textColor || '#ffffff',
+      borderRadius: existingStyle.borderRadius ?? 8,
+      borderWidth: existingStyle.borderWidth ?? 0,
+      borderColor: existingStyle.borderColor || '#000000',
+      backgroundOpacity: existingStyle.backgroundOpacity ?? 100,
+      dropShadow: existingStyle.shadow !== false,
+      shadowAmount: (existingStyle as any).shadowAmount || 4,
+      blurEffect: existingStyle.blur || 0,
       fontFamily: 'Inter',
-      fontSize: { value: 16, unit: 'px' },
+      fontSize: { value: 16, unit: 'px' as const },
       fontWeight: '500',
       lineHeight: '1.2',
-      textTransform: 'none',
+      textTransform: 'none' as const,
+      letterSpacing: '0em',
       hover: {
-        backgroundColor: '#059669',
-        textColor: '#ffffff',
-        dropShadow: true,
-        shadowAmount: 6,
+        backgroundColor: widget.buttonHoverBackground || undefined,
+        textColor: widget.buttonHoverColor || undefined,
+        borderColor: undefined,
+        backgroundOpacity: undefined,
+        scale: 1.02,
       },
     };
   };
@@ -290,6 +312,7 @@ export function ContactFormEditorNew({ widget, onChange }: ContactFormEditorNewP
           });
         }}
         showGlobalStyleSelector={true}
+        globalStyles={website?.globalStyles}
         availableGlobalStyles={['h2', 'h3']}
       />
 
@@ -306,12 +329,13 @@ export function ContactFormEditorNew({ widget, onChange }: ContactFormEditorNewP
           });
         }}
         showGlobalStyleSelector={true}
+        globalStyles={website?.globalStyles}
         availableGlobalStyles={['body']}
       />
 
       {/* Submit Button */}
       <ButtonControl
-        label="Submit Button"
+        headerLabel="Button Styling"
         value={getSubmitButton()}
         onChange={(updates) => {
           if (Object.keys(updates).length > 0) {
@@ -326,15 +350,19 @@ export function ContactFormEditorNew({ widget, onChange }: ContactFormEditorNewP
           }
         }}
         showGlobalStyleSelector={true}
+        globalStyles={website?.globalStyles}
       />
 
       <CollapsibleSection title="Background" open={backgroundOpen} onToggle={() => setBackgroundOpen(!backgroundOpen)}>
         <div className="space-y-2">
           <Label>Background Color</Label>
-          <div className="flex gap-2">
-            <input type="color" value={(widget as any).backgroundColor || 'transparent'} onChange={(e) => onChange({ backgroundColor: e.target.value } as any)} className="h-10 w-16 rounded border cursor-pointer" />
-            <Input value={(widget as any).backgroundColor || 'transparent'} onChange={(e) => onChange({ backgroundColor: e.target.value } as any)} placeholder="transparent" />
-          </div>
+          <GlobalColorInput
+            value={(widget as any).backgroundColor}
+            onChange={(nextColor) => onChange({ backgroundColor: nextColor } as any)}
+            globalStyles={website?.globalStyles}
+            defaultColor="#ffffff"
+            placeholder="transparent"
+          />
         </div>
       </CollapsibleSection>
     </div>

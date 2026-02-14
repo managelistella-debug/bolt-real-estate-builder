@@ -13,6 +13,7 @@ import { SectionEditorTabs } from '../SectionEditorTabs';
 import { FontSizeInput, type FontSizeValue } from '../FontSizeInput';
 import { ImageUpload } from '../ImageUpload';
 import { TypographyControl } from '../controls/TypographyControl';
+import { GlobalColorInput } from '../controls/GlobalColorInput';
 import { useWebsiteStore } from '@/lib/stores/website';
 
 interface TestimonialsEditorNewProps {
@@ -202,6 +203,8 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
       textTransform: (widget as any).headerTextTransform || 'none' as const,
       letterSpacing: (widget as any).headerLetterSpacing || '-0.02em',
       color: widget.headerColor || '#1f2937',
+      useGlobalStyle: (widget as any).headerUseGlobalStyle,
+      globalStyleId: (widget as any).headerGlobalStyleId,
     };
   };
 
@@ -230,6 +233,8 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
       textTransform: (widget as any).nameTextTransform || 'none' as const,
       letterSpacing: (widget as any).nameLetterSpacing || '0em',
       color: widget.nameColor || '#ffffff',
+      useGlobalStyle: (widget as any).nameUseGlobalStyle,
+      globalStyleId: (widget as any).nameGlobalStyleId,
     };
   };
 
@@ -258,6 +263,8 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
       textTransform: (widget as any).titleTextTransform || 'none' as const,
       letterSpacing: (widget as any).titleLetterSpacing || '0em',
       color: widget.titleColor || '#cbd5e1',
+      useGlobalStyle: (widget as any).titleUseGlobalStyle,
+      globalStyleId: (widget as any).titleGlobalStyleId,
     };
   };
 
@@ -286,6 +293,8 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
       textTransform: (widget as any).quoteTextTransform || 'none' as const,
       letterSpacing: (widget as any).quoteLetterSpacing || '0em',
       color: widget.quoteColor || '#ffffff',
+      useGlobalStyle: (widget as any).quoteUseGlobalStyle,
+      globalStyleId: (widget as any).quoteGlobalStyleId,
     };
   };
 
@@ -569,9 +578,12 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
               widgetUpdate.headerColor = updates.color;
               widgetUpdate.sectionHeadingColor = updates.color; // Legacy compatibility
             }
+            if (updates.useGlobalStyle !== undefined) widgetUpdate.headerUseGlobalStyle = updates.useGlobalStyle;
+            if (updates.globalStyleId !== undefined) widgetUpdate.headerGlobalStyleId = updates.globalStyleId;
             onChange(widgetUpdate);
           }}
           showGlobalStyleSelector={true}
+          globalStyles={globalStyles}
           availableGlobalStyles={['h2', 'h3', 'h4']}
         />
       )}
@@ -595,9 +607,12 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
           if (updates.textTransform !== undefined) widgetUpdate.nameTextTransform = updates.textTransform;
           if (updates.letterSpacing !== undefined) widgetUpdate.nameLetterSpacing = updates.letterSpacing;
           if (updates.color !== undefined) widgetUpdate.nameColor = updates.color;
+          if (updates.useGlobalStyle !== undefined) widgetUpdate.nameUseGlobalStyle = updates.useGlobalStyle;
+          if (updates.globalStyleId !== undefined) widgetUpdate.nameGlobalStyleId = updates.globalStyleId;
           onChange(widgetUpdate);
         }}
         showGlobalStyleSelector={true}
+        globalStyles={globalStyles}
         availableGlobalStyles={['h4', 'h5', 'body']}
       />
 
@@ -620,9 +635,12 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
           if (updates.textTransform !== undefined) widgetUpdate.titleTextTransform = updates.textTransform;
           if (updates.letterSpacing !== undefined) widgetUpdate.titleLetterSpacing = updates.letterSpacing;
           if (updates.color !== undefined) widgetUpdate.titleColor = updates.color;
+          if (updates.useGlobalStyle !== undefined) widgetUpdate.titleUseGlobalStyle = updates.useGlobalStyle;
+          if (updates.globalStyleId !== undefined) widgetUpdate.titleGlobalStyleId = updates.globalStyleId;
           onChange(widgetUpdate);
         }}
         showGlobalStyleSelector={true}
+        globalStyles={globalStyles}
         availableGlobalStyles={['h5', 'h6', 'body']}
       />
 
@@ -645,9 +663,12 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
           if (updates.textTransform !== undefined) widgetUpdate.quoteTextTransform = updates.textTransform;
           if (updates.letterSpacing !== undefined) widgetUpdate.quoteLetterSpacing = updates.letterSpacing;
           if (updates.color !== undefined) widgetUpdate.quoteColor = updates.color;
+          if (updates.useGlobalStyle !== undefined) widgetUpdate.quoteUseGlobalStyle = updates.useGlobalStyle;
+          if (updates.globalStyleId !== undefined) widgetUpdate.quoteGlobalStyleId = updates.globalStyleId;
           onChange(widgetUpdate);
         }}
         showGlobalStyleSelector={true}
+        globalStyles={globalStyles}
         availableGlobalStyles={['body']}
       />
 
@@ -656,19 +677,13 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
         <div className="space-y-3">
           <div className="space-y-2">
             <Label>Background Color</Label>
-            <div className="flex gap-2">
-              <input
-                type="color"
-                value={widget.cardBackgroundColor || '#ffffff'}
-                onChange={(e) => onChange({ cardBackgroundColor: e.target.value })}
-                className="h-10 w-16 rounded border cursor-pointer"
-              />
-              <Input
-                value={widget.cardBackgroundColor || '#ffffff'}
-                onChange={(e) => onChange({ cardBackgroundColor: e.target.value })}
-                placeholder="#ffffff"
-              />
-            </div>
+            <GlobalColorInput
+              value={widget.cardBackgroundColor}
+              onChange={(nextColor) => onChange({ cardBackgroundColor: nextColor })}
+              globalStyles={globalStyles}
+              defaultColor="#ffffff"
+              placeholder="#ffffff"
+            />
           </div>
           <div className="space-y-2">
             <Label>Border Radius: {widget.cardBorderRadius || 12}px</Label>
@@ -696,19 +711,13 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
       <CollapsibleSection title="Star Style" open={starStyleOpen} onToggle={() => setStarStyleOpen(!starStyleOpen)}>
         <div className="space-y-2">
           <Label>Star Color</Label>
-          <div className="flex gap-2">
-            <input
-              type="color"
-              value={widget.starColor || '#fbbf24'}
-              onChange={(e) => onChange({ starColor: e.target.value })}
-              className="h-10 w-16 rounded border cursor-pointer"
-            />
-            <Input
-              value={widget.starColor || '#fbbf24'}
-              onChange={(e) => onChange({ starColor: e.target.value })}
-              placeholder="#fbbf24"
-            />
-          </div>
+          <GlobalColorInput
+            value={widget.starColor}
+            onChange={(nextColor) => onChange({ starColor: nextColor })}
+            globalStyles={globalStyles}
+            defaultColor="#fbbf24"
+            placeholder="#fbbf24"
+          />
         </div>
       </CollapsibleSection>
 
@@ -737,19 +746,13 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
           {widget.background?.type === 'color' && (
             <div className="space-y-2">
               <Label>Color</Label>
-              <div className="flex gap-2">
-                <input
-                  type="color"
-                  value={widget.background?.color || 'transparent'}
-                  onChange={(e) => onChange({ background: { ...widget.background, color: e.target.value } as any })}
-                  className="h-10 w-16 rounded border cursor-pointer"
-                />
-                <Input
-                  value={widget.background?.color || 'transparent'}
-                  onChange={(e) => onChange({ background: { ...widget.background, color: e.target.value } as any })}
-                  placeholder="transparent"
-                />
-              </div>
+              <GlobalColorInput
+                value={widget.background?.color}
+                onChange={(nextColor) => onChange({ background: { ...widget.background, color: nextColor } as any })}
+                globalStyles={globalStyles}
+                defaultColor="#ffffff"
+                placeholder="transparent"
+              />
             </div>
           )}
         </div>

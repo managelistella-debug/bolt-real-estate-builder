@@ -12,6 +12,7 @@ import { Plus, Trash2, ChevronDown, ChevronRight, ChevronUp, AlignLeft, AlignCen
 import { SectionEditorTabs } from '../SectionEditorTabs';
 import { FontSizeInput, type FontSizeValue } from '../FontSizeInput';
 import { TypographyControl } from '../controls/TypographyControl';
+import { GlobalColorInput } from '../controls/GlobalColorInput';
 import { useWebsiteStore } from '@/lib/stores/website';
 
 interface FAQEditorNewProps {
@@ -170,6 +171,8 @@ export function FAQEditorNew({ widget, onChange }: FAQEditorNewProps) {
       textTransform: (widget as any).headingTextTransform || 'none' as const,
       letterSpacing: (widget as any).headingLetterSpacing || '-0.02em',
       color: widget.headingColor || '#1f2937',
+      useGlobalStyle: (widget as any).headingUseGlobalStyle,
+      globalStyleId: (widget as any).headingGlobalStyleId,
     };
   };
 
@@ -198,6 +201,8 @@ export function FAQEditorNew({ widget, onChange }: FAQEditorNewProps) {
       textTransform: (widget as any).questionTextTransform || 'none' as const,
       letterSpacing: (widget as any).questionLetterSpacing || '0em',
       color: widget.questionColor || '#1f2937',
+      useGlobalStyle: (widget as any).questionUseGlobalStyle,
+      globalStyleId: (widget as any).questionGlobalStyleId,
     };
   };
 
@@ -226,6 +231,8 @@ export function FAQEditorNew({ widget, onChange }: FAQEditorNewProps) {
       textTransform: (widget as any).answerTextTransform || 'none' as const,
       letterSpacing: (widget as any).answerLetterSpacing || '0em',
       color: widget.answerColor || '#6b7280',
+      useGlobalStyle: (widget as any).answerUseGlobalStyle,
+      globalStyleId: (widget as any).answerGlobalStyleId,
     };
   };
 
@@ -534,9 +541,12 @@ export function FAQEditorNew({ widget, onChange }: FAQEditorNewProps) {
           if (updates.textTransform !== undefined) widgetUpdate.headingTextTransform = updates.textTransform;
           if (updates.letterSpacing !== undefined) widgetUpdate.headingLetterSpacing = updates.letterSpacing;
           if (updates.color !== undefined) widgetUpdate.headingColor = updates.color;
+          if (updates.useGlobalStyle !== undefined) widgetUpdate.headingUseGlobalStyle = updates.useGlobalStyle;
+          if (updates.globalStyleId !== undefined) widgetUpdate.headingGlobalStyleId = updates.globalStyleId;
           onChange(widgetUpdate);
         }}
         showGlobalStyleSelector={true}
+        globalStyles={globalStyles}
         availableGlobalStyles={['h2', 'h3', 'h4']}
       />
 
@@ -587,9 +597,12 @@ export function FAQEditorNew({ widget, onChange }: FAQEditorNewProps) {
           if (updates.textTransform !== undefined) widgetUpdate.questionTextTransform = updates.textTransform;
           if (updates.letterSpacing !== undefined) widgetUpdate.questionLetterSpacing = updates.letterSpacing;
           if (updates.color !== undefined) widgetUpdate.questionColor = updates.color;
+          if (updates.useGlobalStyle !== undefined) widgetUpdate.questionUseGlobalStyle = updates.useGlobalStyle;
+          if (updates.globalStyleId !== undefined) widgetUpdate.questionGlobalStyleId = updates.globalStyleId;
           onChange(widgetUpdate);
         }}
         showGlobalStyleSelector={true}
+        globalStyles={globalStyles}
         availableGlobalStyles={['h3', 'h4', 'h5', 'body']}
       />
 
@@ -612,9 +625,12 @@ export function FAQEditorNew({ widget, onChange }: FAQEditorNewProps) {
           if (updates.textTransform !== undefined) widgetUpdate.answerTextTransform = updates.textTransform;
           if (updates.letterSpacing !== undefined) widgetUpdate.answerLetterSpacing = updates.letterSpacing;
           if (updates.color !== undefined) widgetUpdate.answerColor = updates.color;
+          if (updates.useGlobalStyle !== undefined) widgetUpdate.answerUseGlobalStyle = updates.useGlobalStyle;
+          if (updates.globalStyleId !== undefined) widgetUpdate.answerGlobalStyleId = updates.globalStyleId;
           onChange(widgetUpdate);
         }}
         showGlobalStyleSelector={true}
+        globalStyles={globalStyles}
         availableGlobalStyles={['body']}
       />
 
@@ -654,35 +670,23 @@ export function FAQEditorNew({ widget, onChange }: FAQEditorNewProps) {
           </div>
           <div className="space-y-2">
             <Label>Icon Color</Label>
-            <div className="flex gap-2">
-              <input
-                type="color"
-                value={widget.iconColor || '#10b981'}
-                onChange={(e) => onChange({ iconColor: e.target.value })}
-                className="h-10 w-16 rounded border cursor-pointer"
-              />
-              <Input
-                value={widget.iconColor || '#10b981'}
-                onChange={(e) => onChange({ iconColor: e.target.value })}
-                placeholder="#10b981"
-              />
-            </div>
+            <GlobalColorInput
+              value={widget.iconColor}
+              onChange={(nextColor) => onChange({ iconColor: nextColor })}
+              globalStyles={globalStyles}
+              defaultColor="#10b981"
+              placeholder="#10b981"
+            />
           </div>
           <div className="space-y-2">
             <Label>Icon Background</Label>
-            <div className="flex gap-2">
-              <input
-                type="color"
-                value={widget.iconBackgroundColor || '#d1fae5'}
-                onChange={(e) => onChange({ iconBackgroundColor: e.target.value })}
-                className="h-10 w-16 rounded border cursor-pointer"
-              />
-              <Input
-                value={widget.iconBackgroundColor || '#d1fae5'}
-                onChange={(e) => onChange({ iconBackgroundColor: e.target.value })}
-                placeholder="#d1fae5"
-              />
-            </div>
+            <GlobalColorInput
+              value={widget.iconBackgroundColor}
+              onChange={(nextColor) => onChange({ iconBackgroundColor: nextColor })}
+              globalStyles={globalStyles}
+              defaultColor="#d1fae5"
+              placeholder="#d1fae5"
+            />
           </div>
           <div className="space-y-2">
             <Label>Icon Circle Size: {widget.iconCircleSize || 40}px</Label>
@@ -721,19 +725,13 @@ export function FAQEditorNew({ widget, onChange }: FAQEditorNewProps) {
             <>
               <div className="space-y-2">
                 <Label>Box Background</Label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    value={widget.boxBackgroundColor || '#f9fafb'}
-                    onChange={(e) => onChange({ boxBackgroundColor: e.target.value })}
-                    className="h-10 w-16 rounded border cursor-pointer"
-                  />
-                  <Input
-                    value={widget.boxBackgroundColor || '#f9fafb'}
-                    onChange={(e) => onChange({ boxBackgroundColor: e.target.value })}
-                    placeholder="#f9fafb"
-                  />
-                </div>
+                <GlobalColorInput
+                  value={widget.boxBackgroundColor}
+                  onChange={(nextColor) => onChange({ boxBackgroundColor: nextColor })}
+                  globalStyles={globalStyles}
+                  defaultColor="#f9fafb"
+                  placeholder="#f9fafb"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Border Radius: {widget.boxBorderRadius || 12}px</Label>
@@ -779,19 +777,13 @@ export function FAQEditorNew({ widget, onChange }: FAQEditorNewProps) {
             <>
               <div className="space-y-2">
                 <Label>Divider Color</Label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    value={widget.dividerColor || '#e5e7eb'}
-                    onChange={(e) => onChange({ dividerColor: e.target.value })}
-                    className="h-10 w-16 rounded border cursor-pointer"
-                  />
-                  <Input
-                    value={widget.dividerColor || '#e5e7eb'}
-                    onChange={(e) => onChange({ dividerColor: e.target.value })}
-                    placeholder="#e5e7eb"
-                  />
-                </div>
+                <GlobalColorInput
+                  value={widget.dividerColor}
+                  onChange={(nextColor) => onChange({ dividerColor: nextColor })}
+                  globalStyles={globalStyles}
+                  defaultColor="#e5e7eb"
+                  placeholder="#e5e7eb"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Divider Width: {widget.dividerWidth || 1}px</Label>
@@ -834,19 +826,13 @@ export function FAQEditorNew({ widget, onChange }: FAQEditorNewProps) {
           {background.type === 'color' && (
             <div className="space-y-2">
               <Label>Color</Label>
-              <div className="flex gap-2">
-                <input
-                  type="color"
-                  value={background.color || 'transparent'}
-                  onChange={(e) => onChange({ background: { ...background, color: e.target.value } })}
-                  className="h-10 w-16 rounded border cursor-pointer"
-                />
-                <Input
-                  value={background.color || 'transparent'}
-                  onChange={(e) => onChange({ background: { ...background, color: e.target.value } })}
-                  placeholder="transparent"
-                />
-              </div>
+              <GlobalColorInput
+                value={background.color}
+                onChange={(nextColor) => onChange({ background: { ...background, color: nextColor } })}
+                globalStyles={globalStyles}
+                defaultColor="#ffffff"
+                placeholder="transparent"
+              />
             </div>
           )}
         </div>

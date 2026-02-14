@@ -14,6 +14,7 @@ import { FontSizeInput, type FontSizeValue } from '../FontSizeInput';
 import { ImageUpload } from '../ImageUpload';
 import { TypographyControl } from '../controls/TypographyControl';
 import { useWebsiteStore } from '@/lib/stores/website';
+import { GlobalColorInput } from '../controls/GlobalColorInput';
 
 interface ReviewsSliderEditorNewProps {
   widget: ReviewsSliderWidget;
@@ -453,6 +454,7 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
             });
           }}
           showGlobalStyleSelector={true}
+          globalStyles={website?.globalStyles}
           availableGlobalStyles={['h2', 'h3']}
         />
       )}
@@ -470,6 +472,7 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
           });
         }}
         showGlobalStyleSelector={true}
+        globalStyles={website?.globalStyles}
         availableGlobalStyles={['h4', 'body']}
       />
 
@@ -486,6 +489,7 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
           });
         }}
         showGlobalStyleSelector={true}
+        globalStyles={website?.globalStyles}
         availableGlobalStyles={['body']}
       />
 
@@ -502,6 +506,7 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
           });
         }}
         showGlobalStyleSelector={true}
+        globalStyles={website?.globalStyles}
         availableGlobalStyles={['body']}
       />
 
@@ -510,19 +515,13 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
         <div className="space-y-3">
           <div className="space-y-2">
             <Label>Background Color</Label>
-            <div className="flex gap-2">
-              <input
-                type="color"
-                value={widget.cardBackgroundColor || '#ffffff'}
-                onChange={(e) => onChange({ cardBackgroundColor: e.target.value })}
-                className="h-10 w-16 rounded border cursor-pointer"
-              />
-              <Input
-                value={widget.cardBackgroundColor || '#ffffff'}
-                onChange={(e) => onChange({ cardBackgroundColor: e.target.value })}
-                placeholder="#ffffff"
-              />
-            </div>
+            <GlobalColorInput
+              value={widget.cardBackgroundColor}
+              onChange={(nextColor) => onChange({ cardBackgroundColor: nextColor })}
+              globalStyles={website?.globalStyles}
+              defaultColor="#ffffff"
+              placeholder="#ffffff"
+            />
           </div>
           <div className="space-y-2">
             <Label>Border Radius: {widget.cardBorderRadius || 12}px</Label>
@@ -550,19 +549,13 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
       <CollapsibleSection title="Star Style" open={starStyleOpen} onToggle={() => setStarStyleOpen(!starStyleOpen)}>
         <div className="space-y-2">
           <Label>Star Color</Label>
-          <div className="flex gap-2">
-            <input
-              type="color"
-              value={widget.starColor || '#fbbf24'}
-              onChange={(e) => onChange({ starColor: e.target.value })}
-              className="h-10 w-16 rounded border cursor-pointer"
-            />
-            <Input
-              value={widget.starColor || '#fbbf24'}
-              onChange={(e) => onChange({ starColor: e.target.value })}
-              placeholder="#fbbf24"
-            />
-          </div>
+          <GlobalColorInput
+            value={widget.starColor}
+            onChange={(nextColor) => onChange({ starColor: nextColor })}
+            globalStyles={website?.globalStyles}
+            defaultColor="#fbbf24"
+            placeholder="#fbbf24"
+          />
         </div>
       </CollapsibleSection>
 
@@ -591,19 +584,13 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
           {backgroundConfig.type === 'color' && (
             <div className="space-y-2">
               <Label>Color</Label>
-              <div className="flex gap-2">
-                <input
-                  type="color"
-                  value={backgroundConfig.color || 'transparent'}
-                  onChange={(e) => onChange({ background: { ...backgroundConfig, color: e.target.value } })}
-                  className="h-10 w-16 rounded border cursor-pointer"
-                />
-                <Input
-                  value={backgroundConfig.color || 'transparent'}
-                  onChange={(e) => onChange({ background: { ...backgroundConfig, color: e.target.value } })}
-                  placeholder="transparent"
-                />
-              </div>
+              <GlobalColorInput
+                value={backgroundConfig.color}
+                onChange={(nextColor) => onChange({ background: { ...backgroundConfig, color: nextColor } })}
+                globalStyles={website?.globalStyles}
+                defaultColor="#ffffff"
+                placeholder="transparent"
+              />
             </div>
           )}
         </div>

@@ -28,6 +28,8 @@ export function createDefaultWidget(type: SectionType): any {
           text: 'Get Started',
           url: '#',
           openNewTab: false,
+          useGlobalStyle: true,
+          globalStyleId: 'button1',
           // New button properties
           width: 'standard' as const,
           backgroundColor: '#3b82f6',
@@ -148,6 +150,8 @@ export function createDefaultWidget(type: SectionType): any {
         buttonHover: {
           backgroundOpacity: 90,
         },
+        buttonUseGlobalStyle: true,
+        buttonGlobalStyleId: 'button1',
         background: {
           color: '#f9fafb',
           hasLink: false,
@@ -188,6 +192,8 @@ export function createDefaultWidget(type: SectionType): any {
           strokeWidth: 0,
           strokeColor: '#000000',
         },
+        buttonUseGlobalStyle: true,
+        buttonGlobalStyleId: 'button1',
         imageWidth: 50,
         gap: 40,
         background: {
@@ -273,6 +279,8 @@ export function createDefaultWidget(type: SectionType): any {
         submitButton: {
           text: 'Send Message',
           url: '',
+          useGlobalStyle: true,
+          globalStyleId: 'button1',
           width: 'full' as const,
           backgroundColor: '#10b981',
           textColor: '#ffffff',
@@ -338,6 +346,8 @@ export function createDefaultWidget(type: SectionType): any {
         submitButton: {
           text: 'Submit',
           url: '',
+          useGlobalStyle: true,
+          globalStyleId: 'button1',
           width: 'full' as const,
           backgroundColor: '#10b981',
           textColor: '#ffffff',

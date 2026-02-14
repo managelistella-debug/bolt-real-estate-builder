@@ -36,18 +36,23 @@ export function buttonToCSS(button: ButtonStyleConfig | undefined, isHover: bool
   if (!button) return {};
 
   // Convert hex color with opacity to rgba
-  const hexToRgba = (hex: string, opacity: number) => {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${opacity / 100})`;
+  const colorWithOpacity = (color: string, opacity: number) => {
+    if (/^#([0-9a-f]{6})$/i.test(color)) {
+      const r = parseInt(color.slice(1, 3), 16);
+      const g = parseInt(color.slice(3, 5), 16);
+      const b = parseInt(color.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${opacity / 100})`;
+    }
+    if (opacity >= 100) return color;
+    // Works with CSS variables such as var(--global-color-primary)
+    return `color-mix(in srgb, ${color} ${opacity}%, transparent)`;
   };
 
   const bgColor = button.backgroundColor || '#3b82f6';
   const bgOpacity = button.backgroundOpacity || 100;
 
   const baseStyles: React.CSSProperties = {
-    backgroundColor: hexToRgba(bgColor, bgOpacity),
+    backgroundColor: colorWithOpacity(bgColor, bgOpacity),
     color: button.textColor || '#ffffff',
     borderRadius: `${button.borderRadius || 8}px`,
     borderWidth: `${button.borderWidth || 0}px`,
@@ -72,7 +77,7 @@ export function buttonToCSS(button: ButtonStyleConfig | undefined, isHover: bool
     
     return {
       ...baseStyles,
-      backgroundColor: hexToRgba(hoverBgColor, hoverBgOpacity),
+      backgroundColor: colorWithOpacity(hoverBgColor, hoverBgOpacity),
       color: button.hover.textColor || baseStyles.color,
       borderColor: button.hover.borderColor || baseStyles.borderColor,
       boxShadow: button.hover.dropShadow && button.hover.shadowAmount
@@ -97,4 +102,16 @@ export function getButtonWidthStyle(button: ButtonStyleConfig | undefined): Reac
   }
   
   return {}; // standard width - auto
+}
+
+/**
+ * Calculate inner border radius for button background (outer radius - border width)
+ * This ensures the background perfectly aligns with the inner edge of the border
+ */
+export function getInnerBorderRadius(button: ButtonStyleConfig | undefined): string {
+  if (!button) return '8px';
+  const outerRadius = button.borderRadius || 8;
+  const borderWidth = button.borderWidth || 0;
+  const innerRadius = Math.max(0, outerRadius - borderWidth);
+  return `${innerRadius}px`;
 }

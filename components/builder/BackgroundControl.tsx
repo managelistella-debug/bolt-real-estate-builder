@@ -4,6 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ImageUpload } from './ImageUpload';
+import { GlobalColorInput } from './controls/GlobalColorInput';
+import { GlobalStyles } from '@/lib/types';
 
 interface BackgroundConfig {
   type?: 'none' | 'color' | 'image' | 'video';
@@ -16,9 +18,10 @@ interface BackgroundControlProps {
   value: BackgroundConfig;
   onChange: (value: BackgroundConfig) => void;
   allowNone?: boolean;
+  globalStyles?: GlobalStyles;
 }
 
-export function BackgroundControl({ value, onChange, allowNone = true }: BackgroundControlProps) {
+export function BackgroundControl({ value, onChange, allowNone = true, globalStyles }: BackgroundControlProps) {
   // Ensure value has defaults
   const bgValue = value || { type: 'none' };
   
@@ -46,20 +49,13 @@ export function BackgroundControl({ value, onChange, allowNone = true }: Backgro
         <>
           <div className="space-y-2">
             <Label>Background Color</Label>
-            <div className="flex gap-2">
-              <input
-                type="color"
-                value={bgValue.color || '#ffffff'}
-                onChange={(e) => onChange({ ...bgValue, color: e.target.value })}
-                className="h-10 w-16 rounded border cursor-pointer"
-              />
-              <Input
-                value={bgValue.color || '#ffffff'}
-                onChange={(e) => onChange({ ...bgValue, color: e.target.value })}
-                placeholder="#ffffff"
-                className="flex-1"
-              />
-            </div>
+            <GlobalColorInput
+              value={bgValue.color}
+              onChange={(nextColor) => onChange({ ...bgValue, color: nextColor })}
+              globalStyles={globalStyles}
+              defaultColor="#ffffff"
+              placeholder="#ffffff"
+            />
           </div>
 
           <div className="space-y-2">

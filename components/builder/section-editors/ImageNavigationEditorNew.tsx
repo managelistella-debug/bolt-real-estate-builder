@@ -11,6 +11,7 @@ import { FontSizeInput, type FontSizeValue } from '../FontSizeInput';
 import { ImageUpload } from '../ImageUpload';
 import { TypographyControl } from '../controls/TypographyControl';
 import { useWebsiteStore } from '@/lib/stores/website';
+import { GlobalColorInput } from '../controls/GlobalColorInput';
 
 interface ImageNavigationEditorNewProps {
   widget: ImageNavigationWidget;
@@ -138,16 +139,20 @@ export function ImageNavigationEditorNew({ widget, onChange }: ImageNavigationEd
           });
         }}
         showGlobalStyleSelector={true}
+        globalStyles={website?.globalStyles}
         availableGlobalStyles={['h4', 'body']}
       />
 
       <CollapsibleSection title="Background" open={backgroundOpen} onToggle={() => setBackgroundOpen(!backgroundOpen)}>
         <div className="space-y-2">
           <Label>Background Color</Label>
-          <div className="flex gap-2">
-            <input type="color" value={(widget as any).backgroundColor || 'transparent'} onChange={(e) => onChange({ backgroundColor: e.target.value } as any)} className="h-10 w-16 rounded border cursor-pointer" />
-            <Input value={(widget as any).backgroundColor || 'transparent'} onChange={(e) => onChange({ backgroundColor: e.target.value } as any)} placeholder="transparent" />
-          </div>
+          <GlobalColorInput
+            value={(widget as any).backgroundColor}
+            onChange={(nextColor) => onChange({ backgroundColor: nextColor } as any)}
+            globalStyles={website?.globalStyles}
+            defaultColor="#ffffff"
+            placeholder="transparent"
+          />
         </div>
       </CollapsibleSection>
     </div>

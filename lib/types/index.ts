@@ -960,6 +960,16 @@ export interface GlobalStyles {
     secondary: string;
     accent: string;
   };
+  colorLabels?: {
+    primary?: string;
+    secondary?: string;
+    accent?: string;
+  };
+  customColors?: Array<{
+    id: string;
+    name: string;
+    value: string;
+  }>;
   fontPair: FontPair;
   buttons: {
     button1: GlobalButtonStyle;
@@ -1025,7 +1035,7 @@ export interface TypographyStyle {
   fontWeight: string;
   lineHeight: string;
   textTransform: string;
-  color: string;
+  color?: string; // Legacy only; section typography color is now local.
   letterSpacing?: string;
 }
 

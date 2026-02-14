@@ -18,6 +18,7 @@ import {
 import { SectionEditorTabs } from '../SectionEditorTabs';
 import { TypographyControl } from '../controls/TypographyControl';
 import { ButtonControl } from '../controls/ButtonControl';
+import { GlobalColorInput } from '../controls/GlobalColorInput';
 import { cn } from '@/lib/utils';
 import { useDebouncedInput } from '../hooks/useDebouncedInput';
 import { useWebsiteStore } from '@/lib/stores/website';
@@ -161,6 +162,58 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
       }
     }
 
+    // Migrate button properties to unified button object
+    if (!(widget as any).button && widget.buttonText) {
+      const buttonStyle = widget.buttonStyle || {};
+      let buttonFontSize = { value: 16, unit: 'px' as const };
+      const rawButtonFontSize = (widget as any).buttonFontSize;
+      
+      if (rawButtonFontSize) {
+        if (typeof rawButtonFontSize === 'object' && rawButtonFontSize.value !== undefined) {
+          buttonFontSize = rawButtonFontSize;
+        } else if (typeof rawButtonFontSize === 'number') {
+          buttonFontSize = { value: rawButtonFontSize, unit: 'px' as const };
+        } else if (typeof rawButtonFontSize === 'string') {
+          const match = rawButtonFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+          if (match) {
+            buttonFontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+          }
+        }
+      }
+
+      updates.button = {
+        text: widget.buttonText || '',
+        url: widget.buttonUrl || '',
+        width: (widget as any).buttonWidth || 'auto',
+        customWidth: (widget as any).buttonCustomWidth,
+        backgroundColor: buttonStyle.backgroundColor || '#10b981',
+        textColor: buttonStyle.textColor || '#ffffff',
+        borderRadius: buttonStyle.borderRadius ?? 8,
+        borderWidth: buttonStyle.borderWidth ?? 0,
+        borderColor: buttonStyle.borderColor || '#000000',
+        backgroundOpacity: buttonStyle.backgroundOpacity ?? 100,
+        dropShadow: buttonStyle.shadow !== false,
+        shadowAmount: (buttonStyle as any).shadowAmount || 4,
+        blurEffect: buttonStyle.blur || 0,
+        fontFamily: (widget as any).buttonFontFamily || 'Inter',
+        fontSize: buttonFontSize,
+        fontWeight: (widget as any).buttonFontWeight || '600',
+        lineHeight: (widget as any).buttonLineHeight || '1.5',
+        textTransform: (widget as any).buttonTextTransform || 'none',
+        letterSpacing: (widget as any).buttonLetterSpacing || '0em',
+        hover: (widget as any).buttonHover || {
+          backgroundColor: undefined,
+          textColor: undefined,
+          borderColor: undefined,
+          backgroundOpacity: undefined,
+          scale: 1.05,
+        },
+        useGlobalStyle: (widget as any).buttonUseGlobalStyle ?? true,
+        globalStyleId: (widget as any).buttonGlobalStyleId ?? 'button1',
+      };
+      needsUpdate = true;
+    }
+
     if (needsUpdate) {
       onChange(updates);
     }
@@ -192,6 +245,8 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
       textTransform: (widget as any).headingTextTransform || 'none' as const,
       letterSpacing: (widget as any).headingLetterSpacing || '-0.02em',
       color: widget.headingColor || '#1f2937',
+      useGlobalStyle: (widget as any).headingUseGlobalStyle,
+      globalStyleId: (widget as any).headingGlobalStyleId,
     };
   };
 
@@ -220,6 +275,8 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
       textTransform: (widget as any).taglineTextTransform || 'uppercase' as const,
       letterSpacing: (widget as any).taglineLetterSpacing || '0em',
       color: widget.taglineColor || '#10b981',
+      useGlobalStyle: (widget as any).taglineUseGlobalStyle,
+      globalStyleId: (widget as any).taglineGlobalStyleId,
     };
   };
 
@@ -248,11 +305,19 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
       textTransform: (widget as any).bodyTextTransform || 'none' as const,
       letterSpacing: (widget as any).bodyLetterSpacing || '0em',
       color: widget.bodyTextColor || '#6b7280',
+      useGlobalStyle: (widget as any).bodyUseGlobalStyle,
+      globalStyleId: (widget as any).bodyGlobalStyleId,
     };
   };
 
   // Get button config
   const getButtonConfig = () => {
+    // Prioritize reading from widget.button if it exists
+    if ((widget as any).button) {
+      return (widget as any).button;
+    }
+
+    // Fallback: construct from old fragmented properties
     const buttonStyle = widget.buttonStyle || {};
     let buttonFontSize = { value: 16, unit: 'px' as const };
     const rawButtonFontSize = (widget as any).buttonFontSize;
@@ -273,13 +338,14 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
     return {
       text: widget.buttonText || '',
       url: widget.buttonUrl || '',
-      width: (widget as any).buttonWidth || 'standard' as const,
+      width: (widget as any).buttonWidth || 'auto',
+      customWidth: (widget as any).buttonCustomWidth,
       backgroundColor: buttonStyle.backgroundColor || '#10b981',
       textColor: buttonStyle.textColor || '#ffffff',
-      borderRadius: buttonStyle.borderRadius || 8,
-      borderWidth: buttonStyle.borderWidth || 0,
-      borderColor: buttonStyle.borderColor,
-      backgroundOpacity: buttonStyle.backgroundOpacity || 100,
+      borderRadius: buttonStyle.borderRadius ?? 8,
+      borderWidth: buttonStyle.borderWidth ?? 0,
+      borderColor: buttonStyle.borderColor || '#000000',
+      backgroundOpacity: buttonStyle.backgroundOpacity ?? 100,
       dropShadow: buttonStyle.shadow !== false,
       shadowAmount: (buttonStyle as any).shadowAmount || 4,
       blurEffect: buttonStyle.blur || 0,
@@ -287,11 +353,17 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
       fontSize: buttonFontSize,
       fontWeight: (widget as any).buttonFontWeight || '600',
       lineHeight: (widget as any).buttonLineHeight || '1.5',
-      textTransform: (widget as any).buttonTextTransform || 'none' as const,
+      textTransform: (widget as any).buttonTextTransform || 'none',
       letterSpacing: (widget as any).buttonLetterSpacing || '0em',
-      hover: (widget as any).buttonHover || {},
-      useGlobalStyle: (widget as any).buttonUseGlobalStyle,
-      globalStyleId: (widget as any).buttonGlobalStyleId,
+      hover: (widget as any).buttonHover || {
+        backgroundColor: undefined,
+        textColor: undefined,
+        borderColor: undefined,
+        backgroundOpacity: undefined,
+        scale: 1.05,
+      },
+      useGlobalStyle: (widget as any).buttonUseGlobalStyle ?? true,
+      globalStyleId: (widget as any).buttonGlobalStyleId ?? 'button1',
     };
   };
 
@@ -659,6 +731,8 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
           if (updates.textTransform !== undefined) widgetUpdate.headingTextTransform = updates.textTransform;
           if (updates.letterSpacing !== undefined) widgetUpdate.headingLetterSpacing = updates.letterSpacing;
           if (updates.color !== undefined) widgetUpdate.headingColor = updates.color;
+          if (updates.useGlobalStyle !== undefined) widgetUpdate.headingUseGlobalStyle = updates.useGlobalStyle;
+          if (updates.globalStyleId !== undefined) widgetUpdate.headingGlobalStyleId = updates.globalStyleId;
           onChange(widgetUpdate);
         }}
         showGlobalStyleSelector={true}
@@ -680,6 +754,8 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
             if (updates.textTransform !== undefined) widgetUpdate.taglineTextTransform = updates.textTransform;
             if (updates.letterSpacing !== undefined) widgetUpdate.taglineLetterSpacing = updates.letterSpacing;
             if (updates.color !== undefined) widgetUpdate.taglineColor = updates.color;
+            if (updates.useGlobalStyle !== undefined) widgetUpdate.taglineUseGlobalStyle = updates.useGlobalStyle;
+            if (updates.globalStyleId !== undefined) widgetUpdate.taglineGlobalStyleId = updates.globalStyleId;
             onChange(widgetUpdate);
           }}
           showGlobalStyleSelector={true}
@@ -701,6 +777,8 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
           if (updates.textTransform !== undefined) widgetUpdate.bodyTextTransform = updates.textTransform;
           if (updates.letterSpacing !== undefined) widgetUpdate.bodyLetterSpacing = updates.letterSpacing;
           if (updates.color !== undefined) widgetUpdate.bodyTextColor = updates.color;
+          if (updates.useGlobalStyle !== undefined) widgetUpdate.bodyUseGlobalStyle = updates.useGlobalStyle;
+          if (updates.globalStyleId !== undefined) widgetUpdate.bodyGlobalStyleId = updates.globalStyleId;
           onChange(widgetUpdate);
         }}
         showGlobalStyleSelector={true}
@@ -734,23 +812,15 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
           {widget.background?.type === 'color' && (
             <div className="space-y-2">
               <Label>Color</Label>
-              <div className="flex gap-2">
-                <input
-                  type="color"
-                  value={widget.background?.color || 'transparent'}
-                  onChange={(e) => onChange({
-                    background: { ...widget.background, color: e.target.value } as any
-                  })}
-                  className="h-10 w-16 rounded border cursor-pointer"
-                />
-                <Input
-                  value={widget.background?.color || 'transparent'}
-                  onChange={(e) => onChange({
-                    background: { ...widget.background, color: e.target.value } as any
-                  })}
-                  placeholder="transparent"
-                />
-              </div>
+              <GlobalColorInput
+                value={widget.background?.color}
+                onChange={(nextColor) => onChange({
+                  background: { ...widget.background, color: nextColor } as any
+                })}
+                globalStyles={globalStyles}
+                defaultColor="#ffffff"
+                placeholder="transparent"
+              />
             </div>
           )}
         </div>
@@ -759,41 +829,14 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
       {/* Button Styling */}
       {widget.buttonText && widget.buttonText.trim() !== '' && (
         <div className="border rounded-lg p-3">
-          <Label className="text-sm font-semibold mb-3 block">Button Styling</Label>
           <ButtonControl
+            headerLabel="Button Styling"
             value={getButtonConfig()}
             onChange={(updates) => {
-              const buttonUpdate: any = {};
-              if (updates.text !== undefined) buttonUpdate.buttonText = updates.text;
-              if (updates.url !== undefined) buttonUpdate.buttonUrl = updates.url;
-              if (updates.width !== undefined) buttonUpdate.buttonWidth = updates.width;
-              if (updates.fontFamily !== undefined) buttonUpdate.buttonFontFamily = updates.fontFamily;
-              if (updates.fontSize !== undefined) buttonUpdate.buttonFontSize = updates.fontSize;
-              if (updates.fontWeight !== undefined) buttonUpdate.buttonFontWeight = updates.fontWeight;
-              if (updates.lineHeight !== undefined) buttonUpdate.buttonLineHeight = updates.lineHeight;
-              if (updates.textTransform !== undefined) buttonUpdate.buttonTextTransform = updates.textTransform;
-              if (updates.letterSpacing !== undefined) buttonUpdate.buttonLetterSpacing = updates.letterSpacing;
-              if (updates.hover !== undefined) buttonUpdate.buttonHover = updates.hover;
-              if (updates.useGlobalStyle !== undefined) buttonUpdate.buttonUseGlobalStyle = updates.useGlobalStyle;
-              if (updates.globalStyleId !== undefined) buttonUpdate.buttonGlobalStyleId = updates.globalStyleId;
-              
-              // Update buttonStyle object
-              const buttonStyleUpdate: any = {};
-              if (updates.backgroundColor !== undefined) buttonStyleUpdate.backgroundColor = updates.backgroundColor;
-              if (updates.textColor !== undefined) buttonStyleUpdate.textColor = updates.textColor;
-              if (updates.borderRadius !== undefined) buttonStyleUpdate.borderRadius = updates.borderRadius;
-              if (updates.borderWidth !== undefined) buttonStyleUpdate.borderWidth = updates.borderWidth;
-              if (updates.borderColor !== undefined) buttonStyleUpdate.borderColor = updates.borderColor;
-              if (updates.backgroundOpacity !== undefined) buttonStyleUpdate.backgroundOpacity = updates.backgroundOpacity;
-              if (updates.dropShadow !== undefined) buttonStyleUpdate.shadow = updates.dropShadow;
-              if (updates.shadowAmount !== undefined) buttonStyleUpdate.shadowAmount = updates.shadowAmount;
-              if (updates.blurEffect !== undefined) buttonStyleUpdate.blur = updates.blurEffect;
-              
-              if (Object.keys(buttonStyleUpdate).length > 0) {
-                buttonUpdate.buttonStyle = { ...widget.buttonStyle, ...buttonStyleUpdate };
-              }
-              
-              onChange(buttonUpdate);
+              // Save all button properties into the unified button object
+              const currentButton = (widget as any).button || getButtonConfig();
+              const updatedButton = { ...currentButton, ...updates };
+              onChange({ button: updatedButton } as any);
             }}
             showGlobalStyleSelector={true}
             globalStyles={globalStyles}

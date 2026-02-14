@@ -13,6 +13,7 @@ import { FontSizeInput, type FontSizeValue } from '../FontSizeInput';
 import { ImageUpload } from '../ImageUpload';
 import { TypographyControl } from '../controls/TypographyControl';
 import { useWebsiteStore } from '@/lib/stores/website';
+import { GlobalColorInput } from '../controls/GlobalColorInput';
 
 interface StepsEditorNewProps {
   widget: StepsWidget;
@@ -436,6 +437,7 @@ export function StepsEditorNew({ widget, onChange }: StepsEditorNewProps) {
             });
           }}
           showGlobalStyleSelector={true}
+          globalStyles={website?.globalStyles}
           availableGlobalStyles={['h2', 'h3']}
         />
       )}
@@ -453,6 +455,7 @@ export function StepsEditorNew({ widget, onChange }: StepsEditorNewProps) {
           });
         }}
         showGlobalStyleSelector={true}
+        globalStyles={website?.globalStyles}
         availableGlobalStyles={['body']}
       />
 
@@ -469,6 +472,7 @@ export function StepsEditorNew({ widget, onChange }: StepsEditorNewProps) {
           });
         }}
         showGlobalStyleSelector={true}
+        globalStyles={website?.globalStyles}
         availableGlobalStyles={['h3', 'h4']}
       />
 
@@ -485,6 +489,7 @@ export function StepsEditorNew({ widget, onChange }: StepsEditorNewProps) {
           });
         }}
         showGlobalStyleSelector={true}
+        globalStyles={website?.globalStyles}
         availableGlobalStyles={['body']}
       />
 
@@ -513,19 +518,13 @@ export function StepsEditorNew({ widget, onChange }: StepsEditorNewProps) {
           {backgroundConfig.type === 'color' && (
             <div className="space-y-2">
               <Label>Color</Label>
-              <div className="flex gap-2">
-                <input
-                  type="color"
-                  value={backgroundConfig.color || 'transparent'}
-                  onChange={(e) => onChange({ background: { ...backgroundConfig, color: e.target.value } })}
-                  className="h-10 w-16 rounded border cursor-pointer"
-                />
-                <Input
-                  value={backgroundConfig.color || 'transparent'}
-                  onChange={(e) => onChange({ background: { ...backgroundConfig, color: e.target.value } })}
-                  placeholder="transparent"
-                />
-              </div>
+              <GlobalColorInput
+                value={backgroundConfig.color}
+                onChange={(nextColor) => onChange({ background: { ...backgroundConfig, color: nextColor } })}
+                globalStyles={website?.globalStyles}
+                defaultColor="#ffffff"
+                placeholder="transparent"
+              />
             </div>
           )}
         </div>

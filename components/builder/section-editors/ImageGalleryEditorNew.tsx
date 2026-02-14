@@ -11,6 +11,8 @@ import { Grid3x3, LayoutGrid, Columns, ChevronDown, ChevronRight, ExternalLink }
 import { SectionEditorTabs } from '../SectionEditorTabs';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useImageCollectionsStore } from '@/lib/stores/imageCollections';
+import { useWebsiteStore } from '@/lib/stores/website';
+import { GlobalColorInput } from '../controls/GlobalColorInput';
 import Link from 'next/link';
 
 interface ImageGalleryEditorNewProps {
@@ -34,6 +36,7 @@ const ASPECT_RATIOS: { value: GalleryAspectRatio; label: string }[] = [
 export function ImageGalleryEditorNew({ widget, onChange }: ImageGalleryEditorNewProps) {
   const { user } = useAuthStore();
   const { collections } = useImageCollectionsStore();
+  const { currentWebsite } = useWebsiteStore();
 
   // Collapsible states
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -376,19 +379,13 @@ export function ImageGalleryEditorNew({ widget, onChange }: ImageGalleryEditorNe
           {background.type === 'color' && (
             <div className="space-y-2">
               <Label>Color</Label>
-              <div className="flex gap-2">
-                <input
-                  type="color"
-                  value={background.color || 'transparent'}
-                  onChange={(e) => onChange({ background: { ...background, color: e.target.value } })}
-                  className="h-10 w-16 rounded border cursor-pointer"
-                />
-                <Input
-                  value={background.color || 'transparent'}
-                  onChange={(e) => onChange({ background: { ...background, color: e.target.value } })}
-                  placeholder="transparent"
-                />
-              </div>
+              <GlobalColorInput
+                value={background.color}
+                onChange={(nextColor) => onChange({ background: { ...background, color: nextColor } })}
+                globalStyles={currentWebsite?.globalStyles}
+                defaultColor="#ffffff"
+                placeholder="transparent"
+              />
             </div>
           )}
         </div>

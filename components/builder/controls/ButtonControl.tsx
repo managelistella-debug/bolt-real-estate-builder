@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { ButtonStyleConfig, GlobalStyles, FontSizeValue } from '@/lib/types';
 import { FontSizeInput } from '../FontSizeInput';
-import { GlobalStyleSelector } from './GlobalStyleSelector';
 import { cn } from '@/lib/utils';
+import { GlobalColorInput } from './GlobalColorInput';
 
 interface ButtonControlProps {
+  headerLabel?: string;
   value: Partial<ButtonStyleConfig>;
   onChange: (value: Partial<ButtonStyleConfig>) => void;
   showGlobalStyleSelector?: boolean;
@@ -43,14 +44,64 @@ const TEXT_TRANSFORMS = [
 ];
 
 export function ButtonControl({
-  value,
-  onChange,
+  headerLabel,
+  value: rawValue,
+  onChange: onChangeProp,
   showGlobalStyleSelector = false,
   globalStyles,
   className,
 }: ButtonControlProps) {
   const [activeTab, setActiveTab] = useState<'default' | 'hover'>('default');
-  const isUsingGlobalStyle = value.useGlobalStyle && value.globalStyleId;
+  const linkedToGlobalStyle = !!(rawValue.useGlobalStyle && rawValue.globalStyleId);
+  const selectedGlobalStyle: Partial<ButtonStyleConfig> | undefined = linkedToGlobalStyle
+    ? (rawValue.globalStyleId === 'button2'
+        ? globalStyles?.buttons?.button2
+        : globalStyles?.buttons?.button1) || globalStyles?.buttons?.button1
+    : undefined;
+  // While linked, editor fields should reflect the linked global style.
+  const value: Partial<ButtonStyleConfig> = linkedToGlobalStyle && selectedGlobalStyle
+    ? {
+        ...selectedGlobalStyle,
+        useGlobalStyle: true,
+        globalStyleId: rawValue.globalStyleId,
+      }
+    : rawValue;
+  // Controls are always editable; editing unlinks from global.
+  const isUsingGlobalStyle = false;
+  const activeGlobalStyleId = linkedToGlobalStyle ? value.globalStyleId : undefined;
+
+  const onChange = (updates: Partial<ButtonStyleConfig>, preserveGlobalLink: boolean = false) => {
+    if (preserveGlobalLink) {
+      onChangeProp(updates);
+      return;
+    }
+
+    if (rawValue.useGlobalStyle && rawValue.globalStyleId) {
+      if (selectedGlobalStyle) {
+        const mergedHover = updates.hover
+          ? { ...(selectedGlobalStyle.hover || {}), ...updates.hover }
+          : selectedGlobalStyle.hover;
+
+        onChangeProp({
+          ...selectedGlobalStyle,
+          ...updates,
+          ...(mergedHover ? { hover: mergedHover } : {}),
+          useGlobalStyle: false,
+          globalStyleId: undefined,
+        });
+        return;
+      }
+
+      onChangeProp({
+        useGlobalStyle: false,
+        globalStyleId: undefined,
+        ...updates,
+      });
+      return;
+    }
+
+    onChangeProp(updates);
+  };
 
   // Parse font size
   const parseFontSize = (fontSize: FontSizeValue | string | number | undefined): FontSizeValue => {
@@ -67,11 +118,6 @@ export function ButtonControl({
     return { value: 16, unit: 'px' };
   };
 
-  const globalStyleOptions = [
-    { id: 'button1', label: 'Button Style 1' },
-    { id: 'button2', label: 'Button Style 2' },
-  ];
-
   const updateHover = (hoverUpdates: Partial<NonNullable<ButtonStyleConfig['hover']>>) => {
     onChange({
       hover: {
@@ -83,23 +129,53 @@ export function ButtonControl({
 
   return (
     <div className={cn("space-y-3", className)}>
-      {/* Global Style Selector */}
-      {showGlobalStyleSelector && globalStyles && (
-        <div className="flex items-center justify-between p-3 border rounded-lg">
-          <Label className="text-sm">Button Style</Label>
-          <GlobalStyleSelector
-            type="button"
-            value={value.globalStyleId}
-            availableStyles={globalStyleOptions}
-            onChange={(styleId) => {
-              onChange({
-                useGlobalStyle: !!styleId,
-                globalStyleId: styleId || undefined,
-              });
-            }}
-            useGlobal={!!isUsingGlobalStyle}
-            className="w-[160px]"
-          />
+      {(headerLabel || showGlobalStyleSelector) && (
+        <div className="flex items-center justify-between">
+          {headerLabel ? (
+            <Label className="text-sm font-semibold">{headerLabel}</Label>
+          ) : (
+            <div />
+          )}
+          {showGlobalStyleSelector && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-label="Apply Global Button Style 1"
+                onClick={() => {
+                  if (activeGlobalStyleId === 'button1') {
+                    onChange({ useGlobalStyle: false, globalStyleId: undefined }, true);
+                  } else {
+                    onChange({ useGlobalStyle: true, globalStyleId: 'button1' }, true);
+                  }
+                }}
+                className="inline-flex items-center justify-center"
+              >
+                <img
+                  src={activeGlobalStyleId === 'button1' ? '/icons/globe-active.svg' : '/icons/globe-style-1-inactive.svg'}
+                  alt="Global button style 1"
+                  className="h-[13px] w-[13px]"
+                />
+              </button>
+              <button
+                type="button"
+                aria-label="Apply Global Button Style 2"
+                onClick={() => {
+                  if (activeGlobalStyleId === 'button2') {
+                    onChange({ useGlobalStyle: false, globalStyleId: undefined }, true);
+                  } else {
+                    onChange({ useGlobalStyle: true, globalStyleId: 'button2' }, true);
+                  }
+                }}
+                className="inline-flex items-center justify-center"
+              >
+                <img
+                  src={activeGlobalStyleId === 'button2' ? '/icons/globe-style-2-active.svg' : '/icons/globe-inactive.svg'}
+                  alt="Global button style 2"
+                  className="h-[13px] w-[13px]"
+                />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -165,45 +241,27 @@ export function ButtonControl({
           {/* Background Color */}
           <div className="space-y-2">
             <Label className="text-xs">Background Color</Label>
-            <div className="flex gap-2">
-              <input
-                type="color"
-                value={value.backgroundColor || '#3b82f6'}
-                onChange={(e) => onChange({ backgroundColor: e.target.value })}
-                className="h-9 w-16 rounded border cursor-pointer"
-                disabled={isUsingGlobalStyle}
-              />
-              <Input
-                type="text"
-                value={value.backgroundColor || '#3b82f6'}
-                onChange={(e) => onChange({ backgroundColor: e.target.value })}
-                placeholder="#3b82f6"
-                className="h-9"
-                disabled={isUsingGlobalStyle}
-              />
-            </div>
+            <GlobalColorInput
+              value={value.backgroundColor}
+              onChange={(nextColor) => onChange({ backgroundColor: nextColor })}
+              globalStyles={globalStyles}
+              defaultColor="#3b82f6"
+              placeholder="#3b82f6"
+              disabled={isUsingGlobalStyle}
+            />
           </div>
 
           {/* Text Color */}
           <div className="space-y-2">
             <Label className="text-xs">Text Color</Label>
-            <div className="flex gap-2">
-              <input
-                type="color"
-                value={value.textColor || '#ffffff'}
-                onChange={(e) => onChange({ textColor: e.target.value })}
-                className="h-9 w-16 rounded border cursor-pointer"
-                disabled={isUsingGlobalStyle}
-              />
-              <Input
-                type="text"
-                value={value.textColor || '#ffffff'}
-                onChange={(e) => onChange({ textColor: e.target.value })}
-                placeholder="#ffffff"
-                className="h-9"
-                disabled={isUsingGlobalStyle}
-              />
-            </div>
+            <GlobalColorInput
+              value={value.textColor}
+              onChange={(nextColor) => onChange({ textColor: nextColor })}
+              globalStyles={globalStyles}
+              defaultColor="#ffffff"
+              placeholder="#ffffff"
+              disabled={isUsingGlobalStyle}
+            />
           </div>
 
           {/* Border Radius */}
@@ -237,23 +295,14 @@ export function ButtonControl({
           {value.borderWidth && value.borderWidth > 0 && (
             <div className="space-y-2">
               <Label className="text-xs">Border Color</Label>
-              <div className="flex gap-2">
-                <input
-                  type="color"
-                  value={value.borderColor || '#000000'}
-                  onChange={(e) => onChange({ borderColor: e.target.value })}
-                  className="h-9 w-16 rounded border cursor-pointer"
-                  disabled={isUsingGlobalStyle}
-                />
-                <Input
-                  type="text"
-                  value={value.borderColor || '#000000'}
-                  onChange={(e) => onChange({ borderColor: e.target.value })}
-                  placeholder="#000000"
-                  className="h-9"
-                  disabled={isUsingGlobalStyle}
-                />
-              </div>
+              <GlobalColorInput
+                value={value.borderColor}
+                onChange={(nextColor) => onChange({ borderColor: nextColor })}
+                globalStyles={globalStyles}
+                defaultColor="#000000"
+                placeholder="#000000"
+                disabled={isUsingGlobalStyle}
+              />
             </div>
           )}
 
@@ -415,68 +464,41 @@ export function ButtonControl({
           {/* Hover Background Color */}
           <div className="space-y-2">
             <Label className="text-xs">Background Color (Hover)</Label>
-            <div className="flex gap-2">
-              <input
-                type="color"
-                value={value.hover?.backgroundColor || value.backgroundColor || '#3b82f6'}
-                onChange={(e) => updateHover({ backgroundColor: e.target.value })}
-                className="h-9 w-16 rounded border cursor-pointer"
-                disabled={isUsingGlobalStyle}
-              />
-              <Input
-                type="text"
-                value={value.hover?.backgroundColor || value.backgroundColor || '#3b82f6'}
-                onChange={(e) => updateHover({ backgroundColor: e.target.value })}
-                placeholder="Inherits from default"
-                className="h-9"
-                disabled={isUsingGlobalStyle}
-              />
-            </div>
+            <GlobalColorInput
+              value={value.hover?.backgroundColor || value.backgroundColor}
+              onChange={(nextColor) => updateHover({ backgroundColor: nextColor })}
+              globalStyles={globalStyles}
+              defaultColor="#3b82f6"
+              placeholder="Inherits from default"
+              disabled={isUsingGlobalStyle}
+            />
           </div>
 
           {/* Hover Text Color */}
           <div className="space-y-2">
             <Label className="text-xs">Text Color (Hover)</Label>
-            <div className="flex gap-2">
-              <input
-                type="color"
-                value={value.hover?.textColor || value.textColor || '#ffffff'}
-                onChange={(e) => updateHover({ textColor: e.target.value })}
-                className="h-9 w-16 rounded border cursor-pointer"
-                disabled={isUsingGlobalStyle}
-              />
-              <Input
-                type="text"
-                value={value.hover?.textColor || value.textColor || '#ffffff'}
-                onChange={(e) => updateHover({ textColor: e.target.value })}
-                placeholder="Inherits from default"
-                className="h-9"
-                disabled={isUsingGlobalStyle}
-              />
-            </div>
+            <GlobalColorInput
+              value={value.hover?.textColor || value.textColor}
+              onChange={(nextColor) => updateHover({ textColor: nextColor })}
+              globalStyles={globalStyles}
+              defaultColor="#ffffff"
+              placeholder="Inherits from default"
+              disabled={isUsingGlobalStyle}
+            />
           </div>
 
           {/* Hover Border Color */}
           {value.borderWidth && value.borderWidth > 0 && (
             <div className="space-y-2">
               <Label className="text-xs">Border Color (Hover)</Label>
-              <div className="flex gap-2">
-                <input
-                  type="color"
-                  value={value.hover?.borderColor || value.borderColor || '#000000'}
-                  onChange={(e) => updateHover({ borderColor: e.target.value })}
-                  className="h-9 w-16 rounded border cursor-pointer"
-                  disabled={isUsingGlobalStyle}
-                />
-                <Input
-                  type="text"
-                  value={value.hover?.borderColor || value.borderColor || '#000000'}
-                  onChange={(e) => updateHover({ borderColor: e.target.value })}
-                  placeholder="Inherits from default"
-                  className="h-9"
-                  disabled={isUsingGlobalStyle}
-                />
-              </div>
+              <GlobalColorInput
+                value={value.hover?.borderColor || value.borderColor}
+                onChange={(nextColor) => updateHover({ borderColor: nextColor })}
+                globalStyles={globalStyles}
+                defaultColor="#000000"
+                placeholder="Inherits from default"
+                disabled={isUsingGlobalStyle}
+              />
             </div>
           )}
 

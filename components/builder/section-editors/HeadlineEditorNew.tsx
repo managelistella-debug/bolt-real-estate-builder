@@ -19,6 +19,7 @@ import {
 import { SectionEditorTabs } from '../SectionEditorTabs';
 import { TypographyControl } from '../controls/TypographyControl';
 import { ButtonControl } from '../controls/ButtonControl';
+import { GlobalColorInput } from '../controls/GlobalColorInput';
 import { cn } from '@/lib/utils';
 import { useDebouncedInput } from '../hooks/useDebouncedInput';
 import { useWebsiteStore } from '@/lib/stores/website';
@@ -167,6 +168,8 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
       textTransform: widget.titleTextTransform || 'none' as const,
       letterSpacing: widget.titleLetterSpacing || '-0.02em',
       color: widget.titleColor || '#1f2937',
+      useGlobalStyle: (widget as any).titleUseGlobalStyle,
+      globalStyleId: (widget as any).titleGlobalStyleId,
     };
   };
 
@@ -196,6 +199,8 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
       textTransform: widget.subtitleTextTransform || 'none' as const,
       letterSpacing: widget.subtitleLetterSpacing || '0em',
       color: widget.subtitleColor || '#6b7280',
+      useGlobalStyle: (widget as any).subtitleUseGlobalStyle,
+      globalStyleId: (widget as any).subtitleGlobalStyleId,
     };
   };
 
@@ -343,20 +348,13 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
         <div className="space-y-3">
           <div className="space-y-2">
             <Label className="text-xs">Background Color</Label>
-            <div className="flex gap-2">
-              <input
-                type="color"
-                value={widget.background?.color || '#ffffff'}
-                onChange={(e) => onChange({ background: { ...widget.background, color: e.target.value } })}
-                className="h-9 w-16 rounded border cursor-pointer"
-              />
-              <Input
-                value={widget.background?.color || '#ffffff'}
-                onChange={(e) => onChange({ background: { ...widget.background, color: e.target.value } })}
-                placeholder="#ffffff"
-                className="h-9"
-              />
-            </div>
+            <GlobalColorInput
+              value={widget.background?.color}
+              onChange={(nextColor) => onChange({ background: { ...widget.background, color: nextColor } })}
+              globalStyles={globalStyles}
+              defaultColor="#ffffff"
+              placeholder="#ffffff"
+            />
           </div>
           <div className="flex items-center space-x-2">
             <Checkbox
@@ -528,6 +526,8 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
           if (updates.textTransform !== undefined) widgetUpdate.titleTextTransform = updates.textTransform;
           if (updates.letterSpacing !== undefined) widgetUpdate.titleLetterSpacing = updates.letterSpacing;
           if (updates.color !== undefined) widgetUpdate.titleColor = updates.color;
+          if (updates.useGlobalStyle !== undefined) widgetUpdate.titleUseGlobalStyle = updates.useGlobalStyle;
+          if (updates.globalStyleId !== undefined) widgetUpdate.titleGlobalStyleId = updates.globalStyleId;
           onChange(widgetUpdate);
         }}
         showGlobalStyleSelector={true}
@@ -548,6 +548,8 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
           if (updates.textTransform !== undefined) widgetUpdate.subtitleTextTransform = updates.textTransform;
           if (updates.letterSpacing !== undefined) widgetUpdate.subtitleLetterSpacing = updates.letterSpacing;
           if (updates.color !== undefined) widgetUpdate.subtitleColor = updates.color;
+          if (updates.useGlobalStyle !== undefined) widgetUpdate.subtitleUseGlobalStyle = updates.useGlobalStyle;
+          if (updates.globalStyleId !== undefined) widgetUpdate.subtitleGlobalStyleId = updates.globalStyleId;
           onChange(widgetUpdate);
         }}
         showGlobalStyleSelector={true}
@@ -558,8 +560,8 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
       {/* Button Styling */}
       {widget.button && (
         <div className="border rounded-lg p-3">
-          <Label className="text-sm font-semibold mb-3 block">Button Styling</Label>
           <ButtonControl
+            headerLabel="Button Styling"
             value={getButtonConfig()}
             onChange={(updates) => {
               const widgetUpdate: any = {};

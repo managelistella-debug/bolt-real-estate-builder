@@ -22,6 +22,7 @@ import { ImageUpload } from './ImageUpload';
 import { SectionEditorTabs } from './SectionEditorTabs';
 import { TypographyControl } from './controls/TypographyControl';
 import { ButtonControl } from './controls/ButtonControl';
+import { GlobalColorInput } from './controls/GlobalColorInput';
 import { useDebouncedInput } from './hooks/useDebouncedInput';
 import { useWebsiteStore } from '@/lib/stores/website';
 
@@ -279,8 +280,8 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
     lineHeight: widget.button?.lineHeight || (widget as any).buttonLineHeight || '1.5',
     textTransform: widget.button?.textTransform || (widget as any).buttonTextTransform || 'none' as const,
     hover: widget.button?.hover || (widget as any).buttonHover || {},
-    useGlobalStyle: widget.button?.useGlobalStyle || (widget as any).buttonUseGlobalStyle,
-    globalStyleId: widget.button?.globalStyleId || (widget as any).buttonGlobalStyleId,
+    useGlobalStyle: widget.button?.useGlobalStyle ?? (widget as any).buttonUseGlobalStyle ?? true,
+    globalStyleId: widget.button?.globalStyleId ?? (widget as any).buttonGlobalStyleId ?? 'button1',
   });
 
   // Content Tab
@@ -404,23 +405,15 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
           {widget.background?.type === 'color' && (
             <div className="space-y-2">
               <Label>Color</Label>
-              <div className="flex gap-2">
-                <input
-                  type="color"
-                  value={widget.background?.color || '#3b82f6'}
-                  onChange={(e) => onChange({
-                    background: { ...widget.background, color: e.target.value } as any
-                  })}
-                  className="h-10 w-16 rounded border cursor-pointer"
-                />
-                <Input
-                  value={widget.background?.color || '#3b82f6'}
-                  onChange={(e) => onChange({
-                    background: { ...widget.background, color: e.target.value } as any
-                  })}
-                  placeholder="#3B82F6"
-                />
-              </div>
+              <GlobalColorInput
+                value={widget.background?.color}
+                onChange={(nextColor) => onChange({
+                  background: { ...widget.background, color: nextColor } as any
+                })}
+                globalStyles={globalStyles}
+                defaultColor="#3b82f6"
+                placeholder="#3B82F6"
+              />
             </div>
           )}
 
@@ -444,30 +437,32 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <Label className="text-xs">Start Color</Label>
-                      <input
-                        type="color"
-                        value={widget.background?.gradient?.colorStart || '#3b82f6'}
-                        onChange={(e) => onChange({
-                          background: { 
-                            ...widget.background, 
-                            gradient: { ...widget.background?.gradient, colorStart: e.target.value } 
+                      <GlobalColorInput
+                        value={widget.background?.gradient?.colorStart}
+                        onChange={(nextColor) => onChange({
+                          background: {
+                            ...widget.background,
+                            gradient: { ...widget.background?.gradient, colorStart: nextColor }
                           } as any
                         })}
-                        className="h-10 w-full rounded border cursor-pointer"
+                        globalStyles={globalStyles}
+                        defaultColor="#3b82f6"
+                        placeholder="#3b82f6"
                       />
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs">End Color</Label>
-                      <input
-                        type="color"
-                        value={widget.background?.gradient?.colorEnd || '#8b5cf6'}
-                        onChange={(e) => onChange({
-                          background: { 
-                            ...widget.background, 
-                            gradient: { ...widget.background?.gradient, colorEnd: e.target.value } 
+                      <GlobalColorInput
+                        value={widget.background?.gradient?.colorEnd}
+                        onChange={(nextColor) => onChange({
+                          background: {
+                            ...widget.background,
+                            gradient: { ...widget.background?.gradient, colorEnd: nextColor }
                           } as any
                         })}
-                        className="h-10 w-full rounded border cursor-pointer"
+                        globalStyles={globalStyles}
+                        defaultColor="#8b5cf6"
+                        placeholder="#8b5cf6"
                       />
                     </div>
                   </div>
@@ -572,29 +567,18 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
             <>
               <div className="space-y-2">
                 <Label>Overlay Color</Label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    value={widget.background?.overlay?.color || '#000000'}
-                    onChange={(e) => onChange({
-                      background: { 
-                        ...widget.background, 
-                        overlay: { ...widget.background?.overlay, color: e.target.value } 
-                      } as any
-                    })}
-                    className="h-10 w-16 rounded border cursor-pointer"
-                  />
-                  <Input
-                    value={widget.background?.overlay?.color || '#000000'}
-                    onChange={(e) => onChange({
-                      background: { 
-                        ...widget.background, 
-                        overlay: { ...widget.background?.overlay, color: e.target.value } 
-                      } as any
-                    })}
-                    placeholder="#000000"
-                  />
-                </div>
+                <GlobalColorInput
+                  value={widget.background?.overlay?.color}
+                  onChange={(nextColor) => onChange({
+                    background: {
+                      ...widget.background,
+                      overlay: { ...widget.background?.overlay, color: nextColor }
+                    } as any
+                  })}
+                  globalStyles={globalStyles}
+                  defaultColor="#000000"
+                  placeholder="#000000"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Opacity: {widget.background?.overlay?.opacity || 50}%</Label>
@@ -830,6 +814,7 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
           });
         }}
         showGlobalStyleSelector={true}
+        globalStyles={globalStyles}
         availableGlobalStyles={['h1']}
       />
 
@@ -853,13 +838,14 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
           });
         }}
         showGlobalStyleSelector={true}
+        globalStyles={globalStyles}
         availableGlobalStyles={['h2', 'h3', 'body']}
       />
 
       {/* Button Styling */}
       <div className="border rounded-lg p-3">
-        <Label className="text-sm font-semibold mb-3 block">Button Styling</Label>
         <ButtonControl
+          headerLabel="Button Styling"
           value={getButtonConfig()}
           onChange={(updates) => {
             if (Object.keys(updates).length === 0) return;
@@ -936,6 +922,7 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
             onChange(widgetUpdate);
           }}
           showGlobalStyleSelector={true}
+          globalStyles={globalStyles}
         />
       </div>
     </div>

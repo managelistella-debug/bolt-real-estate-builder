@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { StickyFormWidget, TypographyConfig, ButtonStyleConfig } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +12,7 @@ import { FontSizeInput, type FontSizeValue } from '../FontSizeInput';
 import { TypographyControl } from '../controls/TypographyControl';
 import { ButtonControl } from '../controls/ButtonControl';
 import { useWebsiteStore } from '@/lib/stores/website';
+import { GlobalColorInput } from '../controls/GlobalColorInput';
 
 interface StickyFormEditorNewProps {
   widget: StickyFormWidget;
@@ -26,6 +27,48 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
   const [typographyOpen, setTypographyOpen] = useState(false);
   const [buttonStyleOpen, setButtonStyleOpen] = useState(false);
   const [cardStyleOpen, setCardStyleOpen] = useState(false);
+
+  // Migration: Initialize submitButton for existing widgets
+  useEffect(() => {
+    if (!(widget as any).submitButton) {
+      // Read from existing buttonStyle if it exists
+      const existingStyle = widget.buttonStyle || {};
+      
+      const updates: any = {
+        submitButton: {
+          text: widget.buttonText || 'Submit',
+          url: '',
+          useGlobalStyle: true,
+          globalStyleId: 'button1',
+          width: widget.buttonFullWidth ? 'full' : 'auto',
+          customWidth: undefined,
+          backgroundColor: existingStyle.bgColor || '#10b981',
+          textColor: existingStyle.textColor || '#ffffff',
+          borderRadius: existingStyle.radius ?? 8,
+          borderWidth: 0,
+          borderColor: '#000000',
+          backgroundOpacity: 100,
+          dropShadow: true,
+          shadowAmount: 4,
+          blurEffect: 0,
+          fontFamily: 'Inter',
+          fontSize: { value: 16, unit: 'px' as const },
+          fontWeight: '500',
+          lineHeight: '1.2',
+          textTransform: 'none' as const,
+          letterSpacing: '0em',
+          hover: {
+            backgroundColor: undefined,
+            textColor: undefined,
+            borderColor: undefined,
+            backgroundOpacity: undefined,
+            scale: 1.02,
+          },
+        },
+      };
+      onChange(updates);
+    }
+  }, []);
 
   // Helper functions to get typography configs
   const getHeadingTypography = (): TypographyConfig => {
@@ -65,28 +108,40 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
   };
 
   const getSubmitButton = (): ButtonStyleConfig => {
-    return (widget as any).submitButton || {
+    if ((widget as any).submitButton) {
+      return (widget as any).submitButton;
+    }
+    
+    // Fallback: read from existing buttonStyle if it exists
+    const existingStyle = widget.buttonStyle || {};
+    return {
       text: widget.buttonText || 'Submit',
       url: '',
-      width: 'full',
-      backgroundColor: '#10b981',
-      textColor: '#ffffff',
-      borderRadius: 8,
+      useGlobalStyle: true,
+      globalStyleId: 'button1',
+      width: widget.buttonFullWidth ? 'full' : 'auto',
+      customWidth: undefined,
+      backgroundColor: existingStyle.bgColor || '#10b981',
+      textColor: existingStyle.textColor || '#ffffff',
+      borderRadius: existingStyle.radius ?? 8,
       borderWidth: 0,
+      borderColor: '#000000',
       backgroundOpacity: 100,
       dropShadow: true,
       shadowAmount: 4,
       blurEffect: 0,
       fontFamily: 'Inter',
-      fontSize: { value: 14, unit: 'px' },
+      fontSize: { value: 14, unit: 'px' as const },
       fontWeight: '500',
       lineHeight: '1.2',
-      textTransform: 'none',
+      textTransform: 'none' as const,
+      letterSpacing: '0em',
       hover: {
-        backgroundColor: '#059669',
-        textColor: '#ffffff',
-        dropShadow: true,
-        shadowAmount: 6,
+        backgroundColor: undefined,
+        textColor: undefined,
+        borderColor: undefined,
+        backgroundOpacity: undefined,
+        scale: 1.02,
       },
     };
   };
@@ -191,6 +246,7 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
           }
         }}
         showGlobalStyleSelector={true}
+        globalStyles={website?.globalStyles}
         availableGlobalStyles={['h2', 'h3', 'h4']}
       />
 
@@ -209,6 +265,7 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
           }
         }}
         showGlobalStyleSelector={true}
+        globalStyles={website?.globalStyles}
         availableGlobalStyles={['h3', 'h4', 'h5']}
       />
 
@@ -227,12 +284,13 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
           }
         }}
         showGlobalStyleSelector={true}
+        globalStyles={website?.globalStyles}
         availableGlobalStyles={['body']}
       />
 
       {/* Submit Button */}
       <ButtonControl
-        label="Submit Button"
+        headerLabel="Button Styling"
         value={getSubmitButton()}
         onChange={(updates) => {
           const currentButton = getSubmitButton();
@@ -245,16 +303,20 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
           });
         }}
         showGlobalStyleSelector={true}
+        globalStyles={website?.globalStyles}
       />
 
       <CollapsibleSection title="Card Style" open={cardStyleOpen} onToggle={() => setCardStyleOpen(!cardStyleOpen)}>
         <div className="space-y-3">
           <div className="space-y-2">
             <Label>Background Color</Label>
-            <div className="flex gap-2">
-              <input type="color" value={(widget as any).cardBackgroundColor || '#ffffff'} onChange={(e) => onChange({ cardBackgroundColor: e.target.value } as any)} className="h-10 w-16 rounded border cursor-pointer" />
-              <Input value={(widget as any).cardBackgroundColor || '#ffffff'} onChange={(e) => onChange({ cardBackgroundColor: e.target.value } as any)} placeholder="#ffffff" />
-            </div>
+            <GlobalColorInput
+              value={(widget as any).cardBackgroundColor}
+              onChange={(nextColor) => onChange({ cardBackgroundColor: nextColor } as any)}
+              globalStyles={website?.globalStyles}
+              defaultColor="#ffffff"
+              placeholder="#ffffff"
+            />
           </div>
           <div className="space-y-2">
             <Label>Border Radius: {(widget as any).cardBorderRadius || 12}px</Label>

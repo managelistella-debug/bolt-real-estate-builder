@@ -12,6 +12,7 @@ import { ImageUpload } from './ImageUpload';
 import { SectionEditorTabs } from './SectionEditorTabs';
 import { TypographyControl } from './controls/TypographyControl';
 import { ButtonControl } from './controls/ButtonControl';
+import { GlobalColorInput } from './controls/GlobalColorInput';
 import { useDebouncedInput } from './hooks/useDebouncedInput';
 import { useWebsiteStore } from '@/lib/stores/website';
 
@@ -189,6 +190,8 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
       textTransform: (widget as any).titleTextTransform || 'none' as const,
       letterSpacing: (widget as any).titleLetterSpacing || '-0.02em',
       color: (widget as any).titleColor || '#1f2937',
+      useGlobalStyle: (widget as any).titleUseGlobalStyle,
+      globalStyleId: (widget as any).titleGlobalStyleId,
     };
   };
 
@@ -217,6 +220,8 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
       textTransform: (widget as any).contentTextTransform || 'none' as const,
       letterSpacing: (widget as any).contentLetterSpacing || '0em',
       color: (widget as any).contentColor || '#6b7280',
+      useGlobalStyle: (widget as any).contentUseGlobalStyle,
+      globalStyleId: (widget as any).contentGlobalStyleId,
     };
   };
 
@@ -261,8 +266,8 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
       textTransform: widget.button?.textTransform || (widget as any).buttonTextTransform || 'none' as const,
       letterSpacing: widget.button?.letterSpacing || (widget as any).buttonLetterSpacing || '0em',
       hover: widget.button?.hover || (widget as any).buttonHover || {},
-      useGlobalStyle: widget.button?.useGlobalStyle || (widget as any).buttonUseGlobalStyle,
-      globalStyleId: widget.button?.globalStyleId || (widget as any).buttonGlobalStyleId,
+      useGlobalStyle: widget.button?.useGlobalStyle ?? (widget as any).buttonUseGlobalStyle ?? true,
+      globalStyleId: widget.button?.globalStyleId ?? (widget as any).buttonGlobalStyleId ?? 'button1',
     };
   };
   
@@ -505,6 +510,8 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
             if (updates.textTransform !== undefined) widgetUpdate.titleTextTransform = updates.textTransform;
             if (updates.letterSpacing !== undefined) widgetUpdate.titleLetterSpacing = updates.letterSpacing;
             if (updates.color !== undefined) widgetUpdate.titleColor = updates.color;
+            if (updates.useGlobalStyle !== undefined) widgetUpdate.titleUseGlobalStyle = updates.useGlobalStyle;
+            if (updates.globalStyleId !== undefined) widgetUpdate.titleGlobalStyleId = updates.globalStyleId;
             onChange(widgetUpdate);
           }}
           showGlobalStyleSelector={true}
@@ -526,6 +533,8 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
           if (updates.textTransform !== undefined) widgetUpdate.contentTextTransform = updates.textTransform;
           if (updates.letterSpacing !== undefined) widgetUpdate.contentLetterSpacing = updates.letterSpacing;
           if (updates.color !== undefined) widgetUpdate.contentColor = updates.color;
+          if (updates.useGlobalStyle !== undefined) widgetUpdate.contentUseGlobalStyle = updates.useGlobalStyle;
+          if (updates.globalStyleId !== undefined) widgetUpdate.contentGlobalStyleId = updates.globalStyleId;
           onChange(widgetUpdate);
         }}
         showGlobalStyleSelector={true}
@@ -559,24 +568,15 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
           {widget.background?.type === 'color' && (
             <div className="space-y-2">
               <Label>Background Color</Label>
-              <div className="flex gap-2">
-                <input
-                  type="color"
-                  value={widget.background?.color || '#ffffff'}
-                  onChange={(e) => onChange({
-                    background: { ...widget.background, color: e.target.value }
-                  })}
-                  className="h-10 w-16 rounded border cursor-pointer"
-                />
-                <Input
-                  value={widget.background?.color || '#ffffff'}
-                  onChange={(e) => onChange({
-                    background: { ...widget.background, color: e.target.value }
-                  })}
-                  placeholder="#ffffff"
-                  className="flex-1"
-                />
-              </div>
+              <GlobalColorInput
+                value={widget.background?.color}
+                onChange={(nextColor) => onChange({
+                  background: { ...widget.background, color: nextColor }
+                })}
+                globalStyles={globalStyles}
+                defaultColor="#ffffff"
+                placeholder="#ffffff"
+              />
             </div>
           )}
         </div>
@@ -619,8 +619,8 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
       {/* Button Styling */}
       {widget.cta?.text && (
         <div className="border rounded-lg p-3">
-          <Label className="text-sm font-semibold mb-3 block">Button Styling</Label>
           <ButtonControl
+            headerLabel="Button Styling"
             value={getButtonConfig()}
             onChange={(updates) => {
               if (Object.keys(updates).length === 0) return;

@@ -1,22 +1,234 @@
 'use client';
 
+/**
+ * ========================================
+ * BUTTON STANDARDIZATION RULE
+ * ========================================
+ * 
+ * ALL buttons across ALL sections MUST use the `renderStandardButton` function.
+ * This ensures 100% consistency in:
+ * - Width control (auto, standard, wide, full, custom)
+ * - Border styling and perfect radius alignment
+ * - Drop shadow with amount control
+ * - Blur effects (background only, not text)
+ * - Hover effects (background, text, border, scale)
+ * - Background opacity
+ * - Typography controls
+ * - Centered text alignment
+ * - Full width buttons stay within section boundaries
+ * 
+ * NEVER create custom button rendering logic in individual sections.
+ * If you need to modify button behavior, update the `renderStandardButton` function.
+ * 
+ * Currently standardized sections:
+ * ✅ Hero Section
+ * ✅ Image+Text Section
+ * ✅ Text Section
+ * ✅ Contact Form Section
+ * ✅ Sticky Form Section
+ * 
+ * ========================================
+ */
+
 import { useState, useEffect } from 'react';
 import { Page, Website, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, FAQWidget, FAQIconStyle, TestimonialWidget, StepsWidget, ImageTextColumnsWidget, StickyFormWidget, ReviewsSliderWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { useImageCollectionsStore } from '@/lib/stores/imageCollections';
 import { cn } from '@/lib/utils';
+import { getGlobalColorCssVars } from '@/lib/global-colors';
 import { Lightbox } from './Lightbox';
 import { getIcon } from '@/lib/icons/iconLibrary';
 import { ChevronRight, ChevronLeft, ChevronDown, Plus, Minus, ArrowRight, Star } from 'lucide-react';
-import { typographyToCSS, buttonToCSS, getButtonWidthStyle, fontSizeToCSS } from '@/lib/typography-utils';
+import { typographyToCSS, buttonToCSS, getButtonWidthStyle, fontSizeToCSS, getInnerBorderRadius } from '@/lib/typography-utils';
 
 interface LivePreviewProps {
   page: Page;
   website: Website;
 }
 
+/**
+ * STANDARD BUTTON RENDERER
+ * This function provides consistent button rendering across ALL sections.
+ * Any changes to button behavior should be made here to ensure consistency.
+ * 
+ * Features:
+ * - Proper width control (auto, standard, wide, full, custom)
+ * - Border with perfect radius alignment
+ * - Drop shadow with amount control
+ * - Blur effect (background only, not text)
+ * - Hover effects (background, text, border, scale)
+ * - Background opacity
+ * - Typography controls
+ * - Centered text alignment
+ */
+function renderStandardButton(
+  buttonConfig: any,
+  buttonText: string,
+  buttonUrl: string,
+  options: {
+    isSubmitButton?: boolean;
+    isDisabled?: boolean;
+    containerClassName?: string;
+    globalStyles?: any;
+  } = {}
+) {
+  const { isSubmitButton = false, isDisabled = false, containerClassName = '', globalStyles } = options;
+
+  // Default rule: buttons follow Global Button Style 1 unless explicitly disabled.
+  const useGlobalStyle = buttonConfig?.useGlobalStyle !== false;
+  const globalStyleId = buttonConfig?.globalStyleId || 'button1';
+  const selectedGlobalStyle = useGlobalStyle
+    ? (globalStyleId === 'button2' ? globalStyles?.buttons?.button2 : globalStyles?.buttons?.button1) || globalStyles?.buttons?.button1
+    : undefined;
+
+  const effectiveButtonConfig = selectedGlobalStyle
+    ? {
+        ...buttonConfig,
+        ...selectedGlobalStyle,
+        hover: selectedGlobalStyle.hover || {},
+        useGlobalStyle: true,
+        globalStyleId,
+      }
+    : buttonConfig;
+
+  const normalizedButtonConfig = {
+    ...effectiveButtonConfig,
+    width: effectiveButtonConfig?.width || 'standard',
+    backgroundColor: effectiveButtonConfig?.backgroundColor || effectiveButtonConfig?.bgColor || '#3b82f6',
+    textColor: effectiveButtonConfig?.textColor || '#ffffff',
+    borderRadius: effectiveButtonConfig?.borderRadius ?? effectiveButtonConfig?.radius ?? 8,
+    borderWidth: effectiveButtonConfig?.borderWidth ?? effectiveButtonConfig?.strokeWidth ?? 0,
+    borderColor: effectiveButtonConfig?.borderColor || effectiveButtonConfig?.strokeColor || '#000000',
+    backgroundOpacity: effectiveButtonConfig?.backgroundOpacity ?? effectiveButtonConfig?.bgOpacity ?? 100,
+    dropShadow: effectiveButtonConfig?.dropShadow ?? effectiveButtonConfig?.hasShadow ?? true,
+    shadowAmount: effectiveButtonConfig?.shadowAmount ?? 4,
+    blurEffect: effectiveButtonConfig?.blurEffect ?? effectiveButtonConfig?.blurAmount ?? 0,
+    hover: {
+      ...(effectiveButtonConfig?.hover || {}),
+      backgroundColor: effectiveButtonConfig?.hover?.backgroundColor,
+      textColor: effectiveButtonConfig?.hover?.textColor,
+      borderColor: effectiveButtonConfig?.hover?.borderColor,
+      backgroundOpacity: effectiveButtonConfig?.hover?.backgroundOpacity,
+      dropShadow: effectiveButtonConfig?.hover?.dropShadow,
+      shadowAmount: effectiveButtonConfig?.hover?.shadowAmount,
+      blurEffect: effectiveButtonConfig?.hover?.blurEffect,
+    },
+  };
+
+  const buttonStyles = buttonToCSS(normalizedButtonConfig, false);
+  const buttonHoverStyles = buttonToCSS(normalizedButtonConfig, true);
+  const buttonWidthStyles = getButtonWidthStyle(normalizedButtonConfig);
+
+  const ButtonTag = isSubmitButton ? 'button' : 'a';
+  const buttonProps: any = isSubmitButton
+    ? { type: 'submit', disabled: isDisabled }
+    : { href: buttonUrl || '#' };
+
+  return (
+    <div 
+      className={containerClassName}
+      style={{
+        display: normalizedButtonConfig.width === 'full' ? 'block' : 'inline-block',
+        ...buttonWidthStyles,
+        width: normalizedButtonConfig.width === 'full' ? '100%' : buttonWidthStyles.width,
+        maxWidth: '100%', // Ensure button never goes off screen
+      }}
+    >
+      <ButtonTag
+        {...buttonProps}
+        className="relative"
+        style={{
+          display: 'block',
+          width: '100%',
+          padding: '12px 32px',
+          transition: 'all 0.3s ease',
+          cursor: isDisabled ? 'not-allowed' : 'pointer',
+          position: 'relative',
+          zIndex: 0,
+          overflow: 'hidden',
+          color: buttonStyles.color,
+          fontFamily: buttonStyles.fontFamily,
+          fontSize: buttonStyles.fontSize,
+          fontWeight: buttonStyles.fontWeight,
+          lineHeight: buttonStyles.lineHeight,
+          textTransform: buttonStyles.textTransform,
+          textDecoration: 'none',
+          textAlign: 'center', // Always center text in buttons
+          borderRadius: buttonStyles.borderRadius,
+          borderWidth: buttonStyles.borderWidth,
+          borderStyle: buttonStyles.borderStyle,
+          borderColor: buttonStyles.borderColor,
+          boxShadow: buttonStyles.boxShadow,
+          // Use direct background when no blur is active.
+          // Blur-enabled buttons use the dedicated background layer below.
+          backgroundColor: normalizedButtonConfig.blurEffect ? 'transparent' : buttonStyles.backgroundColor,
+          opacity: isDisabled ? 0.6 : 1,
+        }}
+        onMouseEnter={(e: any) => {
+          if (isDisabled) return;
+          const bg = e.currentTarget.querySelector('.button-bg') as HTMLElement;
+          if (bg) {
+            bg.style.backgroundColor = buttonHoverStyles.backgroundColor || buttonStyles.backgroundColor || '';
+            bg.style.filter = normalizedButtonConfig.hover?.blurEffect !== undefined
+              ? `blur(${normalizedButtonConfig.hover.blurEffect}px)`
+              : normalizedButtonConfig.blurEffect ? `blur(${normalizedButtonConfig.blurEffect}px)` : 'none';
+          }
+          e.currentTarget.style.color = buttonHoverStyles.color || buttonStyles.color || '';
+          e.currentTarget.style.borderColor = buttonHoverStyles.borderColor || buttonStyles.borderColor || '';
+          e.currentTarget.style.boxShadow = buttonHoverStyles.boxShadow || buttonStyles.boxShadow || '';
+          e.currentTarget.style.transform = normalizedButtonConfig.hover?.scale ? `scale(${normalizedButtonConfig.hover.scale})` : 'none';
+        }}
+        onMouseLeave={(e: any) => {
+          if (isDisabled) return;
+          const bg = e.currentTarget.querySelector('.button-bg') as HTMLElement;
+          if (bg) {
+            bg.style.backgroundColor = buttonStyles.backgroundColor || '';
+            bg.style.filter = normalizedButtonConfig.blurEffect ? `blur(${normalizedButtonConfig.blurEffect}px)` : 'none';
+          }
+          e.currentTarget.style.color = buttonStyles.color || '';
+          e.currentTarget.style.borderColor = buttonStyles.borderColor || '';
+          e.currentTarget.style.boxShadow = buttonStyles.boxShadow || '';
+          e.currentTarget.style.transform = 'none';
+        }}
+      >
+        {/* Background with blur */}
+        <div 
+          className="button-bg"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: buttonStyles.backgroundColor,
+            borderRadius: getInnerBorderRadius(normalizedButtonConfig),
+            filter: normalizedButtonConfig.blurEffect ? `blur(${normalizedButtonConfig.blurEffect}px)` : 'none',
+            transition: 'all 0.3s ease',
+            zIndex: 0,
+            pointerEvents: 'none',
+          }}
+        />
+        {/* Text content */}
+        <span style={{ position: 'relative', zIndex: 1 }}>{buttonText}</span>
+      </ButtonTag>
+    </div>
+  );
+}
+
+function colorWithOpacity(color: string | undefined, opacityPercent: number): string {
+  if (!color) return 'transparent';
+  if (color === 'transparent') return 'transparent';
+  if (/^#([0-9a-f]{6})$/i.test(color)) {
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${opacityPercent / 100})`;
+  }
+  if (opacityPercent >= 100) return color;
+  // Supports CSS variable colors such as var(--global-color-primary).
+  return `color-mix(in srgb, ${color} ${opacityPercent}%, transparent)`;
+}
+
 export function LivePreview({ page, website }: LivePreviewProps) {
   const { deviceView, selectedSectionId, selectSection } = useBuilderStore();
+  const globalColorVars = getGlobalColorCssVars(website.globalStyles);
 
   const containerClass = cn(
     'mx-auto bg-white min-h-full transition-all duration-300',
@@ -27,7 +239,7 @@ export function LivePreview({ page, website }: LivePreviewProps) {
 
   return (
     <div className="p-8">
-      <div className={containerClass}>
+      <div className={containerClass} style={globalColorVars}>
         {/* Header */}
         <header className="border-b py-4 px-6">
           <div className="flex items-center justify-between">
@@ -63,10 +275,10 @@ export function LivePreview({ page, website }: LivePreviewProps) {
                 <HeroSection widget={section.widget as HeroWidget} styles={website.globalStyles} />
               )}
               {section.type === 'headline' && (
-                <HeadlineSection widget={section.widget as HeadlineWidget} />
+                <HeadlineSection widget={section.widget as HeadlineWidget} globalStyles={website.globalStyles} />
               )}
               {section.type === 'image-text' && (
-                <ImageTextSection widget={section.widget as ImageTextWidget} />
+                <ImageTextSection widget={section.widget as ImageTextWidget} globalStyles={website.globalStyles} />
               )}
               {section.type === 'image-gallery' && (
                 <ImageGallerySection widget={section.widget as ImageGalleryWidget} />
@@ -75,7 +287,7 @@ export function LivePreview({ page, website }: LivePreviewProps) {
                 <IconTextSection widget={section.widget as IconTextWidget} />
               )}
               {section.type === 'text-section' && (
-                <TextSectionComponent widget={section.widget as TextSectionWidget} />
+                <TextSectionComponent widget={section.widget as TextSectionWidget} globalStyles={website.globalStyles} />
               )}
               {section.type === 'faq' && (
                 <FAQSection widget={section.widget as FAQWidget} />
@@ -84,16 +296,16 @@ export function LivePreview({ page, website }: LivePreviewProps) {
                 <TestimonialsSection widget={section.widget as TestimonialWidget} />
               )}
               {section.type === 'steps' && (
-                <StepsSection widget={section.widget as StepsWidget} />
+                <StepsSection widget={section.widget as StepsWidget} globalStyles={website.globalStyles} />
               )}
               {section.type === 'image-text-columns' && (
                 <ImageTextColumnsSection widget={section.widget as ImageTextColumnsWidget} />
               )}
               {section.type === 'sticky-form' && (
-                <StickyFormSection widget={section.widget as StickyFormWidget} />
+                <StickyFormSection widget={section.widget as StickyFormWidget} globalStyles={website.globalStyles} />
               )}
               {section.type === 'reviews-slider' && (
-                <ReviewsSliderSection widget={section.widget as ReviewsSliderWidget} />
+                <ReviewsSliderSection widget={section.widget as ReviewsSliderWidget} globalStyles={website.globalStyles} />
               )}
               {section.type === 'custom-code' && (
                 <CustomCodeSection widget={section.widget as CustomCodeWidget} />
@@ -102,7 +314,7 @@ export function LivePreview({ page, website }: LivePreviewProps) {
                 <ImageNavigationSection widget={section.widget as ImageNavigationWidget} />
               )}
               {section.type === 'contact-form' && (
-                <ContactFormSection widget={section.widget as ContactFormWidget} />
+                <ContactFormSection widget={section.widget as ContactFormWidget} globalStyles={website.globalStyles} />
               )}
               {section.type === 'about' && (
                 <AboutSection widget={section.widget as AboutWidget} styles={website.globalStyles} />
@@ -215,17 +427,6 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
   };
 
   const buttonForRendering = getButtonForRendering();
-  const buttonStyles = buttonToCSS(buttonForRendering, false);
-  const buttonHoverStyles = buttonToCSS(buttonForRendering, true);
-  const buttonWidthStyles = getButtonWidthStyle(buttonForRendering);
-
-  // Calculate inner border radius for background (outer radius - border width)
-  const getInnerBorderRadius = () => {
-    const outerRadius = buttonForRendering.borderRadius || 8;
-    const borderWidth = buttonForRendering.borderWidth || 0;
-    const innerRadius = Math.max(0, outerRadius - borderWidth);
-    return `${innerRadius}px`;
-  };
 
   const getBackgroundStyle = () => {
     if (bgType === 'gradient' && widget.background?.gradient?.enabled) {
@@ -326,84 +527,7 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
             </SubtitleTag>
           );
         })()}
-        <div 
-          style={{
-            display: buttonForRendering.width === 'full' ? 'block' : 'inline-block',
-            ...buttonWidthStyles,
-          }}
-        >
-          <a
-            href={buttonUrl}
-            className="relative"
-            style={{
-              display: 'block',
-              padding: '12px 32px',
-              transition: 'all 0.3s ease',
-              cursor: 'pointer',
-              position: 'relative',
-              color: buttonStyles.color,
-              fontFamily: buttonStyles.fontFamily,
-              fontSize: buttonStyles.fontSize,
-              fontWeight: buttonStyles.fontWeight,
-              lineHeight: buttonStyles.lineHeight,
-              textTransform: buttonStyles.textTransform,
-              textDecoration: 'none',
-              borderRadius: buttonStyles.borderRadius,
-              borderWidth: buttonStyles.borderWidth,
-              borderStyle: buttonStyles.borderStyle,
-              borderColor: buttonStyles.borderColor,
-              boxShadow: buttonStyles.boxShadow,
-              textAlign: 'center',
-              overflow: 'hidden',
-            }}
-            onMouseEnter={(e) => {
-              const target = e.currentTarget;
-              const bg = target.querySelector('.button-bg') as HTMLElement;
-              if (bg) {
-                Object.assign(bg.style, {
-                  backgroundColor: buttonHoverStyles.backgroundColor,
-                  filter: buttonForRendering.hover?.blurEffect ? `blur(${buttonForRendering.hover.blurEffect}px)` : (buttonForRendering.blurEffect ? `blur(${buttonForRendering.blurEffect}px)` : 'none'),
-                });
-              }
-              Object.assign(target.style, {
-                color: buttonHoverStyles.color,
-                borderColor: buttonHoverStyles.borderColor,
-                boxShadow: buttonHoverStyles.boxShadow,
-              });
-            }}
-            onMouseLeave={(e) => {
-              const target = e.currentTarget;
-              const bg = target.querySelector('.button-bg') as HTMLElement;
-              if (bg) {
-                Object.assign(bg.style, {
-                  backgroundColor: buttonStyles.backgroundColor,
-                  filter: buttonForRendering.blurEffect ? `blur(${buttonForRendering.blurEffect}px)` : 'none',
-                });
-              }
-              Object.assign(target.style, {
-                color: buttonStyles.color,
-                borderColor: buttonStyles.borderColor,
-                boxShadow: buttonStyles.boxShadow,
-              });
-            }}
-          >
-            {/* Background layer with blur */}
-            <div 
-              className="button-bg"
-              style={{
-                position: 'absolute',
-                inset: 0,
-                backgroundColor: buttonStyles.backgroundColor,
-                borderRadius: getInnerBorderRadius(),
-                filter: buttonForRendering.blurEffect ? `blur(${buttonForRendering.blurEffect}px)` : 'none',
-                transition: 'all 0.3s ease',
-                zIndex: -1,
-              }}
-            />
-            {/* Text content */}
-            <span style={{ position: 'relative', zIndex: 1 }}>{buttonText}</span>
-          </a>
-        </div>
+        {renderStandardButton(buttonForRendering, buttonText, buttonUrl, { globalStyles: styles })}
       </div>
     </div>
   );
@@ -416,16 +540,14 @@ function AboutSection({ widget, styles }: { widget: AboutWidget; styles: any }) 
         <div>
           <p className="text-lg leading-relaxed whitespace-pre-wrap">{widget.content}</p>
           {widget.cta && (
-            <a
-              href={widget.cta.url}
-              className="inline-block mt-6 px-6 py-2 rounded-md font-medium"
-              style={{ 
-                backgroundColor: styles.colors.primary,
-                color: 'white'
-              }}
-            >
-              {widget.cta.text}
-            </a>
+            <div className="mt-6">
+              {renderStandardButton(
+                { useGlobalStyle: true, globalStyleId: 'button1', width: 'standard' },
+                widget.cta.text,
+                widget.cta.url,
+                { globalStyles: styles }
+              )}
+            </div>
           )}
         </div>
         <div className="relative h-[400px] rounded-lg overflow-hidden">
@@ -497,13 +619,12 @@ function ContactSection({ widget, styles }: { widget: ContactWidget; styles: any
               )}
             </div>
           ))}
-          <button
-            type="submit"
-            className="w-full py-3 rounded-md font-medium text-white"
-            style={{ backgroundColor: styles.colors.primary }}
-          >
-            {widget.buttonText}
-          </button>
+          {renderStandardButton(
+            { useGlobalStyle: true, globalStyleId: 'button1', width: 'full' },
+            widget.buttonText,
+            '',
+            { isSubmitButton: true, globalStyles: styles }
+          )}
         </form>
       </div>
     </div>
@@ -511,7 +632,7 @@ function ContactSection({ widget, styles }: { widget: ContactWidget; styles: any
 }
 
 // New section renderers
-function HeadlineSection({ widget }: { widget: HeadlineWidget }) {
+function HeadlineSection({ widget, globalStyles }: { widget: HeadlineWidget; globalStyles: any }) {
   const padding = widget.padding || { top: 40, right: 20, bottom: 40, left: 20 };
   const margin = widget.margin || { top: 0, right: 0, bottom: 0, left: 0 };
   
@@ -592,96 +713,47 @@ function HeadlineSection({ widget }: { widget: HeadlineWidget }) {
           return <SubtitleTag className="mb-4" style={subtitleStyles}>{widget.subtitle}</SubtitleTag>;
         })()}
         {/* Button */}
-        {widget.button && widget.button.text && widget.button.url && (() => {
-          // Helper to convert hex color to rgba
-          const hexToRgba = (hex: string, alpha: number) => {
-            if (!hex || !hex.startsWith('#')) return hex;
-            const r = parseInt(hex.slice(1, 3), 16);
-            const g = parseInt(hex.slice(3, 5), 16);
-            const b = parseInt(hex.slice(5, 7), 16);
-            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-          };
-
-          const buttonBgColor = widget.buttonBgColor || '#3b82f6';
-          const buttonTextColor = widget.buttonTextColor || '#ffffff';
-          const buttonBgOpacity = (widget.buttonBgOpacity !== undefined ? widget.buttonBgOpacity : 100) / 100;
-          const buttonBorderRadius = widget.buttonBorderRadius || 42;
-          const buttonBorderWidth = widget.buttonBorderWidth || 0;
-          const buttonDropShadow = widget.buttonDropShadow !== false;
-          const buttonShadowAmount = widget.buttonShadowAmount || 4;
-          const buttonBlurEffect = widget.buttonBlurEffect || 0;
-
-          const hover = widget.buttonHover;
-
-          // Get button font size
-          const getButtonFontSize = () => {
-            const fontSize = widget.buttonFontSize;
-            if (!fontSize) return '16px';
-            if (typeof fontSize === 'object' && fontSize.value !== undefined) {
-              return `${fontSize.value}${fontSize.unit}`;
-            }
-            if (typeof fontSize === 'number') return `${fontSize}px`;
-            return String(fontSize);
-          };
-
-          const buttonStyle: React.CSSProperties = {
-            borderRadius: `${buttonBorderRadius}px`,
-            backgroundColor: hexToRgba(buttonBgColor, buttonBgOpacity),
-            color: buttonTextColor,
-            padding: '12px 32px',
-            border: buttonBorderWidth > 0 ? `${buttonBorderWidth}px solid ${widget.buttonBorderColor || '#000000'}` : 'none',
-            boxShadow: buttonDropShadow ? `0 ${buttonShadowAmount}px ${buttonShadowAmount * 2}px rgba(0,0,0,0.1)` : 'none',
-            backdropFilter: buttonBlurEffect > 0 ? `blur(${buttonBlurEffect}px)` : 'none',
-            WebkitBackdropFilter: buttonBlurEffect > 0 ? `blur(${buttonBlurEffect}px)` : 'none',
-            transition: 'all 0.3s ease',
-            display: 'inline-block',
-            fontFamily: widget.buttonFontFamily || 'Inter',
-            fontSize: getButtonFontSize(),
-            fontWeight: widget.buttonFontWeight || '600',
-            lineHeight: widget.buttonLineHeight || '1.5',
-            textTransform: (widget.buttonTextTransform as any) || 'none',
-            letterSpacing: widget.buttonLetterSpacing || '0em',
-          };
-
-          const buttonHoverStyle: React.CSSProperties = hover ? {
-            backgroundColor: hover.backgroundColor ? hexToRgba(hover.backgroundColor, hover.backgroundOpacity !== undefined ? hover.backgroundOpacity / 100 : buttonBgOpacity) : undefined,
-            color: hover.textColor || undefined,
-            borderColor: hover.borderColor || undefined,
-            boxShadow: hover.dropShadow !== undefined ? (hover.dropShadow ? `0 ${hover.shadowAmount || buttonShadowAmount}px ${(hover.shadowAmount || buttonShadowAmount) * 2}px rgba(0,0,0,0.1)` : 'none') : undefined,
-            backdropFilter: hover.blurEffect !== undefined ? `blur(${hover.blurEffect}px)` : undefined,
-          } : {};
-
-          return (
-            <div className={cn(
-              'mt-6',
-              widget.textAlign === 'left' && 'text-left',
-              widget.textAlign === 'center' && 'text-center',
-              widget.textAlign === 'right' && 'text-right'
-            )}>
-              <a
-                href={widget.button.url}
-                target={widget.button.openNewTab ? '_blank' : undefined}
-                rel={widget.button.openNewTab ? 'noopener noreferrer' : undefined}
-                className="font-medium"
-                style={buttonStyle}
-                onMouseEnter={(e) => {
-                  Object.assign(e.currentTarget.style, buttonHoverStyle);
-                }}
-                onMouseLeave={(e) => {
-                  Object.assign(e.currentTarget.style, buttonStyle);
-                }}
-              >
-                {widget.button.text}
-              </a>
-            </div>
-          );
-        })()}
+        {widget.button && widget.button.text && widget.button.url && (
+          <div className={cn(
+            'mt-6',
+            widget.textAlign === 'left' && 'text-left',
+            widget.textAlign === 'center' && 'text-center',
+            widget.textAlign === 'right' && 'text-right'
+          )}>
+            {renderStandardButton(
+              {
+                text: widget.button.text,
+                url: widget.button.url,
+                width: (widget as any).buttonWidth || 'standard',
+                backgroundColor: (widget as any).buttonBgColor || '#3b82f6',
+                textColor: (widget as any).buttonTextColor || '#ffffff',
+                borderRadius: (widget as any).buttonBorderRadius || 42,
+                borderWidth: (widget as any).buttonBorderWidth || 0,
+                borderColor: (widget as any).buttonBorderColor || '#000000',
+                backgroundOpacity: (widget as any).buttonBgOpacity ?? 100,
+                dropShadow: (widget as any).buttonDropShadow !== false,
+                shadowAmount: (widget as any).buttonShadowAmount || 4,
+                blurEffect: (widget as any).buttonBlurEffect || 0,
+                fontFamily: (widget as any).buttonFontFamily || 'Inter',
+                fontSize: (widget as any).buttonFontSize || { value: 16, unit: 'px' },
+                fontWeight: (widget as any).buttonFontWeight || '600',
+                lineHeight: (widget as any).buttonLineHeight || '1.5',
+                textTransform: (widget as any).buttonTextTransform || 'none',
+                hover: (widget as any).buttonHover || {},
+                useGlobalStyle: (widget as any).buttonUseGlobalStyle ?? true,
+                globalStyleId: (widget as any).buttonGlobalStyleId ?? 'button1',
+              },
+              widget.button.text,
+              widget.button.url
+            , { globalStyles })}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
+function ImageTextSection({ widget, globalStyles }: { widget: ImageTextWidget; globalStyles: any }) {
   const { deviceView } = useBuilderStore();
   const padding = widget.padding || { top: 60, right: 40, bottom: 60, left: 40 };
   const margin = widget.margin || { top: 0, right: 0, bottom: 0, left: 0 };
@@ -707,14 +779,8 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
   const bgColor = widget.background?.color || '#ffffff';
   const bgOpacity = (widget.background?.opacity || 100) / 100;
 
-  // Helper to convert hex color to rgba
-  const hexToRgba = (hex: string, alpha: number) => {
-    if (!hex || !hex.startsWith('#')) return hex;
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  };
+  // Applies opacity while supporting both hex and CSS variable colors.
+  const hexToRgba = (hex: string, alpha: number) => colorWithOpacity(hex, Math.round(alpha * 100));
 
   const sectionStyle: React.CSSProperties = {
     paddingTop: `${padding.top}px`,
@@ -808,17 +874,6 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
   };
 
   const buttonForRendering = getButtonForRendering();
-  const buttonStyles = buttonToCSS(buttonForRendering, false);
-  const buttonHoverStyles = buttonToCSS(buttonForRendering, true);
-  const buttonWidthStyles = getButtonWidthStyle(buttonForRendering);
-
-  // Calculate inner border radius for background (outer radius - border width)
-  const getInnerBorderRadius = () => {
-    const outerRadius = buttonForRendering.borderRadius || 8;
-    const borderWidth = buttonForRendering.borderWidth || 0;
-    const innerRadius = Math.max(0, outerRadius - borderWidth);
-    return `${innerRadius}px`;
-  };
 
   // Get typography helpers
   const getFontSize = (fontSize: any, fallback: string) => {
@@ -871,87 +926,12 @@ function ImageTextSection({ widget }: { widget: ImageTextWidget }) {
             justifyContent: textAlign === 'center' ? 'center' : textAlign === 'right' ? 'flex-end' : 'flex-start',
           }}
         >
-          <div 
-            style={{
-              display: buttonForRendering.width === 'full' ? 'block' : 'inline-block',
-              ...buttonWidthStyles,
-              width: buttonForRendering.width === 'full' ? '100%' : buttonWidthStyles.width,
-            }}
-          >
-            <a
-              href={widget.cta?.url || buttonForRendering.url || '#'}
-              className="relative"
-              style={{
-                display: 'block',
-                padding: '12px 32px',
-                transition: 'all 0.3s ease',
-                cursor: 'pointer',
-                position: 'relative',
-                color: buttonStyles.color,
-                fontFamily: buttonStyles.fontFamily,
-                fontSize: buttonStyles.fontSize,
-                fontWeight: buttonStyles.fontWeight,
-                lineHeight: buttonStyles.lineHeight,
-                textTransform: buttonStyles.textTransform,
-                textDecoration: 'none',
-                borderRadius: buttonStyles.borderRadius,
-                borderWidth: buttonStyles.borderWidth,
-                borderStyle: buttonStyles.borderStyle,
-                borderColor: buttonStyles.borderColor,
-                boxShadow: buttonStyles.boxShadow,
-                textAlign: 'center',
-                overflow: 'hidden',
-              }}
-              onMouseEnter={(e) => {
-                const target = e.currentTarget;
-                const bg = target.querySelector('.button-bg') as HTMLElement;
-                if (bg) {
-                  Object.assign(bg.style, {
-                    backgroundColor: buttonHoverStyles.backgroundColor,
-                    filter: buttonForRendering.hover?.blurEffect ? `blur(${buttonForRendering.hover.blurEffect}px)` : (buttonForRendering.blurEffect ? `blur(${buttonForRendering.blurEffect}px)` : 'none'),
-                  });
-                }
-                Object.assign(target.style, {
-                  color: buttonHoverStyles.color,
-                  borderColor: buttonHoverStyles.borderColor,
-                  boxShadow: buttonHoverStyles.boxShadow,
-                });
-              }}
-              onMouseLeave={(e) => {
-                const target = e.currentTarget;
-                const bg = target.querySelector('.button-bg') as HTMLElement;
-                if (bg) {
-                  Object.assign(bg.style, {
-                    backgroundColor: buttonStyles.backgroundColor,
-                    filter: buttonForRendering.blurEffect ? `blur(${buttonForRendering.blurEffect}px)` : 'none',
-                  });
-                }
-                Object.assign(target.style, {
-                  color: buttonStyles.color,
-                  borderColor: buttonStyles.borderColor,
-                  boxShadow: buttonStyles.boxShadow,
-                });
-              }}
-            >
-              {/* Background layer with blur */}
-              <div 
-                className="button-bg"
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  backgroundColor: buttonStyles.backgroundColor,
-                  borderRadius: getInnerBorderRadius(),
-                  filter: buttonForRendering.blurEffect ? `blur(${buttonForRendering.blurEffect}px)` : 'none',
-                  transition: 'all 0.3s ease',
-                  zIndex: -1,
-                }}
-              />
-              {/* Text content */}
-              <span style={{ position: 'relative', zIndex: 1 }}>
-                {widget.cta?.text || buttonForRendering.text || 'Click here'}
-              </span>
-            </a>
-          </div>
+          {renderStandardButton(
+            buttonForRendering,
+            widget.cta?.text || buttonForRendering.text || 'Click here',
+            widget.cta?.url || buttonForRendering.url || '#',
+            { globalStyles }
+          )}
         </div>
       )}
     </div>
@@ -1661,11 +1641,11 @@ function IconTextSection({ widget }: { widget: IconTextWidget }) {
                   <div
                     className="flex-shrink-0 rounded-full flex items-center justify-center"
                     style={{
-                      backgroundColor: item.iconBgColor || 'transparent',
+                      backgroundColor: (widget as any).defaultIconBgColor || item.iconBgColor || 'transparent',
                       padding: widget.iconSize === 'sm' ? '12px' : widget.iconSize === 'md' ? '16px' : widget.iconSize === 'lg' ? '20px' : '24px',
                     }}
                   >
-                    <IconComponent className={iconSizeClass} color={item.iconColor} />
+                    <IconComponent className={iconSizeClass} color={(widget as any).defaultIconColor || item.iconColor} />
                   </div>
 
                   {/* Text Content */}
@@ -1674,7 +1654,7 @@ function IconTextSection({ widget }: { widget: IconTextWidget }) {
                       <h3
                         style={{
                           ...itemTitleStyles,
-                          color: item.headingColor || itemTitleStyles.color,
+                          color: itemTitleStyles.color,
                           marginBottom: '8px',
                         }}
                       >
@@ -1685,7 +1665,7 @@ function IconTextSection({ widget }: { widget: IconTextWidget }) {
                       <p
                         style={{
                           ...itemDescStyles,
-                          color: item.subheadingColor || itemDescStyles.color,
+                          color: itemDescStyles.color,
                         }}
                       >
                         {item.subheading}
@@ -1702,11 +1682,11 @@ function IconTextSection({ widget }: { widget: IconTextWidget }) {
                   <div
                     className="rounded-full flex items-center justify-center mb-4"
                     style={{
-                      backgroundColor: item.iconBgColor || 'transparent',
+                      backgroundColor: (widget as any).defaultIconBgColor || item.iconBgColor || 'transparent',
                       padding: widget.iconSize === 'sm' ? '12px' : widget.iconSize === 'md' ? '16px' : widget.iconSize === 'lg' ? '20px' : '24px',
                     }}
                   >
-                    <IconComponent className={iconSizeClass} color={item.iconColor} />
+                    <IconComponent className={iconSizeClass} color={(widget as any).defaultIconColor || item.iconColor} />
                   </div>
 
                   {/* Text Content */}
@@ -1715,7 +1695,7 @@ function IconTextSection({ widget }: { widget: IconTextWidget }) {
                       <h3
                         style={{
                           ...itemTitleStyles,
-                          color: item.headingColor || itemTitleStyles.color,
+                          color: itemTitleStyles.color,
                           marginBottom: '8px',
                         }}
                       >
@@ -1726,7 +1706,7 @@ function IconTextSection({ widget }: { widget: IconTextWidget }) {
                       <p
                         style={{
                           ...itemDescStyles,
-                          color: item.subheadingColor || itemDescStyles.color,
+                          color: itemDescStyles.color,
                         }}
                       >
                         {item.subheading}
@@ -1755,7 +1735,7 @@ function IconTextSection({ widget }: { widget: IconTextWidget }) {
   );
 }
 
-function TextSectionComponent({ widget }: { widget: TextSectionWidget }) {
+function TextSectionComponent({ widget, globalStyles }: { widget: TextSectionWidget; globalStyles: any }) {
   const { deviceView } = useBuilderStore();
 
   // Safeguards
@@ -1815,38 +1795,59 @@ function TextSectionComponent({ widget }: { widget: TextSectionWidget }) {
     marginLeft: `${layoutCfg.margin?.left || 0}px`,
   };
 
-  // Button styling
-  const buttonStyle = widget.buttonStyle || {
-    backgroundColor: '#10b981',
-    backgroundOpacity: 100,
-    textColor: '#ffffff',
-    borderRadius: 8,
-    blur: 0,
-    shadow: true,
-    borderWidth: 0,
-    borderColor: '#000000',
+  // Get button config with fallback to old structure
+  const getButtonForRendering = () => {
+    if ((widget as any).button) return (widget as any).button;
+    
+    // Fallback to old structure
+    const buttonStyle = widget.buttonStyle || {};
+    let buttonFontSize = { value: 16, unit: 'px' as const };
+    const rawButtonFontSize = (widget as any).buttonFontSize;
+    
+    if (rawButtonFontSize) {
+      if (typeof rawButtonFontSize === 'object' && rawButtonFontSize.value !== undefined) {
+        buttonFontSize = rawButtonFontSize;
+      } else if (typeof rawButtonFontSize === 'number') {
+        buttonFontSize = { value: rawButtonFontSize, unit: 'px' as const };
+      } else if (typeof rawButtonFontSize === 'string') {
+        const match = rawButtonFontSize.match(/^([\d.]+)(rem|px|em|%)$/);
+        if (match) {
+          buttonFontSize = { value: parseFloat(match[1]), unit: match[2] as any };
+        }
+      }
+    }
+
+    return {
+      text: widget.buttonText || '',
+      url: widget.buttonUrl || '',
+      width: (widget as any).buttonWidth || 'auto',
+      customWidth: (widget as any).buttonCustomWidth,
+      backgroundColor: buttonStyle.backgroundColor || '#10b981',
+      textColor: buttonStyle.textColor || '#ffffff',
+      borderRadius: buttonStyle.borderRadius ?? 8,
+      borderWidth: buttonStyle.borderWidth ?? 0,
+      borderColor: buttonStyle.borderColor || '#000000',
+      backgroundOpacity: buttonStyle.backgroundOpacity ?? 100,
+      dropShadow: buttonStyle.shadow !== false,
+      shadowAmount: (buttonStyle as any).shadowAmount || 4,
+      blurEffect: buttonStyle.blur || 0,
+      fontFamily: (widget as any).buttonFontFamily || 'Inter',
+      fontSize: buttonFontSize,
+      fontWeight: (widget as any).buttonFontWeight || '600',
+      lineHeight: (widget as any).buttonLineHeight || '1.5',
+      textTransform: (widget as any).buttonTextTransform || 'none',
+      letterSpacing: (widget as any).buttonLetterSpacing || '0em',
+      hover: (widget as any).buttonHover || {
+        backgroundColor: undefined,
+        textColor: undefined,
+        borderColor: undefined,
+        backgroundOpacity: undefined,
+        scale: 1.05,
+      },
+    };
   };
 
-  const buttonBgColor = buttonStyle.backgroundColor;
-  const buttonOpacity = (buttonStyle.backgroundOpacity || 100) / 100;
-  const buttonTextColor = buttonStyle.textColor;
-  const buttonBorderRadius = buttonStyle.borderRadius;
-  const buttonBlur = buttonStyle.blur || 0;
-  const buttonShadow = buttonStyle.shadow;
-  const buttonBorderWidth = buttonStyle.borderWidth || 0;
-  const buttonBorderColor = buttonStyle.borderColor;
-
-  const buttonContainerStyle: React.CSSProperties = {
-    backgroundColor: buttonBgColor,
-    opacity: buttonOpacity,
-    color: buttonTextColor,
-    borderRadius: `${buttonBorderRadius}px`,
-    ...(buttonBlur > 0 && { backdropFilter: `blur(${buttonBlur}px)` }),
-    ...(buttonShadow && { boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' }),
-    ...(buttonBorderWidth > 0 && {
-      border: `${buttonBorderWidth}px solid ${buttonBorderColor}`,
-    }),
-  };
+  const buttonForRendering = getButtonForRendering();
 
   // Alignment classes
   const getAlignmentClass = (alignment: string) => {
@@ -1905,16 +1906,6 @@ function TextSectionComponent({ widget }: { widget: TextSectionWidget }) {
     margin: bodyAlignment === 'center' ? '0 auto' : '0',
   };
 
-  // Button typography
-  const buttonFontStyles: React.CSSProperties = {
-    fontFamily: (widget as any).buttonFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).buttonFontSize, '16px'),
-    fontWeight: (widget as any).buttonFontWeight || '600',
-    lineHeight: (widget as any).buttonLineHeight || '1.5',
-    textTransform: ((widget as any).buttonTextTransform as any) || 'none',
-    letterSpacing: (widget as any).buttonLetterSpacing || '0em',
-  };
-
   // Tagline component (subheader - appears under heading)
   const taglineElement = widget.tagline && (
     <div
@@ -1948,13 +1939,7 @@ function TextSectionComponent({ widget }: { widget: TextSectionWidget }) {
   // Button component
   const buttonElement = widget.buttonText && widget.buttonText.trim() !== '' && (
     <div className={`mt-6 ${getAlignmentClass(bodyAlignment)}`}>
-      <a
-        href={widget.buttonUrl || '#'}
-        className="inline-block px-6 py-3 transition-all hover:scale-105"
-        style={{...buttonContainerStyle, ...buttonFontStyles}}
-      >
-        {widget.buttonText}
-      </a>
+      {renderStandardButton(buttonForRendering, widget.buttonText, widget.buttonUrl || '#', { globalStyles })}
     </div>
   );
 
@@ -2353,7 +2338,7 @@ function FAQSection({ widget }: { widget: FAQWidget }) {
   );
 }
 
-function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
+function ContactFormSection({ widget, globalStyles }: { widget: ContactFormWidget; globalStyles: any }) {
   const { deviceView } = useBuilderStore();
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -2474,14 +2459,7 @@ function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
     
     if (background.type === 'color') {
       const opacity = background.opacity ?? 100;
-      if (background.color === 'transparent') {
-        styles.backgroundColor = 'transparent';
-      } else {
-        const r = parseInt(background.color.slice(1, 3), 16);
-        const g = parseInt(background.color.slice(3, 5), 16);
-        const b = parseInt(background.color.slice(5, 7), 16);
-        styles.backgroundColor = `rgba(${r}, ${g}, ${b}, ${opacity / 100})`;
-      }
+      styles.backgroundColor = colorWithOpacity(background.color, opacity);
     } else if (background.type === 'image' && background.imageUrl) {
       styles.backgroundImage = `url(${background.imageUrl})`;
       styles.backgroundSize = 'cover';
@@ -2734,44 +2712,46 @@ function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
   );
   
   const renderButton = () => {
-    const bgOpacity = buttonStyle.backgroundOpacity ?? 100;
-    const bgColor = buttonStyle.backgroundColor || '#10b981';
-    const r = parseInt(bgColor.slice(1, 3), 16);
-    const g = parseInt(bgColor.slice(3, 5), 16);
-    const b = parseInt(bgColor.slice(5, 7), 16);
+    // Get button config with fallback to old structure
+    const getButtonForRendering = () => {
+      if ((widget as any).submitButton) return (widget as any).submitButton;
+      
+      // Fallback to old structure
+      return {
+        text: buttonText,
+        url: '',
+        width: buttonFullWidth ? 'full' : 'auto',
+        customWidth: undefined,
+        backgroundColor: buttonStyle.backgroundColor || '#10b981',
+        textColor: buttonStyle.textColor || '#ffffff',
+        borderRadius: buttonStyle.borderRadius ?? 8,
+        borderWidth: buttonStyle.borderWidth ?? 0,
+        borderColor: buttonStyle.borderColor || '#000000',
+        backgroundOpacity: buttonStyle.backgroundOpacity ?? 100,
+        dropShadow: buttonStyle.shadow !== false,
+        shadowAmount: 4,
+        blurEffect: buttonStyle.blur || 0,
+        fontFamily: 'Inter',
+        fontSize: { value: 16, unit: 'px' as const },
+        fontWeight: '600',
+        lineHeight: '1.5',
+        textTransform: 'none' as const,
+        letterSpacing: '0em',
+        hover: {
+          backgroundColor: widget.buttonHoverBackground,
+          textColor: widget.buttonHoverColor,
+          borderColor: undefined,
+          backgroundOpacity: undefined,
+          scale: 1.02,
+        },
+      };
+    };
+
+    const buttonForRendering = getButtonForRendering();
     
     return (
       <div className={getButtonAlignmentContainerClass()}>
-        <button
-          type="submit"
-          style={{
-            backgroundColor: `rgba(${r}, ${g}, ${b}, ${bgOpacity / 100})`,
-            color: buttonStyle.textColor,
-            borderRadius: `${buttonStyle.borderRadius}px`,
-            padding: '12px 32px',
-            fontWeight: 600,
-            border: buttonStyle.borderWidth ? `${buttonStyle.borderWidth}px solid ${buttonStyle.borderColor}` : 'none',
-            boxShadow: buttonStyle.shadow ? '0 4px 6px rgba(0, 0, 0, 0.1)' : 'none',
-            backdropFilter: buttonStyle.blur ? `blur(${buttonStyle.blur}px)` : 'none',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            width: buttonFullWidth ? '100%' : 'auto',
-          }}
-          onMouseEnter={(e) => {
-            if (widget.buttonHoverBackground) {
-              e.currentTarget.style.backgroundColor = widget.buttonHoverBackground;
-            }
-            if (widget.buttonHoverColor) {
-              e.currentTarget.style.color = widget.buttonHoverColor;
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = `rgba(${r}, ${g}, ${b}, ${bgOpacity / 100})`;
-            e.currentTarget.style.color = buttonStyle.textColor;
-          }}
-        >
-          {buttonText}
-        </button>
+        {renderStandardButton(buttonForRendering, buttonText, '', { isSubmitButton: true, globalStyles })}
       </div>
     );
   };
@@ -2843,39 +2823,17 @@ function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
           </p>
         )}
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-          {widget.button1Text && (
-            <a
-              href={widget.button1Url || '#'}
-              style={{
-                display: 'inline-block',
-                padding: '12px 24px',
-                backgroundColor: buttonStyle.backgroundColor,
-                color: buttonStyle.textColor,
-                borderRadius: `${buttonStyle.borderRadius}px`,
-                fontWeight: 600,
-                textDecoration: 'none',
-                boxShadow: buttonStyle.shadow ? '0 4px 6px rgba(0, 0, 0, 0.1)' : 'none',
-              }}
-            >
-              {widget.button1Text}
-            </a>
+          {widget.button1Text && renderStandardButton(
+            { useGlobalStyle: true, globalStyleId: 'button1' },
+            widget.button1Text,
+            widget.button1Url || '#',
+            { globalStyles }
           )}
-          {widget.button2Text && (
-            <a
-              href={widget.button2Url || '#'}
-              style={{
-                display: 'inline-block',
-                padding: '12px 24px',
-                backgroundColor: 'transparent',
-                color: buttonStyle.backgroundColor,
-                border: `2px solid ${buttonStyle.backgroundColor}`,
-                borderRadius: `${buttonStyle.borderRadius}px`,
-                fontWeight: 600,
-                textDecoration: 'none',
-              }}
-            >
-              {widget.button2Text}
-            </a>
+          {widget.button2Text && renderStandardButton(
+            { useGlobalStyle: true, globalStyleId: 'button1' },
+            widget.button2Text,
+            widget.button2Url || '#',
+            { globalStyles }
           )}
         </div>
       </div>
@@ -3006,21 +2964,12 @@ function ContactFormSection({ widget }: { widget: ContactFormWidget }) {
         </div>
         {widget.button1Text && (
           <div style={{ marginTop: '32px' }}>
-            <a
-              href={widget.button1Url || '#'}
-              style={{
-                display: 'inline-block',
-                padding: '12px 24px',
-                backgroundColor: buttonStyle.backgroundColor,
-                color: buttonStyle.textColor,
-                borderRadius: `${buttonStyle.borderRadius}px`,
-                fontWeight: 600,
-                textDecoration: 'none',
-                boxShadow: buttonStyle.shadow ? '0 4px 6px rgba(0, 0, 0, 0.1)' : 'none',
-              }}
-            >
-              {widget.button1Text}
-            </a>
+            {renderStandardButton(
+              { useGlobalStyle: true, globalStyleId: 'button1' },
+              widget.button1Text,
+              widget.button1Url || '#',
+              { globalStyles }
+            )}
           </div>
         )}
       </div>
@@ -3525,7 +3474,7 @@ function TestimonialsSection({ widget }: { widget: TestimonialWidget }) {
   );
 }
 
-function StepsSection({ widget }: { widget: StepsWidget }) {
+function StepsSection({ widget, globalStyles }: { widget: StepsWidget; globalStyles: any }) {
   const { deviceView } = useBuilderStore();
 
   // Safeguards for potentially undefined or corrupted data
@@ -3663,9 +3612,11 @@ function StepsSection({ widget }: { widget: StepsWidget }) {
   const buttonVisible = widget.buttonVisible ?? true;
   const buttonText = widget.buttonText || 'Get in Touch';
   const buttonUrl = widget.buttonUrl || '#';
-  const buttonBgColor = widget.buttonStyle?.bgColor || '#10b981';
-  const buttonTextColor = widget.buttonStyle?.textColor || '#ffffff';
-  const buttonRadius = widget.buttonStyle?.radius ?? 8;
+  const buttonConfig = {
+    ...(widget.buttonStyle || {}),
+    useGlobalStyle: widget.buttonStyle?.useGlobalStyle ?? true,
+    globalStyleId: widget.buttonStyle?.globalStyleId ?? 'button1',
+  };
 
   const getObjectPosition = () => {
     switch (imagePosition) {
@@ -3680,14 +3631,7 @@ function StepsSection({ widget }: { widget: StepsWidget }) {
     
     if (backgroundConfig.type === 'color') {
       const opacity = backgroundConfig.opacity ?? 100;
-      if (backgroundConfig.color === 'transparent') {
-        styles.backgroundColor = 'transparent';
-      } else {
-        const r = parseInt(backgroundConfig.color.slice(1, 3), 16);
-        const g = parseInt(backgroundConfig.color.slice(3, 5), 16);
-        const b = parseInt(backgroundConfig.color.slice(5, 7), 16);
-        styles.backgroundColor = `rgba(${r}, ${g}, ${b}, ${opacity / 100})`;
-      }
+      styles.backgroundColor = colorWithOpacity(backgroundConfig.color, opacity);
     } else if (backgroundConfig.type === 'image' && backgroundConfig.imageUrl) {
       styles.backgroundImage = `url(${backgroundConfig.imageUrl})`;
       styles.backgroundSize = 'cover';
@@ -3729,32 +3673,7 @@ function StepsSection({ widget }: { widget: StepsWidget }) {
               {sectionHeading}
             </h2>
           )}
-          {buttonVisible && buttonText && (
-            <a
-              href={buttonUrl}
-              style={{
-                backgroundColor: buttonBgColor,
-                color: buttonTextColor,
-                borderRadius: `${buttonRadius}px`,
-                padding: '12px 32px',
-                fontSize: '16px',
-                fontWeight: 600,
-                textDecoration: 'none',
-                display: 'inline-block',
-                transition: 'all 0.3s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = '0.9';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = '1';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
-            >
-              {buttonText}
-            </a>
-          )}
+          {buttonVisible && buttonText && renderStandardButton(buttonConfig, buttonText, buttonUrl, { globalStyles })}
         </div>
 
         {/* Main content */}
@@ -3960,14 +3879,7 @@ function ImageTextColumnsSection({ widget }: { widget: ImageTextColumnsWidget })
     
     if (backgroundConfig.type === 'color') {
       const opacity = backgroundConfig.opacity ?? 100;
-      if (backgroundConfig.color === 'transparent') {
-        styles.backgroundColor = 'transparent';
-      } else {
-        const r = parseInt(backgroundConfig.color.slice(1, 3), 16);
-        const g = parseInt(backgroundConfig.color.slice(3, 5), 16);
-        const b = parseInt(backgroundConfig.color.slice(5, 7), 16);
-        styles.backgroundColor = `rgba(${r}, ${g}, ${b}, ${opacity / 100})`;
-      }
+      styles.backgroundColor = colorWithOpacity(backgroundConfig.color, opacity);
     } else if (backgroundConfig.type === 'image' && backgroundConfig.imageUrl) {
       styles.backgroundImage = `url(${backgroundConfig.imageUrl})`;
       styles.backgroundSize = 'cover';
@@ -4090,7 +4002,7 @@ function ImageTextColumnsSection({ widget }: { widget: ImageTextColumnsWidget })
   );
 }
 
-function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
+function StickyFormSection({ widget, globalStyles }: { widget: StickyFormWidget; globalStyles: any }) {
   const { deviceView } = useBuilderStore();
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -4223,14 +4135,7 @@ function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
     
     if (backgroundConfig.type === 'color') {
       const opacity = backgroundConfig.opacity ?? 100;
-      if (backgroundConfig.color === 'transparent') {
-        styles.backgroundColor = 'transparent';
-      } else {
-        const r = parseInt(backgroundConfig.color.slice(1, 3), 16);
-        const g = parseInt(backgroundConfig.color.slice(3, 5), 16);
-        const b = parseInt(backgroundConfig.color.slice(5, 7), 16);
-        styles.backgroundColor = `rgba(${r}, ${g}, ${b}, ${opacity / 100})`;
-      }
+      styles.backgroundColor = colorWithOpacity(backgroundConfig.color, opacity);
     } else if (backgroundConfig.type === 'image' && backgroundConfig.imageUrl) {
       styles.backgroundImage = `url(${backgroundConfig.imageUrl})`;
       styles.backgroundSize = 'cover';
@@ -4370,23 +4275,51 @@ function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
               )}
             </div>
           ))}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            style={{
-              backgroundColor: buttonBgColor,
-              color: buttonTextColor,
-              borderRadius: `${buttonRadius}px`,
-              padding: '12px 24px',
-              fontSize: '16px',
-              fontWeight: 600,
-              border: 'none',
-              cursor: 'pointer',
-              width: buttonFullWidth ? '100%' : 'auto',
-            }}
-          >
-            {isSubmitting ? 'Submitting...' : buttonText}
-          </button>
+          {(() => {
+            // Get button config with fallback to old structure
+            const getButtonForRendering = () => {
+              if ((widget as any).submitButton) return (widget as any).submitButton;
+              
+              // Fallback to old structure
+              return {
+                text: buttonText,
+                url: '',
+                width: buttonFullWidth ? 'full' : 'auto',
+                customWidth: undefined,
+                backgroundColor: buttonBgColor,
+                textColor: buttonTextColor,
+                borderRadius: buttonRadius,
+                borderWidth: 0,
+                borderColor: '#000000',
+                backgroundOpacity: 100,
+                dropShadow: false,
+                shadowAmount: 4,
+                blurEffect: 0,
+                fontFamily: 'Inter',
+                fontSize: { value: 16, unit: 'px' as const },
+                fontWeight: '600',
+                lineHeight: '1.5',
+                textTransform: 'none' as const,
+                letterSpacing: '0em',
+                hover: {
+                  backgroundColor: undefined,
+                  textColor: undefined,
+                  borderColor: undefined,
+                  backgroundOpacity: undefined,
+                  scale: 1.02,
+                },
+              };
+            };
+
+            const buttonForRendering = getButtonForRendering();
+
+            return renderStandardButton(
+              buttonForRendering,
+              isSubmitting ? 'Submitting...' : buttonText,
+              '',
+              { isSubmitButton: true, isDisabled: isSubmitting, globalStyles }
+            );
+          })()}
         </form>
       )}
     </div>
@@ -4492,7 +4425,7 @@ function StickyFormSection({ widget }: { widget: StickyFormWidget }) {
   );
 }
 
-function ReviewsSliderSection({ widget }: { widget: ReviewsSliderWidget }) {
+function ReviewsSliderSection({ widget, globalStyles }: { widget: ReviewsSliderWidget; globalStyles: any }) {
   const { deviceView } = useBuilderStore();
   const [currentOffset, setCurrentOffset] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -4620,9 +4553,11 @@ function ReviewsSliderSection({ widget }: { widget: ReviewsSliderWidget }) {
   const showButton = widget.showButton ?? false;
   const buttonText = widget.buttonText || '';
   const buttonUrl = widget.buttonUrl || '#';
-  const buttonBgColor = widget.buttonStyle?.bgColor || '#10b981';
-  const buttonTextColor = widget.buttonStyle?.textColor || '#ffffff';
-  const buttonRadius = widget.buttonStyle?.radius ?? 8;
+  const buttonConfig = {
+    ...(widget.buttonStyle || {}),
+    useGlobalStyle: widget.buttonStyle?.useGlobalStyle ?? true,
+    globalStyleId: widget.buttonStyle?.globalStyleId ?? 'button1',
+  };
 
   const sectionHeading = widget.sectionHeading;
   const sectionSubheading = widget.sectionSubheading;
@@ -4718,14 +4653,7 @@ function ReviewsSliderSection({ widget }: { widget: ReviewsSliderWidget }) {
     
     if (backgroundConfig.type === 'color') {
       const opacity = backgroundConfig.opacity ?? 100;
-      if (backgroundConfig.color === 'transparent') {
-        styles.backgroundColor = 'transparent';
-      } else {
-        const r = parseInt(backgroundConfig.color.slice(1, 3), 16);
-        const g = parseInt(backgroundConfig.color.slice(3, 5), 16);
-        const b = parseInt(backgroundConfig.color.slice(5, 7), 16);
-        styles.backgroundColor = `rgba(${r}, ${g}, ${b}, ${opacity / 100})`;
-      }
+      styles.backgroundColor = colorWithOpacity(backgroundConfig.color, opacity);
     } else if (backgroundConfig.type === 'image' && backgroundConfig.imageUrl) {
       styles.backgroundImage = `url(${backgroundConfig.imageUrl})`;
       styles.backgroundSize = 'cover';
@@ -5005,22 +4933,7 @@ function ReviewsSliderSection({ widget }: { widget: ReviewsSliderWidget }) {
         {/* CTA Button */}
         {showButton && buttonText && (
           <div className="flex justify-center mt-8">
-            <a
-              href={buttonUrl}
-              style={{
-                backgroundColor: buttonBgColor,
-                color: buttonTextColor,
-                borderRadius: `${buttonRadius}px`,
-                padding: '12px 32px',
-                fontSize: '16px',
-                fontWeight: 600,
-                textDecoration: 'none',
-                display: 'inline-block',
-                transition: 'all 0.3s ease',
-              }}
-            >
-              {buttonText}
-            </a>
+            {renderStandardButton(buttonConfig, buttonText, buttonUrl, { globalStyles })}
           </div>
         )}
       </div>

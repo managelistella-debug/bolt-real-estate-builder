@@ -5,8 +5,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TypographyConfig, GlobalStyles, FontSizeValue } from '@/lib/types';
 import { FontSizeInput } from '../FontSizeInput';
-import { GlobalStyleSelector } from './GlobalStyleSelector';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { GlobalColorInput } from './GlobalColorInput';
 
 interface TypographyControlProps {
   value: Partial<TypographyConfig>;
@@ -15,6 +16,7 @@ interface TypographyControlProps {
   showGlobalStyleSelector?: boolean;
   globalStyles?: GlobalStyles;
   availableGlobalStyles?: ('h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'body')[];
+  showColorControl?: boolean;
   className?: string;
 }
 
@@ -54,15 +56,38 @@ const TEXT_TRANSFORMS = [
 ];
 
 export function TypographyControl({
-  value,
-  onChange,
+  value: rawValue,
+  onChange: onChangeProp,
   label,
   showGlobalStyleSelector = false,
   globalStyles,
   availableGlobalStyles = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'body'],
+  showColorControl = true,
   className,
 }: TypographyControlProps) {
-  const isUsingGlobalStyle = value.useGlobalStyle && value.globalStyleId;
+  const allGlobalTypographyStyles: ('h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'body')[] = [
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'body',
+  ];
+  // Always expose all global typography styles in a fixed order.
+  const styleOptions = allGlobalTypographyStyles;
+
+  const isUsingGlobalStyle = !!(rawValue.useGlobalStyle && rawValue.globalStyleId);
+  const selectedGlobalStyle = isUsingGlobalStyle
+    ? (rawValue.globalStyleId === 'body'
+        ? globalStyles?.body
+        : globalStyles?.headings?.[rawValue.globalStyleId as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'])
+    : undefined;
+  // Color is now always section-specific and should never be inherited from global typography.
+  const value: Partial<TypographyConfig> = isUsingGlobalStyle && selectedGlobalStyle
+    ? {
+        ...selectedGlobalStyle,
+        color: rawValue.color ?? '#000000',
+        useGlobalStyle: true,
+        globalStyleId: rawValue.globalStyleId,
+      }
+    : rawValue;
+  // Typography controls remain editable while linked; editing forks and unlinks.
+  const controlsLockedByGlobal = false;
 
   // Parse font size to FontSizeValue
   const parseFontSize = (fontSize: FontSizeValue | string | number | undefined): FontSizeValue => {
@@ -84,30 +109,115 @@ export function TypographyControl({
     onChange({ fontSize: newValue });
   };
 
-  // Convert global style IDs to dropdown options
-  const globalStyleOptions = availableGlobalStyles.map((id) => ({
-    id,
-    label: id.toUpperCase(),
-  }));
+  const styleLabelMap: Record<string, string> = {
+    h1: 'H1',
+    h2: 'H2',
+    h3: 'H3',
+    h4: 'H4',
+    h5: 'H5',
+    h6: 'H6',
+    body: 'Body',
+  };
+
+  const onChange = (updates: Partial<TypographyConfig>, preserveGlobalLink: boolean = false) => {
+    if (preserveGlobalLink) {
+      onChangeProp(updates);
+      return;
+    }
+
+    if (rawValue.useGlobalStyle && rawValue.globalStyleId) {
+      if (selectedGlobalStyle) {
+        onChangeProp({
+          ...selectedGlobalStyle,
+          // Keep color local to section while forking from global style.
+          color: rawValue.color ?? '#000000',
+          ...updates,
+          useGlobalStyle: false,
+          globalStyleId: undefined,
+        });
+        return;
+      }
+
+      onChangeProp({
+        useGlobalStyle: false,
+        globalStyleId: undefined,
+        ...updates,
+      });
+      return;
+    }
+
+    onChangeProp(updates);
+  };
 
   return (
     <div className={cn("space-y-3 p-3 border rounded-lg", className)}>
       <div className="flex items-center justify-between">
         <Label className="text-sm font-semibold">{label}</Label>
-        {showGlobalStyleSelector && globalStyles && (
-          <GlobalStyleSelector
-            type="typography"
-            value={value.globalStyleId}
-            availableStyles={globalStyleOptions}
-            onChange={(styleId) => {
-              onChange({
-                useGlobalStyle: !!styleId,
-                globalStyleId: styleId || undefined,
-              });
-            }}
-            useGlobal={!!isUsingGlobalStyle}
-            className="w-[140px]"
-          />
+        {showGlobalStyleSelector && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex items-center justify-center"
+                title={isUsingGlobalStyle && value.globalStyleId ? styleLabelMap[value.globalStyleId] : 'No global typography style'}
+              >
+                <img
+                  src={isUsingGlobalStyle ? '/icons/globe-active.svg' : '/icons/globe-inactive.svg'}
+                  alt="Typography global style"
+                  className="h-[13px] w-[13px]"
+                />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-[240px] p-0">
+              <div className="border-b px-3 py-2 text-sm font-medium">Global Typography</div>
+              <div className="p-2 space-y-1">
+                {styleOptions.map((styleId) => {
+                  const styleConfig = styleId === 'body'
+                    ? globalStyles?.body
+                    : globalStyles?.headings?.[styleId as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'];
+                  const isActive = value.globalStyleId === styleId && value.useGlobalStyle;
+
+                  return (
+                    <button
+                      key={styleId}
+                      type="button"
+                      className={cn(
+                        "w-full text-left rounded px-2 py-1.5 hover:bg-muted",
+                        isActive && "bg-muted"
+                      )}
+                      onClick={() => {
+                        onChange({
+                          ...(styleConfig || {}),
+                          color: rawValue.color ?? '#000000',
+                          useGlobalStyle: true,
+                          globalStyleId: styleId,
+                        }, true);
+                      }}
+                    >
+                      <span
+                        className="block"
+                        style={{
+                          fontFamily: styleConfig?.fontFamily || 'Inter',
+                          fontWeight: styleConfig?.fontWeight || '400',
+                          lineHeight: styleConfig?.lineHeight || '1.5',
+                          textTransform: (styleConfig?.textTransform as any) || 'none',
+                          fontSize: (() => {
+                            const fs = styleConfig?.fontSize as FontSizeValue | string | undefined;
+                            if (!fs) return '14px';
+                            if (typeof fs === 'string') return fs;
+                            if (typeof fs === 'object' && 'value' in fs) return `${fs.value}${fs.unit}`;
+                            return '14px';
+                          })(),
+                        }}
+                      >
+                        {styleLabelMap[styleId]}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
         )}
       </div>
 
@@ -118,7 +228,7 @@ export function TypographyControl({
           <Select
             value={value.fontFamily || 'Inter'}
             onValueChange={(v) => onChange({ fontFamily: v })}
-            disabled={isUsingGlobalStyle}
+            disabled={controlsLockedByGlobal}
           >
             <SelectTrigger className="h-9">
               <SelectValue />
@@ -148,7 +258,7 @@ export function TypographyControl({
           <Select
             value={value.fontWeight || '400'}
             onValueChange={(v) => onChange({ fontWeight: v })}
-            disabled={isUsingGlobalStyle}
+            disabled={controlsLockedByGlobal}
           >
             <SelectTrigger className="h-9">
               <SelectValue />
@@ -172,7 +282,7 @@ export function TypographyControl({
             onChange={(e) => onChange({ lineHeight: e.target.value })}
             placeholder="1.5"
             className="h-9"
-            disabled={isUsingGlobalStyle}
+            disabled={controlsLockedByGlobal}
           />
         </div>
 
@@ -182,7 +292,7 @@ export function TypographyControl({
           <Select
             value={value.textTransform || 'none'}
             onValueChange={(v: any) => onChange({ textTransform: v })}
-            disabled={isUsingGlobalStyle}
+            disabled={controlsLockedByGlobal}
           >
             <SelectTrigger className="h-9">
               <SelectValue />
@@ -197,27 +307,19 @@ export function TypographyControl({
           </Select>
         </div>
 
-        {/* Color */}
-        <div className="space-y-2">
-          <Label className="text-xs">Color</Label>
-          <div className="flex gap-2">
-            <input
-              type="color"
-              value={value.color || '#000000'}
-              onChange={(e) => onChange({ color: e.target.value })}
-              className="h-9 w-16 rounded border cursor-pointer"
-              disabled={isUsingGlobalStyle}
-            />
-            <Input
-              type="text"
-              value={value.color || '#000000'}
-              onChange={(e) => onChange({ color: e.target.value })}
+        {showColorControl && (
+          <div className="space-y-2">
+            <Label className="text-xs">Color</Label>
+            <GlobalColorInput
+              value={value.color}
+              onChange={(nextColor) => onChange({ color: nextColor })}
+              globalStyles={globalStyles}
+              defaultColor="#000000"
               placeholder="#000000"
-              className="h-9"
-              disabled={isUsingGlobalStyle}
+              disabled={controlsLockedByGlobal}
             />
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

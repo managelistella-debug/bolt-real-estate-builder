@@ -15,6 +15,7 @@ import { ButtonControl } from '../controls/ButtonControl';
 import { IconPicker } from '../IconPicker';
 import { cn } from '@/lib/utils';
 import { useWebsiteStore } from '@/lib/stores/website';
+import { GlobalColorInput } from '../controls/GlobalColorInput';
 
 interface IconTextEditorNewProps {
   widget: IconTextWidget;
@@ -175,6 +176,8 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
       textTransform: (widget as any).headerTextTransform || 'none' as const,
       letterSpacing: (widget as any).headerLetterSpacing || '0em',
       color: widget.headingColor || '#1f2937',
+      useGlobalStyle: (widget as any).headerUseGlobalStyle,
+      globalStyleId: (widget as any).headerGlobalStyleId,
     };
   };
 
@@ -203,6 +206,8 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
       textTransform: (widget as any).itemTitleTextTransform || 'none' as const,
       letterSpacing: (widget as any).itemTitleLetterSpacing || '0em',
       color: widget.titleColor || '#1f2937',
+      useGlobalStyle: (widget as any).itemTitleUseGlobalStyle,
+      globalStyleId: (widget as any).itemTitleGlobalStyleId,
     };
   };
 
@@ -231,6 +236,8 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
       textTransform: (widget as any).itemDescTextTransform || 'none' as const,
       letterSpacing: (widget as any).itemDescLetterSpacing || '0em',
       color: widget.descriptionColor || '#6b7280',
+      useGlobalStyle: (widget as any).itemDescUseGlobalStyle,
+      globalStyleId: (widget as any).itemDescGlobalStyleId,
     };
   };
 
@@ -549,11 +556,14 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
               widgetUpdate.headingColor = updates.color;
               widgetUpdate.sectionHeadingColor = updates.color; // Legacy compatibility
             }
+            if (updates.useGlobalStyle !== undefined) widgetUpdate.headerUseGlobalStyle = updates.useGlobalStyle;
+            if (updates.globalStyleId !== undefined) widgetUpdate.headerGlobalStyleId = updates.globalStyleId;
             if (Object.keys(widgetUpdate).length > 0) {
               onChange(widgetUpdate);
             }
           }}
           showGlobalStyleSelector={true}
+          globalStyles={globalStyles}
           availableGlobalStyles={['h2', 'h3', 'h4']}
         />
       )}
@@ -581,11 +591,14 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
             widgetUpdate.titleColor = updates.color;
             widgetUpdate.itemHeadingColor = updates.color; // Legacy compatibility
           }
+          if (updates.useGlobalStyle !== undefined) widgetUpdate.itemTitleUseGlobalStyle = updates.useGlobalStyle;
+          if (updates.globalStyleId !== undefined) widgetUpdate.itemTitleGlobalStyleId = updates.globalStyleId;
           if (Object.keys(widgetUpdate).length > 0) {
             onChange(widgetUpdate);
           }
         }}
         showGlobalStyleSelector={true}
+        globalStyles={globalStyles}
         availableGlobalStyles={['h3', 'h4', 'h5']}
       />
 
@@ -612,11 +625,14 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
             widgetUpdate.descriptionColor = updates.color;
             widgetUpdate.itemSubheadingColor = updates.color; // Legacy compatibility
           }
+          if (updates.useGlobalStyle !== undefined) widgetUpdate.itemDescUseGlobalStyle = updates.useGlobalStyle;
+          if (updates.globalStyleId !== undefined) widgetUpdate.itemDescGlobalStyleId = updates.globalStyleId;
           if (Object.keys(widgetUpdate).length > 0) {
             onChange(widgetUpdate);
           }
         }}
         showGlobalStyleSelector={true}
+        globalStyles={globalStyles}
         availableGlobalStyles={['body']}
       />
 
@@ -636,35 +652,23 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
           </div>
           <div className="space-y-2">
             <Label>Default Icon Color</Label>
-            <div className="flex gap-2">
-              <input
-                type="color"
-                value={(widget as any).defaultIconColor || '#10b981'}
-                onChange={(e) => onChange({ defaultIconColor: e.target.value } as any)}
-                className="h-10 w-16 rounded border cursor-pointer"
-              />
-              <Input
-                value={(widget as any).defaultIconColor || '#10b981'}
-                onChange={(e) => onChange({ defaultIconColor: e.target.value } as any)}
-                placeholder="#10b981"
-              />
-            </div>
+            <GlobalColorInput
+              value={(widget as any).defaultIconColor}
+              onChange={(nextColor) => onChange({ defaultIconColor: nextColor } as any)}
+              globalStyles={globalStyles}
+              defaultColor="#10b981"
+              placeholder="#10b981"
+            />
           </div>
           <div className="space-y-2">
             <Label>Default Icon Background</Label>
-            <div className="flex gap-2">
-              <input
-                type="color"
-                value={(widget as any).defaultIconBgColor || '#d1fae5'}
-                onChange={(e) => onChange({ defaultIconBgColor: e.target.value } as any)}
-                className="h-10 w-16 rounded border cursor-pointer"
-              />
-              <Input
-                value={(widget as any).defaultIconBgColor || '#d1fae5'}
-                onChange={(e) => onChange({ defaultIconBgColor: e.target.value } as any)}
-                placeholder="#d1fae5"
-              />
-            </div>
+            <GlobalColorInput
+              value={(widget as any).defaultIconBgColor}
+              onChange={(nextColor) => onChange({ defaultIconBgColor: nextColor } as any)}
+              globalStyles={globalStyles}
+              defaultColor="#d1fae5"
+              placeholder="#d1fae5"
+            />
           </div>
         </div>
       </CollapsibleSection>
@@ -694,19 +698,13 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
           {background.type === 'color' && (
             <div className="space-y-2">
               <Label>Color</Label>
-              <div className="flex gap-2">
-                <input
-                  type="color"
-                  value={background.color || 'transparent'}
-                  onChange={(e) => onChange({ background: { ...background, color: e.target.value } })}
-                  className="h-10 w-16 rounded border cursor-pointer"
-                />
-                <Input
-                  value={background.color || 'transparent'}
-                  onChange={(e) => onChange({ background: { ...background, color: e.target.value } })}
-                  placeholder="transparent"
-                />
-              </div>
+              <GlobalColorInput
+                value={background.color}
+                onChange={(nextColor) => onChange({ background: { ...background, color: nextColor } })}
+                globalStyles={globalStyles}
+                defaultColor="#ffffff"
+                placeholder="transparent"
+              />
             </div>
           )}
         </div>

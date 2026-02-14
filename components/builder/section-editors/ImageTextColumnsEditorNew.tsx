@@ -470,6 +470,7 @@ export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumns
             });
           }}
           showGlobalStyleSelector={true}
+          globalStyles={website?.globalStyles}
           availableGlobalStyles={['h2', 'h3']}
         />
       )}
@@ -487,6 +488,7 @@ export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumns
           });
         }}
         showGlobalStyleSelector={true}
+        globalStyles={website?.globalStyles}
         availableGlobalStyles={['h4', 'body']}
       />
 
@@ -503,6 +505,7 @@ export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumns
           });
         }}
         showGlobalStyleSelector={true}
+        globalStyles={website?.globalStyles}
         availableGlobalStyles={['body']}
       />
 

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GlobalStyles, FontPair, FontSizeValue } from '@/lib/types';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { TypographyControl } from './controls/TypographyControl';
 import { ButtonControl } from './controls/ButtonControl';
 
@@ -74,7 +74,6 @@ export function GlobalStylesDialog({ open, onOpenChange, globalStyles, onUpdate 
       fontWeight: weight,
       lineHeight: '1.2',
       textTransform: 'none' as const,
-      color: '#1f2937',
     });
 
     return {
@@ -89,6 +88,16 @@ export function GlobalStylesDialog({ open, onOpenChange, globalStyles, onUpdate 
 
   const buttons = ensureButtons();
   const headings = ensureHeadings();
+  const removeTypographyColor = (updates: any) => {
+    const { color, ...rest } = updates || {};
+    return rest;
+  };
+  const colorLabels = {
+    primary: globalStyles.colorLabels?.primary || 'Primary',
+    secondary: globalStyles.colorLabels?.secondary || 'Secondary',
+    accent: globalStyles.colorLabels?.accent || 'Accent',
+  };
+  const customColors = globalStyles.customColors || [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -109,60 +118,121 @@ export function GlobalStylesDialog({ open, onOpenChange, globalStyles, onUpdate 
 
           {/* Colors Tab */}
           <TabsContent value="colors" className="space-y-4 pt-4">
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label>Primary Color</Label>
-                <div className="flex gap-2 mt-2">
+            <div className="space-y-3">
+              {(['primary', 'secondary', 'accent'] as const).map((colorId) => (
+                <div key={colorId} className="grid grid-cols-[1fr_120px_1fr] gap-2 items-center">
+                  <Input
+                    value={colorLabels[colorId]}
+                    onChange={(e) =>
+                      onUpdate({
+                        colorLabels: {
+                          ...globalStyles.colorLabels,
+                          [colorId]: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder={`${colorId} label`}
+                  />
                   <Input
                     type="color"
-                    value={globalStyles.colors.primary}
-                    onChange={(e) => onUpdate({ colors: { ...globalStyles.colors, primary: e.target.value } })}
+                    value={globalStyles.colors[colorId]}
+                    onChange={(e) =>
+                      onUpdate({
+                        colors: {
+                          ...globalStyles.colors,
+                          [colorId]: e.target.value,
+                        },
+                      })
+                    }
                     className="h-10 w-full"
                   />
                   <Input
-                    type="text"
-                    value={globalStyles.colors.primary}
-                    onChange={(e) => onUpdate({ colors: { ...globalStyles.colors, primary: e.target.value } })}
+                    value={globalStyles.colors[colorId]}
+                    onChange={(e) =>
+                      onUpdate({
+                        colors: {
+                          ...globalStyles.colors,
+                          [colorId]: e.target.value,
+                        },
+                      })
+                    }
                     className="font-mono text-xs"
                   />
                 </div>
-              </div>
+              ))}
+            </div>
 
-              <div>
-                <Label>Secondary Color</Label>
-                <div className="flex gap-2 mt-2">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Custom Global Colors</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const id = `color-${Date.now()}`;
+                    onUpdate({
+                      customColors: [
+                        ...customColors,
+                        { id, name: 'New Color', value: '#000000' },
+                      ],
+                    });
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add
+                </Button>
+              </div>
+              {customColors.map((customColor) => (
+                <div key={customColor.id} className="grid grid-cols-[1fr_120px_1fr_auto] gap-2 items-center">
+                  <Input
+                    value={customColor.name}
+                    onChange={(e) =>
+                      onUpdate({
+                        customColors: customColors.map((c) =>
+                          c.id === customColor.id ? { ...c, name: e.target.value } : c
+                        ),
+                      })
+                    }
+                    placeholder="Color name"
+                  />
                   <Input
                     type="color"
-                    value={globalStyles.colors.secondary}
-                    onChange={(e) => onUpdate({ colors: { ...globalStyles.colors, secondary: e.target.value } })}
+                    value={customColor.value}
+                    onChange={(e) =>
+                      onUpdate({
+                        customColors: customColors.map((c) =>
+                          c.id === customColor.id ? { ...c, value: e.target.value } : c
+                        ),
+                      })
+                    }
                     className="h-10 w-full"
                   />
                   <Input
-                    type="text"
-                    value={globalStyles.colors.secondary}
-                    onChange={(e) => onUpdate({ colors: { ...globalStyles.colors, secondary: e.target.value } })}
+                    value={customColor.value}
+                    onChange={(e) =>
+                      onUpdate({
+                        customColors: customColors.map((c) =>
+                          c.id === customColor.id ? { ...c, value: e.target.value } : c
+                        ),
+                      })
+                    }
                     className="font-mono text-xs"
                   />
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={() =>
+                      onUpdate({
+                        customColors: customColors.filter((c) => c.id !== customColor.id),
+                      })
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-              </div>
-
-              <div>
-                <Label>Accent Color</Label>
-                <div className="flex gap-2 mt-2">
-                  <Input
-                    type="color"
-                    value={globalStyles.colors.accent}
-                    onChange={(e) => onUpdate({ colors: { ...globalStyles.colors, accent: e.target.value } })}
-                    className="h-10 w-full"
-                  />
-                  <Input
-                    type="text"
-                    value={globalStyles.colors.accent}
-                    onChange={(e) => onUpdate({ colors: { ...globalStyles.colors, accent: e.target.value } })}
-                    className="font-mono text-xs"
-                  />
-                </div>
-              </div>
+              ))}
             </div>
 
             <div className="p-4 border rounded-lg bg-muted/50">
@@ -172,6 +242,13 @@ export function GlobalStylesDialog({ open, onOpenChange, globalStyles, onUpdate 
                 <div className="flex-1 h-20 rounded" style={{ backgroundColor: globalStyles.colors.secondary }}></div>
                 <div className="flex-1 h-20 rounded" style={{ backgroundColor: globalStyles.colors.accent }}></div>
               </div>
+              {customColors.length > 0 && (
+                <div className="grid grid-cols-4 gap-2 mt-2">
+                  {customColors.map((c) => (
+                    <div key={c.id} className="h-10 rounded border" style={{ backgroundColor: c.value }} />
+                  ))}
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -209,9 +286,10 @@ export function GlobalStylesDialog({ open, onOpenChange, globalStyles, onUpdate 
                 label="H1 - Main Title (Hero)"
                 value={headings.h1}
                 onChange={(updates) => onUpdate({
-                  headings: { ...headings, h1: { ...headings.h1, ...updates } }
+                  headings: { ...headings, h1: { ...headings.h1, ...removeTypographyColor(updates) } }
                 })}
                 showGlobalStyleSelector={false}
+                showColorControl={false}
               />
 
               {/* H2 */}
@@ -219,9 +297,10 @@ export function GlobalStylesDialog({ open, onOpenChange, globalStyles, onUpdate 
                 label="H2 - Section Headers"
                 value={headings.h2}
                 onChange={(updates) => onUpdate({
-                  headings: { ...headings, h2: { ...headings.h2, ...updates } }
+                  headings: { ...headings, h2: { ...headings.h2, ...removeTypographyColor(updates) } }
                 })}
                 showGlobalStyleSelector={false}
+                showColorControl={false}
               />
 
               {/* H3 */}
@@ -229,9 +308,10 @@ export function GlobalStylesDialog({ open, onOpenChange, globalStyles, onUpdate 
                 label="H3 - Subheaders"
                 value={headings.h3}
                 onChange={(updates) => onUpdate({
-                  headings: { ...headings, h3: { ...headings.h3, ...updates } }
+                  headings: { ...headings, h3: { ...headings.h3, ...removeTypographyColor(updates) } }
                 })}
                 showGlobalStyleSelector={false}
+                showColorControl={false}
               />
 
               {/* H4 */}
@@ -239,9 +319,10 @@ export function GlobalStylesDialog({ open, onOpenChange, globalStyles, onUpdate 
                 label="H4 - Small Headers"
                 value={headings.h4}
                 onChange={(updates) => onUpdate({
-                  headings: { ...headings, h4: { ...headings.h4, ...updates } }
+                  headings: { ...headings, h4: { ...headings.h4, ...removeTypographyColor(updates) } }
                 })}
                 showGlobalStyleSelector={false}
+                showColorControl={false}
               />
 
               {/* H5 */}
@@ -249,9 +330,10 @@ export function GlobalStylesDialog({ open, onOpenChange, globalStyles, onUpdate 
                 label="H5 - Minor Headers"
                 value={headings.h5}
                 onChange={(updates) => onUpdate({
-                  headings: { ...headings, h5: { ...headings.h5, ...updates } }
+                  headings: { ...headings, h5: { ...headings.h5, ...removeTypographyColor(updates) } }
                 })}
                 showGlobalStyleSelector={false}
+                showColorControl={false}
               />
 
               {/* H6 */}
@@ -259,9 +341,10 @@ export function GlobalStylesDialog({ open, onOpenChange, globalStyles, onUpdate 
                 label="H6 - Smallest Headers"
                 value={headings.h6}
                 onChange={(updates) => onUpdate({
-                  headings: { ...headings, h6: { ...headings.h6, ...updates } }
+                  headings: { ...headings, h6: { ...headings.h6, ...removeTypographyColor(updates) } }
                 })}
                 showGlobalStyleSelector={false}
+                showColorControl={false}
               />
 
               {/* Body */}
@@ -269,9 +352,10 @@ export function GlobalStylesDialog({ open, onOpenChange, globalStyles, onUpdate 
                 label="Body Text"
                 value={globalStyles.body}
                 onChange={(updates) => onUpdate({
-                  body: { ...globalStyles.body, ...updates }
+                  body: { ...globalStyles.body, ...removeTypographyColor(updates) }
                 })}
                 showGlobalStyleSelector={false}
+                showColorControl={false}
               />
             </div>
           </TabsContent>
