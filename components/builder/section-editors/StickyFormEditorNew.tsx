@@ -207,22 +207,47 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
       <CollapsibleSection title="Position" open={positionOpen} onToggle={() => setPositionOpen(!positionOpen)}>
         <div className="space-y-3">
           <div className="space-y-2">
-            <Label>Position</Label>
-            <Select value={widget.position || 'bottom-right'} onValueChange={(value: any) => onChange({ position: value })}>
+            <Label>Form Side (Desktop/Tablet)</Label>
+            <Select
+              value={(widget as any).formLayout || 'form-left'}
+              onValueChange={(value: 'form-left' | 'form-right') => onChange({ formLayout: value } as any)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="bottom-right">Bottom Right</SelectItem>
-                <SelectItem value="bottom-left">Bottom Left</SelectItem>
-                <SelectItem value="top-right">Top Right</SelectItem>
-                <SelectItem value="top-left">Top Left</SelectItem>
+                <SelectItem value="form-left">Form on Left</SelectItem>
+                <SelectItem value="form-right">Form on Right</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Offset from Edge: {widget.offset || 20}px</Label>
-            <input type="range" min="10" max="50" value={widget.offset || 20} onChange={(e) => onChange({ offset: parseInt(e.target.value) })} className="w-full" />
+            <Label>Mobile Stack Order</Label>
+            <Select
+              value={(widget as any).mobileStackOrder || 'form-first'}
+              onValueChange={(value: 'form-first' | 'text-first') => onChange({ mobileStackOrder: value } as any)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="form-first">Form First</SelectItem>
+                <SelectItem value="text-first">Text First</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>
+              Sticky Offset (Desktop/Tablet): {((widget as any).stickyOffset ?? (widget as any).offset ?? 20)}px
+            </Label>
+            <input
+              type="range"
+              min="0"
+              max="160"
+              value={((widget as any).stickyOffset ?? (widget as any).offset ?? 20)}
+              onChange={(e) => onChange({ stickyOffset: parseInt(e.target.value, 10) } as any)}
+              className="w-full"
+            />
           </div>
         </div>
       </CollapsibleSection>

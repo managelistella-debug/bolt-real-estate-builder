@@ -21,6 +21,7 @@ export default function DashboardLayout({
   // Check if we're in builder or preview mode (hide sidebar)
   const isBuilderMode = pathname?.includes('/builder');
   const isPreviewMode = pathname?.includes('/preview');
+  const isHeaderEditorMode = pathname?.startsWith('/header-footer');
 
   // Wait for Zustand to rehydrate from localStorage
   useEffect(() => {
@@ -59,8 +60,8 @@ export default function DashboardLayout({
     return null;
   }
 
-  // Full-screen layout for builder and preview modes
-  if (isBuilderMode || isPreviewMode) {
+  // Full-screen layout for editor-focused routes
+  if (isBuilderMode || isPreviewMode || isHeaderEditorMode) {
     return (
       <>
         {children}

@@ -96,4 +96,16 @@
   .animate-slide-in-right {
     animation: slideInRight 0.3s ease-out;
   }
+
+  .land-page {
+    letter-spacing: 0.02em;
+  }
+
+  .land-page button {
+    transition: all 220ms ease;
+  }
+
+  .land-page button:hover {
+    background-color: rgba(247, 238, 224, 0.1);
+  }
 }

@@ -9,7 +9,8 @@ import {
   Users, 
   Images,
   FolderKanban,
-  Settings,
+  MenuSquare,
+  PanelsTopLeft,
   LogOut,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth';
@@ -18,6 +19,8 @@ import { Button } from '@/components/ui/button';
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Pages', href: '/pages', icon: Globe },
+  { name: 'Header & Footer', href: '/header-footer', icon: PanelsTopLeft },
+  { name: 'Navigation', href: '/navigation', icon: MenuSquare },
   { name: 'Collections', href: '/collections', icon: Images },
   { name: 'Leads', href: '/leads', icon: Users },
   { name: 'Templates', href: '/templates', icon: FolderKanban, adminOnly: true },

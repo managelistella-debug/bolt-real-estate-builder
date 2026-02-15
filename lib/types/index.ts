@@ -33,6 +33,7 @@ export interface Page {
   slug: string;
   isHomepage: boolean;
   sections: Section[];
+  headerSettings?: PageHeaderSettings;
   seo: SEOSettings;
   status: 'draft' | 'published';
   createdAt: Date;
@@ -791,6 +792,7 @@ export interface StickyFormWidget {
   // Layout
   formLayout: StickyFormLayout;
   mobileStackOrder: MobileStackOrder;
+  stickyOffset?: number; // px offset from viewport top for sticky form (desktop/tablet)
   
   // Text Content
   heading: string;
@@ -1040,25 +1042,170 @@ export interface TypographyStyle {
 }
 
 // Header and Footer Types
-export type HeaderLayout = 'header-a' | 'header-b' | 'header-c';
+export type HeaderLayout = 'leftLogoRightMenu' | 'centeredLogoSplitMenu' | 'centeredLogoBurger';
+export type LegacyHeaderLayout = 'header-a' | 'header-b' | 'header-c';
 export type FooterLayout = 'footer-a' | 'footer-b' | 'footer-c';
+export type FooterMenuSource = 'headerNavigation' | 'customNavigation';
+
+export type HeaderPositioning = 'aboveFirstSection' | 'overlayFirstSection';
+export type HeaderScrollMode = 'none' | 'color-shift' | 'transparent-to-solid' | 'solid-to-transparent';
+
+export interface HeaderLogoConfig {
+  src?: string;
+  alt?: string;
+  sizes: {
+    mobile: number;
+    tablet: number;
+    desktop: number;
+  };
+}
+
+export interface HeaderBackgroundConfig {
+  initialColor: string;
+  scrolledColor: string;
+  initialOpacity: number; // 0-100
+  scrolledOpacity: number; // 0-100
+}
+
+export interface HeaderLogoScrollConfig {
+  mode: 'none' | 'svg-color' | 'swap-image';
+  scrolledSrc?: string;
+  initialColor?: string;
+  scrolledColor?: string;
+}
+
+export interface HeaderStickyConfig {
+  enabled: boolean;
+  offset: number;
+}
+
+export interface HeaderScrollConfig {
+  mode: HeaderScrollMode;
+  triggerY: number;
+}
+
+export interface HeaderBurgerMenuConfig {
+  panelSide: 'left' | 'right';
+  panelWidth: number;
+  overlayOpacity: number; // 0-100
+  closeOnItemClick: boolean;
+}
+
+export interface HeaderBurgerIconConfig {
+  src?: string;
+  size: number;
+  initialColor?: string;
+  scrolledColor?: string;
+}
+
+export interface HeaderBorderConfig {
+  enabled: boolean;
+  width: number;
+  color: string;
+}
+
+/**
+ * Screenshot-driven visual references:
+ * - leftLogoRightMenu: dark header with left logo block and right nav
+ * - centeredLogoSplitMenu: light header with centered logo and split nav
+ * - centeredLogoBurger: transparent/overlay capable header with centered logo and right burger
+ */
+export const HEADER_LAYOUT_REFERENCE_SPECS: Record<HeaderLayout, { treatment: 'light' | 'dark'; notes: string }> = {
+  leftLogoRightMenu: {
+    treatment: 'dark',
+    notes: 'Left-aligned brand block and right horizontal navigation.',
+  },
+  centeredLogoSplitMenu: {
+    treatment: 'light',
+    notes: 'Centered logo with navigation items distributed evenly on both sides.',
+  },
+  centeredLogoBurger: {
+    treatment: 'dark',
+    notes: 'Centered logo with right burger trigger that opens an overlay menu.',
+  },
+};
 
 export interface HeaderConfig {
-  layout: HeaderLayout;
-  logo?: string;
+  layout: HeaderLayout | LegacyHeaderLayout;
+  logo?: string; // Legacy fallback
+  logoConfig?: HeaderLogoConfig;
+  logoScroll?: HeaderLogoScrollConfig;
   navigation: NavItem[];
+  menuItemTypography?: Partial<TypographyConfig>;
+  menuItemScrolledColor?: string;
+  menuItemGap?: number; // px spacing between desktop menu items
+  height?: {
+    type: 'auto' | 'vh' | 'percentage' | 'pixels';
+    value?: number;
+  };
+  padding?: SpacingValues;
+  margin?: SpacingValues;
+  positioning?: HeaderPositioning;
+  sticky?: HeaderStickyConfig;
+  scroll?: HeaderScrollConfig;
+  background?: HeaderBackgroundConfig;
+  burgerMenu?: HeaderBurgerMenuConfig;
+  burgerIcon?: HeaderBurgerIconConfig;
+  border?: HeaderBorderConfig;
+  presetTheme?: 'light' | 'dark';
   phone?: string;
   email?: string;
 }
 
+export interface PageHeaderSettings {
+  useCustomHeader: boolean;
+  headerOverride?: Partial<HeaderConfig>;
+}
+
+export interface FooterLogoConfig {
+  src?: string;
+  alt?: string;
+  sizes: {
+    mobile: number;
+    tablet: number;
+    desktop: number;
+  };
+}
+
+export interface FooterBackgroundConfig {
+  topColor: string;
+  bottomColor: string;
+  watermarkSvg?: string;
+  watermarkOpacity: number;
+  watermarkSize: number;
+}
+
+export interface FooterLinksConfig {
+  privacyLabel: string;
+  privacyUrl: string;
+  termsLabel: string;
+  termsUrl: string;
+}
+
 export interface FooterConfig {
   layout: FooterLayout;
+  menuSource: FooterMenuSource;
+  logoConfig?: FooterLogoConfig;
   logo?: string;
   navigation: NavItem[];
+  menuItemTypography?: Partial<TypographyConfig>;
+  menuItemGap?: number;
+  contactTypography?: Partial<TypographyConfig>;
+  disclaimerTypography?: Partial<TypographyConfig>;
+  legalTypography?: Partial<TypographyConfig>;
   phone?: string;
   email?: string;
   address?: string;
   socialLinks: SocialLink[];
+  socialIconSize?: number;
+  socialIconGap?: number;
+  socialIconColor?: string;
+  customSocialIconColor?: string;
+  disclaimer?: string;
+  legalLinks?: FooterLinksConfig;
+  background?: FooterBackgroundConfig;
+  padding?: SpacingValues;
+  margin?: SpacingValues;
 }
 
 export interface NavItem {
@@ -1066,12 +1213,18 @@ export interface NavItem {
   label: string;
   url: string;
   order: number;
+  source?: 'page' | 'custom';
+  pageId?: string;
+  openInNewTab?: boolean;
 }
 
 export interface SocialLink {
   id: string;
-  platform: 'facebook' | 'instagram' | 'twitter' | 'linkedin' | 'youtube';
+  platform: 'facebook' | 'instagram' | 'twitter' | 'linkedin' | 'youtube' | 'custom';
   url: string;
+  iconSrc?: string;
+  label?: string;
+  openInNewTab?: boolean;
 }
 
 // Media Types

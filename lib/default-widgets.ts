@@ -305,6 +305,9 @@ export function createDefaultWidget(type: SectionType): any {
     case 'sticky-form':
       return {
         type: 'sticky-form',
+        formLayout: 'form-left',
+        mobileStackOrder: 'form-first',
+        stickyOffset: 20,
         heading: 'Get in Touch',
         formHeading: 'Contact Us',
         description: 'Get a free consultation',
@@ -312,8 +315,6 @@ export function createDefaultWidget(type: SectionType): any {
         nameLabel: 'Name',
         emailLabel: 'Email',
         phoneLabel: 'Phone',
-        position: 'bottom-right',
-        offset: 20,
         // Typography using nested objects (new format)
         headingTypography: {
           fontFamily: 'Inter',

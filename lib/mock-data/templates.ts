@@ -41,6 +41,7 @@ export const mockTemplates: Template[] = [
     },
     defaultFooter: {
       layout: 'footer-a',
+      menuSource: 'customNavigation',
       navigation: [
         { id: 'footer-nav-1', label: 'Privacy Policy', url: '/privacy', order: 1 },
         { id: 'footer-nav-2', label: 'Terms of Service', url: '/terms', order: 2 },
@@ -164,6 +165,7 @@ export const mockTemplates: Template[] = [
     },
     defaultFooter: {
       layout: 'footer-b',
+      menuSource: 'customNavigation',
       navigation: [],
       socialLinks: [],
     },
@@ -240,6 +242,7 @@ export const mockTemplates: Template[] = [
     },
     defaultFooter: {
       layout: 'footer-c',
+      menuSource: 'customNavigation',
       navigation: [],
       socialLinks: [],
     },

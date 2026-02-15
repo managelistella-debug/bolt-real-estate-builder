@@ -12,15 +12,84 @@ interface ImageUploadProps {
   onChange: (url: string) => void;
   label?: string;
   maxSizeMB?: number;
+  preserveOriginal?: boolean;
 }
 
-export function ImageUpload({ value, onChange, label = 'Image', maxSizeMB = 4 }: ImageUploadProps) {
+export function ImageUpload({
+  value,
+  onChange,
+  label = 'Image',
+  maxSizeMB = 4,
+  preserveOriginal = false,
+}: ImageUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  const readFileAsDataUrl = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve((e.target?.result as string) || '');
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const readSvgAsCompactDataUrl = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const rawSvg = (e.target?.result as string) || '';
+        if (!rawSvg) {
+          reject(new Error('Failed to read SVG file'));
+          return;
+        }
+
+        // Lightweight minification to reduce localStorage pressure.
+        const compact = rawSvg
+          .replace(/>\s+</g, '><')
+          .replace(/\s{2,}/g, ' ')
+          .trim();
+
+        resolve(`data:image/svg+xml;utf8,${encodeURIComponent(compact)}`);
+      };
+      reader.onerror = () => reject(new Error('Failed to read SVG file'));
+      reader.readAsText(file);
+    });
+  };
+
+  const isSvgFile = (file: File) =>
+    file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg');
+
   const compressImage = async (file: File): Promise<string> => {
+    // Keep original file data when requested (header logos, SVGs).
+    if (preserveOriginal || isSvgFile(file)) {
+      if (!file.type.startsWith('image/') && !isSvgFile(file)) {
+        throw new Error('Invalid image file type');
+      }
+
+      // For non-SVG files, respect max size when preserving original.
+      if (!isSvgFile(file) && file.size > maxSizeMB * 1024 * 1024) {
+        throw new Error(`Image is too large. Please upload a file smaller than ${maxSizeMB}MB.`);
+      }
+
+      if (isSvgFile(file)) {
+        return readSvgAsCompactDataUrl(file);
+      }
+
+      return readFileAsDataUrl(file);
+    }
+
+    if (file.type === 'image/svg+xml') {
+      return new Promise((resolve, reject) => {
+        const svgReader = new FileReader();
+        svgReader.onload = (e) => resolve((e.target?.result as string) || '');
+        svgReader.onerror = () => reject(new Error('Failed to read SVG file'));
+        svgReader.readAsDataURL(file);
+      });
+    }
+
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -53,15 +122,18 @@ export function ImageUpload({ value, onChange, label = 'Image', maxSizeMB = 4 }:
           canvas.height = height;
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Start with quality 0.7 for aggressive compression (localStorage limits)
+          const preserveTransparency = file.type === 'image/png' || file.type === 'image/webp' || file.type === 'image/gif';
+          const outputType = preserveTransparency ? 'image/png' : 'image/jpeg';
           let quality = 0.7;
-          let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          let compressedDataUrl = preserveTransparency
+            ? canvas.toDataURL(outputType)
+            : canvas.toDataURL(outputType, quality);
 
-          // Keep reducing quality until under 800KB (very conservative for localStorage)
+          // Keep reducing quality until under 800KB for lossy outputs.
           const maxSizeBytes = 800 * 1024;
-          while (compressedDataUrl.length > maxSizeBytes && quality > 0.2) {
+          while (!preserveTransparency && compressedDataUrl.length > maxSizeBytes && quality > 0.2) {
             quality -= 0.05;
-            compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+            compressedDataUrl = canvas.toDataURL(outputType, quality);
           }
 
           // Check if still too large
@@ -82,46 +154,55 @@ export function ImageUpload({ value, onChange, label = 'Image', maxSizeMB = 4 }:
 
   const handleFile = async (file: File) => {
     // Validate file type
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith('image/') && !file.name.toLowerCase().endsWith('.svg')) {
       toast({
         title: 'Invalid file type',
-        description: 'Please upload an image file (jpg, png, gif, webp)',
+        description: 'Please upload an image file (jpg, png, gif, webp, svg)',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Guardrail for oversized uploads regardless of conversion mode.
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      toast({
+        title: 'File too large',
+        description: `Please upload a file smaller than ${maxSizeMB}MB.`,
         variant: 'destructive',
       });
       return;
     }
 
     setIsUploading(true);
+    const keepsOriginalData = preserveOriginal || file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg');
 
     try {
-      // Compress the image
+      // Convert/compress image depending on mode.
       const compressedDataUrl = await compressImage(file);
-      
-      // Calculate compressed size
-      const compressedSizeKB = Math.round((compressedDataUrl.length * 3) / 4 / 1024);
       const originalSizeKB = Math.round(file.size / 1024);
-      
-      console.log('Image compressed successfully:', {
-        originalSize: originalSizeKB,
-        compressedSize: compressedSizeKB,
-        dataUrlLength: compressedDataUrl.length
+
+      // Yield once so the UI can paint before we set large data URLs.
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
       });
-      
+
       onChange(compressedDataUrl);
-      setIsUploading(false);
       
       toast({
         title: 'Image uploaded successfully',
-        description: `Compressed from ${originalSizeKB} KB to ${compressedSizeKB} KB`,
+        description: keepsOriginalData
+          ? `Uploaded original file (${originalSizeKB} KB)`
+          : 'Image optimized and uploaded successfully',
       });
     } catch (error) {
       console.error('Image upload failed:', error);
-      setIsUploading(false);
       toast({
         title: 'Upload failed',
         description: error instanceof Error ? error.message : 'An error occurred while uploading',
         variant: 'destructive',
       });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -182,7 +263,7 @@ export function ImageUpload({ value, onChange, label = 'Image', maxSizeMB = 4 }:
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/svg+xml"
             onChange={handleFileInputChange}
             className="hidden"
           />
@@ -190,10 +271,10 @@ export function ImageUpload({ value, onChange, label = 'Image', maxSizeMB = 4 }:
           <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           
           <p className="text-sm font-medium mb-1">
-            {isUploading ? 'Compressing & uploading...' : 'Drop your image here, or click to browse'}
+            {isUploading ? (preserveOriginal ? 'Uploading...' : 'Compressing & uploading...') : 'Drop your image here, or click to browse'}
           </p>
           <p className="text-xs text-muted-foreground">
-            Supports JPG, PNG, GIF, WebP (will be compressed for web)
+            Supports JPG, PNG, GIF, WebP, SVG (optimized for web)
           </p>
         </div>
       ) : (
@@ -227,3 +308,6 @@ export function ImageUpload({ value, onChange, label = 'Image', maxSizeMB = 4 }:
     </div>
   );
 }
+
+// Backward-compatible default export for legacy editors.
+export default ImageUpload;

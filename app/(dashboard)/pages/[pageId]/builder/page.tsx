@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { useAuthStore } from '@/lib/stores/auth';
@@ -16,9 +17,11 @@ import { Section, SectionType, GlobalStyles } from '@/lib/types';
 import { createDefaultWidget } from '@/lib/default-widgets';
 import Link from 'next/link';
 import { useToast } from '@/components/ui/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function PageBuilderPage({ params }: { params: { pageId: string } }) {
   const { pageId } = params;
+  const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuthStore();
   
@@ -26,12 +29,36 @@ export default function PageBuilderPage({ params }: { params: { pageId: string }
   const { setCurrentPage, selectedSectionId, selectSection, showLayersPanel, setShowLayersPanel } = useBuilderStore();
   const [isSaving, setIsSaving] = useState(false);
   const [showGlobalStyles, setShowGlobalStyles] = useState(false);
+  const [showHeaderActions, setShowHeaderActions] = useState(false);
 
   useEffect(() => {
     if (user) {
       initializeUserWebsite(user.id);
     }
   }, [user, initializeUserWebsite]);
+
+  useEffect(() => {
+    const rehydrateStore = () => {
+      (useWebsiteStore as any).persist?.rehydrate?.();
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        rehydrateStore();
+      }
+    };
+
+    rehydrateStore();
+    window.addEventListener('focus', rehydrateStore);
+    window.addEventListener('storage', rehydrateStore);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', rehydrateStore);
+      window.removeEventListener('storage', rehydrateStore);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, []);
 
   useEffect(() => {
     if (pageId) {
@@ -69,9 +96,22 @@ export default function PageBuilderPage({ params }: { params: { pageId: string }
   };
 
   const handlePreview = () => {
-    // Open preview in new tab
-    const previewUrl = `/pages/${pageId}/preview`;
-    window.open(previewUrl, '_blank');
+    router.push(`/pages/${pageId}/preview`);
+  };
+
+  const goToGlobalHeaderEditor = () => {
+    setShowHeaderActions(false);
+    router.push('/header-footer');
+  };
+
+  const goToPageHeaderEditor = () => {
+    setShowHeaderActions(false);
+    router.push(`/header-footer?target=${pageId}`);
+  };
+
+  const goToNavigationEditor = () => {
+    setShowHeaderActions(false);
+    router.push('/navigation');
   };
 
   const addSection = (type: string) => {
@@ -120,6 +160,9 @@ export default function PageBuilderPage({ params }: { params: { pageId: string }
           <div>
             <h1 className="font-semibold text-sm">{currentPage.name}</h1>
             <p className="text-xs text-muted-foreground">{currentPage.slug}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Header source: {currentPage.headerSettings?.useCustomHeader ? 'Custom (page)' : 'Global'}
+            </p>
           </div>
         </div>
 
@@ -133,6 +176,9 @@ export default function PageBuilderPage({ params }: { params: { pageId: string }
           >
             <Palette className="h-4 w-4 mr-2" />
             Global Styles
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setShowHeaderActions(true)}>
+            Edit Header
           </Button>
           <Button
             variant="ghost"
@@ -172,6 +218,7 @@ export default function PageBuilderPage({ params }: { params: { pageId: string }
           <LivePreview 
             page={currentPage}
             website={website}
+            onHeaderClick={() => setShowHeaderActions(true)}
           />
         </div>
 
@@ -192,6 +239,26 @@ export default function PageBuilderPage({ params }: { params: { pageId: string }
         globalStyles={website.globalStyles}
         onUpdate={handleUpdateGlobalStyles}
       />
+
+      <Dialog open={showHeaderActions} onOpenChange={setShowHeaderActions}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Header</DialogTitle>
+            <DialogDescription>
+              Choose whether to edit the global header or this page&apos;s custom header override.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-between gap-2">
+            <Button variant="outline" onClick={goToNavigationEditor}>
+              Go to Navigation
+            </Button>
+            <Button variant="outline" onClick={goToGlobalHeaderEditor}>
+              Edit Global Header
+            </Button>
+            <Button onClick={goToPageHeaderEditor}>Edit This Page Header</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

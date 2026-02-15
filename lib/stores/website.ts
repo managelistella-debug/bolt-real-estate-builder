@@ -1,6 +1,8 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { Website, Page, Section } from '@/lib/types';
+import { getDefaultHeaderConfig, normalizeHeaderConfig } from '@/lib/header-config';
+import { getDefaultFooterConfig, normalizeFooterConfig } from '@/lib/footer-config';
 
 interface WebsiteState {
   currentWebsite: Website | null;
@@ -15,6 +17,18 @@ interface WebsiteState {
   duplicatePage: (pageId: string) => void;
   setHomepage: (pageId: string) => void;
 }
+
+const normalizePageData = (page: Page): Page => ({
+  ...page,
+  headerSettings: page.headerSettings || { useCustomHeader: false },
+});
+
+const normalizeWebsiteData = (website: Website): Website => ({
+  ...website,
+  header: normalizeHeaderConfig(website.header),
+  footer: normalizeFooterConfig(website.footer),
+  pages: website.pages.map(normalizePageData),
+});
 
 export const useWebsiteStore = create<WebsiteState>()(
   persist(
@@ -39,6 +53,9 @@ export const useWebsiteStore = create<WebsiteState>()(
         slug: '/',
         isHomepage: true,
         sections: [],
+        headerSettings: {
+          useCustomHeader: false,
+        },
         seo: {
           metaTitle: 'Home',
           metaDescription: 'Welcome to my website',
@@ -78,34 +95,35 @@ export const useWebsiteStore = create<WebsiteState>()(
           },
           body: { fontSize: '1rem', fontWeight: '400', lineHeight: '1.6' },
         },
-        header: {
-          layout: 'header-a',
-          navigation: [],
-        },
-        footer: {
-          layout: 'footer-a',
-          navigation: [],
-          socialLinks: [],
-        },
+        header: getDefaultHeaderConfig(),
+        footer: getDefaultFooterConfig(),
         pages: [defaultHomePage],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      set({ websites: [defaultWebsite], currentWebsite: defaultWebsite });
+      const normalizedWebsite = normalizeWebsiteData(defaultWebsite);
+      set({ websites: [normalizedWebsite], currentWebsite: normalizedWebsite });
     }
   },
   
   setCurrentWebsite: (website) => {
-    set({ currentWebsite: website });
+    set({ currentWebsite: normalizeWebsiteData(website) });
   },
   
   updateWebsite: (websiteId, updates) => {
+    const normalizedUpdates: Partial<Website> = { ...updates };
+    if (updates.header) {
+      normalizedUpdates.header = normalizeHeaderConfig(updates.header);
+    }
+    if (updates.footer) {
+      normalizedUpdates.footer = normalizeFooterConfig(updates.footer);
+    }
     set((state) => ({
       websites: state.websites.map(w =>
-        w.id === websiteId ? { ...w, ...updates, updatedAt: new Date() } : w
+        w.id === websiteId ? normalizeWebsiteData({ ...w, ...normalizedUpdates, updatedAt: new Date() }) : w
       ),
       currentWebsite: state.currentWebsite?.id === websiteId
-        ? { ...state.currentWebsite, ...updates, updatedAt: new Date() }
+        ? normalizeWebsiteData({ ...state.currentWebsite, ...normalizedUpdates, updatedAt: new Date() })
         : state.currentWebsite,
     }));
   },
@@ -117,7 +135,7 @@ export const useWebsiteStore = create<WebsiteState>()(
       
       const updatedWebsite = {
         ...website,
-        pages: [...website.pages, page],
+        pages: [...website.pages, normalizePageData(page)],
         updatedAt: new Date(),
       };
       
@@ -136,7 +154,7 @@ export const useWebsiteStore = create<WebsiteState>()(
       const updatedWebsite = {
         ...website,
         pages: website.pages.map(p =>
-          p.id === pageId ? { ...p, ...updates, updatedAt: new Date() } : p
+          p.id === pageId ? normalizePageData({ ...p, ...updates, updatedAt: new Date() }) : p
         ),
         updatedAt: new Date(),
       };
@@ -180,6 +198,7 @@ export const useWebsiteStore = create<WebsiteState>()(
         name: `${pageToDuplicate.name} (Copy)`,
         slug: `${pageToDuplicate.slug}-copy`,
         isHomepage: false,
+        headerSettings: pageToDuplicate.headerSettings || { useCustomHeader: false },
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -221,6 +240,22 @@ export const useWebsiteStore = create<WebsiteState>()(
     {
       name: 'website-storage',
       version: 1,
+      storage: createJSONStorage(() => ({
+        getItem: (name) => localStorage.getItem(name),
+        setItem: (name, value) => {
+          try {
+            localStorage.setItem(name, value);
+          } catch (error) {
+            // Prevent quota exceptions from crashing the UI.
+            console.error('Failed to persist website state:', error);
+          }
+        },
+        removeItem: (name) => localStorage.removeItem(name),
+      })),
+      // Avoid persisting duplicated website payloads; currentWebsite is derivable.
+      partialize: (state) => ({
+        websites: state.websites,
+      }),
     }
   )
 );

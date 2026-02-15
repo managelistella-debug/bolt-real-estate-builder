@@ -23,6 +23,29 @@ export default function PreviewPage({ params }: { params: { pageId: string } }) 
     }
   }, [user, initializeUserWebsite, setDeviceView]);
 
+  useEffect(() => {
+    const rehydrateStore = () => {
+      (useWebsiteStore as any).persist?.rehydrate?.();
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        rehydrateStore();
+      }
+    };
+
+    rehydrateStore();
+    window.addEventListener('focus', rehydrateStore);
+    window.addEventListener('storage', rehydrateStore);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', rehydrateStore);
+      window.removeEventListener('storage', rehydrateStore);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, []);
+
   // Show loading while authentication is being checked
   if (!isAuthenticated || !user) {
     return (
@@ -53,33 +76,31 @@ export default function PreviewPage({ params }: { params: { pageId: string } }) 
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Preview Header */}
-      <div className="bg-white border-b sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-white relative">
+      {/* Floating Preview Controls */}
+      <div className="fixed bottom-4 left-4 z-[100]">
+        <div className="rounded-md border bg-white/95 backdrop-blur px-3 py-2 shadow-sm">
+          <div className="flex items-center gap-2">
             <Link href={`/pages/${pageId}/builder`}>
               <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Editor
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Back
               </Button>
             </Link>
-            <div className="h-6 w-px bg-border" />
-            <div>
-              <h1 className="font-semibold text-sm">{currentPage.name}</h1>
-              <p className="text-xs text-muted-foreground">Preview Mode</p>
-            </div>
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {currentPage.status === 'published' ? '🟢 Published' : '🟡 Draft'}
+            <span className="text-xs font-medium text-muted-foreground">
+              {currentPage.name} Preview
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Preview Content - Full Width, No Padding */}
-      <div className="w-full bg-white">
-        <LivePreview page={currentPage} website={website} />
-      </div>
+      {/* Full-screen Website Preview */}
+      <LivePreview
+        page={currentPage}
+        website={website}
+        fullscreen
+        allowSectionSelection={false}
+      />
     </div>
   );
 }

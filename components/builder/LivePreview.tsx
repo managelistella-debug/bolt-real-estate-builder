@@ -40,10 +40,18 @@ import { Lightbox } from './Lightbox';
 import { getIcon } from '@/lib/icons/iconLibrary';
 import { ChevronRight, ChevronLeft, ChevronDown, Plus, Minus, ArrowRight, Star } from 'lucide-react';
 import { typographyToCSS, buttonToCSS, getButtonWidthStyle, fontSizeToCSS, getInnerBorderRadius } from '@/lib/typography-utils';
+import { resolvePageHeaderConfig } from '@/lib/header-config';
+import { SiteHeader } from '@/components/site-header/SiteHeader';
+import { SiteFooter } from '@/components/site-footer/SiteFooter';
+import { normalizeFooterConfig } from '@/lib/footer-config';
 
 interface LivePreviewProps {
   page: Page;
   website: Website;
+  onHeaderClick?: () => void;
+  allowSectionSelection?: boolean;
+  showScrollBackdrop?: boolean;
+  fullscreen?: boolean;
 }
 
 /**
@@ -226,49 +234,51 @@ function colorWithOpacity(color: string | undefined, opacityPercent: number): st
   return `color-mix(in srgb, ${color} ${opacityPercent}%, transparent)`;
 }
 
-export function LivePreview({ page, website }: LivePreviewProps) {
+export function LivePreview({
+  page,
+  website,
+  onHeaderClick,
+  allowSectionSelection = true,
+  showScrollBackdrop = false,
+  fullscreen = false,
+}: LivePreviewProps) {
   const { deviceView, selectedSectionId, selectSection } = useBuilderStore();
   const globalColorVars = getGlobalColorCssVars(website.globalStyles);
+  const effectiveHeader = resolvePageHeaderConfig(page, website.header);
+  const effectiveFooter = normalizeFooterConfig(website.footer);
+  const isOverlayHeader = effectiveHeader.positioning === 'overlayFirstSection';
 
   const containerClass = cn(
-    'mx-auto bg-white min-h-full transition-all duration-300',
-    deviceView === 'mobile' && 'max-w-[375px]',
-    deviceView === 'tablet' && 'max-w-[768px]',
-    deviceView === 'desktop' && 'w-full'
+    'mx-auto bg-white min-h-full transition-all duration-300 relative',
+    fullscreen ? 'w-full min-h-screen' : deviceView === 'mobile' && 'max-w-[375px]',
+    !fullscreen && deviceView === 'tablet' && 'max-w-[768px]',
+    !fullscreen && deviceView === 'desktop' && 'w-full'
   );
 
   return (
-    <div className="p-8">
+    <div className={fullscreen ? '' : 'p-8'}>
       <div className={containerClass} style={globalColorVars}>
         {/* Header */}
-        <header className="border-b py-4 px-6">
-          <div className="flex items-center justify-between">
-            <div className="font-bold text-xl" style={{ color: website.globalStyles.colors.primary }}>
-              {website.header.logo ? (
-                <img src={website.header.logo} alt="Logo" className="h-8" />
-              ) : (
-                website.name
-              )}
-            </div>
-            <nav className="flex gap-4">
-              {website.header.navigation.map((item) => (
-                <a key={item.id} href={item.url} className="text-sm hover:underline">
-                  {item.label}
-                </a>
-              ))}
-            </nav>
-          </div>
-        </header>
+        <SiteHeader
+          websiteName={website.name}
+          header={effectiveHeader}
+          globalStyles={website.globalStyles}
+          deviceView={deviceView}
+          clickable={Boolean(onHeaderClick)}
+          onClick={onHeaderClick}
+          overlay={isOverlayHeader}
+          className={isOverlayHeader ? 'left-0 top-0 right-0 border-b-0' : undefined}
+        />
 
         {/* Sections */}
-        <main>
+        <main className={isOverlayHeader ? '' : ''}>
           {page.sections.map((section) => (
             <div
               key={section.id}
-              onClick={() => selectSection(section.id)}
+              onClick={allowSectionSelection ? () => selectSection(section.id) : undefined}
               className={cn(
-                'transition-all cursor-pointer hover:ring-1 hover:ring-gray-300 hover:ring-inset',
-                selectedSectionId === section.id && 'ring-2 ring-primary ring-inset'
+                allowSectionSelection && 'transition-all cursor-pointer hover:ring-1 hover:ring-gray-300 hover:ring-inset',
+                allowSectionSelection && selectedSectionId === section.id && 'ring-2 ring-primary ring-inset'
               )}
             >
               {section.type === 'hero' && (
@@ -327,25 +337,18 @@ export function LivePreview({ page, website }: LivePreviewProps) {
               )}
             </div>
           ))}
+          {showScrollBackdrop && <div className="h-[150vh] bg-gray-200" />}
         </main>
 
         {/* Footer */}
-        <footer className="border-t py-8 px-6 bg-gray-50 mt-12">
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              © {new Date().getFullYear()} {website.name}. All rights reserved.
-            </p>
-            {website.footer.navigation.length > 0 && (
-              <div className="flex justify-center gap-4 mt-4">
-                {website.footer.navigation.map((item) => (
-                  <a key={item.id} href={item.url} className="text-sm text-gray-600 hover:underline">
-                    {item.label}
-                  </a>
-                ))}
-              </div>
-            )}
-          </div>
-        </footer>
+        <SiteFooter
+          websiteName={website.name}
+          footer={effectiveFooter}
+          headerNavigation={effectiveHeader.navigation}
+          globalStyles={website.globalStyles}
+          deviceView={deviceView}
+          className="mt-12"
+        />
       </div>
     </div>
   );
@@ -4007,9 +4010,11 @@ function StickyFormSection({ widget, globalStyles }: { widget: StickyFormWidget;
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const isMobile = deviceView === 'mobile';
 
   const formLayout = widget.formLayout || 'form-left';
   const mobileStackOrder = widget.mobileStackOrder || 'form-first';
+  const stickyOffset = (widget as any).stickyOffset ?? (widget as any).offset ?? 20;
   
   // Helper to convert fontSize to CSS
   const getFontSize = (fontSize: any, fallback: string) => {
@@ -4203,9 +4208,9 @@ function StickyFormSection({ widget, globalStyles }: { widget: StickyFormWidget;
         borderRadius: formBoxed ? `${formBoxBorderRadius}px` : '0',
         padding: formBoxed ? `${formBoxPadding}px` : '0',
         boxShadow: formBoxed && formBoxShadow ? '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' : 'none',
-        ...(deviceView !== 'mobile' && { 
+        ...(!isMobile && {
           position: 'sticky', 
-          top: '20px',
+          top: `${stickyOffset}px`,
           alignSelf: 'start',
           height: 'fit-content',
         }),
@@ -4386,7 +4391,7 @@ function StickyFormSection({ widget, globalStyles }: { widget: StickyFormWidget;
 
   return (
     <div
-      className="relative overflow-hidden"
+      className="relative"
       style={{
         ...getBackgroundStyle(),
         paddingTop: `${layoutConfig.paddingTop || 80}px`,
