@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Section } from '@/lib/types';
 
-type DeviceView = 'mobile' | 'tablet' | 'desktop';
+export type DeviceView = 'mobile' | 'tablet' | 'desktop';
 
 interface LayersPanelPosition {
   x: number;

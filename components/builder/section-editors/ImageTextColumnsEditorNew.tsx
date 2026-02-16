@@ -18,6 +18,10 @@ import { SectionEditorTabs } from '../SectionEditorTabs';
 import { cn } from '@/lib/utils';
 import { TypographyControl } from '../controls/TypographyControl';
 import { useWebsiteStore } from '@/lib/stores/website';
+import { useBuilderStore } from '@/lib/stores/builder';
+import { resolveResponsiveValue, updateResponsiveValue } from '@/lib/responsive';
+import { ResponsiveControlShell } from '../controls/ResponsiveControlShell';
+import { ResponsiveDevicePicker } from '../controls/ResponsiveControlShell';
 
 interface ImageTextColumnsEditorNewProps {
   widget: ImageTextColumnsWidget;
@@ -26,9 +30,10 @@ interface ImageTextColumnsEditorNewProps {
 
 export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumnsEditorNewProps) {
   const { website } = useWebsiteStore();
+  const { deviceView } = useBuilderStore();
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
-  const [sectionHeaderOpen, setSectionHeaderOpen] = useState(false);
-  const [columnItemsOpen, setColumnItemsOpen] = useState(true);
+  const [sectionHeaderOpen, setSectionHeaderOpen] = useState(true);
+  const [columnItemsOpen, setColumnItemsOpen] = useState(false);
 
   // Helper functions to get typography configs
   const getSectionHeaderTypography = (): TypographyConfig => {
@@ -82,6 +87,12 @@ export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumns
     opacity: 100,
     blur: 0,
   };
+  const columnsResponsive = widget.columnsResponsive || {
+    desktop: widget.desktopColumns || 3,
+    tablet: widget.tabletColumns || 2,
+    mobile: widget.mobileColumns || 1,
+  };
+  const activeColumns = resolveResponsiveValue<number>(columnsResponsive, deviceView, widget.desktopColumns || 3);
 
   const updateLayout = (updates: Partial<LayoutConfig>) => {
     onChange({ layout: { ...layoutConfig, ...updates } });
@@ -97,6 +108,8 @@ export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumns
       image: '',
       subtitle: 'New Column',
       description: 'Add your description here.',
+      buttonText: '',
+      buttonUrl: '',
       order: (widget.items || []).length,
     };
     onChange({ items: [...(widget.items || []), newItem] });
@@ -147,11 +160,13 @@ export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumns
     title, 
     open, 
     onToggle, 
+    showBreakpointIcon = false,
     children 
   }: { 
     title: string; 
     open: boolean; 
     onToggle: () => void; 
+    showBreakpointIcon?: boolean;
     children: React.ReactNode;
   }) => (
     <div className="border rounded-lg">
@@ -160,7 +175,14 @@ export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumns
         className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
         onClick={onToggle}
       >
-        <span className="font-medium text-sm">{title}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-sm">{title}</span>
+          {showBreakpointIcon && (
+            <div onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+              <ResponsiveDevicePicker className="h-6 w-6" />
+            </div>
+          )}
+        </div>
         {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
       </button>
       {open && (
@@ -296,6 +318,27 @@ export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumns
                       maxSizeMB={1}
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`buttonText-${item.id}`}>Button Text (Optional)</Label>
+                    <Input
+                      id={`buttonText-${item.id}`}
+                      value={item.buttonText || ''}
+                      onChange={(e) => updateItem(item.id, { buttonText: e.target.value })}
+                      placeholder="Learn more"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`buttonUrl-${item.id}`}>Button Link URL (Optional)</Label>
+                    <Input
+                      id={`buttonUrl-${item.id}`}
+                      value={item.buttonUrl || ''}
+                      onChange={(e) => updateItem(item.id, { buttonUrl: e.target.value })}
+                      placeholder="/services"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Button only displays when a link URL is provided.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -315,38 +358,47 @@ export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumns
       <div className="border rounded-lg p-3 space-y-3">
         <h4 className="font-medium text-sm">Column Layout</h4>
         <div className="space-y-2">
-          <Label htmlFor="desktopColumns">Desktop Columns (1-4)</Label>
+          <Label htmlFor="layoutStyle">Content Layout</Label>
+          <Select
+            value={widget.layoutStyle || 'text-below'}
+            onValueChange={(value: 'text-below' | 'text-overlay') =>
+              onChange(
+                value === 'text-overlay'
+                  ? { layoutStyle: value, textAlign: 'center' }
+                  : { layoutStyle: value }
+              )
+            }
+          >
+            <SelectTrigger id="layoutStyle">
+              <SelectValue placeholder="Select layout" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="text-below">Text Under Image</SelectItem>
+              <SelectItem value="text-overlay">Text Overlay (Centered)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <ResponsiveControlShell
+          label="Columns"
+          hasOverride={!!columnsResponsive.tablet || !!columnsResponsive.mobile}
+        >
           <Input
-            id="desktopColumns"
+            id="responsiveColumns"
             type="number"
             min={1}
             max={4}
-            value={widget.desktopColumns || 3}
-            onChange={(e) => onChange({ desktopColumns: parseInt(e.target.value) })}
+            value={activeColumns}
+            onChange={(e) => {
+              const value = parseInt(e.target.value);
+              onChange({
+                desktopColumns: deviceView === 'desktop' ? value : widget.desktopColumns,
+                tabletColumns: deviceView === 'tablet' ? value : widget.tabletColumns,
+                mobileColumns: deviceView === 'mobile' ? value : widget.mobileColumns,
+                columnsResponsive: updateResponsiveValue(columnsResponsive, deviceView, value),
+              });
+            }}
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="tabletColumns">Tablet Columns (1-3)</Label>
-          <Input
-            id="tabletColumns"
-            type="number"
-            min={1}
-            max={3}
-            value={widget.tabletColumns || 2}
-            onChange={(e) => onChange({ tabletColumns: parseInt(e.target.value) })}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="mobileColumns">Mobile Columns (1-2)</Label>
-          <Input
-            id="mobileColumns"
-            type="number"
-            min={1}
-            max={2}
-            value={widget.mobileColumns || 1}
-            onChange={(e) => onChange({ mobileColumns: parseInt(e.target.value) })}
-          />
-        </div>
+        </ResponsiveControlShell>
         <div className="space-y-2">
           <Label htmlFor="gap">Gap Between Columns (px)</Label>
           <Input
@@ -444,23 +496,66 @@ export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumns
             onChange={(e) => onChange({ imageBorderRadius: parseInt(e.target.value) })}
           />
         </div>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="showImageBorder">Show Image Border</Label>
+          <Switch
+            id="showImageBorder"
+            checked={widget.showImageBorder ?? false}
+            onCheckedChange={(checked) => onChange({ showImageBorder: checked })}
+          />
+        </div>
+        {(widget.showImageBorder ?? false) && (
+          <>
+            <div className="space-y-2">
+              <Label>Image Border Color</Label>
+              {renderColorPicker(widget.imageBorderColor, (color) => onChange({ imageBorderColor: color }), '#e5e7eb')}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="imageBorderWidth">Image Border Width (px)</Label>
+              <Input
+                id="imageBorderWidth"
+                type="number"
+                min={1}
+                max={10}
+                value={widget.imageBorderWidth ?? 1}
+                onChange={(e) => onChange({ imageBorderWidth: parseInt(e.target.value) })}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       {/* Text Alignment */}
       <div className="border rounded-lg p-3 space-y-3">
         <h4 className="font-medium text-sm">Text Alignment</h4>
-        <div className="flex gap-2">
-          {getAlignmentButton('left', <AlignLeft className="h-4 w-4" />)}
-          {getAlignmentButton('center', <AlignCenter className="h-4 w-4" />)}
-          {getAlignmentButton('right', <AlignRight className="h-4 w-4" />)}
-        </div>
+        {widget.layoutStyle === 'text-overlay' ? (
+          <p className="text-sm text-muted-foreground">
+            Overlay layout is centered horizontally and vertically.
+          </p>
+        ) : (
+          <div className="flex gap-2">
+            {getAlignmentButton('left', <AlignLeft className="h-4 w-4" />)}
+            {getAlignmentButton('center', <AlignCenter className="h-4 w-4" />)}
+            {getAlignmentButton('right', <AlignRight className="h-4 w-4" />)}
+          </div>
+        )}
       </div>
 
       {/* Section Header Typography (optional) */}
       {widget.sectionHeading && (
         <TypographyControl
           label="Section Header Typography"
+          defaultOpen={true}
           value={getSectionHeaderTypography()}
+          responsiveFontSize={(getSectionHeaderTypography() as any).fontSizeResponsive}
+          onResponsiveFontSizeChange={(next) => {
+            onChange({
+              sectionHeaderTypography: {
+                ...getSectionHeaderTypography(),
+                fontSizeResponsive: next,
+              } as any,
+            });
+          }}
           onChange={(updates) => {
             onChange({
               sectionHeaderTypography: {
@@ -478,7 +573,17 @@ export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumns
       {/* Subtitle Typography */}
       <TypographyControl
         label="Subtitle Typography"
+        defaultOpen={false}
         value={getSubtitleTypography()}
+        responsiveFontSize={(getSubtitleTypography() as any).fontSizeResponsive}
+        onResponsiveFontSizeChange={(next) => {
+          onChange({
+            subtitleTypography: {
+              ...getSubtitleTypography(),
+              fontSizeResponsive: next,
+            } as any,
+          });
+        }}
         onChange={(updates) => {
           onChange({
             subtitleTypography: {
@@ -495,7 +600,17 @@ export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumns
       {/* Description Typography */}
       <TypographyControl
         label="Description Typography"
+        defaultOpen={false}
         value={getDescriptionTypography()}
+        responsiveFontSize={(getDescriptionTypography() as any).fontSizeResponsive}
+        onResponsiveFontSizeChange={(next) => {
+          onChange({
+            descriptionTypography: {
+              ...getDescriptionTypography(),
+              fontSizeResponsive: next,
+            } as any,
+          });
+        }}
         onChange={(updates) => {
           onChange({
             descriptionTypography: {
@@ -520,11 +635,9 @@ export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumns
   return (
     <SectionEditorTabs
       sectionType="multi-column"
-      tabs={{
-        content: contentTab,
-        layout: layoutTab,
-        style: styleTab,
-      }}
+      contentTab={contentTab}
+      layoutTab={layoutTab}
+      styleTab={styleTab}
     />
   );
 }

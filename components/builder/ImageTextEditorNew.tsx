@@ -15,6 +15,9 @@ import { ButtonControl } from './controls/ButtonControl';
 import { GlobalColorInput } from './controls/GlobalColorInput';
 import { useDebouncedInput } from './hooks/useDebouncedInput';
 import { useWebsiteStore } from '@/lib/stores/website';
+import { useBuilderStore } from '@/lib/stores/builder';
+import { resolveResponsiveValue, updateResponsiveValue } from '@/lib/responsive';
+import { ResponsiveDevicePicker } from './controls/ResponsiveControlShell';
 
 interface ImageTextEditorNewProps {
   widget: ImageTextWidget;
@@ -23,7 +26,18 @@ interface ImageTextEditorNewProps {
 
 export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps) {
   const { currentWebsite } = useWebsiteStore();
+  const { deviceView } = useBuilderStore();
   const globalStyles = currentWebsite?.globalStyles;
+  const activeTextAlign = resolveResponsiveValue<'left' | 'center' | 'right'>(
+    widget.textAlignResponsive,
+    deviceView,
+    widget.textAlign || 'left',
+  );
+  const activeMobileLayout = resolveResponsiveValue<'stacked-image-top' | 'stacked-image-bottom' | 'horizontal'>(
+    widget.mobileLayoutResponsive,
+    deviceView,
+    widget.mobileLayout || 'stacked-image-top',
+  );
 
   // Migration: Initialize widget.button from old structure
   useEffect(() => {
@@ -78,7 +92,7 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
     (value) => onChange({ cta: { ...widget.cta, url: value } })
   );
 
-  const [backgroundOpen, setBackgroundOpen] = useState(false);
+  const [backgroundOpen, setBackgroundOpen] = useState(true);
   const [imageStyleOpen, setImageStyleOpen] = useState(false);
 
   const CollapsibleSection = ({ 
@@ -330,7 +344,10 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
   const layoutTab = (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label>Layout</Label>
+        <div className="flex items-center gap-2">
+          <Label>Layout</Label>
+          <ResponsiveDevicePicker className="h-6 w-6" />
+        </div>
         <Select
           value={widget.layout}
           onValueChange={(value: 'image-left' | 'image-right') => onChange({ layout: value })}
@@ -346,10 +363,16 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
       </div>
 
       <div className="space-y-2">
-        <Label>Mobile Layout</Label>
+        <div className="flex items-center gap-2">
+          <Label>Mobile Layout</Label>
+          <ResponsiveDevicePicker className="h-6 w-6" />
+        </div>
         <Select
-          value={widget.mobileLayout || 'stacked-image-top'}
-          onValueChange={(value: 'stacked-image-top' | 'stacked-image-bottom' | 'horizontal') => onChange({ mobileLayout: value })}
+          value={activeMobileLayout}
+          onValueChange={(value: 'stacked-image-top' | 'stacked-image-bottom' | 'horizontal') => onChange({
+            mobileLayout: deviceView === 'desktop' ? value : widget.mobileLayout,
+            mobileLayoutResponsive: updateResponsiveValue(widget.mobileLayoutResponsive, deviceView, value),
+          })}
         >
           <SelectTrigger>
             <SelectValue />
@@ -363,7 +386,10 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
       </div>
 
       <div className="space-y-2">
-        <Label>Image Height</Label>
+        <div className="flex items-center gap-2">
+          <Label>Image Height</Label>
+          <ResponsiveDevicePicker className="h-6 w-6" />
+        </div>
         <div className="flex gap-2">
           <Select
             value={widget.imageHeight?.type || 'auto'}
@@ -394,7 +420,10 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
       </div>
 
       <div className="space-y-2">
-        <Label>Padding (px)</Label>
+        <div className="flex items-center gap-2">
+          <Label>Padding (px)</Label>
+          <ResponsiveDevicePicker className="h-6 w-6" />
+        </div>
         <div className="grid grid-cols-2 gap-2">
           <Input
             type="number"
@@ -432,28 +461,40 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
       </div>
 
       <div className="space-y-2">
-        <Label>Text Horizontal Alignment</Label>
+        <div className="flex items-center gap-2">
+          <Label>Text Horizontal Alignment</Label>
+          <ResponsiveDevicePicker className="h-6 w-6" />
+        </div>
         <div className="grid grid-cols-3 gap-2">
           <Button
-            variant={widget.textAlign === 'left' ? 'default' : 'outline'}
+            variant={activeTextAlign === 'left' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => onChange({ textAlign: 'left' })}
+            onClick={() => onChange({
+              textAlign: deviceView === 'desktop' ? 'left' : widget.textAlign,
+              textAlignResponsive: updateResponsiveValue(widget.textAlignResponsive, deviceView, 'left'),
+            })}
             className="w-full"
           >
             <AlignLeft className="h-4 w-4" />
           </Button>
           <Button
-            variant={(widget.textAlign || 'left') === 'center' ? 'default' : 'outline'}
+            variant={activeTextAlign === 'center' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => onChange({ textAlign: 'center' })}
+            onClick={() => onChange({
+              textAlign: deviceView === 'desktop' ? 'center' : widget.textAlign,
+              textAlignResponsive: updateResponsiveValue(widget.textAlignResponsive, deviceView, 'center'),
+            })}
             className="w-full"
           >
             <AlignCenter className="h-4 w-4" />
           </Button>
           <Button
-            variant={widget.textAlign === 'right' ? 'default' : 'outline'}
+            variant={activeTextAlign === 'right' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => onChange({ textAlign: 'right' })}
+            onClick={() => onChange({
+              textAlign: deviceView === 'desktop' ? 'right' : widget.textAlign,
+              textAlignResponsive: updateResponsiveValue(widget.textAlignResponsive, deviceView, 'right'),
+            })}
             className="w-full"
           >
             <AlignRight className="h-4 w-4" />
@@ -500,7 +541,10 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
       {widget.title && (
         <TypographyControl
           label="Title Typography"
+          defaultOpen={true}
           value={getTitleTypography()}
+          responsiveFontSize={(widget as any).titleFontSizeResponsive}
+          onResponsiveFontSizeChange={(next) => onChange({ titleFontSizeResponsive: next } as any)}
           onChange={(updates) => {
             const widgetUpdate: any = {};
             if (updates.fontFamily !== undefined) widgetUpdate.titleFontFamily = updates.fontFamily;
@@ -523,7 +567,10 @@ export function ImageTextEditorNew({ widget, onChange }: ImageTextEditorNewProps
       {/* Content Typography */}
       <TypographyControl
         label="Content Typography"
+        defaultOpen={!widget.title}
         value={getContentTypography()}
+        responsiveFontSize={(widget as any).contentFontSizeResponsive}
+        onResponsiveFontSizeChange={(next) => onChange({ contentFontSizeResponsive: next } as any)}
         onChange={(updates) => {
           const widgetUpdate: any = {};
           if (updates.fontFamily !== undefined) widgetUpdate.contentFontFamily = updates.fontFamily;

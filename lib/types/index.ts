@@ -73,6 +73,16 @@ export interface SpacingValues {
   left: number;
 }
 
+export type Breakpoint = 'desktop' | 'tablet' | 'mobile';
+
+export interface ResponsiveValue<T> {
+  desktop?: T;
+  tablet?: T;
+  mobile?: T;
+}
+
+export type ResponsiveSpacingValues = ResponsiveValue<SpacingValues>;
+
 // Background types
 export interface BackgroundConfig {
   type: 'color' | 'image' | 'video' | 'gradient';
@@ -161,6 +171,7 @@ export interface ButtonStyleConfig {
 export interface TypographyConfig {
   fontFamily: string;
   fontSize: FontSizeValue | string | number;  // Support legacy formats
+  fontSizeResponsive?: ResponsiveValue<FontSizeValue | string | number>;
   fontWeight: '300' | '400' | '500' | '600' | '700' | '800' | '900' | 'normal' | 'bold' | string;
   lineHeight: string;
   textTransform: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
@@ -181,9 +192,20 @@ export interface LayoutConfig {
     type: 'auto' | 'vh' | 'percentage' | 'pixels';
     value?: number;
   };
+  heightResponsive?: ResponsiveValue<{
+    type: 'auto' | 'vh' | 'percentage' | 'pixels';
+    value?: number;
+  }>;
   width: 'full' | 'container';
+  widthResponsive?: ResponsiveValue<'full' | 'container'>;
   padding: SpacingValues;
+  paddingResponsive?: ResponsiveSpacingValues;
   margin: SpacingValues;
+  marginResponsive?: ResponsiveSpacingValues;
+  flexDirectionResponsive?: ResponsiveValue<'row' | 'row-reverse' | 'column' | 'column-reverse'>;
+  justifyContentResponsive?: ResponsiveValue<'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around' | 'space-evenly'>;
+  alignItemsResponsive?: ResponsiveValue<'flex-start' | 'center' | 'flex-end' | 'stretch'>;
+  gapResponsive?: ResponsiveValue<number>;
 }
 
 // Enhanced Hero Widget with comprehensive properties
@@ -202,6 +224,10 @@ export interface HeroWidget {
   textPosition: {
     horizontal: 'left' | 'center' | 'right';
     vertical: 'top' | 'middle' | 'bottom';
+  };
+  textPositionResponsive?: {
+    horizontal?: ResponsiveValue<'left' | 'center' | 'right'>;
+    vertical?: ResponsiveValue<'top' | 'middle' | 'bottom'>;
   };
   border?: {
     width: number;
@@ -264,6 +290,7 @@ export interface ImageTextWidget {
   title?: string;
   content: string;
   textAlign?: 'left' | 'center' | 'right';
+  textAlignResponsive?: ResponsiveValue<'left' | 'center' | 'right'>;
   textVerticalAlign?: 'top' | 'middle' | 'bottom';
   cta?: {
     text: string;
@@ -289,8 +316,11 @@ export interface ImageTextWidget {
     opacity?: number;
   };
   mobileLayout?: 'stacked-image-top' | 'stacked-image-bottom' | 'horizontal';
+  mobileLayoutResponsive?: ResponsiveValue<'stacked-image-top' | 'stacked-image-bottom' | 'horizontal'>;
   padding?: SpacingValues;
+  paddingResponsive?: ResponsiveSpacingValues;
   margin?: SpacingValues;
+  marginResponsive?: ResponsiveSpacingValues;
 }
 
 // Image Collection Types
@@ -388,6 +418,7 @@ export type TextAlignment = 'left' | 'center' | 'right';
 export interface TextSectionWidget {
   type: 'text-section';
   layout: TextSectionLayout;
+  layoutResponsive?: ResponsiveValue<TextSectionLayout>;
   
   // Content
   tagline?: string;
@@ -404,20 +435,29 @@ export interface TextSectionWidget {
   
   // Layout Options
   reverseOrder?: boolean; // For side-by-side, swap left/right
+  reverseOrderResponsive?: ResponsiveValue<boolean>;
   headingAlignment?: TextAlignment;
+  headingAlignmentResponsive?: ResponsiveValue<TextAlignment>;
   bodyAlignment?: TextAlignment;
+  bodyAlignmentResponsive?: ResponsiveValue<TextAlignment>;
   
   // Styling
   headingSize?: number; // Font size in px
+  headingSizeResponsive?: ResponsiveValue<number>;
   bodySize?: number; // Font size in px
+  bodySizeResponsive?: ResponsiveValue<number>;
   taglineSize?: number; // Font size in px
+  taglineSizeResponsive?: ResponsiveValue<number>;
   
   // Spacing
   columnGap?: number; // Gap between columns in side-by-side
+  columnGapResponsive?: ResponsiveValue<number>;
   rowGap?: number; // Gap between elements in stacked
+  rowGapResponsive?: ResponsiveValue<number>;
   
   // Column Widths (for side-by-side)
   headingColumnWidth?: number; // Percentage (30-70)
+  headingColumnWidthResponsive?: ResponsiveValue<number>;
   
   // Background & Layout
   background?: BackgroundConfig;
@@ -442,11 +482,13 @@ export interface FAQWidget {
   headingColor?: string;
   headingSize?: number;
   headingAlignment?: TextAlignment;
+  headingAlignmentResponsive?: ResponsiveValue<TextAlignment>;
   
   subheading?: string;
   subheadingColor?: string;
   subheadingSize?: number;
   subheadingAlignment?: TextAlignment;
+  subheadingAlignmentResponsive?: ResponsiveValue<TextAlignment>;
   
   // FAQ Items
   items: FAQItem[];
@@ -455,11 +497,13 @@ export interface FAQWidget {
   questionFontSize?: number;
   questionColor?: string;
   questionAlignment?: TextAlignment;
+  questionAlignmentResponsive?: ResponsiveValue<TextAlignment>;
   questionFontWeight?: number;
   
   answerFontSize?: number;
   answerColor?: string;
   answerAlignment?: TextAlignment;
+  answerAlignmentResponsive?: ResponsiveValue<TextAlignment>;
   answerFontWeight?: number;
   
   // Icon Settings
@@ -503,17 +547,28 @@ export interface CustomCodeWidget {
   javascript: string;
 }
 
+export interface ImageNavigationItem {
+  id: string;
+  title: string;
+  image: string;
+  url: string;
+}
+
 // Image Navigation Widget
 export interface ImageNavigationWidget {
   type: 'image-navigation';
-  items: {
-    id: string;
-    title: string;
-    image: string;
-    url: string;
-  }[];
+  items: ImageNavigationItem[];
+  // Legacy single-column setting (desktop fallback)
   columns: number;
+  desktopColumns?: number;
+  tabletColumns?: number;
+  mobileColumns?: number;
+  columnsResponsive?: ResponsiveValue<number>;
   gap: number;
+  cardBorderRadius?: number;
+  showCardBorder?: boolean;
+  cardBorderColor?: string;
+  cardBorderWidth?: number;
 }
 
 // Contact Form Widget Types
@@ -735,6 +790,8 @@ export interface ImageTextColumnItem {
   image: string;
   subtitle: string;
   description: string;
+  buttonText?: string;
+  buttonUrl?: string;
   order: number;
 }
 
@@ -753,17 +810,23 @@ export interface ImageTextColumnsWidget {
   items: ImageTextColumnItem[];
   
   // Layout
+  layoutStyle?: 'text-below' | 'text-overlay';
   desktopColumns: number; // 1-4
   tabletColumns: number; // 1-3
   mobileColumns: number; // 1-2
+  columnsResponsive?: ResponsiveValue<number>;
   gap: number; // Gap between columns in px
   
   // Image Styling
   imageAspectRatio?: '1:1' | '3:2' | '4:3' | '16:9';
   imageBorderRadius?: number;
+  showImageBorder?: boolean;
+  imageBorderColor?: string;
+  imageBorderWidth?: number;
   
   // Text Styling
   textAlign?: 'left' | 'center' | 'right';
+  textAlignResponsive?: ResponsiveValue<'left' | 'center' | 'right'>;
   subtitleColor?: string;
   subtitleSize?: number;
   subtitleFontWeight?: number;
@@ -792,6 +855,7 @@ export interface StickyFormWidget {
   // Layout
   formLayout: StickyFormLayout;
   mobileStackOrder: MobileStackOrder;
+  mobileStackOrderResponsive?: ResponsiveValue<MobileStackOrder>;
   stickyOffset?: number; // px offset from viewport top for sticky form (desktop/tablet)
   
   // Text Content

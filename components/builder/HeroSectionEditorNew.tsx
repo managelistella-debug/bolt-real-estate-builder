@@ -25,6 +25,9 @@ import { ButtonControl } from './controls/ButtonControl';
 import { GlobalColorInput } from './controls/GlobalColorInput';
 import { useDebouncedInput } from './hooks/useDebouncedInput';
 import { useWebsiteStore } from '@/lib/stores/website';
+import { useBuilderStore } from '@/lib/stores/builder';
+import { resolveResponsiveValue, updateResponsiveValue } from '@/lib/responsive';
+import { ResponsiveDevicePicker } from './controls/ResponsiveControlShell';
 
 interface HeroSectionEditorNewProps {
   widget: HeroWidget;
@@ -33,6 +36,7 @@ interface HeroSectionEditorNewProps {
 
 export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewProps) {
   const { currentWebsite } = useWebsiteStore();
+  const { deviceView } = useBuilderStore();
   const globalStyles = currentWebsite?.globalStyles;
 
   // Migration: Convert old widget format to new format on first render
@@ -156,25 +160,27 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
   );
 
   // Collapsible states
-  const [sectionHeightOpen, setSectionHeightOpen] = useState(false);
+  const [sectionHeightOpen, setSectionHeightOpen] = useState(true);
   const [sectionWidthOpen, setSectionWidthOpen] = useState(false);
   const [paddingOpen, setPaddingOpen] = useState(false);
   const [horizontalAlignOpen, setHorizontalAlignOpen] = useState(false);
   const [verticalAlignOpen, setVerticalAlignOpen] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(false);
   const [bgOverlayOpen, setBgOverlayOpen] = useState(false);
-  const [buttonOpen, setButtonOpen] = useState(false);
+  const [buttonOpen, setButtonOpen] = useState(true);
 
   const CollapsibleSection = ({ 
     title, 
     open, 
     onToggle, 
-    children 
+    children,
+    showBreakpointIcon = false,
   }: { 
     title: string; 
     open: boolean; 
     onToggle: () => void; 
     children: React.ReactNode;
+    showBreakpointIcon?: boolean;
   }) => (
     <div className="border rounded-lg">
       <button
@@ -182,7 +188,17 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
         className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
         onClick={onToggle}
       >
-        <span className="font-medium text-sm">{title}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-sm">{title}</span>
+          {showBreakpointIcon && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <ResponsiveDevicePicker className="h-6 w-6" />
+            </div>
+          )}
+        </div>
         {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
       </button>
       {open && (
@@ -604,17 +620,63 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
   );
 
   // Layout Tab
+  const defaultLayout = {
+    height: { type: 'vh' as const, value: 60 },
+    width: 'full' as const,
+    padding: { top: 80, right: 20, bottom: 80, left: 20 },
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
+  };
+  const layoutCfg = {
+    ...defaultLayout,
+    ...(widget.layout || {}),
+  } as any;
+  const activeHeight = resolveResponsiveValue<any>(
+    layoutCfg.heightResponsive,
+    deviceView,
+    layoutCfg.height || defaultLayout.height,
+  );
+  const activeWidth = resolveResponsiveValue<'full' | 'container'>(
+    layoutCfg.widthResponsive,
+    deviceView,
+    layoutCfg.width || defaultLayout.width,
+  );
+  const activePadding = resolveResponsiveValue<any>(
+    layoutCfg.paddingResponsive,
+    deviceView,
+    layoutCfg.padding || defaultLayout.padding,
+  );
+  const textPosition = widget.textPosition || { horizontal: 'center' as const, vertical: 'middle' as const };
+  const activeHorizontal = resolveResponsiveValue<'left' | 'center' | 'right'>(
+    widget.textPositionResponsive?.horizontal,
+    deviceView,
+    textPosition.horizontal || 'center',
+  );
+  const activeVertical = resolveResponsiveValue<'top' | 'middle' | 'bottom'>(
+    widget.textPositionResponsive?.vertical,
+    deviceView,
+    textPosition.vertical || 'middle',
+  );
+
   const layoutTab = (
     <div className="space-y-2">
       {/* Section Height */}
-      <CollapsibleSection title="Section Height" open={sectionHeightOpen} onToggle={() => setSectionHeightOpen(!sectionHeightOpen)}>
+      <CollapsibleSection
+        title="Section Height"
+        open={sectionHeightOpen}
+        onToggle={() => setSectionHeightOpen(!sectionHeightOpen)}
+        showBreakpointIcon={true}
+      >
         <div className="flex gap-2">
           <Select
-            value={widget.layout?.height?.type || 'vh'}
+            value={activeHeight?.type || 'vh'}
             onValueChange={(value: 'auto' | 'vh' | 'percentage' | 'pixels') => onChange({
               layout: { 
-                ...widget.layout, 
-                height: { ...widget.layout?.height, type: value } 
+                ...layoutCfg,
+                height: deviceView === 'desktop' ? { ...activeHeight, type: value } : layoutCfg.height,
+                heightResponsive: updateResponsiveValue(layoutCfg.heightResponsive, deviceView, {
+                  ...activeHeight,
+                  type: value,
+                }),
               } as any
             })}
           >
@@ -628,14 +690,18 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
               <SelectItem value="pixels">Pixels</SelectItem>
             </SelectContent>
           </Select>
-          {widget.layout?.height?.type !== 'auto' && (
+          {activeHeight?.type !== 'auto' && (
             <Input
               type="number"
-              value={widget.layout?.height?.value || 60}
+              value={activeHeight?.value || 60}
               onChange={(e) => onChange({
                 layout: { 
-                  ...widget.layout, 
-                  height: { ...widget.layout?.height, value: parseInt(e.target.value) } 
+                  ...layoutCfg,
+                  height: deviceView === 'desktop' ? { ...activeHeight, value: parseInt(e.target.value) } : layoutCfg.height,
+                  heightResponsive: updateResponsiveValue(layoutCfg.heightResponsive, deviceView, {
+                    ...activeHeight,
+                    value: parseInt(e.target.value),
+                  }),
                 } as any
               })}
               className="w-24"
@@ -645,11 +711,20 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
       </CollapsibleSection>
 
       {/* Section Width */}
-      <CollapsibleSection title="Section Width" open={sectionWidthOpen} onToggle={() => setSectionWidthOpen(!sectionWidthOpen)}>
+      <CollapsibleSection
+        title="Section Width"
+        open={sectionWidthOpen}
+        onToggle={() => setSectionWidthOpen(!sectionWidthOpen)}
+        showBreakpointIcon={true}
+      >
         <Select
-          value={widget.layout?.width || 'full'}
+          value={activeWidth}
           onValueChange={(value: 'full' | 'container') => onChange({
-            layout: { ...widget.layout, width: value } as any
+            layout: {
+              ...layoutCfg,
+              width: deviceView === 'desktop' ? value : layoutCfg.width,
+              widthResponsive: updateResponsiveValue(layoutCfg.widthResponsive, deviceView, value),
+            } as any
           })}
         >
           <SelectTrigger>
@@ -663,17 +738,26 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
       </CollapsibleSection>
 
       {/* Padding */}
-      <CollapsibleSection title="Padding" open={paddingOpen} onToggle={() => setPaddingOpen(!paddingOpen)}>
+      <CollapsibleSection
+        title="Padding"
+        open={paddingOpen}
+        onToggle={() => setPaddingOpen(!paddingOpen)}
+        showBreakpointIcon={true}
+      >
         <div className="grid grid-cols-4 gap-2">
           <div className="space-y-1">
             <Label className="text-xs">Top</Label>
             <Input
               type="number"
-              value={widget.layout?.padding?.top || 80}
+              value={activePadding?.top || 80}
               onChange={(e) => onChange({
                 layout: { 
-                  ...widget.layout, 
-                  padding: { ...widget.layout?.padding, top: parseInt(e.target.value) } 
+                  ...layoutCfg,
+                  padding: deviceView === 'desktop' ? { ...activePadding, top: parseInt(e.target.value) } : layoutCfg.padding,
+                  paddingResponsive: updateResponsiveValue(layoutCfg.paddingResponsive, deviceView, {
+                    ...activePadding,
+                    top: parseInt(e.target.value),
+                  }),
                 } as any
               })}
             />
@@ -682,11 +766,15 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
             <Label className="text-xs">Right</Label>
             <Input
               type="number"
-              value={widget.layout?.padding?.right || 20}
+              value={activePadding?.right || 20}
               onChange={(e) => onChange({
                 layout: { 
-                  ...widget.layout, 
-                  padding: { ...widget.layout?.padding, right: parseInt(e.target.value) } 
+                  ...layoutCfg,
+                  padding: deviceView === 'desktop' ? { ...activePadding, right: parseInt(e.target.value) } : layoutCfg.padding,
+                  paddingResponsive: updateResponsiveValue(layoutCfg.paddingResponsive, deviceView, {
+                    ...activePadding,
+                    right: parseInt(e.target.value),
+                  }),
                 } as any
               })}
             />
@@ -695,11 +783,15 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
             <Label className="text-xs">Bottom</Label>
             <Input
               type="number"
-              value={widget.layout?.padding?.bottom || 80}
+              value={activePadding?.bottom || 80}
               onChange={(e) => onChange({
                 layout: { 
-                  ...widget.layout, 
-                  padding: { ...widget.layout?.padding, bottom: parseInt(e.target.value) } 
+                  ...layoutCfg,
+                  padding: deviceView === 'desktop' ? { ...activePadding, bottom: parseInt(e.target.value) } : layoutCfg.padding,
+                  paddingResponsive: updateResponsiveValue(layoutCfg.paddingResponsive, deviceView, {
+                    ...activePadding,
+                    bottom: parseInt(e.target.value),
+                  }),
                 } as any
               })}
             />
@@ -708,11 +800,15 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
             <Label className="text-xs">Left</Label>
             <Input
               type="number"
-              value={widget.layout?.padding?.left || 20}
+              value={activePadding?.left || 20}
               onChange={(e) => onChange({
                 layout: { 
-                  ...widget.layout, 
-                  padding: { ...widget.layout?.padding, left: parseInt(e.target.value) } 
+                  ...layoutCfg,
+                  padding: deviceView === 'desktop' ? { ...activePadding, left: parseInt(e.target.value) } : layoutCfg.padding,
+                  paddingResponsive: updateResponsiveValue(layoutCfg.paddingResponsive, deviceView, {
+                    ...activePadding,
+                    left: parseInt(e.target.value),
+                  }),
                 } as any
               })}
             />
@@ -721,33 +817,50 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
       </CollapsibleSection>
 
       {/* Horizontal Alignment */}
-      <CollapsibleSection title="Horizontal Alignment" open={horizontalAlignOpen} onToggle={() => setHorizontalAlignOpen(!horizontalAlignOpen)}>
+      <CollapsibleSection
+        title="Horizontal Alignment"
+        open={horizontalAlignOpen}
+        onToggle={() => setHorizontalAlignOpen(!horizontalAlignOpen)}
+        showBreakpointIcon={true}
+      >
         <div className="grid grid-cols-3 gap-2">
           <Button
-            variant={widget.textPosition?.horizontal === 'left' ? 'default' : 'outline'}
+            variant={activeHorizontal === 'left' ? 'default' : 'outline'}
             size="sm"
             onClick={() => onChange({ 
-              textPosition: { ...widget.textPosition, horizontal: 'left' } as any,
+              textPosition: deviceView === 'desktop' ? { ...textPosition, horizontal: 'left' } as any : textPosition as any,
+              textPositionResponsive: {
+                ...(widget.textPositionResponsive || {}),
+                horizontal: updateResponsiveValue(widget.textPositionResponsive?.horizontal, deviceView, 'left'),
+              },
               alignment: 'left'
             })}
           >
             <AlignLeft className="h-4 w-4" />
           </Button>
           <Button
-            variant={widget.textPosition?.horizontal === 'center' ? 'default' : 'outline'}
+            variant={activeHorizontal === 'center' ? 'default' : 'outline'}
             size="sm"
             onClick={() => onChange({ 
-              textPosition: { ...widget.textPosition, horizontal: 'center' } as any,
+              textPosition: deviceView === 'desktop' ? { ...textPosition, horizontal: 'center' } as any : textPosition as any,
+              textPositionResponsive: {
+                ...(widget.textPositionResponsive || {}),
+                horizontal: updateResponsiveValue(widget.textPositionResponsive?.horizontal, deviceView, 'center'),
+              },
               alignment: 'center'
             })}
           >
             <AlignCenter className="h-4 w-4" />
           </Button>
           <Button
-            variant={widget.textPosition?.horizontal === 'right' ? 'default' : 'outline'}
+            variant={activeHorizontal === 'right' ? 'default' : 'outline'}
             size="sm"
             onClick={() => onChange({ 
-              textPosition: { ...widget.textPosition, horizontal: 'right' } as any,
+              textPosition: deviceView === 'desktop' ? { ...textPosition, horizontal: 'right' } as any : textPosition as any,
+              textPositionResponsive: {
+                ...(widget.textPositionResponsive || {}),
+                horizontal: updateResponsiveValue(widget.textPositionResponsive?.horizontal, deviceView, 'right'),
+              },
               alignment: 'right'
             })}
           >
@@ -757,31 +870,48 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
       </CollapsibleSection>
 
       {/* Vertical Alignment */}
-      <CollapsibleSection title="Vertical Alignment" open={verticalAlignOpen} onToggle={() => setVerticalAlignOpen(!verticalAlignOpen)}>
+      <CollapsibleSection
+        title="Vertical Alignment"
+        open={verticalAlignOpen}
+        onToggle={() => setVerticalAlignOpen(!verticalAlignOpen)}
+        showBreakpointIcon={true}
+      >
         <div className="grid grid-cols-3 gap-2">
           <Button
-            variant={widget.textPosition?.vertical === 'top' ? 'default' : 'outline'}
+            variant={activeVertical === 'top' ? 'default' : 'outline'}
             size="sm"
             onClick={() => onChange({ 
-              textPosition: { ...widget.textPosition, vertical: 'top' } as any
+              textPosition: deviceView === 'desktop' ? { ...textPosition, vertical: 'top' } as any : textPosition as any,
+              textPositionResponsive: {
+                ...(widget.textPositionResponsive || {}),
+                vertical: updateResponsiveValue(widget.textPositionResponsive?.vertical, deviceView, 'top'),
+              },
             })}
           >
             <AlignVerticalJustifyStart className="h-4 w-4" />
           </Button>
           <Button
-            variant={widget.textPosition?.vertical === 'middle' ? 'default' : 'outline'}
+            variant={activeVertical === 'middle' ? 'default' : 'outline'}
             size="sm"
             onClick={() => onChange({ 
-              textPosition: { ...widget.textPosition, vertical: 'middle' } as any
+              textPosition: deviceView === 'desktop' ? { ...textPosition, vertical: 'middle' } as any : textPosition as any,
+              textPositionResponsive: {
+                ...(widget.textPositionResponsive || {}),
+                vertical: updateResponsiveValue(widget.textPositionResponsive?.vertical, deviceView, 'middle'),
+              },
             })}
           >
             <AlignVerticalJustifyCenter className="h-4 w-4" />
           </Button>
           <Button
-            variant={widget.textPosition?.vertical === 'bottom' ? 'default' : 'outline'}
+            variant={activeVertical === 'bottom' ? 'default' : 'outline'}
             size="sm"
             onClick={() => onChange({ 
-              textPosition: { ...widget.textPosition, vertical: 'bottom' } as any
+              textPosition: deviceView === 'desktop' ? { ...textPosition, vertical: 'bottom' } as any : textPosition as any,
+              textPositionResponsive: {
+                ...(widget.textPositionResponsive || {}),
+                vertical: updateResponsiveValue(widget.textPositionResponsive?.vertical, deviceView, 'bottom'),
+              },
             })}
           >
             <AlignVerticalJustifyEnd className="h-4 w-4" />
@@ -797,7 +927,21 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
       {/* Title Typography */}
       <TypographyControl
         label="Title Typography"
+        defaultOpen={true}
         value={getTitleTypography()}
+        responsiveFontSize={(widget.textStyles?.title as any)?.fontSizeResponsive}
+        onResponsiveFontSizeChange={(next) => {
+          const currentTitle = widget.textStyles?.title || {};
+          onChange({
+            textStyles: {
+              ...widget.textStyles,
+              title: {
+                ...currentTitle,
+                fontSizeResponsive: next,
+              } as any,
+            } as any,
+          });
+        }}
         onChange={(updates) => {
           const currentTitle = widget.textStyles?.title || {};
           onChange({
@@ -821,7 +965,21 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
       {/* Subtitle Typography */}
       <TypographyControl
         label="Subtitle Typography"
+        defaultOpen={false}
         value={getSubtitleTypography()}
+        responsiveFontSize={(widget.textStyles?.subtitle as any)?.fontSizeResponsive}
+        onResponsiveFontSizeChange={(next) => {
+          const currentSubtitle = widget.textStyles?.subtitle || {};
+          onChange({
+            textStyles: {
+              ...widget.textStyles,
+              subtitle: {
+                ...currentSubtitle,
+                fontSizeResponsive: next,
+              } as any,
+            } as any,
+          });
+        }}
         onChange={(updates) => {
           const currentSubtitle = widget.textStyles?.subtitle || {};
           onChange({

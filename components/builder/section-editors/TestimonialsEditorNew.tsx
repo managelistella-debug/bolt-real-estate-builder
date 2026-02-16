@@ -15,6 +15,7 @@ import { ImageUpload } from '../ImageUpload';
 import { TypographyControl } from '../controls/TypographyControl';
 import { GlobalColorInput } from '../controls/GlobalColorInput';
 import { useWebsiteStore } from '@/lib/stores/website';
+import { ResponsiveDevicePicker } from '../controls/ResponsiveControlShell';
 
 interface TestimonialsEditorNewProps {
   widget: TestimonialWidget;
@@ -28,18 +29,18 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   
   // Collapsible states
-  const [sectionHeaderOpen, setSectionHeaderOpen] = useState(false);
-  const [testimonialsOpen, setTestimonialsOpen] = useState(true);
+  const [sectionHeaderOpen, setSectionHeaderOpen] = useState(true);
+  const [testimonialsOpen, setTestimonialsOpen] = useState(false);
   const [sectionHeightOpen, setSectionHeightOpen] = useState(false);
   const [sectionWidthOpen, setSectionWidthOpen] = useState(false);
   const [paddingOpen, setPaddingOpen] = useState(false);
-  const [sliderSettingsOpen, setSliderSettingsOpen] = useState(false);
+  const [sliderSettingsOpen, setSliderSettingsOpen] = useState(true);
   const [typographyOpen, setTypographyOpen] = useState(false);
   const [sectionHeaderStyleOpen, setSectionHeaderStyleOpen] = useState(false);
   const [nameStyleOpen, setNameStyleOpen] = useState(false);
   const [titleStyleOpen, setTitleStyleOpen] = useState(false);
   const [quoteStyleOpen, setQuoteStyleOpen] = useState(false);
-  const [cardStyleOpen, setCardStyleOpen] = useState(false);
+  const [cardStyleOpen, setCardStyleOpen] = useState(true);
   const [starStyleOpen, setStarStyleOpen] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(false);
 
@@ -47,11 +48,13 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
     title, 
     open, 
     onToggle, 
+    showBreakpointIcon = false,
     children 
   }: { 
     title: string; 
     open: boolean; 
     onToggle: () => void; 
+    showBreakpointIcon?: boolean;
     children: React.ReactNode;
   }) => (
     <div className="border rounded-lg">
@@ -60,7 +63,14 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
         className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
         onClick={onToggle}
       >
-        <span className="font-medium text-sm">{title}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-sm">{title}</span>
+          {showBreakpointIcon && (
+            <div onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+              <ResponsiveDevicePicker className="h-6 w-6" />
+            </div>
+          )}
+        </div>
         {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
       </button>
       {open && (
@@ -452,7 +462,7 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
   const layoutTab = (
     <div className="space-y-2">
       {/* Slider Settings */}
-      <CollapsibleSection title="Slider Settings" open={sliderSettingsOpen} onToggle={() => setSliderSettingsOpen(!sliderSettingsOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Slider Settings" open={sliderSettingsOpen} onToggle={() => setSliderSettingsOpen(!sliderSettingsOpen)}>
         <div className="space-y-3">
           <div className="flex items-center space-x-2">
             <Checkbox
@@ -496,7 +506,7 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
       </CollapsibleSection>
 
       {/* Section Height */}
-      <CollapsibleSection title="Section Height" open={sectionHeightOpen} onToggle={() => setSectionHeightOpen(!sectionHeightOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Section Height" open={sectionHeightOpen} onToggle={() => setSectionHeightOpen(!sectionHeightOpen)}>
         <Select defaultValue="auto">
           <SelectTrigger>
             <SelectValue />
@@ -510,7 +520,7 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
       </CollapsibleSection>
 
       {/* Section Width */}
-      <CollapsibleSection title="Section Width" open={sectionWidthOpen} onToggle={() => setSectionWidthOpen(!sectionWidthOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Section Width" open={sectionWidthOpen} onToggle={() => setSectionWidthOpen(!sectionWidthOpen)}>
         <Select
           value={(widget.layout as any)?.fullWidth ? 'full' : 'container'}
           onValueChange={(value) => onChange({
@@ -528,7 +538,7 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
       </CollapsibleSection>
 
       {/* Padding */}
-      <CollapsibleSection title="Padding" open={paddingOpen} onToggle={() => setPaddingOpen(!paddingOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Padding" open={paddingOpen} onToggle={() => setPaddingOpen(!paddingOpen)}>
         <div className="grid grid-cols-4 gap-2">
           {['top', 'right', 'bottom', 'left'].map((side) => (
             <div key={side} className="space-y-1">
@@ -558,7 +568,10 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
       {widget.sectionHeading && (
         <TypographyControl
           label="Section Header Typography"
+          defaultOpen={true}
           value={getSectionHeaderTypography()}
+          responsiveFontSize={(widget as any).headerFontSizeResponsive}
+          onResponsiveFontSizeChange={(next) => onChange({ headerFontSizeResponsive: next } as any)}
           onChange={(updates) => {
             const widgetUpdate: any = {};
             if (updates.fontFamily !== undefined) widgetUpdate.headerFontFamily = updates.fontFamily;
@@ -591,7 +604,10 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
       {/* Name Typography */}
       <TypographyControl
         label="Name Typography"
+        defaultOpen={false}
         value={getNameTypography()}
+        responsiveFontSize={(widget as any).nameFontSizeResponsive}
+        onResponsiveFontSizeChange={(next) => onChange({ nameFontSizeResponsive: next } as any)}
         onChange={(updates) => {
           const widgetUpdate: any = {};
           if (updates.fontFamily !== undefined) widgetUpdate.nameFontFamily = updates.fontFamily;
@@ -619,7 +635,10 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
       {/* Title/Position Typography */}
       <TypographyControl
         label="Title/Position Typography"
+        defaultOpen={false}
         value={getTitleTypography()}
+        responsiveFontSize={(widget as any).titleFontSizeResponsive}
+        onResponsiveFontSizeChange={(next) => onChange({ titleFontSizeResponsive: next } as any)}
         onChange={(updates) => {
           const widgetUpdate: any = {};
           if (updates.fontFamily !== undefined) widgetUpdate.titleFontFamily = updates.fontFamily;
@@ -647,7 +666,10 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
       {/* Quote Typography */}
       <TypographyControl
         label="Quote Typography"
+        defaultOpen={false}
         value={getQuoteTypography()}
+        responsiveFontSize={(widget as any).quoteFontSizeResponsive}
+        onResponsiveFontSizeChange={(next) => onChange({ quoteFontSizeResponsive: next } as any)}
         onChange={(updates) => {
           const widgetUpdate: any = {};
           if (updates.fontFamily !== undefined) widgetUpdate.quoteFontFamily = updates.fontFamily;
@@ -673,7 +695,7 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
       />
 
       {/* Card Style */}
-      <CollapsibleSection title="Card Style" open={cardStyleOpen} onToggle={() => setCardStyleOpen(!cardStyleOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Card Style" open={cardStyleOpen} onToggle={() => setCardStyleOpen(!cardStyleOpen)}>
         <div className="space-y-3">
           <div className="space-y-2">
             <Label>Background Color</Label>
@@ -708,7 +730,7 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
       </CollapsibleSection>
 
       {/* Star Style */}
-      <CollapsibleSection title="Star Style" open={starStyleOpen} onToggle={() => setStarStyleOpen(!starStyleOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Star Style" open={starStyleOpen} onToggle={() => setStarStyleOpen(!starStyleOpen)}>
         <div className="space-y-2">
           <Label>Star Color</Label>
           <GlobalColorInput
@@ -722,7 +744,7 @@ export function TestimonialsEditorNew({ widget, onChange }: TestimonialsEditorNe
       </CollapsibleSection>
 
       {/* Background */}
-      <CollapsibleSection title="Background" open={backgroundOpen} onToggle={() => setBackgroundOpen(!backgroundOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Background" open={backgroundOpen} onToggle={() => setBackgroundOpen(!backgroundOpen)}>
         <div className="space-y-3">
           <div className="space-y-2">
             <Label>Type</Label>

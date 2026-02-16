@@ -15,6 +15,7 @@ import { TypographyControl } from '../controls/TypographyControl';
 import { ButtonControl } from '../controls/ButtonControl';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { GlobalColorInput } from '../controls/GlobalColorInput';
+import { ResponsiveDevicePicker } from '../controls/ResponsiveControlShell';
 
 interface ContactFormEditorNewProps {
   widget: ContactFormWidget;
@@ -26,11 +27,11 @@ export function ContactFormEditorNew({ widget, onChange }: ContactFormEditorNewP
   const [formContentOpen, setFormContentOpen] = useState(true);
   const [fieldsOpen, setFieldsOpen] = useState(false);
   const [columnContentOpen, setColumnContentOpen] = useState(false);
-  const [styleOpen, setStyleOpen] = useState(false);
+  const [styleOpen, setStyleOpen] = useState(true);
   const [layoutOpen, setLayoutOpen] = useState(false);
   const [typographyOpen, setTypographyOpen] = useState(false);
   const [buttonStyleOpen, setButtonStyleOpen] = useState(false);
-  const [backgroundOpen, setBackgroundOpen] = useState(false);
+  const [backgroundOpen, setBackgroundOpen] = useState(true);
 
   // Migration: Initialize submitButton for existing widgets
   useEffect(() => {
@@ -138,10 +139,17 @@ export function ContactFormEditorNew({ widget, onChange }: ContactFormEditorNewP
     };
   };
 
-  const CollapsibleSection = ({ title, open, onToggle, children }: any) => (
+  const CollapsibleSection = ({ title, open, onToggle, showBreakpointIcon = false, children }: any) => (
     <div className="border rounded-lg">
       <button type="button" className="w-full flex items-center justify-between p-3 hover:bg-muted/50" onClick={onToggle}>
-        <span className="font-medium text-sm">{title}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-sm">{title}</span>
+          {showBreakpointIcon && (
+            <div onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+              <ResponsiveDevicePicker className="h-6 w-6" />
+            </div>
+          )}
+        </div>
         {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
       </button>
       {open && <div className="p-4 pt-0 space-y-3">{children}</div>}
@@ -261,7 +269,7 @@ export function ContactFormEditorNew({ widget, onChange }: ContactFormEditorNewP
 
   const layoutTab = (
     <div className="space-y-2">
-      <CollapsibleSection title="Form Style" open={styleOpen} onToggle={() => setStyleOpen(!styleOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Form Style" open={styleOpen} onToggle={() => setStyleOpen(!styleOpen)}>
         <Select value={widget.style} onValueChange={(value: any) => onChange({ style: value })}>
           <SelectTrigger>
             <SelectValue />
@@ -274,7 +282,7 @@ export function ContactFormEditorNew({ widget, onChange }: ContactFormEditorNewP
         </Select>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Layout" open={layoutOpen} onToggle={() => setLayoutOpen(!layoutOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Layout" open={layoutOpen} onToggle={() => setLayoutOpen(!layoutOpen)}>
         <div className="space-y-3">
           <div className="space-y-2">
             <Label>Width</Label>
@@ -302,7 +310,15 @@ export function ContactFormEditorNew({ widget, onChange }: ContactFormEditorNewP
       {/* Form Heading Typography */}
       <TypographyControl
         label="Form Heading Typography"
+        defaultOpen={true}
         value={getFormHeadingTypography()}
+        responsiveFontSize={(getFormHeadingTypography() as any).fontSizeResponsive}
+        onResponsiveFontSizeChange={(next) => onChange({
+          formHeadingTypography: {
+            ...getFormHeadingTypography(),
+            fontSizeResponsive: next,
+          } as any,
+        })}
         onChange={(updates) => {
           onChange({
             formHeadingTypography: {
@@ -319,7 +335,15 @@ export function ContactFormEditorNew({ widget, onChange }: ContactFormEditorNewP
       {/* Form Description Typography */}
       <TypographyControl
         label="Form Description Typography"
+        defaultOpen={false}
         value={getFormDescriptionTypography()}
+        responsiveFontSize={(getFormDescriptionTypography() as any).fontSizeResponsive}
+        onResponsiveFontSizeChange={(next) => onChange({
+          formDescriptionTypography: {
+            ...getFormDescriptionTypography(),
+            fontSizeResponsive: next,
+          } as any,
+        })}
         onChange={(updates) => {
           onChange({
             formDescriptionTypography: {
@@ -353,7 +377,7 @@ export function ContactFormEditorNew({ widget, onChange }: ContactFormEditorNewP
         globalStyles={website?.globalStyles}
       />
 
-      <CollapsibleSection title="Background" open={backgroundOpen} onToggle={() => setBackgroundOpen(!backgroundOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Background" open={backgroundOpen} onToggle={() => setBackgroundOpen(!backgroundOpen)}>
         <div className="space-y-2">
           <Label>Background Color</Label>
           <GlobalColorInput

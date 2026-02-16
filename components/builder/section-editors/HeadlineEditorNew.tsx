@@ -23,6 +23,7 @@ import { GlobalColorInput } from '../controls/GlobalColorInput';
 import { cn } from '@/lib/utils';
 import { useDebouncedInput } from '../hooks/useDebouncedInput';
 import { useWebsiteStore } from '@/lib/stores/website';
+import { ResponsiveDevicePicker } from '../controls/ResponsiveControlShell';
 
 interface HeadlineEditorNewProps {
   widget: HeadlineWidget;
@@ -55,8 +56,8 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
   );
 
   // Collapsible states
-  const [backgroundOpen, setBackgroundOpen] = useState(false);
-  const [sectionHeightOpen, setSectionHeightOpen] = useState(false);
+  const [backgroundOpen, setBackgroundOpen] = useState(true);
+  const [sectionHeightOpen, setSectionHeightOpen] = useState(true);
   const [sectionWidthOpen, setSectionWidthOpen] = useState(false);
   const [paddingOpen, setPaddingOpen] = useState(false);
   const [horizontalAlignOpen, setHorizontalAlignOpen] = useState(false);
@@ -66,11 +67,13 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
     title, 
     open, 
     onToggle, 
+    showBreakpointIcon = false,
     children 
   }: { 
     title: string; 
     open: boolean; 
     onToggle: () => void; 
+    showBreakpointIcon?: boolean;
     children: React.ReactNode;
   }) => (
     <div className="border rounded-lg">
@@ -79,7 +82,17 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
         className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
         onClick={onToggle}
       >
-        <span className="font-medium text-sm">{title}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-sm">{title}</span>
+          {showBreakpointIcon && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <ResponsiveDevicePicker className="h-6 w-6" />
+            </div>
+          )}
+        </div>
         {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
       </button>
       {open && (
@@ -388,7 +401,7 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
   const layoutTab = (
     <div className="space-y-3">
       {/* Section Height */}
-      <CollapsibleSection title="Section Height" open={sectionHeightOpen} onToggle={() => setSectionHeightOpen(!sectionHeightOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Section Height" open={sectionHeightOpen} onToggle={() => setSectionHeightOpen(!sectionHeightOpen)}>
         <div className="space-y-2">
           <Label className="text-xs">Height Type</Label>
           <Select
@@ -423,7 +436,7 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
       </CollapsibleSection>
 
       {/* Padding */}
-      <CollapsibleSection title="Padding" open={paddingOpen} onToggle={() => setPaddingOpen(!paddingOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Padding" open={paddingOpen} onToggle={() => setPaddingOpen(!paddingOpen)}>
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-2">
             <Label className="text-xs">Top</Label>
@@ -473,7 +486,7 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
       </CollapsibleSection>
 
       {/* Text Alignment */}
-      <CollapsibleSection title="Text Alignment" open={horizontalAlignOpen} onToggle={() => setHorizontalAlignOpen(!horizontalAlignOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Text Alignment" open={horizontalAlignOpen} onToggle={() => setHorizontalAlignOpen(!horizontalAlignOpen)}>
         <div className="flex gap-2">
           <button
             type="button"
@@ -516,7 +529,10 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
       {/* Title Typography */}
       <TypographyControl
         label="Title Typography"
+        defaultOpen={true}
         value={getTitleTypography()}
+        responsiveFontSize={(widget as any).titleSizeResponsive}
+        onResponsiveFontSizeChange={(next) => onChange({ titleSizeResponsive: next } as any)}
         onChange={(updates) => {
           const widgetUpdate: any = {};
           if (updates.fontFamily !== undefined) widgetUpdate.titleFontFamily = updates.fontFamily;
@@ -538,7 +554,10 @@ export function HeadlineEditorNew({ widget, onChange }: HeadlineEditorNewProps) 
       {/* Subtitle Typography */}
       <TypographyControl
         label="Subtitle Typography"
+        defaultOpen={false}
         value={getSubtitleTypography()}
+        responsiveFontSize={(widget as any).subtitleSizeResponsive}
+        onResponsiveFontSizeChange={(next) => onChange({ subtitleSizeResponsive: next } as any)}
         onChange={(updates) => {
           const widgetUpdate: any = {};
           if (updates.fontFamily !== undefined) widgetUpdate.subtitleFontFamily = updates.fontFamily;

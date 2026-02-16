@@ -15,6 +15,7 @@ import { ImageUpload } from '../ImageUpload';
 import { TypographyControl } from '../controls/TypographyControl';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { GlobalColorInput } from '../controls/GlobalColorInput';
+import { ResponsiveDevicePicker } from '../controls/ResponsiveControlShell';
 
 interface ReviewsSliderEditorNewProps {
   widget: ReviewsSliderWidget;
@@ -26,9 +27,9 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
   const [expandedReviewId, setExpandedReviewId] = useState<string | null>(null);
   
   // Collapsible states
-  const [sectionHeaderOpen, setSectionHeaderOpen] = useState(false);
-  const [reviewsOpen, setReviewsOpen] = useState(true);
-  const [sliderSettingsOpen, setSliderSettingsOpen] = useState(false);
+  const [sectionHeaderOpen, setSectionHeaderOpen] = useState(true);
+  const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [sliderSettingsOpen, setSliderSettingsOpen] = useState(true);
   const [sectionHeightOpen, setSectionHeightOpen] = useState(false);
   const [sectionWidthOpen, setSectionWidthOpen] = useState(false);
   const [paddingOpen, setPaddingOpen] = useState(false);
@@ -37,7 +38,7 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
   const [nameStyleOpen, setNameStyleOpen] = useState(false);
   const [textStyleOpen, setTextStyleOpen] = useState(false);
   const [dateStyleOpen, setDateStyleOpen] = useState(false);
-  const [cardStyleOpen, setCardStyleOpen] = useState(false);
+  const [cardStyleOpen, setCardStyleOpen] = useState(true);
   const [starStyleOpen, setStarStyleOpen] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(false);
 
@@ -94,11 +95,13 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
     title, 
     open, 
     onToggle, 
+    showBreakpointIcon = false,
     children 
   }: { 
     title: string; 
     open: boolean; 
     onToggle: () => void; 
+    showBreakpointIcon?: boolean;
     children: React.ReactNode;
   }) => (
     <div className="border rounded-lg">
@@ -107,7 +110,14 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
         className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
         onClick={onToggle}
       >
-        <span className="font-medium text-sm">{title}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-sm">{title}</span>
+          {showBreakpointIcon && (
+            <div onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+              <ResponsiveDevicePicker className="h-6 w-6" />
+            </div>
+          )}
+        </div>
         {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
       </button>
       {open && (
@@ -326,7 +336,7 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
   const layoutTab = (
     <div className="space-y-2">
       {/* Slider Settings */}
-      <CollapsibleSection title="Slider Settings" open={sliderSettingsOpen} onToggle={() => setSliderSettingsOpen(!sliderSettingsOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Slider Settings" open={sliderSettingsOpen} onToggle={() => setSliderSettingsOpen(!sliderSettingsOpen)}>
         <div className="space-y-3">
           <div className="space-y-2">
             <Label>Reviews Per Slide: {widget.reviewsPerSlide || 3}</Label>
@@ -381,7 +391,7 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
       </CollapsibleSection>
 
       {/* Section Height */}
-      <CollapsibleSection title="Section Height" open={sectionHeightOpen} onToggle={() => setSectionHeightOpen(!sectionHeightOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Section Height" open={sectionHeightOpen} onToggle={() => setSectionHeightOpen(!sectionHeightOpen)}>
         <Select defaultValue="auto">
           <SelectTrigger>
             <SelectValue />
@@ -395,7 +405,7 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
       </CollapsibleSection>
 
       {/* Section Width */}
-      <CollapsibleSection title="Section Width" open={sectionWidthOpen} onToggle={() => setSectionWidthOpen(!sectionWidthOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Section Width" open={sectionWidthOpen} onToggle={() => setSectionWidthOpen(!sectionWidthOpen)}>
         <Select
           value={layoutConfig.fullWidth ? 'full' : 'container'}
           onValueChange={(value) => onChange({
@@ -413,7 +423,7 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
       </CollapsibleSection>
 
       {/* Padding */}
-      <CollapsibleSection title="Padding" open={paddingOpen} onToggle={() => setPaddingOpen(!paddingOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Padding" open={paddingOpen} onToggle={() => setPaddingOpen(!paddingOpen)}>
         <div className="grid grid-cols-4 gap-2">
           {[
             { key: 'paddingTop', label: 'Top' },
@@ -444,7 +454,15 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
       {widget.sectionHeading && (
         <TypographyControl
           label="Section Header Typography"
+          defaultOpen={true}
           value={getSectionHeaderTypography()}
+          responsiveFontSize={(getSectionHeaderTypography() as any).fontSizeResponsive}
+          onResponsiveFontSizeChange={(next) => onChange({
+            sectionHeaderTypography: {
+              ...getSectionHeaderTypography(),
+              fontSizeResponsive: next,
+            } as any,
+          })}
           onChange={(updates) => {
             onChange({
               sectionHeaderTypography: {
@@ -462,7 +480,15 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
       {/* Name Typography */}
       <TypographyControl
         label="Name Typography"
+        defaultOpen={false}
         value={getNameTypography()}
+        responsiveFontSize={(getNameTypography() as any).fontSizeResponsive}
+        onResponsiveFontSizeChange={(next) => onChange({
+          nameTypography: {
+            ...getNameTypography(),
+            fontSizeResponsive: next,
+          } as any,
+        })}
         onChange={(updates) => {
           onChange({
             nameTypography: {
@@ -479,7 +505,15 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
       {/* Review Text Typography */}
       <TypographyControl
         label="Review Text Typography"
+        defaultOpen={false}
         value={getReviewTextTypography()}
+        responsiveFontSize={(getReviewTextTypography() as any).fontSizeResponsive}
+        onResponsiveFontSizeChange={(next) => onChange({
+          reviewTextTypography: {
+            ...getReviewTextTypography(),
+            fontSizeResponsive: next,
+          } as any,
+        })}
         onChange={(updates) => {
           onChange({
             reviewTextTypography: {
@@ -496,7 +530,15 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
       {/* Date Typography */}
       <TypographyControl
         label="Date Typography"
+        defaultOpen={false}
         value={getDateTypography()}
+        responsiveFontSize={(getDateTypography() as any).fontSizeResponsive}
+        onResponsiveFontSizeChange={(next) => onChange({
+          dateTypography: {
+            ...getDateTypography(),
+            fontSizeResponsive: next,
+          } as any,
+        })}
         onChange={(updates) => {
           onChange({
             dateTypography: {
@@ -511,7 +553,7 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
       />
 
       {/* Card Style */}
-      <CollapsibleSection title="Card Style" open={cardStyleOpen} onToggle={() => setCardStyleOpen(!cardStyleOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Card Style" open={cardStyleOpen} onToggle={() => setCardStyleOpen(!cardStyleOpen)}>
         <div className="space-y-3">
           <div className="space-y-2">
             <Label>Background Color</Label>
@@ -546,7 +588,7 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
       </CollapsibleSection>
 
       {/* Star Style */}
-      <CollapsibleSection title="Star Style" open={starStyleOpen} onToggle={() => setStarStyleOpen(!starStyleOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Star Style" open={starStyleOpen} onToggle={() => setStarStyleOpen(!starStyleOpen)}>
         <div className="space-y-2">
           <Label>Star Color</Label>
           <GlobalColorInput
@@ -560,7 +602,7 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
       </CollapsibleSection>
 
       {/* Background */}
-      <CollapsibleSection title="Background" open={backgroundOpen} onToggle={() => setBackgroundOpen(!backgroundOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Background" open={backgroundOpen} onToggle={() => setBackgroundOpen(!backgroundOpen)}>
         <div className="space-y-3">
           <div className="space-y-2">
             <Label>Type</Label>

@@ -16,6 +16,7 @@ import { IconPicker } from '../IconPicker';
 import { cn } from '@/lib/utils';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { GlobalColorInput } from '../controls/GlobalColorInput';
+import { ResponsiveDevicePicker } from '../controls/ResponsiveControlShell';
 
 interface IconTextEditorNewProps {
   widget: IconTextWidget;
@@ -31,18 +32,18 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   
   // Collapsible states
-  const [sectionHeaderOpen, setSectionHeaderOpen] = useState(false);
-  const [itemsOpen, setItemsOpen] = useState(true);
+  const [sectionHeaderOpen, setSectionHeaderOpen] = useState(true);
+  const [itemsOpen, setItemsOpen] = useState(false);
   const [sectionHeightOpen, setSectionHeightOpen] = useState(false);
   const [sectionWidthOpen, setSectionWidthOpen] = useState(false);
   const [paddingOpen, setPaddingOpen] = useState(false);
-  const [columnsOpen, setColumnsOpen] = useState(false);
+  const [columnsOpen, setColumnsOpen] = useState(true);
   const [alignmentOpen, setAlignmentOpen] = useState(false);
   const [typographyOpen, setTypographyOpen] = useState(false);
   const [sectionHeaderStyleOpen, setSectionHeaderStyleOpen] = useState(false);
   const [itemHeadingStyleOpen, setItemHeadingStyleOpen] = useState(false);
   const [itemSubheadingStyleOpen, setItemSubheadingStyleOpen] = useState(false);
-  const [iconStyleOpen, setIconStyleOpen] = useState(false);
+  const [iconStyleOpen, setIconStyleOpen] = useState(true);
   const [boxStyleOpen, setBoxStyleOpen] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(false);
 
@@ -50,11 +51,13 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
     title, 
     open, 
     onToggle, 
+    showBreakpointIcon = false,
     children 
   }: { 
     title: string; 
     open: boolean; 
     onToggle: () => void; 
+    showBreakpointIcon?: boolean;
     children: React.ReactNode;
   }) => (
     <div className="border rounded-lg">
@@ -63,7 +66,14 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
         className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
         onClick={onToggle}
       >
-        <span className="font-medium text-sm">{title}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-sm">{title}</span>
+          {showBreakpointIcon && (
+            <div onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+              <ResponsiveDevicePicker className="h-6 w-6" />
+            </div>
+          )}
+        </div>
         {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
       </button>
       {open && (
@@ -410,7 +420,7 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
   const layoutTab = (
     <div className="space-y-2">
       {/* Columns */}
-      <CollapsibleSection title="Columns" open={columnsOpen} onToggle={() => setColumnsOpen(!columnsOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Columns" open={columnsOpen} onToggle={() => setColumnsOpen(!columnsOpen)}>
         <div className="space-y-2">
           <Label>Columns per Row: {widget.columns || 3}</Label>
           <input
@@ -436,7 +446,7 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
       </CollapsibleSection>
 
       {/* Section Height */}
-      <CollapsibleSection title="Section Height" open={sectionHeightOpen} onToggle={() => setSectionHeightOpen(!sectionHeightOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Section Height" open={sectionHeightOpen} onToggle={() => setSectionHeightOpen(!sectionHeightOpen)}>
         <div className="flex gap-2">
           <Select
             value={layout.height.type || 'auto'}
@@ -467,7 +477,7 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
       </CollapsibleSection>
 
       {/* Section Width */}
-      <CollapsibleSection title="Section Width" open={sectionWidthOpen} onToggle={() => setSectionWidthOpen(!sectionWidthOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Section Width" open={sectionWidthOpen} onToggle={() => setSectionWidthOpen(!sectionWidthOpen)}>
         <Select
           value={layout.width || 'container'}
           onValueChange={(value: 'full' | 'container') => onChange({ layout: { ...layout, width: value } })}
@@ -483,7 +493,7 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
       </CollapsibleSection>
 
       {/* Padding */}
-      <CollapsibleSection title="Padding" open={paddingOpen} onToggle={() => setPaddingOpen(!paddingOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Padding" open={paddingOpen} onToggle={() => setPaddingOpen(!paddingOpen)}>
         <div className="grid grid-cols-4 gap-2">
           {['top', 'right', 'bottom', 'left'].map((side) => (
             <div key={side} className="space-y-1">
@@ -501,7 +511,7 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
       </CollapsibleSection>
 
       {/* Alignment */}
-      <CollapsibleSection title="Text Alignment" open={alignmentOpen} onToggle={() => setAlignmentOpen(!alignmentOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Text Alignment" open={alignmentOpen} onToggle={() => setAlignmentOpen(!alignmentOpen)}>
         <div className="grid grid-cols-3 gap-2">
           <Button
             variant={widget.alignment === 'left' ? 'default' : 'outline'}
@@ -536,7 +546,10 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
       {widget.sectionHeading && (
         <TypographyControl
           label="Section Header Typography"
+          defaultOpen={true}
           value={getSectionHeaderTypography()}
+          responsiveFontSize={(widget as any).headerFontSizeResponsive}
+          onResponsiveFontSizeChange={(next) => onChange({ headerFontSizeResponsive: next } as any)}
           onChange={(updates) => {
             const widgetUpdate: any = {};
             if (updates.fontFamily !== undefined) widgetUpdate.headerFontFamily = updates.fontFamily;
@@ -571,7 +584,10 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
       {/* Item Title Typography */}
       <TypographyControl
         label="Item Title Typography"
+        defaultOpen={false}
         value={getItemTitleTypography()}
+        responsiveFontSize={(widget as any).itemTitleFontSizeResponsive}
+        onResponsiveFontSizeChange={(next) => onChange({ itemTitleFontSizeResponsive: next } as any)}
         onChange={(updates) => {
           const widgetUpdate: any = {};
           if (updates.fontFamily !== undefined) widgetUpdate.itemTitleFontFamily = updates.fontFamily;
@@ -605,7 +621,10 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
       {/* Item Description Typography */}
       <TypographyControl
         label="Item Description Typography"
+        defaultOpen={false}
         value={getItemDescriptionTypography()}
+        responsiveFontSize={(widget as any).itemDescFontSizeResponsive}
+        onResponsiveFontSizeChange={(next) => onChange({ itemDescFontSizeResponsive: next } as any)}
         onChange={(updates) => {
           const widgetUpdate: any = {};
           if (updates.fontFamily !== undefined) widgetUpdate.itemDescFontFamily = updates.fontFamily;
@@ -637,7 +656,7 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
       />
 
       {/* Icon Style */}
-      <CollapsibleSection title="Icon Style" open={iconStyleOpen} onToggle={() => setIconStyleOpen(!iconStyleOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Icon Style" open={iconStyleOpen} onToggle={() => setIconStyleOpen(!iconStyleOpen)}>
         <div className="space-y-3">
           <div className="space-y-2">
             <Label>Icon Size: {widget.iconSize || 24}px</Label>
@@ -674,7 +693,7 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
       </CollapsibleSection>
 
       {/* Background */}
-      <CollapsibleSection title="Background" open={backgroundOpen} onToggle={() => setBackgroundOpen(!backgroundOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Background" open={backgroundOpen} onToggle={() => setBackgroundOpen(!backgroundOpen)}>
         <div className="space-y-3">
           <div className="space-y-2">
             <Label>Type</Label>

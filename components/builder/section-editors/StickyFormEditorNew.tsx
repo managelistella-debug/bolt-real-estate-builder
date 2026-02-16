@@ -13,6 +13,10 @@ import { TypographyControl } from '../controls/TypographyControl';
 import { ButtonControl } from '../controls/ButtonControl';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { GlobalColorInput } from '../controls/GlobalColorInput';
+import { useBuilderStore } from '@/lib/stores/builder';
+import { resolveResponsiveValue, updateResponsiveValue } from '@/lib/responsive';
+import { ResponsiveControlShell } from '../controls/ResponsiveControlShell';
+import { ResponsiveDevicePicker } from '../controls/ResponsiveControlShell';
 
 interface StickyFormEditorNewProps {
   widget: StickyFormWidget;
@@ -21,12 +25,18 @@ interface StickyFormEditorNewProps {
 
 export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewProps) {
   const { website } = useWebsiteStore();
+  const { deviceView } = useBuilderStore();
   const [contentOpen, setContentOpen] = useState(true);
   const [formSettingsOpen, setFormSettingsOpen] = useState(false);
-  const [positionOpen, setPositionOpen] = useState(false);
+  const [positionOpen, setPositionOpen] = useState(true);
   const [typographyOpen, setTypographyOpen] = useState(false);
   const [buttonStyleOpen, setButtonStyleOpen] = useState(false);
-  const [cardStyleOpen, setCardStyleOpen] = useState(false);
+  const [cardStyleOpen, setCardStyleOpen] = useState(true);
+  const activeMobileStackOrder = resolveResponsiveValue<'form-first' | 'text-first'>(
+    (widget as any).mobileStackOrderResponsive,
+    deviceView,
+    (widget as any).mobileStackOrder || 'form-first',
+  );
 
   // Migration: Initialize submitButton for existing widgets
   useEffect(() => {
@@ -146,10 +156,20 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
     };
   };
 
-  const CollapsibleSection = ({ title, open, onToggle, children }: any) => (
+  const CollapsibleSection = ({ title, open, onToggle, showBreakpointIcon = false, children }: any) => (
     <div className="border rounded-lg">
       <button type="button" className="w-full flex items-center justify-between p-3 hover:bg-muted/50" onClick={onToggle}>
-        <span className="font-medium text-sm">{title}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-sm">{title}</span>
+          {showBreakpointIcon && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <ResponsiveDevicePicker className="h-6 w-6" />
+            </div>
+          )}
+        </div>
         {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
       </button>
       {open && <div className="p-4 pt-0 space-y-3">{children}</div>}
@@ -204,7 +224,7 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
 
   const layoutTab = (
     <div className="space-y-2">
-      <CollapsibleSection title="Position" open={positionOpen} onToggle={() => setPositionOpen(!positionOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Position" open={positionOpen} onToggle={() => setPositionOpen(!positionOpen)}>
         <div className="space-y-3">
           <div className="space-y-2">
             <Label>Form Side (Desktop/Tablet)</Label>
@@ -222,19 +242,32 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Mobile Stack Order</Label>
-            <Select
-              value={(widget as any).mobileStackOrder || 'form-first'}
-              onValueChange={(value: 'form-first' | 'text-first') => onChange({ mobileStackOrder: value } as any)}
+            <ResponsiveControlShell
+              label="Mobile Stack Order"
+              hasOverride={!!(widget as any).mobileStackOrderResponsive?.mobile}
             >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="form-first">Form First</SelectItem>
-                <SelectItem value="text-first">Text First</SelectItem>
-              </SelectContent>
-            </Select>
+              <Select
+                value={activeMobileStackOrder}
+                onValueChange={(value: 'form-first' | 'text-first') =>
+                  onChange({
+                    mobileStackOrder: value,
+                    mobileStackOrderResponsive: updateResponsiveValue(
+                      (widget as any).mobileStackOrderResponsive,
+                      deviceView,
+                      value,
+                    ),
+                  } as any)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="form-first">Form First</SelectItem>
+                  <SelectItem value="text-first">Text First</SelectItem>
+                </SelectContent>
+              </Select>
+            </ResponsiveControlShell>
           </div>
           <div className="space-y-2">
             <Label>
@@ -259,7 +292,15 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
       {/* Main Heading Typography (Text Side) */}
       <TypographyControl
         label="Main Heading Typography"
+        defaultOpen={true}
         value={getHeadingTypography()}
+        responsiveFontSize={(getHeadingTypography() as any).fontSizeResponsive}
+        onResponsiveFontSizeChange={(next) => onChange({
+          headingTypography: {
+            ...getHeadingTypography(),
+            fontSizeResponsive: next,
+          } as any,
+        })}
         onChange={(updates) => {
           if (Object.keys(updates).length > 0) {
             onChange({
@@ -278,7 +319,15 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
       {/* Form Heading Typography (Form Box) */}
       <TypographyControl
         label="Form Heading Typography"
+        defaultOpen={false}
         value={getFormHeadingTypography()}
+        responsiveFontSize={(getFormHeadingTypography() as any).fontSizeResponsive}
+        onResponsiveFontSizeChange={(next) => onChange({
+          formHeadingTypography: {
+            ...getFormHeadingTypography(),
+            fontSizeResponsive: next,
+          } as any,
+        })}
         onChange={(updates) => {
           if (Object.keys(updates).length > 0) {
             onChange({
@@ -297,7 +346,15 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
       {/* Description Typography */}
       <TypographyControl
         label="Description Typography"
+        defaultOpen={false}
         value={getDescriptionTypography()}
+        responsiveFontSize={(getDescriptionTypography() as any).fontSizeResponsive}
+        onResponsiveFontSizeChange={(next) => onChange({
+          descriptionTypography: {
+            ...getDescriptionTypography(),
+            fontSizeResponsive: next,
+          } as any,
+        })}
         onChange={(updates) => {
           if (Object.keys(updates).length > 0) {
             onChange({
@@ -331,7 +388,7 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
         globalStyles={website?.globalStyles}
       />
 
-      <CollapsibleSection title="Card Style" open={cardStyleOpen} onToggle={() => setCardStyleOpen(!cardStyleOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Card Style" open={cardStyleOpen} onToggle={() => setCardStyleOpen(!cardStyleOpen)}>
         <div className="space-y-3">
           <div className="space-y-2">
             <Label>Background Color</Label>

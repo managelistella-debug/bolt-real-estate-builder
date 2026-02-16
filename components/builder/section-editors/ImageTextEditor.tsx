@@ -8,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ImageTextWidget } from '@/lib/types';
 import { AlignLeft, AlignCenter, AlignRight, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd } from 'lucide-react';
 import { ImageUpload } from '../ImageUpload';
+import { useBuilderStore } from '@/lib/stores/builder';
+import { resolveResponsiveValue, updateResponsiveValue } from '@/lib/responsive';
+import { ResponsiveControlShell } from '../controls/ResponsiveControlShell';
 
 interface ImageTextEditorProps {
   widget: ImageTextWidget;
@@ -15,6 +18,18 @@ interface ImageTextEditorProps {
 }
 
 export function ImageTextEditor({ widget, onChange }: ImageTextEditorProps) {
+  const { deviceView } = useBuilderStore();
+  const activeTextAlign = resolveResponsiveValue<'left' | 'center' | 'right'>(
+    widget.textAlignResponsive,
+    deviceView,
+    widget.textAlign || 'left',
+  );
+  const activeMobileLayout = resolveResponsiveValue<'stacked-image-top' | 'stacked-image-bottom' | 'horizontal'>(
+    widget.mobileLayoutResponsive,
+    deviceView,
+    widget.mobileLayout || 'stacked-image-top',
+  );
+
   return (
     <div className="space-y-4">
       {/* Image Upload */}
@@ -147,10 +162,16 @@ export function ImageTextEditor({ widget, onChange }: ImageTextEditorProps) {
 
       {/* Mobile Layout */}
       <div className="space-y-2">
-        <Label>Mobile Layout</Label>
+        <ResponsiveControlShell
+          label="Mobile Layout"
+          hasOverride={!!widget.mobileLayoutResponsive?.mobile}
+        >
         <Select
-          value={widget.mobileLayout || 'stacked-image-top'}
-          onValueChange={(value: 'stacked-image-top' | 'stacked-image-bottom' | 'horizontal') => onChange({ mobileLayout: value })}
+          value={activeMobileLayout}
+          onValueChange={(value: 'stacked-image-top' | 'stacked-image-bottom' | 'horizontal') => onChange({
+            mobileLayout: value,
+            mobileLayoutResponsive: updateResponsiveValue(widget.mobileLayoutResponsive, deviceView, value),
+          })}
         >
           <SelectTrigger>
             <SelectValue />
@@ -161,6 +182,7 @@ export function ImageTextEditor({ widget, onChange }: ImageTextEditorProps) {
             <SelectItem value="horizontal">Side by Side</SelectItem>
           </SelectContent>
         </Select>
+        </ResponsiveControlShell>
       </div>
 
       {/* Title */}
@@ -186,33 +208,46 @@ export function ImageTextEditor({ widget, onChange }: ImageTextEditorProps) {
 
       {/* Text Horizontal Alignment */}
       <div className="space-y-2">
-        <Label>Text Alignment</Label>
+        <ResponsiveControlShell
+          label="Text Alignment"
+          hasOverride={!!widget.textAlignResponsive?.tablet || !!widget.textAlignResponsive?.mobile}
+        >
         <div className="grid grid-cols-3 gap-2">
           <Button
-            variant={widget.textAlign === 'left' ? 'default' : 'outline'}
+            variant={activeTextAlign === 'left' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => onChange({ textAlign: 'left' })}
+            onClick={() => onChange({
+              textAlign: deviceView === 'desktop' ? 'left' : widget.textAlign,
+              textAlignResponsive: updateResponsiveValue(widget.textAlignResponsive, deviceView, 'left'),
+            })}
             className="w-full"
           >
             <AlignLeft className="h-4 w-4" />
           </Button>
           <Button
-            variant={(widget.textAlign || 'left') === 'center' ? 'default' : 'outline'}
+            variant={activeTextAlign === 'center' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => onChange({ textAlign: 'center' })}
+            onClick={() => onChange({
+              textAlign: deviceView === 'desktop' ? 'center' : widget.textAlign,
+              textAlignResponsive: updateResponsiveValue(widget.textAlignResponsive, deviceView, 'center'),
+            })}
             className="w-full"
           >
             <AlignCenter className="h-4 w-4" />
           </Button>
           <Button
-            variant={widget.textAlign === 'right' ? 'default' : 'outline'}
+            variant={activeTextAlign === 'right' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => onChange({ textAlign: 'right' })}
+            onClick={() => onChange({
+              textAlign: deviceView === 'desktop' ? 'right' : widget.textAlign,
+              textAlignResponsive: updateResponsiveValue(widget.textAlignResponsive, deviceView, 'right'),
+            })}
             className="w-full"
           >
             <AlignRight className="h-4 w-4" />
           </Button>
         </div>
+        </ResponsiveControlShell>
       </div>
 
       {/* Text Vertical Alignment */}

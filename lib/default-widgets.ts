@@ -202,6 +202,9 @@ export function createDefaultWidget(type: SectionType): any {
           opacity: 100,
         },
         mobileLayout: 'stacked-image-top',
+        mobileLayoutResponsive: {
+          mobile: 'stacked-image-top',
+        },
         padding: DEFAULT_PADDING,
         margin: DEFAULT_MARGIN,
       };
@@ -374,6 +377,19 @@ export function createDefaultWidget(type: SectionType): any {
       return {
         type: 'image-navigation',
         columns: 3,
+        desktopColumns: 3,
+        tabletColumns: 3,
+        mobileColumns: 1,
+        columnsResponsive: {
+          desktop: 3,
+          tablet: 3,
+          mobile: 1,
+        },
+        gap: 24,
+        cardBorderRadius: 12,
+        showCardBorder: false,
+        cardBorderColor: '#e5e7eb',
+        cardBorderWidth: 1,
         items: [
           {
             id: `item_${timestamp}_1`,
@@ -679,6 +695,11 @@ export function createDefaultWidget(type: SectionType): any {
         desktopColumns: 3,
         tabletColumns: 2,
         mobileColumns: 1,
+        columnsResponsive: {
+          desktop: 3,
+          tablet: 2,
+          mobile: 1,
+        },
         gap: 32,
         // Image styling
         imageHeight: 200,

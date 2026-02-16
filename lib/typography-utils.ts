@@ -1,11 +1,15 @@
-import { TypographyConfig, FontSizeValue, ButtonStyleConfig } from './types';
+import { TypographyConfig, FontSizeValue, ButtonStyleConfig, Breakpoint } from './types';
+import { resolveResponsiveValue } from './responsive';
 
 /**
  * Converts a FontSizeValue to a CSS string
  */
-export function fontSizeToCSS(fontSize: FontSizeValue | number | undefined): string {
+export function fontSizeToCSS(fontSize: FontSizeValue | string | number | undefined): string {
   if (typeof fontSize === 'number') {
     return `${fontSize}px`;
+  }
+  if (typeof fontSize === 'string') {
+    return fontSize;
   }
   if (!fontSize) return '16px';
   return `${fontSize.value}${fontSize.unit}`;
@@ -14,12 +18,20 @@ export function fontSizeToCSS(fontSize: FontSizeValue | number | undefined): str
 /**
  * Converts a TypographyConfig to CSS style object
  */
-export function typographyToCSS(typography: TypographyConfig | undefined): React.CSSProperties {
+export function typographyToCSS(
+  typography: TypographyConfig | undefined,
+  breakpoint: Breakpoint = 'desktop',
+): React.CSSProperties {
   if (!typography) return {};
+  const fontSize = resolveResponsiveValue(
+    typography.fontSizeResponsive,
+    breakpoint,
+    typography.fontSize,
+  );
   
   return {
     fontFamily: typography.fontFamily || 'Inter',
-    fontSize: fontSizeToCSS(typography.fontSize),
+    fontSize: fontSizeToCSS(fontSize as any),
     fontWeight: typography.fontWeight || '400',
     lineHeight: typography.lineHeight || '1.5',
     textTransform: typography.textTransform || 'none',

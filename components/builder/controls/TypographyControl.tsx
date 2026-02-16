@@ -1,13 +1,19 @@
 'use client';
 
+import { useState } from 'react';
+
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TypographyConfig, GlobalStyles, FontSizeValue } from '@/lib/types';
+import { TypographyConfig, GlobalStyles, FontSizeValue, ResponsiveValue } from '@/lib/types';
 import { FontSizeInput } from '../FontSizeInput';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { GlobalColorInput } from './GlobalColorInput';
+import { useResponsiveField } from '../hooks/useResponsiveField';
+import { ResponsiveControlShell } from './ResponsiveControlShell';
+import { ResponsiveDevicePicker } from './ResponsiveControlShell';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 interface TypographyControlProps {
   value: Partial<TypographyConfig>;
@@ -18,6 +24,9 @@ interface TypographyControlProps {
   availableGlobalStyles?: ('h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'body')[];
   showColorControl?: boolean;
   className?: string;
+  responsiveFontSize?: ResponsiveValue<FontSizeValue | string | number>;
+  onResponsiveFontSizeChange?: (value: ResponsiveValue<FontSizeValue | string | number>) => void;
+  defaultOpen?: boolean;
 }
 
 const FONT_FAMILIES = [
@@ -64,7 +73,11 @@ export function TypographyControl({
   availableGlobalStyles = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'body'],
   showColorControl = true,
   className,
+  responsiveFontSize,
+  onResponsiveFontSizeChange,
+  defaultOpen = true,
 }: TypographyControlProps) {
+  const [open, setOpen] = useState(defaultOpen);
   const allGlobalTypographyStyles: ('h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'body')[] = [
     'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'body',
   ];
@@ -89,6 +102,16 @@ export function TypographyControl({
   // Typography controls remain editable while linked; editing forks and unlinks.
   const controlsLockedByGlobal = false;
 
+  const {
+    deviceView,
+    resolvedValue: resolvedResponsiveFontSize,
+    setValueForActiveDevice: setResponsiveFontSizeForDevice,
+  } = useResponsiveField<FontSizeValue | string | number>({
+    value: responsiveFontSize,
+    fallback: rawValue.fontSize || 16,
+    onChange: (next) => onResponsiveFontSizeChange?.(next),
+  });
+
   // Parse font size to FontSizeValue
   const parseFontSize = (fontSize: FontSizeValue | string | number | undefined): FontSizeValue => {
     if (!fontSize) return { value: 16, unit: 'px' };
@@ -106,6 +129,13 @@ export function TypographyControl({
   };
 
   const handleFontSizeChange = (newValue: FontSizeValue) => {
+    if (onResponsiveFontSizeChange) {
+      setResponsiveFontSizeForDevice(newValue);
+      if (deviceView === 'desktop') {
+        onChange({ fontSize: newValue });
+      }
+      return;
+    }
     onChange({ fontSize: newValue });
   };
 
@@ -152,75 +182,84 @@ export function TypographyControl({
   return (
     <div className={cn("space-y-3 p-3 border rounded-lg", className)}>
       <div className="flex items-center justify-between">
-        <Label className="text-sm font-semibold">{label}</Label>
-        {showGlobalStyleSelector && (
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className="inline-flex items-center justify-center"
-                title={isUsingGlobalStyle && value.globalStyleId ? styleLabelMap[value.globalStyleId] : 'No global typography style'}
-              >
-                <img
-                  src={isUsingGlobalStyle ? '/icons/globe-active.svg' : '/icons/globe-inactive.svg'}
-                  alt="Typography global style"
-                  className="h-[13px] w-[13px]"
-                />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-[240px] p-0">
-              <div className="border-b px-3 py-2 text-sm font-medium">Global Typography</div>
-              <div className="p-2 space-y-1">
-                {styleOptions.map((styleId) => {
-                  const styleConfig = styleId === 'body'
-                    ? globalStyles?.body
-                    : globalStyles?.headings?.[styleId as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'];
-                  const isActive = value.globalStyleId === styleId && value.useGlobalStyle;
+        <div className="flex items-center gap-2">
+          <Label className="text-sm font-semibold">{label}</Label>
+          {onResponsiveFontSizeChange && <ResponsiveDevicePicker className="h-6 w-6" />}
+        </div>
+        <div className="flex items-center gap-2">
+          {showGlobalStyleSelector && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center"
+                  title={isUsingGlobalStyle && value.globalStyleId ? styleLabelMap[value.globalStyleId] : 'No global typography style'}
+                >
+                  <img
+                    src={isUsingGlobalStyle ? '/icons/globe-active.svg' : '/icons/globe-inactive.svg'}
+                    alt="Typography global style"
+                    className="h-[13px] w-[13px]"
+                  />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-[240px] p-0">
+                <div className="border-b px-3 py-2 text-sm font-medium">Global Typography</div>
+                <div className="p-2 space-y-1">
+                  {styleOptions.map((styleId) => {
+                    const styleConfig = styleId === 'body'
+                      ? globalStyles?.body
+                      : globalStyles?.headings?.[styleId as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'];
+                    const isActive = value.globalStyleId === styleId && value.useGlobalStyle;
 
-                  return (
-                    <button
-                      key={styleId}
-                      type="button"
-                      className={cn(
-                        "w-full text-left rounded px-2 py-1.5 hover:bg-muted",
-                        isActive && "bg-muted"
-                      )}
-                      onClick={() => {
-                        onChange({
-                          ...(styleConfig || {}),
-                          color: rawValue.color ?? '#000000',
-                          useGlobalStyle: true,
-                          globalStyleId: styleId,
-                        }, true);
-                      }}
-                    >
-                      <span
-                        className="block"
-                        style={{
-                          fontFamily: styleConfig?.fontFamily || 'Inter',
-                          fontWeight: styleConfig?.fontWeight || '400',
-                          lineHeight: styleConfig?.lineHeight || '1.5',
-                          textTransform: (styleConfig?.textTransform as any) || 'none',
-                          fontSize: (() => {
-                            const fs = styleConfig?.fontSize as FontSizeValue | string | undefined;
-                            if (!fs) return '14px';
-                            if (typeof fs === 'string') return fs;
-                            if (typeof fs === 'object' && 'value' in fs) return `${fs.value}${fs.unit}`;
-                            return '14px';
-                          })(),
+                    return (
+                      <button
+                        key={styleId}
+                        type="button"
+                        className={cn(
+                          "w-full text-left rounded px-2 py-1.5 hover:bg-muted",
+                          isActive && "bg-muted"
+                        )}
+                        onClick={() => {
+                          onChange({
+                            ...(styleConfig || {}),
+                            color: rawValue.color ?? '#000000',
+                            useGlobalStyle: true,
+                            globalStyleId: styleId,
+                          }, true);
                         }}
                       >
-                        {styleLabelMap[styleId]}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </PopoverContent>
-          </Popover>
-        )}
+                        <span
+                          className="block"
+                          style={{
+                            fontFamily: styleConfig?.fontFamily || 'Inter',
+                            fontWeight: styleConfig?.fontWeight || '400',
+                            lineHeight: styleConfig?.lineHeight || '1.5',
+                            textTransform: (styleConfig?.textTransform as any) || 'none',
+                            fontSize: (() => {
+                              const fs = styleConfig?.fontSize as FontSizeValue | string | undefined;
+                              if (!fs) return '14px';
+                              if (typeof fs === 'string') return fs;
+                              if (typeof fs === 'object' && 'value' in fs) return `${fs.value}${fs.unit}`;
+                              return '14px';
+                            })(),
+                          }}
+                        >
+                          {styleLabelMap[styleId]}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+          <button type="button" onClick={() => setOpen((prev) => !prev)} className="inline-flex items-center">
+            {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </button>
+        </div>
       </div>
 
+      {open && (
       <div className="space-y-3">
         {/* Font Family */}
         <div className="space-y-2">
@@ -244,13 +283,25 @@ export function TypographyControl({
         </div>
 
         {/* Font Size */}
-        <div className="space-y-2">
-          <Label className="text-xs">Font Size</Label>
-          <FontSizeInput
-            value={parseFontSize(value.fontSize)}
-            onChange={handleFontSizeChange}
-          />
-        </div>
+        {onResponsiveFontSizeChange ? (
+          <ResponsiveControlShell
+            label="Font Size"
+            hasOverride={!!responsiveFontSize?.tablet || !!responsiveFontSize?.mobile}
+          >
+            <FontSizeInput
+              value={parseFontSize(resolvedResponsiveFontSize)}
+              onChange={handleFontSizeChange}
+            />
+          </ResponsiveControlShell>
+        ) : (
+          <div className="space-y-2">
+            <Label className="text-xs">Font Size</Label>
+            <FontSizeInput
+              value={parseFontSize(value.fontSize)}
+              onChange={handleFontSizeChange}
+            />
+          </div>
+        )}
 
         {/* Font Weight */}
         <div className="space-y-2">
@@ -321,6 +372,7 @@ export function TypographyControl({
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

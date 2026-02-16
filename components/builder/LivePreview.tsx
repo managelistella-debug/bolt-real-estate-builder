@@ -44,6 +44,7 @@ import { resolvePageHeaderConfig } from '@/lib/header-config';
 import { SiteHeader } from '@/components/site-header/SiteHeader';
 import { SiteFooter } from '@/components/site-footer/SiteFooter';
 import { normalizeFooterConfig } from '@/lib/footer-config';
+import { resolveResponsiveColumns, resolveResponsiveSpacing, resolveResponsiveValue } from '@/lib/responsive';
 
 interface LivePreviewProps {
   page: Page;
@@ -309,7 +310,7 @@ export function LivePreview({
                 <StepsSection widget={section.widget as StepsWidget} globalStyles={website.globalStyles} />
               )}
               {section.type === 'image-text-columns' && (
-                <ImageTextColumnsSection widget={section.widget as ImageTextColumnsWidget} />
+                <ImageTextColumnsSection widget={section.widget as ImageTextColumnsWidget} globalStyles={website.globalStyles} />
               )}
               {section.type === 'sticky-form' && (
                 <StickyFormSection widget={section.widget as StickyFormWidget} globalStyles={website.globalStyles} />
@@ -355,24 +356,65 @@ export function LivePreview({
 }
 
 function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
+  const { deviceView } = useBuilderStore();
   const title = widget.title || widget.headline || 'Welcome';
   const subtitle = widget.subtitle || widget.subheadline || '';
   const buttonText = widget.button?.text || widget.cta?.text || 'Get Started';
   const buttonUrl = widget.button?.url || widget.cta?.url || '#';
   
-  const horizontal = widget.textPosition?.horizontal || widget.alignment || 'center';
-  const vertical = widget.textPosition?.vertical || 'middle';
-  
-  const heightType = widget.layout?.height?.type || 'vh';
-  const heightValue = widget.layout?.height?.value || 60;
+  const textPosition = widget.textPosition || { horizontal: 'center', vertical: 'middle' };
+  const horizontal = resolveResponsiveValue<'left' | 'center' | 'right'>(
+    widget.textPositionResponsive?.horizontal,
+    deviceView,
+    (textPosition.horizontal as 'left' | 'center' | 'right') || (widget.alignment as any) || 'center',
+  );
+  const vertical = resolveResponsiveValue<'top' | 'middle' | 'bottom'>(
+    widget.textPositionResponsive?.vertical,
+    deviceView,
+    (textPosition.vertical as 'top' | 'middle' | 'bottom') || 'middle',
+  );
+
+  const defaultLayout = {
+    height: { type: 'vh' as const, value: 60 },
+    width: 'full' as const,
+    padding: { top: 80, right: 40, bottom: 80, left: 40 },
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
+  };
+  const layoutCfg = {
+    ...defaultLayout,
+    ...(widget.layout || {}),
+  };
+  const resolvedHeight = resolveResponsiveValue<any>(
+    layoutCfg.heightResponsive,
+    deviceView,
+    layoutCfg.height || defaultLayout.height,
+  );
+  const resolvedWidth = resolveResponsiveValue<'full' | 'container'>(
+    layoutCfg.widthResponsive,
+    deviceView,
+    layoutCfg.width || defaultLayout.width,
+  );
+  const resolvedPadding = resolveResponsiveValue<any>(
+    layoutCfg.paddingResponsive,
+    deviceView,
+    layoutCfg.padding || defaultLayout.padding,
+  );
+  const resolvedMargin = resolveResponsiveValue<any>(
+    layoutCfg.marginResponsive,
+    deviceView,
+    layoutCfg.margin || defaultLayout.margin,
+  );
+
+  const heightType = resolvedHeight?.type || 'vh';
+  const heightValue = resolvedHeight?.value || 60;
   let height = '500px';
   if (heightType === 'vh') height = `${heightValue}vh`;
   else if (heightType === 'percentage') height = `${heightValue}%`;
   else if (heightType === 'pixels') height = `${heightValue}px`;
   else height = 'auto';
 
-  const padding = widget.layout?.padding || { top: 80, right: 40, bottom: 80, left: 40 };
-  const margin = widget.layout?.margin || { top: 0, right: 0, bottom: 0, left: 0 };
+  const padding = resolvedPadding;
+  const margin = resolvedMargin;
 
   const bgType = widget.background?.type || 'color';
   const bgColor = widget.background?.color || '#3b82f6';
@@ -381,7 +423,7 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
   
   // Get typography styles using the new TypographyConfig structure
   const titleStyles = widget.textStyles?.title 
-    ? typographyToCSS(widget.textStyles.title)
+    ? typographyToCSS(widget.textStyles.title, deviceView as any)
     : {
         fontFamily: 'Inter',
         fontSize: '3rem',
@@ -392,7 +434,7 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
       };
   
   const subtitleStyles = widget.textStyles?.subtitle
-    ? typographyToCSS(widget.textStyles.subtitle)
+    ? typographyToCSS(widget.textStyles.subtitle, deviceView as any)
     : {
         fontFamily: 'Inter',
         fontSize: '1.25rem',
@@ -494,7 +536,8 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
       {/* Content */}
       <div 
         className={cn(
-          'relative z-10 w-full max-w-6xl mx-auto',
+          'relative z-10 w-full',
+          resolvedWidth === 'container' && 'max-w-6xl mx-auto',
           horizontal === 'left' && 'text-left',
           horizontal === 'center' && 'text-center',
           horizontal === 'right' && 'text-right'
@@ -636,6 +679,7 @@ function ContactSection({ widget, styles }: { widget: ContactWidget; styles: any
 
 // New section renderers
 function HeadlineSection({ widget, globalStyles }: { widget: HeadlineWidget; globalStyles: any }) {
+  const { deviceView } = useBuilderStore();
   const padding = widget.padding || { top: 40, right: 20, bottom: 40, left: 20 };
   const margin = widget.margin || { top: 0, right: 0, bottom: 0, left: 0 };
   
@@ -648,7 +692,11 @@ function HeadlineSection({ widget, globalStyles }: { widget: HeadlineWidget; glo
   
   // Get title typography
   const getTitleFontSize = () => {
-    const fontSize = widget.titleSize || (widget as any).titleFontSize;
+    const fontSize = resolveResponsiveValue<any>(
+      (widget as any).titleSizeResponsive,
+      deviceView,
+      widget.titleSize || (widget as any).titleFontSize,
+    );
     if (!fontSize) return '48px';
     if (typeof fontSize === 'object' && fontSize.value !== undefined) {
       return `${fontSize.value}${fontSize.unit}`;
@@ -669,7 +717,11 @@ function HeadlineSection({ widget, globalStyles }: { widget: HeadlineWidget; glo
 
   // Get subtitle typography
   const getSubtitleFontSize = () => {
-    const fontSize = widget.subtitleSize || (widget as any).subtitleFontSize;
+    const fontSize = resolveResponsiveValue<any>(
+      (widget as any).subtitleSizeResponsive,
+      deviceView,
+      widget.subtitleSize || (widget as any).subtitleFontSize,
+    );
     if (!fontSize) return '20px';
     if (typeof fontSize === 'object' && fontSize.value !== undefined) {
       return `${fontSize.value}${fontSize.unit}`;
@@ -688,9 +740,15 @@ function HeadlineSection({ widget, globalStyles }: { widget: HeadlineWidget; glo
     color: widget.subtitleColor || '#6b7280',
   };
   
+  const textAlign = resolveResponsiveValue<'left' | 'center' | 'right'>(
+    (widget as any).textAlignResponsive,
+    deviceView,
+    widget.textAlign || 'center',
+  );
+
   return (
     <div 
-      className={cn('flex items-center', `text-${widget.textAlign || 'center'}`)}
+      className={cn('flex items-center', `text-${textAlign}`)}
       style={{ 
         backgroundColor: widget.background.color,
         paddingTop: `${padding.top}px`,
@@ -758,8 +816,16 @@ function HeadlineSection({ widget, globalStyles }: { widget: HeadlineWidget; glo
 
 function ImageTextSection({ widget, globalStyles }: { widget: ImageTextWidget; globalStyles: any }) {
   const { deviceView } = useBuilderStore();
-  const padding = widget.padding || { top: 60, right: 40, bottom: 60, left: 40 };
-  const margin = widget.margin || { top: 0, right: 0, bottom: 0, left: 0 };
+  const padding = resolveResponsiveSpacing(
+    widget.paddingResponsive,
+    deviceView,
+    widget.padding || { top: 60, right: 40, bottom: 60, left: 40 },
+  );
+  const margin = resolveResponsiveSpacing(
+    widget.marginResponsive,
+    deviceView,
+    widget.margin || { top: 0, right: 0, bottom: 0, left: 0 },
+  );
   
   // Image height calculation
   const imageHeightType = widget.imageHeight?.type || 'auto';
@@ -774,8 +840,17 @@ function ImageTextSection({ widget, globalStyles }: { widget: ImageTextWidget; g
   const imageObjectFit = widget.imageObjectFit || 'cover';
   const imageObjectPosition = `${widget.imageObjectPosition?.x || 'center'} ${widget.imageObjectPosition?.y || 'center'}`;
   
-  const textAlign = widget.textAlign || 'left';
+  const textAlign = resolveResponsiveValue<'left' | 'center' | 'right'>(
+    widget.textAlignResponsive,
+    deviceView,
+    widget.textAlign || 'left',
+  );
   const textVerticalAlign = widget.textVerticalAlign || 'middle';
+  const mobileLayout = resolveResponsiveValue<'stacked-image-top' | 'stacked-image-bottom' | 'horizontal'>(
+    widget.mobileLayoutResponsive,
+    deviceView,
+    widget.mobileLayout || 'stacked-image-top',
+  );
   
   // Background styling
   const bgType = widget.background?.type || 'none';
@@ -891,7 +966,10 @@ function ImageTextSection({ widget, globalStyles }: { widget: ImageTextWidget; g
   // Title typography
   const titleStyles: React.CSSProperties = {
     fontFamily: (widget as any).titleFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).titleFontSize, '36px'),
+    fontSize: getFontSize(
+      resolveResponsiveValue((widget as any).titleFontSizeResponsive, deviceView, (widget as any).titleFontSize),
+      '36px',
+    ),
     fontWeight: (widget as any).titleFontWeight || '700',
     lineHeight: (widget as any).titleLineHeight || '1.2',
     textTransform: ((widget as any).titleTextTransform as any) || 'none',
@@ -902,7 +980,10 @@ function ImageTextSection({ widget, globalStyles }: { widget: ImageTextWidget; g
   // Content typography
   const contentStyles: React.CSSProperties = {
     fontFamily: (widget as any).contentFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).contentFontSize, '16px'),
+    fontSize: getFontSize(
+      resolveResponsiveValue((widget as any).contentFontSizeResponsive, deviceView, (widget as any).contentFontSize),
+      '16px',
+    ),
     fontWeight: (widget as any).contentFontWeight || '400',
     lineHeight: (widget as any).contentLineHeight || '1.6',
     textTransform: ((widget as any).contentTextTransform as any) || 'none',
@@ -980,11 +1061,11 @@ function ImageTextSection({ widget, globalStyles }: { widget: ImageTextWidget; g
           <div 
             className={cn(
               'max-w-6xl mx-auto grid items-center',
-              widget.mobileLayout === 'horizontal' ? 'grid-cols-2' : 'grid-cols-1'
+              mobileLayout === 'horizontal' ? 'grid-cols-2' : 'grid-cols-1'
             )}
             style={{ gap: `${widget.gap || 40}px` }}
           >
-            {widget.mobileLayout === 'stacked-image-bottom' ? (
+            {mobileLayout === 'stacked-image-bottom' ? (
               <>
                 {textComponent}
                 {imageComponent}
@@ -1384,25 +1465,81 @@ function CustomCodeSection({ widget }: { widget: CustomCodeWidget }) {
 }
 
 function ImageNavigationSection({ widget }: { widget: ImageNavigationWidget }) {
+  const { deviceView } = useBuilderStore();
+  const desktopColumns = Math.max(1, Math.min(6, widget.desktopColumns ?? widget.columns ?? 3));
+  const tabletColumns = Math.max(1, Math.min(6, widget.tabletColumns ?? desktopColumns));
+  const mobileColumns = Math.max(1, Math.min(4, widget.mobileColumns ?? 1));
+  const gap = Math.max(0, widget.gap ?? 24);
+  const cardBorderRadius = Math.max(0, widget.cardBorderRadius ?? 12);
+  const showCardBorder = widget.showCardBorder ?? false;
+  const cardBorderWidth = Math.max(1, widget.cardBorderWidth ?? 1);
+  const cardBorderColor = widget.cardBorderColor || '#e5e7eb';
+  const columnsForDevice = resolveResponsiveColumns(
+    {
+      desktop: desktopColumns,
+      tablet: tabletColumns,
+      mobile: mobileColumns,
+      responsive: widget.columnsResponsive,
+      min: 1,
+      max: 6,
+    },
+    deviceView,
+  );
+  const titleTypography = (widget as any).titleTypography || {
+    fontFamily: 'Inter',
+    fontSize: { value: 1.5, unit: 'rem' },
+    fontWeight: '700',
+    lineHeight: '1.2',
+    textTransform: 'none',
+    letterSpacing: '0em',
+    color: '#ffffff',
+  };
+  const titleFontSize = resolveResponsiveValue<any>(
+    titleTypography.fontSizeResponsive,
+    deviceView,
+    titleTypography.fontSize,
+  );
+
   return (
     <div className="py-16 px-6">
       <div className="max-w-6xl mx-auto">
         <div 
           className="grid"
           style={{ 
-            gridTemplateColumns: `repeat(${widget.columns}, 1fr)`,
-            gap: `${widget.gap}px`,
+            gridTemplateColumns: `repeat(${columnsForDevice}, minmax(0, 1fr))`,
+            gap: `${gap}px`,
           }}
         >
           {(widget.items || []).map((item) => (
             <a 
               key={item.id} 
               href={item.url}
-              className="relative h-64 rounded-lg overflow-hidden group"
+              className="relative h-64 overflow-hidden group"
+              style={{
+                borderRadius: `${cardBorderRadius}px`,
+                border: showCardBorder ? `${cardBorderWidth}px solid ${cardBorderColor}` : 'none',
+              }}
             >
               <img src={item.image} alt={item.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
               <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors flex items-center justify-center">
-                <h3 className="text-white text-2xl font-bold">{item.title}</h3>
+                <h3
+                  style={{
+                    color: titleTypography.color || '#ffffff',
+                    fontFamily: titleTypography.fontFamily || 'Inter',
+                    fontWeight: titleTypography.fontWeight || '700',
+                    lineHeight: titleTypography.lineHeight || '1.2',
+                    textTransform: (titleTypography.textTransform as any) || 'none',
+                    letterSpacing: titleTypography.letterSpacing || '0em',
+                    fontSize:
+                      typeof titleFontSize === 'object'
+                        ? `${titleFontSize.value}${titleFontSize.unit}`
+                        : typeof titleFontSize === 'number'
+                          ? `${titleFontSize}px`
+                          : String(titleFontSize || '1.5rem'),
+                  }}
+                >
+                  {item.title}
+                </h3>
               </div>
             </a>
           ))}
@@ -1428,7 +1565,14 @@ function IconTextSection({ widget }: { widget: IconTextWidget }) {
   // Section header typography
   const headerStyles: React.CSSProperties = {
     fontFamily: (widget as any).headerFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).headerFontSize || widget.headingSize, '36px'),
+    fontSize: getFontSize(
+      resolveResponsiveValue(
+        (widget as any).headerFontSizeResponsive,
+        deviceView,
+        (widget as any).headerFontSize || widget.headingSize,
+      ),
+      '36px',
+    ),
     fontWeight: (widget as any).headerFontWeight || widget.headingWeight || '700',
     lineHeight: (widget as any).headerLineHeight || '1.2',
     textTransform: ((widget as any).headerTextTransform as any) || 'none',
@@ -1440,7 +1584,14 @@ function IconTextSection({ widget }: { widget: IconTextWidget }) {
   // Item title typography
   const itemTitleStyles: React.CSSProperties = {
     fontFamily: (widget as any).itemTitleFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).itemTitleFontSize || widget.titleFontSize, '20px'),
+    fontSize: getFontSize(
+      resolveResponsiveValue(
+        (widget as any).itemTitleFontSizeResponsive,
+        deviceView,
+        (widget as any).itemTitleFontSize || widget.titleFontSize,
+      ),
+      '20px',
+    ),
     fontWeight: (widget as any).itemTitleFontWeight || widget.titleFontWeight || '600',
     lineHeight: (widget as any).itemTitleLineHeight || '1.4',
     textTransform: ((widget as any).itemTitleTextTransform as any) || 'none',
@@ -1451,7 +1602,14 @@ function IconTextSection({ widget }: { widget: IconTextWidget }) {
   // Item description typography
   const itemDescStyles: React.CSSProperties = {
     fontFamily: (widget as any).itemDescFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).itemDescFontSize || widget.descriptionFontSize, '16px'),
+    fontSize: getFontSize(
+      resolveResponsiveValue(
+        (widget as any).itemDescFontSizeResponsive,
+        deviceView,
+        (widget as any).itemDescFontSize || widget.descriptionFontSize,
+      ),
+      '16px',
+    ),
     fontWeight: (widget as any).itemDescFontWeight || widget.descriptionFontWeight || '400',
     lineHeight: (widget as any).itemDescLineHeight || '1.6',
     textTransform: ((widget as any).itemDescTextTransform as any) || 'none',
@@ -1742,19 +1900,60 @@ function TextSectionComponent({ widget, globalStyles }: { widget: TextSectionWid
   const { deviceView } = useBuilderStore();
 
   // Safeguards
-  const layout = widget.layout || 'side-by-side';
-  const headingAlignment = widget.headingAlignment || 'left';
-  const bodyAlignment = widget.bodyAlignment || 'left';
-  const headingSize = widget.headingSize ?? 48;
-  const bodySize = widget.bodySize ?? 16;
-  const taglineSize = widget.taglineSize ?? 14;
-  const columnGap = widget.columnGap ?? 60;
-  const rowGap = widget.rowGap ?? 24;
-  const headingColumnWidth = widget.headingColumnWidth ?? 40;
-  const reverseOrder = widget.reverseOrder || false;
+  const layout = resolveResponsiveValue<'side-by-side' | 'stacked'>(
+    widget.layoutResponsive,
+    deviceView,
+    widget.layout || 'side-by-side',
+  );
+  const headingAlignment = resolveResponsiveValue<'left' | 'center' | 'right'>(
+    widget.headingAlignmentResponsive,
+    deviceView,
+    widget.headingAlignment || 'left',
+  );
+  const bodyAlignment = resolveResponsiveValue<'left' | 'center' | 'right'>(
+    widget.bodyAlignmentResponsive,
+    deviceView,
+    widget.bodyAlignment || 'left',
+  );
+  const headingSize = resolveResponsiveValue<number>(
+    widget.headingSizeResponsive,
+    deviceView,
+    widget.headingSize ?? 48,
+  );
+  const bodySize = resolveResponsiveValue<number>(
+    widget.bodySizeResponsive,
+    deviceView,
+    widget.bodySize ?? 16,
+  );
+  const taglineSize = resolveResponsiveValue<number>(
+    widget.taglineSizeResponsive,
+    deviceView,
+    widget.taglineSize ?? 14,
+  );
+  const columnGap = resolveResponsiveValue<number>(
+    widget.columnGapResponsive,
+    deviceView,
+    widget.columnGap ?? 60,
+  );
+  const rowGap = resolveResponsiveValue<number>(
+    widget.rowGapResponsive,
+    deviceView,
+    widget.rowGap ?? 24,
+  );
+  const headingColumnWidth = resolveResponsiveValue<number>(
+    widget.headingColumnWidthResponsive,
+    deviceView,
+    widget.headingColumnWidth ?? 40,
+  );
+  const reverseOrder = resolveResponsiveValue<boolean>(
+    widget.reverseOrderResponsive,
+    deviceView,
+    widget.reverseOrder || false,
+  );
 
-  // Force stacked layout on mobile
-  const effectiveLayout = deviceView === 'mobile' ? 'stacked' : layout;
+  // Force stacked by default on mobile unless explicitly overridden.
+  const hasMobileLayoutOverride = Boolean(widget.layoutResponsive?.mobile);
+  const effectiveLayout = deviceView === 'mobile' && !hasMobileLayoutOverride ? 'stacked' : layout;
 
   // Background styling
   const bgType = widget.background?.type || 'none';
@@ -1875,9 +2074,24 @@ function TextSectionComponent({ widget, globalStyles }: { widget: TextSectionWid
   };
 
   // Heading typography
+  const headingFontSize = resolveResponsiveValue<any>(
+    (widget as any).headingFontSizeResponsive,
+    deviceView,
+    (widget as any).headingFontSize,
+  );
+  const taglineFontSize = resolveResponsiveValue<any>(
+    (widget as any).taglineFontSizeResponsive,
+    deviceView,
+    (widget as any).taglineFontSize,
+  );
+  const bodyFontSize = resolveResponsiveValue<any>(
+    (widget as any).bodyFontSizeResponsive,
+    deviceView,
+    (widget as any).bodyFontSize,
+  );
   const headingStyles: React.CSSProperties = {
     fontFamily: (widget as any).headingFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).headingFontSize, `${headingSize}px`),
+    fontSize: getFontSize(headingFontSize, `${headingSize}px`),
     fontWeight: (widget as any).headingFontWeight || '700',
     lineHeight: (widget as any).headingLineHeight || '1.2',
     textTransform: ((widget as any).headingTextTransform as any) || 'none',
@@ -1888,7 +2102,7 @@ function TextSectionComponent({ widget, globalStyles }: { widget: TextSectionWid
   // Tagline typography
   const taglineStyles: React.CSSProperties = {
     fontFamily: (widget as any).taglineFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).taglineFontSize, `${taglineSize}px`),
+    fontSize: getFontSize(taglineFontSize, `${taglineSize}px`),
     fontWeight: (widget as any).taglineFontWeight || '600',
     lineHeight: (widget as any).taglineLineHeight || '1.4',
     textTransform: ((widget as any).taglineTextTransform as any) || 'uppercase',
@@ -1899,7 +2113,7 @@ function TextSectionComponent({ widget, globalStyles }: { widget: TextSectionWid
   // Body typography
   const bodyStyles: React.CSSProperties = {
     fontFamily: (widget as any).bodyFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).bodyFontSize, `${bodySize}px`),
+    fontSize: getFontSize(bodyFontSize, `${bodySize}px`),
     fontWeight: (widget as any).bodyFontWeight || '400',
     lineHeight: (widget as any).bodyLineHeight || '1.6',
     textTransform: ((widget as any).bodyTextTransform as any) || 'none',
@@ -2068,12 +2282,32 @@ function FAQSection({ widget }: { widget: FAQWidget }) {
 
   // Ensure defaults
   const heading = widget.heading || 'Have Questions?';
-  const headingAlignment = widget.headingAlignment || 'center';
+  const headingAlignment = resolveResponsiveValue<'left' | 'center' | 'right'>(
+    widget.headingAlignmentResponsive,
+    deviceView,
+    widget.headingAlignment || 'center',
+  );
   
+  const headingFontSize = resolveResponsiveValue<any>(
+    (widget as any).headingFontSizeResponsive,
+    deviceView,
+    (widget as any).headingFontSize || widget.headingSize,
+  );
+  const questionFontSize = resolveResponsiveValue<any>(
+    (widget as any).questionFontSizeResponsive,
+    deviceView,
+    (widget as any).questionFontSizeObj || widget.questionFontSize,
+  );
+  const answerFontSize = resolveResponsiveValue<any>(
+    (widget as any).answerFontSizeResponsive,
+    deviceView,
+    (widget as any).answerFontSizeObj || widget.answerFontSize,
+  );
+
   // Heading typography
   const headingStyles: React.CSSProperties = {
     fontFamily: (widget as any).headingFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).headingFontSize || widget.headingSize, '48px'),
+    fontSize: getFontSize(headingFontSize, '48px'),
     fontWeight: (widget as any).headingFontWeight || widget.headingWeight || '700',
     lineHeight: (widget as any).headingLineHeight || '1.2',
     textTransform: ((widget as any).headingTextTransform as any) || 'none',
@@ -2084,7 +2318,11 @@ function FAQSection({ widget }: { widget: FAQWidget }) {
   const subheading = widget.subheading || '';
   const subheadingColor = widget.subheadingColor || '#6b7280';
   const subheadingSize = widget.subheadingSize || 18;
-  const subheadingAlignment = widget.subheadingAlignment || 'center';
+  const subheadingAlignment = resolveResponsiveValue<'left' | 'center' | 'right'>(
+    widget.subheadingAlignmentResponsive,
+    deviceView,
+    widget.subheadingAlignment || 'center',
+  );
   
   // Extract heading size for responsive calculations
   const headingSize = widget.headingSize ?? 48;
@@ -2094,7 +2332,7 @@ function FAQSection({ widget }: { widget: FAQWidget }) {
   // Question typography
   const questionStyles: React.CSSProperties = {
     fontFamily: (widget as any).questionFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).questionFontSizeObj || widget.questionFontSize, '18px'),
+    fontSize: getFontSize(questionFontSize, '18px'),
     fontWeight: (widget as any).questionFontWeightStr || String(widget.questionFontWeight || '600'),
     lineHeight: (widget as any).questionLineHeight || '1.5',
     textTransform: ((widget as any).questionTextTransform as any) || 'none',
@@ -2105,7 +2343,7 @@ function FAQSection({ widget }: { widget: FAQWidget }) {
   // Answer typography
   const answerStyles: React.CSSProperties = {
     fontFamily: (widget as any).answerFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).answerFontSizeObj || widget.answerFontSize, '16px'),
+    fontSize: getFontSize(answerFontSize, '16px'),
     fontWeight: (widget as any).answerFontWeightStr || String(widget.answerFontWeight || '400'),
     lineHeight: (widget as any).answerLineHeight || '1.6',
     textTransform: ((widget as any).answerTextTransform as any) || 'none',
@@ -2113,8 +2351,16 @@ function FAQSection({ widget }: { widget: FAQWidget }) {
     color: widget.answerColor || '#6b7280',
   };
   
-  const questionAlignment = widget.questionAlignment || 'left';
-  const answerAlignment = widget.answerAlignment || 'left';
+  const questionAlignment = resolveResponsiveValue<'left' | 'center' | 'right'>(
+    widget.questionAlignmentResponsive,
+    deviceView,
+    widget.questionAlignment || 'left',
+  );
+  const answerAlignment = resolveResponsiveValue<'left' | 'center' | 'right'>(
+    widget.answerAlignmentResponsive,
+    deviceView,
+    widget.answerAlignment || 'left',
+  );
   
   const iconStyle = widget.iconStyle || 'chevron';
   const iconColor = widget.iconColor || '#10b981';
@@ -2415,7 +2661,10 @@ function ContactFormSection({ widget, globalStyles }: { widget: ContactFormWidge
   // Heading styles
   const headingStyles: React.CSSProperties = {
     fontFamily: formHeadingTypography.fontFamily,
-    fontSize: getFontSize(formHeadingTypography.fontSize, '32px'),
+    fontSize: getFontSize(
+      resolveResponsiveValue(formHeadingTypography.fontSizeResponsive, deviceView, formHeadingTypography.fontSize),
+      '32px',
+    ),
     fontWeight: formHeadingTypography.fontWeight,
     lineHeight: formHeadingTypography.lineHeight,
     textTransform: formHeadingTypography.textTransform as any,
@@ -2427,7 +2676,10 @@ function ContactFormSection({ widget, globalStyles }: { widget: ContactFormWidge
   // Description styles
   const descriptionStyles: React.CSSProperties = {
     fontFamily: formDescriptionTypography.fontFamily,
-    fontSize: getFontSize(formDescriptionTypography.fontSize, '16px'),
+    fontSize: getFontSize(
+      resolveResponsiveValue(formDescriptionTypography.fontSizeResponsive, deviceView, formDescriptionTypography.fontSize),
+      '16px',
+    ),
     fontWeight: formDescriptionTypography.fontWeight,
     lineHeight: formDescriptionTypography.lineHeight,
     textTransform: formDescriptionTypography.textTransform as any,
@@ -3014,7 +3266,7 @@ function ContactFormSection({ widget, globalStyles }: { widget: ContactFormWidge
 }
 
 function TestimonialsSection({ widget }: { widget: TestimonialWidget }) {
-  const { selectSection } = useBuilderStore();
+  const { selectSection, deviceView } = useBuilderStore();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -3072,7 +3324,14 @@ function TestimonialsSection({ widget }: { widget: TestimonialWidget }) {
   // Section header typography - match editor getter exactly
   const headerStyles: React.CSSProperties = {
     fontFamily: (widget as any).headerFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).headerFontSize || widget.headerSize || { value: 36, unit: 'px' }, '36px'),
+    fontSize: getFontSize(
+      resolveResponsiveValue(
+        (widget as any).headerFontSizeResponsive,
+        deviceView,
+        (widget as any).headerFontSize || widget.headerSize || { value: 36, unit: 'px' },
+      ),
+      '36px',
+    ),
     fontWeight: (widget as any).headerFontWeight || widget.headerWeight || '700',
     lineHeight: (widget as any).headerLineHeight || '1.2',
     textTransform: ((widget as any).headerTextTransform as any) || 'none',
@@ -3084,7 +3343,14 @@ function TestimonialsSection({ widget }: { widget: TestimonialWidget }) {
   // Name typography - match editor getter exactly
   const nameStyles: React.CSSProperties = {
     fontFamily: (widget as any).nameFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).nameFontSizeObj || widget.nameFontSize || { value: 18, unit: 'px' }, '18px'),
+    fontSize: getFontSize(
+      resolveResponsiveValue(
+        (widget as any).nameFontSizeResponsive,
+        deviceView,
+        (widget as any).nameFontSizeObj || widget.nameFontSize || { value: 18, unit: 'px' },
+      ),
+      '18px',
+    ),
     fontWeight: (widget as any).nameFontWeightStr || String(widget.nameFontWeight || '600'),
     lineHeight: (widget as any).nameLineHeight || '1.4',
     textTransform: ((widget as any).nameTextTransform as any) || 'none',
@@ -3095,7 +3361,14 @@ function TestimonialsSection({ widget }: { widget: TestimonialWidget }) {
   // Title typography - match editor getter exactly
   const titleStyles: React.CSSProperties = {
     fontFamily: (widget as any).titleFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).titleFontSizeObj || widget.titleFontSize || { value: 14, unit: 'px' }, '14px'),
+    fontSize: getFontSize(
+      resolveResponsiveValue(
+        (widget as any).titleFontSizeResponsive,
+        deviceView,
+        (widget as any).titleFontSizeObj || widget.titleFontSize || { value: 14, unit: 'px' },
+      ),
+      '14px',
+    ),
     fontWeight: (widget as any).titleFontWeightStr || String(widget.titleFontWeight || '400'),
     lineHeight: (widget as any).titleLineHeight || '1.4',
     textTransform: ((widget as any).titleTextTransform as any) || 'none',
@@ -3106,7 +3379,14 @@ function TestimonialsSection({ widget }: { widget: TestimonialWidget }) {
   // Quote typography - match editor getter exactly
   const quoteStyles: React.CSSProperties = {
     fontFamily: (widget as any).quoteFontFamily || 'Inter',
-    fontSize: getFontSize((widget as any).quoteFontSizeObj || widget.quoteFontSize || { value: 16, unit: 'px' }, '16px'),
+    fontSize: getFontSize(
+      resolveResponsiveValue(
+        (widget as any).quoteFontSizeResponsive,
+        deviceView,
+        (widget as any).quoteFontSizeObj || widget.quoteFontSize || { value: 16, unit: 'px' },
+      ),
+      '16px',
+    ),
     fontWeight: (widget as any).quoteFontWeightStr || String(widget.quoteFontWeight || '400'),
     lineHeight: (widget as any).quoteLineHeight || '1.6',
     textTransform: ((widget as any).quoteTextTransform as any) || 'none',
@@ -3561,7 +3841,10 @@ function StepsSection({ widget, globalStyles }: { widget: StepsWidget; globalSty
   // Section header styles
   const sectionHeaderStyles: React.CSSProperties = {
     fontFamily: sectionHeaderTypography.fontFamily,
-    fontSize: getFontSize(sectionHeaderTypography.fontSize, '48px'),
+    fontSize: getFontSize(
+      resolveResponsiveValue(sectionHeaderTypography.fontSizeResponsive, deviceView, sectionHeaderTypography.fontSize),
+      '48px',
+    ),
     fontWeight: sectionHeaderTypography.fontWeight,
     lineHeight: sectionHeaderTypography.lineHeight,
     textTransform: sectionHeaderTypography.textTransform as any,
@@ -3573,7 +3856,10 @@ function StepsSection({ widget, globalStyles }: { widget: StepsWidget; globalSty
   // Step label styles
   const stepLabelStyles: React.CSSProperties = {
     fontFamily: stepLabelTypography.fontFamily,
-    fontSize: getFontSize(stepLabelTypography.fontSize, '12px'),
+    fontSize: getFontSize(
+      resolveResponsiveValue(stepLabelTypography.fontSizeResponsive, deviceView, stepLabelTypography.fontSize),
+      '12px',
+    ),
     fontWeight: stepLabelTypography.fontWeight,
     lineHeight: stepLabelTypography.lineHeight,
     textTransform: stepLabelTypography.textTransform as any,
@@ -3589,7 +3875,10 @@ function StepsSection({ widget, globalStyles }: { widget: StepsWidget; globalSty
   // Step heading styles
   const stepHeadingStyles: React.CSSProperties = {
     fontFamily: stepHeadingTypography.fontFamily,
-    fontSize: getFontSize(stepHeadingTypography.fontSize, '24px'),
+    fontSize: getFontSize(
+      resolveResponsiveValue(stepHeadingTypography.fontSizeResponsive, deviceView, stepHeadingTypography.fontSize),
+      '24px',
+    ),
     fontWeight: stepHeadingTypography.fontWeight,
     lineHeight: stepHeadingTypography.lineHeight,
     textTransform: stepHeadingTypography.textTransform as any,
@@ -3601,7 +3890,10 @@ function StepsSection({ widget, globalStyles }: { widget: StepsWidget; globalSty
   // Step description styles
   const stepDescriptionStyles: React.CSSProperties = {
     fontFamily: stepDescriptionTypography.fontFamily,
-    fontSize: getFontSize(stepDescriptionTypography.fontSize, '16px'),
+    fontSize: getFontSize(
+      resolveResponsiveValue(stepDescriptionTypography.fontSizeResponsive, deviceView, stepDescriptionTypography.fontSize),
+      '16px',
+    ),
     fontWeight: stepDescriptionTypography.fontWeight,
     lineHeight: stepDescriptionTypography.lineHeight,
     textTransform: stepDescriptionTypography.textTransform as any,
@@ -3769,7 +4061,7 @@ function StepsSection({ widget, globalStyles }: { widget: StepsWidget; globalSty
   );
 }
 
-function ImageTextColumnsSection({ widget }: { widget: ImageTextColumnsWidget }) {
+function ImageTextColumnsSection({ widget, globalStyles }: { widget: ImageTextColumnsWidget; globalStyles: any }) {
   const { deviceView } = useBuilderStore();
 
   const items = widget.items || [];
@@ -3779,7 +4071,15 @@ function ImageTextColumnsSection({ widget }: { widget: ImageTextColumnsWidget })
   const gap = widget.gap || 24;
   const imageAspectRatio = widget.imageAspectRatio || '3:2';
   const imageBorderRadius = widget.imageBorderRadius ?? 12;
-  const textAlign = widget.textAlign || 'center';
+  const showImageBorder = widget.showImageBorder ?? false;
+  const imageBorderColor = widget.imageBorderColor || '#e5e7eb';
+  const imageBorderWidth = widget.imageBorderWidth ?? 1;
+  const layoutStyle = widget.layoutStyle || 'text-below';
+  const textAlign = resolveResponsiveValue<'left' | 'center' | 'right'>(
+    widget.textAlignResponsive,
+    deviceView,
+    widget.textAlign || 'center',
+  );
   // Helper to convert fontSize to CSS
   const getFontSize = (fontSize: any, fallback: string) => {
     if (!fontSize) return fallback;
@@ -3821,10 +4121,26 @@ function ImageTextColumnsSection({ widget }: { widget: ImageTextColumnsWidget })
     color: widget.descriptionColor || '#6b7280',
   };
 
+  const sectionHeaderFontSize = resolveResponsiveValue<any>(
+    sectionHeaderTypography.fontSizeResponsive,
+    deviceView,
+    sectionHeaderTypography.fontSize,
+  );
+  const subtitleFontSize = resolveResponsiveValue<any>(
+    subtitleTypography.fontSizeResponsive,
+    deviceView,
+    subtitleTypography.fontSize,
+  );
+  const descriptionFontSize = resolveResponsiveValue<any>(
+    descriptionTypography.fontSizeResponsive,
+    deviceView,
+    descriptionTypography.fontSize,
+  );
+
   // Section header styles
   const sectionHeaderStyles: React.CSSProperties = {
     fontFamily: sectionHeaderTypography.fontFamily,
-    fontSize: getFontSize(sectionHeaderTypography.fontSize, '48px'),
+    fontSize: getFontSize(sectionHeaderFontSize, '48px'),
     fontWeight: sectionHeaderTypography.fontWeight,
     lineHeight: sectionHeaderTypography.lineHeight,
     textTransform: sectionHeaderTypography.textTransform as any,
@@ -3836,7 +4152,7 @@ function ImageTextColumnsSection({ widget }: { widget: ImageTextColumnsWidget })
   // Subtitle styles
   const subtitleStyles: React.CSSProperties = {
     fontFamily: subtitleTypography.fontFamily,
-    fontSize: getFontSize(subtitleTypography.fontSize, '20px'),
+    fontSize: getFontSize(subtitleFontSize, '20px'),
     fontWeight: subtitleTypography.fontWeight,
     lineHeight: subtitleTypography.lineHeight,
     textTransform: subtitleTypography.textTransform as any,
@@ -3848,7 +4164,7 @@ function ImageTextColumnsSection({ widget }: { widget: ImageTextColumnsWidget })
   // Description styles
   const descriptionStyles: React.CSSProperties = {
     fontFamily: descriptionTypography.fontFamily,
-    fontSize: getFontSize(descriptionTypography.fontSize, '16px'),
+    fontSize: getFontSize(descriptionFontSize, '16px'),
     fontWeight: descriptionTypography.fontWeight,
     lineHeight: descriptionTypography.lineHeight,
     textTransform: descriptionTypography.textTransform as any,
@@ -3913,9 +4229,17 @@ function ImageTextColumnsSection({ widget }: { widget: ImageTextColumnsWidget })
   };
 
   const getGridColumns = () => {
-    if (deviceView === 'mobile') return mobileColumns;
-    if (deviceView === 'tablet') return tabletColumns;
-    return desktopColumns;
+    return resolveResponsiveColumns(
+      {
+        desktop: desktopColumns,
+        tablet: tabletColumns,
+        mobile: mobileColumns,
+        responsive: widget.columnsResponsive,
+        min: 1,
+        max: 4,
+      },
+      deviceView,
+    );
   };
 
   return (
@@ -3964,41 +4288,113 @@ function ImageTextColumnsSection({ widget }: { widget: ImageTextColumnsWidget })
             gap: `${gap}px`,
           }}
         >
-          {items.map((item) => (
-            <div key={item.id} className={getTextAlignClass()}>
-              {/* Image */}
-              {item.image && (
-                <div
-                  style={{
-                    aspectRatio: getAspectRatio(),
-                    borderRadius: `${imageBorderRadius}px`,
-                    overflow: 'hidden',
-                    marginBottom: '16px',
-                  }}
-                >
-                  <img
-                    src={item.image}
-                    alt={item.subtitle}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                    }}
-                  />
+          {items.map((item) => {
+            const shouldShowButton = Boolean(item.buttonUrl?.trim());
+            const imageFrameStyle: React.CSSProperties = {
+              aspectRatio: getAspectRatio(),
+              borderRadius: `${imageBorderRadius}px`,
+              overflow: 'hidden',
+              border: showImageBorder ? `${imageBorderWidth}px solid ${imageBorderColor}` : 'none',
+            };
+
+            if (layoutStyle === 'text-overlay') {
+              return (
+                <div key={item.id}>
+                  <div style={{ ...imageFrameStyle, position: 'relative' }}>
+                    {item.image ? (
+                      <img
+                        src={item.image}
+                        alt={item.subtitle}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted" />
+                    )}
+                    <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-center p-6">
+                      <h3 style={{ ...subtitleStyles, color: '#ffffff', marginBottom: item.description ? '12px' : '0px' }}>
+                        {item.subtitle}
+                      </h3>
+                      {item.description && (
+                        <p style={{ ...descriptionStyles, color: '#ffffff', marginBottom: shouldShowButton ? '16px' : '0px' }}>
+                          {item.description}
+                        </p>
+                      )}
+                      {shouldShowButton &&
+                        renderStandardButton(
+                          {
+                            text: item.buttonText?.trim() || 'Learn more',
+                            url: item.buttonUrl || '#',
+                            useGlobalStyle: true,
+                            globalStyleId: 'button1',
+                          },
+                          item.buttonText?.trim() || 'Learn more',
+                          item.buttonUrl || '#',
+                          {
+                            globalStyles,
+                          }
+                        )}
+                    </div>
+                  </div>
                 </div>
-              )}
+              );
+            }
 
-              {/* Subtitle */}
-              <h3 style={subtitleStyles}>
-                {item.subtitle}
-              </h3>
+            return (
+              <div key={item.id} className={getTextAlignClass()}>
+                {/* Image */}
+                {item.image && (
+                  <div
+                    style={{
+                      ...imageFrameStyle,
+                      marginBottom: '16px',
+                    }}
+                  >
+                    <img
+                      src={item.image}
+                      alt={item.subtitle}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                      }}
+                    />
+                  </div>
+                )}
 
-              {/* Description */}
-              <p style={descriptionStyles}>
-                {item.description}
-              </p>
-            </div>
-          ))}
+                {/* Subtitle */}
+                <h3 style={subtitleStyles}>
+                  {item.subtitle}
+                </h3>
+
+                {/* Description */}
+                <p style={descriptionStyles}>
+                  {item.description}
+                </p>
+
+                {shouldShowButton && (
+                  <div className={cn("mt-4", textAlign === 'left' ? 'flex justify-start' : textAlign === 'right' ? 'flex justify-end' : 'flex justify-center')}>
+                    {renderStandardButton(
+                      {
+                        text: item.buttonText?.trim() || 'Learn more',
+                        url: item.buttonUrl || '#',
+                        useGlobalStyle: true,
+                        globalStyleId: 'button1',
+                      },
+                      item.buttonText?.trim() || 'Learn more',
+                      item.buttonUrl || '#',
+                      {
+                        globalStyles,
+                      }
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -4513,7 +4909,10 @@ function ReviewsSliderSection({ widget, globalStyles }: { widget: ReviewsSliderW
   // Section header styles
   const sectionHeaderStyles: React.CSSProperties = {
     fontFamily: sectionHeaderTypography.fontFamily,
-    fontSize: getFontSize(sectionHeaderTypography.fontSize, '48px'),
+    fontSize: getFontSize(
+      resolveResponsiveValue(sectionHeaderTypography.fontSizeResponsive, deviceView, sectionHeaderTypography.fontSize),
+      '48px',
+    ),
     fontWeight: sectionHeaderTypography.fontWeight,
     lineHeight: sectionHeaderTypography.lineHeight,
     textTransform: sectionHeaderTypography.textTransform as any,
@@ -4525,7 +4924,10 @@ function ReviewsSliderSection({ widget, globalStyles }: { widget: ReviewsSliderW
   // Name styles
   const nameStyles: React.CSSProperties = {
     fontFamily: nameTypography.fontFamily,
-    fontSize: getFontSize(nameTypography.fontSize, '16px'),
+    fontSize: getFontSize(
+      resolveResponsiveValue(nameTypography.fontSizeResponsive, deviceView, nameTypography.fontSize),
+      '16px',
+    ),
     fontWeight: nameTypography.fontWeight,
     lineHeight: nameTypography.lineHeight,
     textTransform: nameTypography.textTransform as any,
@@ -4536,7 +4938,10 @@ function ReviewsSliderSection({ widget, globalStyles }: { widget: ReviewsSliderW
   // Review text styles
   const reviewTextStyles: React.CSSProperties = {
     fontFamily: reviewTextTypography.fontFamily,
-    fontSize: getFontSize(reviewTextTypography.fontSize, '14px'),
+    fontSize: getFontSize(
+      resolveResponsiveValue(reviewTextTypography.fontSizeResponsive, deviceView, reviewTextTypography.fontSize),
+      '14px',
+    ),
     fontWeight: reviewTextTypography.fontWeight,
     lineHeight: reviewTextTypography.lineHeight,
     textTransform: reviewTextTypography.textTransform as any,
@@ -4547,7 +4952,10 @@ function ReviewsSliderSection({ widget, globalStyles }: { widget: ReviewsSliderW
   // Date styles
   const dateStyles: React.CSSProperties = {
     fontFamily: dateTypography.fontFamily,
-    fontSize: getFontSize(dateTypography.fontSize, '12px'),
+    fontSize: getFontSize(
+      resolveResponsiveValue(dateTypography.fontSizeResponsive, deviceView, dateTypography.fontSize),
+      '12px',
+    ),
     fontWeight: dateTypography.fontWeight,
     lineHeight: dateTypography.lineHeight,
     textTransform: dateTypography.textTransform as any,

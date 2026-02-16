@@ -22,6 +22,10 @@ import { GlobalColorInput } from '../controls/GlobalColorInput';
 import { cn } from '@/lib/utils';
 import { useDebouncedInput } from '../hooks/useDebouncedInput';
 import { useWebsiteStore } from '@/lib/stores/website';
+import { useBuilderStore } from '@/lib/stores/builder';
+import { resolveResponsiveValue, updateResponsiveValue } from '@/lib/responsive';
+import { ResponsiveControlShell } from '../controls/ResponsiveControlShell';
+import { ResponsiveDevicePicker } from '../controls/ResponsiveControlShell';
 
 interface TextSectionEditorNewProps {
   widget: TextSectionWidget;
@@ -30,6 +34,7 @@ interface TextSectionEditorNewProps {
 
 export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewProps) {
   const { currentWebsite } = useWebsiteStore();
+  const { deviceView } = useBuilderStore();
   const globalStyles = currentWebsite?.globalStyles;
 
   // Debounced inputs for smooth typing
@@ -44,9 +49,9 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
   );
 
   // Collapsible states
-  const [buttonOpen, setButtonOpen] = useState(false);
-  const [backgroundOpen, setBackgroundOpen] = useState(false);
-  const [sectionHeightOpen, setSectionHeightOpen] = useState(false);
+  const [buttonOpen, setButtonOpen] = useState(true);
+  const [backgroundOpen, setBackgroundOpen] = useState(true);
+  const [sectionHeightOpen, setSectionHeightOpen] = useState(true);
   const [sectionWidthOpen, setSectionWidthOpen] = useState(false);
   const [paddingOpen, setPaddingOpen] = useState(false);
   const [layoutTypeOpen, setLayoutTypeOpen] = useState(false);
@@ -56,11 +61,13 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
     title, 
     open, 
     onToggle, 
+    showBreakpointIcon = false,
     children 
   }: { 
     title: string; 
     open: boolean; 
     onToggle: () => void; 
+    showBreakpointIcon?: boolean;
     children: React.ReactNode;
   }) => (
     <div className="border rounded-lg">
@@ -69,7 +76,14 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
         className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
         onClick={onToggle}
       >
-        <span className="font-medium text-sm">{title}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-sm">{title}</span>
+          {showBreakpointIcon && (
+            <div onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+              <ResponsiveDevicePicker className="h-6 w-6" />
+            </div>
+          )}
+        </div>
         {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
       </button>
       {open && (
@@ -96,6 +110,43 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
         margin: widget.layout.margin || defaultLayout.margin,
       }
     : defaultLayout;
+
+  const activeLayoutType = resolveResponsiveValue<'side-by-side' | 'stacked'>(
+    (widget as any).layoutResponsive,
+    deviceView,
+    typeof widget.layout === 'string' ? widget.layout : 'side-by-side',
+  );
+  const activeHeadingAlignment = resolveResponsiveValue<'left' | 'center' | 'right'>(
+    (widget as any).headingAlignmentResponsive,
+    deviceView,
+    widget.headingAlignment || 'left',
+  );
+  const activeBodyAlignment = resolveResponsiveValue<'left' | 'center' | 'right'>(
+    (widget as any).bodyAlignmentResponsive,
+    deviceView,
+    widget.bodyAlignment || 'left',
+  );
+
+  const updateResponsiveLayoutType = (next: 'side-by-side' | 'stacked') => {
+    onChange({
+      layout: deviceView === 'desktop' ? next : widget.layout,
+      layoutResponsive: updateResponsiveValue((widget as any).layoutResponsive, deviceView, next),
+    } as any);
+  };
+
+  const updateResponsiveHeadingAlignment = (next: 'left' | 'center' | 'right') => {
+    onChange({
+      headingAlignment: deviceView === 'desktop' ? next : widget.headingAlignment,
+      headingAlignmentResponsive: updateResponsiveValue((widget as any).headingAlignmentResponsive, deviceView, next),
+    } as any);
+  };
+
+  const updateResponsiveBodyAlignment = (next: 'left' | 'center' | 'right') => {
+    onChange({
+      bodyAlignment: deviceView === 'desktop' ? next : widget.bodyAlignment,
+      bodyAlignmentResponsive: updateResponsiveValue((widget as any).bodyAlignmentResponsive, deviceView, next),
+    } as any);
+  };
 
   // Migration: Convert old widget format to new format on first render
   useEffect(() => {
@@ -469,7 +520,7 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
   const layoutTab = (
     <div className="space-y-2">
       {/* Section Height */}
-      <CollapsibleSection title="Section Height" open={sectionHeightOpen} onToggle={() => setSectionHeightOpen(!sectionHeightOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Section Height" open={sectionHeightOpen} onToggle={() => setSectionHeightOpen(!sectionHeightOpen)}>
         <div className="flex gap-2">
           <Select
             value={layoutCfg.height.type || 'auto'}
@@ -507,7 +558,7 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
       </CollapsibleSection>
 
       {/* Section Width */}
-      <CollapsibleSection title="Section Width" open={sectionWidthOpen} onToggle={() => setSectionWidthOpen(!sectionWidthOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Section Width" open={sectionWidthOpen} onToggle={() => setSectionWidthOpen(!sectionWidthOpen)}>
         <Select
           value={layoutCfg.width || 'container'}
           onValueChange={(value: 'full' | 'container') => onChange({
@@ -525,7 +576,7 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
       </CollapsibleSection>
 
       {/* Padding */}
-      <CollapsibleSection title="Padding" open={paddingOpen} onToggle={() => setPaddingOpen(!paddingOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Padding" open={paddingOpen} onToggle={() => setPaddingOpen(!paddingOpen)}>
         <div className="grid grid-cols-4 gap-2">
           <div className="space-y-1">
             <Label className="text-xs">Top</Label>
@@ -583,29 +634,34 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
       </CollapsibleSection>
 
       {/* Layout Type */}
-      <CollapsibleSection title="Layout Type" open={layoutTypeOpen} onToggle={() => setLayoutTypeOpen(!layoutTypeOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Layout Type" open={layoutTypeOpen} onToggle={() => setLayoutTypeOpen(!layoutTypeOpen)}>
+        <ResponsiveControlShell
+          label="Layout Type"
+          hasOverride={!!(widget as any).layoutResponsive?.tablet || !!(widget as any).layoutResponsive?.mobile}
+        >
         <div className="grid grid-cols-2 gap-2">
           <Button
-            variant={widget.layout === 'side-by-side' ? 'default' : 'outline'}
+            variant={activeLayoutType === 'side-by-side' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => onChange({ layout: 'side-by-side' })}
+            onClick={() => updateResponsiveLayoutType('side-by-side')}
             className="flex-col h-auto py-3"
           >
             <div className="font-medium text-xs">Side by Side</div>
             <div className="text-xs opacity-70 mt-1">Heading left, text right</div>
           </Button>
           <Button
-            variant={widget.layout === 'stacked' ? 'default' : 'outline'}
+            variant={activeLayoutType === 'stacked' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => onChange({ layout: 'stacked' })}
+            onClick={() => updateResponsiveLayoutType('stacked')}
             className="flex-col h-auto py-3"
           >
             <div className="font-medium text-xs">Stacked</div>
             <div className="text-xs opacity-70 mt-1">Heading above text</div>
           </Button>
         </div>
+        </ResponsiveControlShell>
 
-        {widget.layout === 'side-by-side' && (
+        {activeLayoutType === 'side-by-side' && (
           <div className="space-y-3 mt-3">
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -640,7 +696,7 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
           </div>
         )}
 
-        {widget.layout === 'stacked' && (
+        {activeLayoutType === 'stacked' && (
           <div className="space-y-2 mt-3">
             <Label className="text-xs">Row Gap: {widget.rowGap ?? 24}px</Label>
             <input
@@ -656,59 +712,67 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
       </CollapsibleSection>
 
       {/* Alignment */}
-      <CollapsibleSection title="Alignment" open={alignmentOpen} onToggle={() => setAlignmentOpen(!alignmentOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Alignment" open={alignmentOpen} onToggle={() => setAlignmentOpen(!alignmentOpen)}>
         <div className="space-y-3">
           <div className="space-y-2">
-            <Label className="text-xs">Heading Alignment</Label>
+            <ResponsiveControlShell
+              label="Heading Alignment"
+              hasOverride={!!(widget as any).headingAlignmentResponsive?.tablet || !!(widget as any).headingAlignmentResponsive?.mobile}
+            >
             <div className="grid grid-cols-3 gap-2">
               <Button
-                variant={widget.headingAlignment === 'left' ? 'default' : 'outline'}
+                variant={activeHeadingAlignment === 'left' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => onChange({ headingAlignment: 'left' })}
+                onClick={() => updateResponsiveHeadingAlignment('left')}
               >
                 <AlignLeft className="h-4 w-4" />
               </Button>
               <Button
-                variant={widget.headingAlignment === 'center' ? 'default' : 'outline'}
+                variant={activeHeadingAlignment === 'center' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => onChange({ headingAlignment: 'center' })}
+                onClick={() => updateResponsiveHeadingAlignment('center')}
               >
                 <AlignCenter className="h-4 w-4" />
               </Button>
               <Button
-                variant={widget.headingAlignment === 'right' ? 'default' : 'outline'}
+                variant={activeHeadingAlignment === 'right' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => onChange({ headingAlignment: 'right' })}
+                onClick={() => updateResponsiveHeadingAlignment('right')}
               >
                 <AlignRight className="h-4 w-4" />
               </Button>
             </div>
+            </ResponsiveControlShell>
           </div>
           <div className="space-y-2">
-            <Label className="text-xs">Body Alignment</Label>
+            <ResponsiveControlShell
+              label="Body Alignment"
+              hasOverride={!!(widget as any).bodyAlignmentResponsive?.tablet || !!(widget as any).bodyAlignmentResponsive?.mobile}
+            >
             <div className="grid grid-cols-3 gap-2">
               <Button
-                variant={widget.bodyAlignment === 'left' ? 'default' : 'outline'}
+                variant={activeBodyAlignment === 'left' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => onChange({ bodyAlignment: 'left' })}
+                onClick={() => updateResponsiveBodyAlignment('left')}
               >
                 <AlignLeft className="h-4 w-4" />
               </Button>
               <Button
-                variant={widget.bodyAlignment === 'center' ? 'default' : 'outline'}
+                variant={activeBodyAlignment === 'center' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => onChange({ bodyAlignment: 'center' })}
+                onClick={() => updateResponsiveBodyAlignment('center')}
               >
                 <AlignCenter className="h-4 w-4" />
               </Button>
               <Button
-                variant={widget.bodyAlignment === 'right' ? 'default' : 'outline'}
+                variant={activeBodyAlignment === 'right' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => onChange({ bodyAlignment: 'right' })}
+                onClick={() => updateResponsiveBodyAlignment('right')}
               >
                 <AlignRight className="h-4 w-4" />
               </Button>
             </div>
+            </ResponsiveControlShell>
           </div>
         </div>
       </CollapsibleSection>
@@ -721,7 +785,10 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
       {/* Heading Typography */}
       <TypographyControl
         label="Heading Typography"
+        defaultOpen={true}
         value={getHeadingTypography()}
+        responsiveFontSize={(widget as any).headingFontSizeResponsive}
+        onResponsiveFontSizeChange={(next) => onChange({ headingFontSizeResponsive: next } as any)}
         onChange={(updates) => {
           const widgetUpdate: any = {};
           if (updates.fontFamily !== undefined) widgetUpdate.headingFontFamily = updates.fontFamily;
@@ -744,7 +811,10 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
       {widget.tagline && (
         <TypographyControl
           label="Subheader Typography"
+          defaultOpen={false}
           value={getTaglineTypography()}
+          responsiveFontSize={(widget as any).taglineFontSizeResponsive}
+          onResponsiveFontSizeChange={(next) => onChange({ taglineFontSizeResponsive: next } as any)}
           onChange={(updates) => {
             const widgetUpdate: any = {};
             if (updates.fontFamily !== undefined) widgetUpdate.taglineFontFamily = updates.fontFamily;
@@ -767,7 +837,10 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
       {/* Body Typography */}
       <TypographyControl
         label="Body Text Typography"
+        defaultOpen={false}
         value={getBodyTypography()}
+        responsiveFontSize={(widget as any).bodyFontSizeResponsive}
+        onResponsiveFontSizeChange={(next) => onChange({ bodyFontSizeResponsive: next } as any)}
         onChange={(updates) => {
           const widgetUpdate: any = {};
           if (updates.fontFamily !== undefined) widgetUpdate.bodyFontFamily = updates.fontFamily;
@@ -787,7 +860,7 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
       />
 
       {/* Background */}
-      <CollapsibleSection title="Background" open={backgroundOpen} onToggle={() => setBackgroundOpen(!backgroundOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Background" open={backgroundOpen} onToggle={() => setBackgroundOpen(!backgroundOpen)}>
         <div className="space-y-3">
           <div className="space-y-2">
             <Label>Type</Label>
