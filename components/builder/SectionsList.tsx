@@ -872,6 +872,12 @@ function createDefaultWidget(type: SectionType): any {
         ],
         columns: 3,
         gap: 16,
+        layout: {
+          height: { type: 'auto' },
+          width: 'container',
+          padding: { top: 80, right: 24, bottom: 80, left: 24 },
+          margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        },
       };
     case 'contact-form':
       return {

@@ -13,6 +13,7 @@ import { SectionEditorTabs } from '../SectionEditorTabs';
 import { FontSizeInput, type FontSizeValue } from '../FontSizeInput';
 import { TypographyControl } from '../controls/TypographyControl';
 import { GlobalColorInput } from '../controls/GlobalColorInput';
+import { SectionAnimationsControl } from '../controls/SectionAnimationsControl';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { ResponsiveDevicePicker } from '../controls/ResponsiveControlShell';
 
@@ -41,6 +42,7 @@ export function FAQEditorNew({ widget, onChange }: FAQEditorNewProps) {
   const [iconStyleOpen, setIconStyleOpen] = useState(true);
   const [itemStyleOpen, setItemStyleOpen] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(false);
+  const [animationsOpen, setAnimationsOpen] = useState(false);
 
   const CollapsibleSection = ({ 
     title, 
@@ -858,6 +860,15 @@ export function FAQEditorNew({ widget, onChange }: FAQEditorNewProps) {
             </div>
           )}
         </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection showBreakpointIcon title="Animations" open={animationsOpen} onToggle={() => setAnimationsOpen(!animationsOpen)}>
+        <SectionAnimationsControl
+          sectionType="faq"
+          widget={widget as any}
+          onChange={(updates) => onChange(updates as any)}
+          globalStyles={globalStyles}
+        />
       </CollapsibleSection>
     </div>
   );

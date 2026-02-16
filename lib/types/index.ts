@@ -56,6 +56,31 @@ export interface Template {
 // Section and Widget Types
 export type SectionType = 'hero' | 'headline' | 'image-text' | 'image-gallery' | 'icon-text' | 'text-section' | 'faq' | 'testimonials' | 'steps' | 'image-text-columns' | 'sticky-form' | 'reviews-slider' | 'custom-code' | 'image-navigation' | 'contact-form' | 'about' | 'services' | 'contact';
 
+export type TextEntranceAnimationType = 'none' | 'fadeIn' | 'fadeInUp';
+export type ImageEntranceAnimationType = 'none' | 'fadeIn' | 'curtainExpandReveal' | 'fadeInZoomOut';
+export type ImageHoverAnimationType = 'none' | 'slowZoomIn' | 'overlayFadeZoom';
+export type AnimationElementKind = 'text' | 'button' | 'image' | 'form';
+
+export interface SectionAnimationElementSettings {
+  kind: AnimationElementKind;
+  entrance: TextEntranceAnimationType | ImageEntranceAnimationType;
+  entranceResponsive?: ResponsiveValue<TextEntranceAnimationType | ImageEntranceAnimationType>;
+  imageHover?: ImageHoverAnimationType;
+  imageHoverResponsive?: ResponsiveValue<ImageHoverAnimationType>;
+  imageHoverOverlayColor?: string;
+  imageHoverOverlayColorResponsive?: ResponsiveValue<string>;
+  imageHoverOverlayOpacity?: number;
+  imageHoverOverlayOpacityResponsive?: ResponsiveValue<number>;
+}
+
+export interface SectionAnimationSettings {
+  elements: Record<string, SectionAnimationElementSettings>;
+}
+
+export interface WidgetAnimationContainer {
+  animationSettings?: SectionAnimationSettings;
+}
+
 export interface Section {
   id: string;
   type: SectionType;
@@ -63,7 +88,26 @@ export interface Section {
   widget: Widget;
 }
 
-export type Widget = HeroWidget | HeadlineWidget | ImageTextWidget | ImageGalleryWidget | IconTextWidget | TextSectionWidget | FAQWidget | TestimonialWidget | StepsWidget | ImageTextColumnsWidget | StickyFormWidget | ReviewsSliderWidget | CustomCodeWidget | ImageNavigationWidget | ContactFormWidget | AboutWidget | ServicesWidget | ContactWidget;
+export type Widget = (
+  HeroWidget
+  | HeadlineWidget
+  | ImageTextWidget
+  | ImageGalleryWidget
+  | IconTextWidget
+  | TextSectionWidget
+  | FAQWidget
+  | TestimonialWidget
+  | StepsWidget
+  | ImageTextColumnsWidget
+  | StickyFormWidget
+  | ReviewsSliderWidget
+  | CustomCodeWidget
+  | ImageNavigationWidget
+  | ContactFormWidget
+  | AboutWidget
+  | ServicesWidget
+  | ContactWidget
+) & WidgetAnimationContainer;
 
 // Spacing interface for consistent spacing properties
 export interface SpacingValues {
@@ -569,6 +613,7 @@ export interface ImageNavigationWidget {
   showCardBorder?: boolean;
   cardBorderColor?: string;
   cardBorderWidth?: number;
+  layout?: LayoutConfig;
 }
 
 // Contact Form Widget Types

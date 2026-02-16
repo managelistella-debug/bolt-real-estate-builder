@@ -15,6 +15,7 @@ import { TypographyControl } from '../controls/TypographyControl';
 import { ButtonControl } from '../controls/ButtonControl';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { GlobalColorInput } from '../controls/GlobalColorInput';
+import { SectionAnimationsControl } from '../controls/SectionAnimationsControl';
 import { ResponsiveDevicePicker } from '../controls/ResponsiveControlShell';
 
 interface ContactFormEditorNewProps {
@@ -32,6 +33,7 @@ export function ContactFormEditorNew({ widget, onChange }: ContactFormEditorNewP
   const [typographyOpen, setTypographyOpen] = useState(false);
   const [buttonStyleOpen, setButtonStyleOpen] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(true);
+  const [animationsOpen, setAnimationsOpen] = useState(false);
 
   // Migration: Initialize submitButton for existing widgets
   useEffect(() => {
@@ -358,24 +360,26 @@ export function ContactFormEditorNew({ widget, onChange }: ContactFormEditorNewP
       />
 
       {/* Submit Button */}
-      <ButtonControl
-        headerLabel="Button Styling"
-        value={getSubmitButton()}
-        onChange={(updates) => {
-          if (Object.keys(updates).length > 0) {
-            const currentButton = getSubmitButton();
-            onChange({
-              submitButton: {
-                ...currentButton,
-                ...updates,
-              } as any,
-              buttonText: updates.text || currentButton.text,
-            });
-          }
-        }}
-        showGlobalStyleSelector={true}
-        globalStyles={website?.globalStyles}
-      />
+      <CollapsibleSection title="Button Styling" open={buttonStyleOpen} onToggle={() => setButtonStyleOpen(!buttonStyleOpen)}>
+        <ButtonControl
+          headerLabel=""
+          value={getSubmitButton()}
+          onChange={(updates) => {
+            if (Object.keys(updates).length > 0) {
+              const currentButton = getSubmitButton();
+              onChange({
+                submitButton: {
+                  ...currentButton,
+                  ...updates,
+                } as any,
+                buttonText: updates.text || currentButton.text,
+              });
+            }
+          }}
+          showGlobalStyleSelector={true}
+          globalStyles={website?.globalStyles}
+        />
+      </CollapsibleSection>
 
       <CollapsibleSection showBreakpointIcon title="Background" open={backgroundOpen} onToggle={() => setBackgroundOpen(!backgroundOpen)}>
         <div className="space-y-2">
@@ -388,6 +392,15 @@ export function ContactFormEditorNew({ widget, onChange }: ContactFormEditorNewP
             placeholder="transparent"
           />
         </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection showBreakpointIcon title="Animations" open={animationsOpen} onToggle={() => setAnimationsOpen(!animationsOpen)}>
+        <SectionAnimationsControl
+          sectionType="contact-form"
+          widget={widget as any}
+          onChange={(updates) => onChange(updates as any)}
+          globalStyles={website?.globalStyles}
+        />
       </CollapsibleSection>
     </div>
   );

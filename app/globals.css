@@ -108,4 +108,84 @@
   .land-page button:hover {
     background-color: rgba(247, 238, 224, 0.1);
   }
+
+  .sa-target {
+    will-change: opacity, transform, clip-path;
+  }
+
+  .sa-enter-fade-in {
+    opacity: 0;
+    transition: opacity 700ms ease;
+  }
+
+  .sa-enter-fade-in.sa-in-view {
+    opacity: 1;
+  }
+
+  .sa-enter-fade-in-up {
+    opacity: 0;
+    transform: translateY(22px);
+    transition: opacity 700ms ease, transform 700ms ease;
+  }
+
+  .sa-enter-fade-in-up.sa-in-view {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .sa-enter-curtain-reveal {
+    clip-path: inset(0 50% 0 50%);
+    transition: clip-path 850ms ease;
+  }
+
+  .sa-enter-curtain-reveal.sa-in-view {
+    clip-path: inset(0 0 0 0);
+  }
+
+  .sa-enter-fade-zoom-out {
+    opacity: 0;
+    transform: scale(1.08);
+    transition: opacity 850ms ease, transform 850ms ease;
+  }
+
+  .sa-enter-fade-zoom-out.sa-in-view {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .sa-hover-slow-zoom {
+    transform: scale(1);
+    transition: transform 850ms ease;
+  }
+
+  .sa-hover-slow-zoom:hover {
+    transform: scale(1.06);
+  }
+
+  .sa-hover-overlay-parent {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sa-hover-overlay-parent::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: var(--sa-overlay-color, #000000);
+    opacity: 0;
+    transition: opacity 700ms ease;
+    pointer-events: none;
+  }
+
+  .sa-hover-overlay-zoom-image {
+    transition: transform 700ms ease;
+  }
+
+  .sa-hover-overlay-parent:hover::after {
+    opacity: var(--sa-overlay-opacity, 0.3);
+  }
+
+  .sa-hover-overlay-parent:hover .sa-hover-overlay-zoom-image {
+    transform: scale(1.04);
+  }
 }

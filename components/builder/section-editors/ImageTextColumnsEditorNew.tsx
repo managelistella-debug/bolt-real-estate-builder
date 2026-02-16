@@ -17,6 +17,7 @@ import { Switch } from '@/components/ui/switch';
 import { SectionEditorTabs } from '../SectionEditorTabs';
 import { cn } from '@/lib/utils';
 import { TypographyControl } from '../controls/TypographyControl';
+import { SectionAnimationsControl } from '../controls/SectionAnimationsControl';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { resolveResponsiveValue, updateResponsiveValue } from '@/lib/responsive';
@@ -72,14 +73,32 @@ export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumns
     };
   };
 
-  const layoutConfig = widget.layout || {
-    fullWidth: true,
-    maxWidth: 1200,
-    paddingTop: 80,
-    paddingBottom: 80,
-    paddingLeft: 24,
-    paddingRight: 24,
+  const defaultLayout: LayoutConfig = {
+    height: { type: 'auto' },
+    width: 'container',
+    padding: { top: 80, right: 24, bottom: 80, left: 24 },
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
   };
+  const rawLayout = widget.layout as any;
+  const layoutConfig: LayoutConfig = (rawLayout && typeof rawLayout === 'object' && 'height' in rawLayout)
+    ? {
+        ...defaultLayout,
+        ...rawLayout,
+        height: rawLayout.height || defaultLayout.height,
+        width: rawLayout.width || defaultLayout.width,
+        padding: { ...defaultLayout.padding, ...(rawLayout.padding || {}) },
+        margin: { ...defaultLayout.margin, ...(rawLayout.margin || {}) },
+      }
+    : {
+        ...defaultLayout,
+        width: rawLayout?.fullWidth ? 'full' : 'container',
+        padding: {
+          top: rawLayout?.paddingTop ?? defaultLayout.padding.top,
+          right: rawLayout?.paddingRight ?? defaultLayout.padding.right,
+          bottom: rawLayout?.paddingBottom ?? defaultLayout.padding.bottom,
+          left: rawLayout?.paddingLeft ?? defaultLayout.padding.left,
+        },
+      };
 
   const backgroundConfig = widget.background || {
     type: 'color',
@@ -95,7 +114,14 @@ export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumns
   const activeColumns = resolveResponsiveValue<number>(columnsResponsive, deviceView, widget.desktopColumns || 3);
 
   const updateLayout = (updates: Partial<LayoutConfig>) => {
-    onChange({ layout: { ...layoutConfig, ...updates } });
+    onChange({
+      layout: {
+        ...layoutConfig,
+        ...updates,
+        padding: updates.padding ? { ...layoutConfig.padding, ...updates.padding } : layoutConfig.padding,
+        margin: updates.margin ? { ...layoutConfig.margin, ...updates.margin } : layoutConfig.margin,
+      } as any,
+    });
   };
 
   const updateBackground = (updates: Partial<BackgroundConfig>) => {
@@ -416,26 +442,20 @@ export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumns
       <div className="border rounded-lg p-3 space-y-3">
         <h4 className="font-medium text-sm">Section Layout</h4>
         <div className="space-y-2">
-          <Label htmlFor="fullWidth">Full Width</Label>
-          <Switch
-            id="fullWidth"
-            checked={layoutConfig.fullWidth ?? true}
-            onCheckedChange={(checked) => updateLayout({ fullWidth: checked })}
-          />
+          <Label htmlFor="sectionWidth">Section Width</Label>
+          <Select
+            value={layoutConfig.width || 'container'}
+            onValueChange={(value: 'full' | 'container') => updateLayout({ width: value })}
+          >
+            <SelectTrigger id="sectionWidth">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="container">Container</SelectItem>
+              <SelectItem value="full">Full Width</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        {!layoutConfig.fullWidth && (
-          <div className="space-y-2">
-            <Label htmlFor="maxWidth">Max Width (px)</Label>
-            <Input
-              id="maxWidth"
-              type="number"
-              min={600}
-              max={1400}
-              value={layoutConfig.maxWidth ?? 1200}
-              onChange={(e) => updateLayout({ maxWidth: parseInt(e.target.value) })}
-            />
-          </div>
-        )}
         <div className="space-y-2">
           <Label htmlFor="paddingTop">Padding Top (px)</Label>
           <Input
@@ -443,8 +463,8 @@ export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumns
             type="number"
             min={0}
             max={200}
-            value={layoutConfig.paddingTop ?? 80}
-            onChange={(e) => updateLayout({ paddingTop: parseInt(e.target.value) })}
+            value={layoutConfig.padding?.top ?? 80}
+            onChange={(e) => updateLayout({ padding: { top: parseInt(e.target.value) || 0 } as any })}
           />
         </div>
         <div className="space-y-2">
@@ -454,8 +474,8 @@ export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumns
             type="number"
             min={0}
             max={200}
-            value={layoutConfig.paddingBottom ?? 80}
-            onChange={(e) => updateLayout({ paddingBottom: parseInt(e.target.value) })}
+            value={layoutConfig.padding?.bottom ?? 80}
+            onChange={(e) => updateLayout({ padding: { bottom: parseInt(e.target.value) || 0 } as any })}
           />
         </div>
       </div>
@@ -628,6 +648,19 @@ export function ImageTextColumnsEditorNew({ widget, onChange }: ImageTextColumns
       <div className="border rounded-lg p-3">
         <h4 className="font-medium text-sm mb-3">Background</h4>
         <BackgroundControl value={backgroundConfig} onChange={updateBackground} />
+      </div>
+
+      <div className="border rounded-lg p-3 space-y-3">
+        <div className="flex items-center justify-between">
+          <h4 className="font-medium text-sm">Animations</h4>
+          <ResponsiveDevicePicker className="h-6 w-6" />
+        </div>
+        <SectionAnimationsControl
+          sectionType="image-text-columns"
+          widget={widget as any}
+          onChange={(updates) => onChange(updates as any)}
+          globalStyles={website?.globalStyles}
+        />
       </div>
     </div>
   );

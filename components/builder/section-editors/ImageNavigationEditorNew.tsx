@@ -5,12 +5,14 @@ import { ImageNavigationWidget, ImageNavigationItem, TypographyConfig } from '@/
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { SectionEditorTabs } from '../SectionEditorTabs';
 import { ImageUpload } from '../ImageUpload';
 import { TypographyControl } from '../controls/TypographyControl';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { GlobalColorInput } from '../controls/GlobalColorInput';
+import { SectionAnimationsControl } from '../controls/SectionAnimationsControl';
 import { Switch } from '@/components/ui/switch';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { resolveResponsiveValue, updateResponsiveValue } from '@/lib/responsive';
@@ -28,8 +30,10 @@ export function ImageNavigationEditorNew({ widget, onChange }: ImageNavigationEd
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [itemsOpen, setItemsOpen] = useState(true);
   const [columnsOpen, setColumnsOpen] = useState(true);
+  const [sectionLayoutOpen, setSectionLayoutOpen] = useState(false);
   const [cardStyleOpen, setCardStyleOpen] = useState(true);
   const [backgroundOpen, setBackgroundOpen] = useState(false);
+  const [animationsOpen, setAnimationsOpen] = useState(false);
   const desktopColumns = widget.desktopColumns ?? widget.columns ?? 3;
   const tabletColumns = widget.tabletColumns ?? desktopColumns;
   const mobileColumns = widget.mobileColumns ?? 1;
@@ -44,6 +48,32 @@ export function ImageNavigationEditorNew({ widget, onChange }: ImageNavigationEd
   const showCardBorder = widget.showCardBorder ?? false;
   const cardBorderWidth = widget.cardBorderWidth ?? 1;
   const cardBorderColor = widget.cardBorderColor || '#e5e7eb';
+  const defaultLayout = {
+    height: { type: 'auto' as const },
+    width: 'container' as const,
+    padding: { top: 80, right: 24, bottom: 80, left: 24 },
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
+  };
+  const rawLayout = widget.layout as any;
+  const layoutCfg = (rawLayout && typeof rawLayout === 'object' && 'height' in rawLayout)
+    ? {
+        ...defaultLayout,
+        ...rawLayout,
+        height: rawLayout.height || defaultLayout.height,
+        width: rawLayout.width || defaultLayout.width,
+        padding: { ...defaultLayout.padding, ...(rawLayout.padding || {}) },
+        margin: { ...defaultLayout.margin, ...(rawLayout.margin || {}) },
+      }
+    : {
+        ...defaultLayout,
+        width: rawLayout?.fullWidth ? 'full' : 'container',
+        padding: {
+          top: rawLayout?.paddingTop ?? defaultLayout.padding.top,
+          right: rawLayout?.paddingRight ?? defaultLayout.padding.right,
+          bottom: rawLayout?.paddingBottom ?? defaultLayout.padding.bottom,
+          left: rawLayout?.paddingLeft ?? defaultLayout.padding.left,
+        },
+      };
 
   // Helper function to get typography config
   const getTitleTypography = (): TypographyConfig => {
@@ -181,6 +211,30 @@ export function ImageNavigationEditorNew({ widget, onChange }: ImageNavigationEd
           </div>
         </div>
       </CollapsibleSection>
+      <CollapsibleSection showBreakpointIcon title="Section Layout" open={sectionLayoutOpen} onToggle={() => setSectionLayoutOpen(!sectionLayoutOpen)}>
+        <div className="space-y-2">
+          <Label>Section Width</Label>
+          <Select
+            value={layoutCfg.width || 'container'}
+            onValueChange={(value: 'full' | 'container') =>
+              onChange({
+                layout: {
+                  ...layoutCfg,
+                  width: value,
+                } as any,
+              })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="container">Container</SelectItem>
+              <SelectItem value="full">Full Width</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </CollapsibleSection>
     </div>
   );
 
@@ -275,6 +329,15 @@ export function ImageNavigationEditorNew({ widget, onChange }: ImageNavigationEd
             placeholder="transparent"
           />
         </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection showBreakpointIcon title="Animations" open={animationsOpen} onToggle={() => setAnimationsOpen(!animationsOpen)}>
+        <SectionAnimationsControl
+          sectionType="image-navigation"
+          widget={widget as any}
+          onChange={(updates) => onChange(updates as any)}
+          globalStyles={website?.globalStyles}
+        />
       </CollapsibleSection>
     </div>
   );

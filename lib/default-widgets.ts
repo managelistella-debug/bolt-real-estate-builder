@@ -390,6 +390,12 @@ export function createDefaultWidget(type: SectionType): any {
         showCardBorder: false,
         cardBorderColor: '#e5e7eb',
         cardBorderWidth: 1,
+        layout: {
+          height: { type: 'auto' },
+          width: 'container',
+          padding: { top: 80, right: 24, bottom: 80, left: 24 },
+          margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        },
         items: [
           {
             id: `item_${timestamp}_1`,

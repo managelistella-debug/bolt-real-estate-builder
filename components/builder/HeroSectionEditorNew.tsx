@@ -23,6 +23,7 @@ import { SectionEditorTabs } from './SectionEditorTabs';
 import { TypographyControl } from './controls/TypographyControl';
 import { ButtonControl } from './controls/ButtonControl';
 import { GlobalColorInput } from './controls/GlobalColorInput';
+import { SectionAnimationsControl } from './controls/SectionAnimationsControl';
 import { useDebouncedInput } from './hooks/useDebouncedInput';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { useBuilderStore } from '@/lib/stores/builder';
@@ -165,6 +166,8 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
   const [paddingOpen, setPaddingOpen] = useState(false);
   const [horizontalAlignOpen, setHorizontalAlignOpen] = useState(false);
   const [verticalAlignOpen, setVerticalAlignOpen] = useState(false);
+  const [animationsOpen, setAnimationsOpen] = useState(false);
+  const [buttonStyleOpen, setButtonStyleOpen] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(false);
   const [bgOverlayOpen, setBgOverlayOpen] = useState(false);
   const [buttonOpen, setButtonOpen] = useState(true);
@@ -1001,9 +1004,9 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
       />
 
       {/* Button Styling */}
-      <div className="border rounded-lg p-3">
+      <CollapsibleSection title="Button Styling" open={buttonStyleOpen} onToggle={() => setButtonStyleOpen(!buttonStyleOpen)}>
         <ButtonControl
-          headerLabel="Button Styling"
+          headerLabel=""
           value={getButtonConfig()}
           onChange={(updates) => {
             if (Object.keys(updates).length === 0) return;
@@ -1082,7 +1085,16 @@ export function HeroSectionEditorNew({ widget, onChange }: HeroSectionEditorNewP
           showGlobalStyleSelector={true}
           globalStyles={globalStyles}
         />
-      </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection showBreakpointIcon title="Animations" open={animationsOpen} onToggle={() => setAnimationsOpen(!animationsOpen)}>
+        <SectionAnimationsControl
+          sectionType="hero"
+          widget={widget as any}
+          onChange={(updates) => onChange(updates as any)}
+          globalStyles={globalStyles}
+        />
+      </CollapsibleSection>
     </div>
   );
 

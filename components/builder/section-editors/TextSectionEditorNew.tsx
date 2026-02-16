@@ -19,6 +19,7 @@ import { SectionEditorTabs } from '../SectionEditorTabs';
 import { TypographyControl } from '../controls/TypographyControl';
 import { ButtonControl } from '../controls/ButtonControl';
 import { GlobalColorInput } from '../controls/GlobalColorInput';
+import { SectionAnimationsControl } from '../controls/SectionAnimationsControl';
 import { cn } from '@/lib/utils';
 import { useDebouncedInput } from '../hooks/useDebouncedInput';
 import { useWebsiteStore } from '@/lib/stores/website';
@@ -56,6 +57,7 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
   const [paddingOpen, setPaddingOpen] = useState(false);
   const [layoutTypeOpen, setLayoutTypeOpen] = useState(false);
   const [alignmentOpen, setAlignmentOpen] = useState(false);
+  const [animationsOpen, setAnimationsOpen] = useState(false);
 
   const CollapsibleSection = ({ 
     title, 
@@ -901,9 +903,9 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
 
       {/* Button Styling */}
       {widget.buttonText && widget.buttonText.trim() !== '' && (
-        <div className="border rounded-lg p-3">
+        <CollapsibleSection title="Button Styling" open={buttonOpen} onToggle={() => setButtonOpen(!buttonOpen)}>
           <ButtonControl
-            headerLabel="Button Styling"
+            headerLabel=""
             value={getButtonConfig()}
             onChange={(updates) => {
               // Save all button properties into the unified button object
@@ -914,8 +916,17 @@ export function TextSectionEditorNew({ widget, onChange }: TextSectionEditorNewP
             showGlobalStyleSelector={true}
             globalStyles={globalStyles}
           />
-        </div>
+        </CollapsibleSection>
       )}
+
+      <CollapsibleSection showBreakpointIcon title="Animations" open={animationsOpen} onToggle={() => setAnimationsOpen(!animationsOpen)}>
+        <SectionAnimationsControl
+          sectionType="text-section"
+          widget={widget as any}
+          onChange={(updates) => onChange(updates as any)}
+          globalStyles={globalStyles}
+        />
+      </CollapsibleSection>
     </div>
   );
 

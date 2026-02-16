@@ -30,8 +30,8 @@
  * ========================================
  */
 
-import { useState, useEffect } from 'react';
-import { Page, Website, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, FAQWidget, FAQIconStyle, TestimonialWidget, StepsWidget, ImageTextColumnsWidget, StickyFormWidget, ReviewsSliderWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
+import { useState, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { Page, Website, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, FAQWidget, FAQIconStyle, TestimonialWidget, StepsWidget, ImageTextColumnsWidget, StickyFormWidget, ReviewsSliderWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget, SectionType, Breakpoint } from '@/lib/types';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { useImageCollectionsStore } from '@/lib/stores/imageCollections';
 import { cn } from '@/lib/utils';
@@ -45,6 +45,7 @@ import { SiteHeader } from '@/components/site-header/SiteHeader';
 import { SiteFooter } from '@/components/site-footer/SiteFooter';
 import { normalizeFooterConfig } from '@/lib/footer-config';
 import { resolveResponsiveColumns, resolveResponsiveSpacing, resolveResponsiveValue } from '@/lib/responsive';
+import { normalizeSectionAnimationSettings } from '@/lib/animations/sectionElementRegistry';
 
 interface LivePreviewProps {
   page: Page;
@@ -145,7 +146,7 @@ function renderStandardButton(
     >
       <ButtonTag
         {...buttonProps}
-        className="relative"
+        className="relative builder-standard-button"
         style={{
           display: 'block',
           width: '100%',
@@ -235,6 +236,170 @@ function colorWithOpacity(color: string | undefined, opacityPercent: number): st
   return `color-mix(in srgb, ${color} ${opacityPercent}%, transparent)`;
 }
 
+interface SectionAnimationScopeProps {
+  sectionId: string;
+  sectionType: SectionType;
+  widget: any;
+  breakpoint: Breakpoint;
+  children: ReactNode;
+}
+
+function SectionAnimationScope({ sectionId, sectionType, widget, breakpoint, children }: SectionAnimationScopeProps) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const normalizedSettings = useMemo(() => normalizeSectionAnimationSettings(sectionType, widget), [sectionType, widget]);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+
+    const elements = normalizedSettings.elements || {};
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!(entry.target instanceof HTMLElement)) return;
+          if (entry.isIntersecting) {
+            entry.target.classList.add('sa-in-view');
+            // Non-curtain entrance animations should play once and remain in entered state.
+            if (!entry.target.classList.contains('sa-enter-curtain-reveal')) {
+              observer.unobserve(entry.target);
+            }
+          } else {
+            // Curtain reveal is scroll-linked, so it can reverse when leaving view.
+            if (entry.target.classList.contains('sa-enter-curtain-reveal')) {
+              entry.target.classList.remove('sa-in-view');
+            }
+          }
+        });
+      },
+      { threshold: 0.2, rootMargin: '0px 0px -10% 0px' }
+    );
+
+    const findTargets = (elementId: string): HTMLElement[] => {
+      const textCandidates = Array.from(
+        root.querySelectorAll('[data-anim-role], h1, h2, h3, h4, h5, h6, p, li, blockquote, span, div')
+      )
+        .filter((node): node is HTMLElement => node instanceof HTMLElement)
+        .filter((node) => node.textContent && node.textContent.trim().length > 0)
+        .filter((node) => !node.closest('button, a, form, nav'));
+
+      if (elementId === 'headerText') {
+        const explicit = root.querySelector('[data-anim-role="header"]');
+        if (explicit instanceof HTMLElement) return [explicit];
+        return textCandidates.length > 0 ? [textCandidates[0]] : [];
+      }
+      if (elementId === 'subheaderText') {
+        const explicit = root.querySelector('[data-anim-role="subheader"]');
+        if (explicit instanceof HTMLElement) return [explicit];
+        return textCandidates.length > 1 ? [textCandidates[1]] : [];
+      }
+      if (elementId === 'buttons') {
+        return Array.from(root.querySelectorAll('.builder-standard-button')) as HTMLElement[];
+      }
+      if (elementId === 'heroBackgroundImage') {
+        return Array.from(root.querySelectorAll('img[alt="Hero background"]')) as HTMLElement[];
+      }
+      if (elementId === 'image') {
+        return Array.from(root.querySelectorAll('img:not([data-anim-image="background"])')) as HTMLElement[];
+      }
+      if (elementId === 'form') {
+        return Array.from(root.querySelectorAll('form, [data-anim-form="true"]')) as HTMLElement[];
+      }
+      if (elementId === 'icon') {
+        return Array.from(root.querySelectorAll('svg')) as HTMLElement[];
+      }
+      if (elementId === 'itemHeaderText') {
+        return Array.from(root.querySelectorAll('h3, h4')) as HTMLElement[];
+      }
+      if (elementId === 'itemBodyText') {
+        return Array.from(root.querySelectorAll('p, li, blockquote')) as HTMLElement[];
+      }
+      const explicitBody = root.querySelectorAll('[data-anim-role="body"]');
+      if (explicitBody.length > 0) return Array.from(explicitBody) as HTMLElement[];
+      return Array.from(root.querySelectorAll('p, li, blockquote')) as HTMLElement[];
+    };
+
+    const applyEntranceClass = (target: HTMLElement, entrance: string) => {
+      target.classList.remove(
+        'sa-in-view',
+        'sa-enter-fade-in',
+        'sa-enter-fade-in-up',
+        'sa-enter-curtain-reveal',
+        'sa-enter-fade-zoom-out',
+      );
+      target.classList.add('sa-target');
+      if (entrance === 'fadeIn') target.classList.add('sa-enter-fade-in');
+      if (entrance === 'fadeInUp') target.classList.add('sa-enter-fade-in-up');
+      if (entrance === 'curtainExpandReveal') target.classList.add('sa-enter-curtain-reveal');
+      if (entrance === 'fadeInZoomOut') target.classList.add('sa-enter-fade-zoom-out');
+      observer.observe(target);
+      if (target.getBoundingClientRect().top < window.innerHeight && target.getBoundingClientRect().bottom > 0) {
+        requestAnimationFrame(() => {
+          void target.offsetWidth;
+          target.classList.add('sa-in-view');
+        });
+      }
+    };
+
+    Object.entries(elements).forEach(([elementId, config]) => {
+      if (!config) return;
+      const targets = findTargets(elementId);
+      const resolvedEntrance = resolveResponsiveValue<any>(
+        config.entranceResponsive,
+        breakpoint,
+        config.entrance || 'none',
+      );
+      const resolvedImageHover = resolveResponsiveValue<any>(
+        config.imageHoverResponsive,
+        breakpoint,
+        config.imageHover || 'none',
+      );
+      const resolvedOverlayColor = resolveResponsiveValue<any>(
+        config.imageHoverOverlayColorResponsive,
+        breakpoint,
+        config.imageHoverOverlayColor || '#000000',
+      );
+      const resolvedOverlayOpacity = resolveResponsiveValue<any>(
+        config.imageHoverOverlayOpacityResponsive,
+        breakpoint,
+        config.imageHoverOverlayOpacity ?? 30,
+      );
+      targets.forEach((target) => {
+        target.classList.remove('sa-hover-slow-zoom', 'sa-hover-overlay-zoom-image');
+        const parent = target.parentElement as HTMLElement | null;
+        if (parent) {
+          parent.classList.remove('sa-hover-overlay-parent');
+          parent.style.removeProperty('--sa-overlay-color');
+          parent.style.removeProperty('--sa-overlay-opacity');
+        }
+        if (config.entrance && resolvedEntrance !== 'none') {
+          applyEntranceClass(target, resolvedEntrance);
+        }
+        if (config.kind === 'image' && resolvedImageHover !== 'none') {
+          if (resolvedImageHover === 'slowZoomIn') {
+            target.classList.add('sa-hover-slow-zoom');
+          }
+          if (resolvedImageHover === 'overlayFadeZoom') {
+            target.classList.add('sa-hover-overlay-zoom-image');
+            if (parent) {
+              parent.classList.add('sa-hover-overlay-parent');
+              parent.style.setProperty('--sa-overlay-color', resolvedOverlayColor);
+              parent.style.setProperty('--sa-overlay-opacity', String(resolvedOverlayOpacity / 100));
+            }
+          }
+        }
+      });
+    });
+
+    return () => observer.disconnect();
+  }, [normalizedSettings, sectionId, breakpoint]);
+
+  return (
+    <div ref={rootRef} data-animation-scope={sectionId}>
+      {children}
+    </div>
+  );
+}
+
 export function LivePreview({
   page,
   website,
@@ -282,60 +447,67 @@ export function LivePreview({
                 allowSectionSelection && selectedSectionId === section.id && 'ring-2 ring-primary ring-inset'
               )}
             >
-              {section.type === 'hero' && (
-                <HeroSection widget={section.widget as HeroWidget} styles={website.globalStyles} />
-              )}
-              {section.type === 'headline' && (
-                <HeadlineSection widget={section.widget as HeadlineWidget} globalStyles={website.globalStyles} />
-              )}
-              {section.type === 'image-text' && (
-                <ImageTextSection widget={section.widget as ImageTextWidget} globalStyles={website.globalStyles} />
-              )}
-              {section.type === 'image-gallery' && (
-                <ImageGallerySection widget={section.widget as ImageGalleryWidget} />
-              )}
-              {section.type === 'icon-text' && (
-                <IconTextSection widget={section.widget as IconTextWidget} />
-              )}
-              {section.type === 'text-section' && (
-                <TextSectionComponent widget={section.widget as TextSectionWidget} globalStyles={website.globalStyles} />
-              )}
-              {section.type === 'faq' && (
-                <FAQSection widget={section.widget as FAQWidget} />
-              )}
-              {section.type === 'testimonials' && (
-                <TestimonialsSection widget={section.widget as TestimonialWidget} />
-              )}
-              {section.type === 'steps' && (
-                <StepsSection widget={section.widget as StepsWidget} globalStyles={website.globalStyles} />
-              )}
-              {section.type === 'image-text-columns' && (
-                <ImageTextColumnsSection widget={section.widget as ImageTextColumnsWidget} globalStyles={website.globalStyles} />
-              )}
-              {section.type === 'sticky-form' && (
-                <StickyFormSection widget={section.widget as StickyFormWidget} globalStyles={website.globalStyles} />
-              )}
-              {section.type === 'reviews-slider' && (
-                <ReviewsSliderSection widget={section.widget as ReviewsSliderWidget} globalStyles={website.globalStyles} />
-              )}
-              {section.type === 'custom-code' && (
-                <CustomCodeSection widget={section.widget as CustomCodeWidget} />
-              )}
-              {section.type === 'image-navigation' && (
-                <ImageNavigationSection widget={section.widget as ImageNavigationWidget} />
-              )}
-              {section.type === 'contact-form' && (
-                <ContactFormSection widget={section.widget as ContactFormWidget} globalStyles={website.globalStyles} />
-              )}
-              {section.type === 'about' && (
-                <AboutSection widget={section.widget as AboutWidget} styles={website.globalStyles} />
-              )}
-              {section.type === 'services' && (
-                <ServicesSection widget={section.widget as ServicesWidget} styles={website.globalStyles} />
-              )}
-              {section.type === 'contact' && (
-                <ContactSection widget={section.widget as ContactWidget} styles={website.globalStyles} />
-              )}
+              <SectionAnimationScope
+                sectionId={section.id}
+                sectionType={section.type}
+                widget={section.widget as any}
+                breakpoint={deviceView as Breakpoint}
+              >
+                {section.type === 'hero' && (
+                  <HeroSection widget={section.widget as HeroWidget} styles={website.globalStyles} />
+                )}
+                {section.type === 'headline' && (
+                  <HeadlineSection widget={section.widget as HeadlineWidget} globalStyles={website.globalStyles} />
+                )}
+                {section.type === 'image-text' && (
+                  <ImageTextSection widget={section.widget as ImageTextWidget} globalStyles={website.globalStyles} />
+                )}
+                {section.type === 'image-gallery' && (
+                  <ImageGallerySection widget={section.widget as ImageGalleryWidget} />
+                )}
+                {section.type === 'icon-text' && (
+                  <IconTextSection widget={section.widget as IconTextWidget} />
+                )}
+                {section.type === 'text-section' && (
+                  <TextSectionComponent widget={section.widget as TextSectionWidget} globalStyles={website.globalStyles} />
+                )}
+                {section.type === 'faq' && (
+                  <FAQSection widget={section.widget as FAQWidget} />
+                )}
+                {section.type === 'testimonials' && (
+                  <TestimonialsSection widget={section.widget as TestimonialWidget} />
+                )}
+                {section.type === 'steps' && (
+                  <StepsSection widget={section.widget as StepsWidget} globalStyles={website.globalStyles} />
+                )}
+                {section.type === 'image-text-columns' && (
+                  <ImageTextColumnsSection widget={section.widget as ImageTextColumnsWidget} globalStyles={website.globalStyles} />
+                )}
+                {section.type === 'sticky-form' && (
+                  <StickyFormSection widget={section.widget as StickyFormWidget} globalStyles={website.globalStyles} />
+                )}
+                {section.type === 'reviews-slider' && (
+                  <ReviewsSliderSection widget={section.widget as ReviewsSliderWidget} globalStyles={website.globalStyles} />
+                )}
+                {section.type === 'custom-code' && (
+                  <CustomCodeSection widget={section.widget as CustomCodeWidget} />
+                )}
+                {section.type === 'image-navigation' && (
+                  <ImageNavigationSection widget={section.widget as ImageNavigationWidget} />
+                )}
+                {section.type === 'contact-form' && (
+                  <ContactFormSection widget={section.widget as ContactFormWidget} globalStyles={website.globalStyles} />
+                )}
+                {section.type === 'about' && (
+                  <AboutSection widget={section.widget as AboutWidget} styles={website.globalStyles} />
+                )}
+                {section.type === 'services' && (
+                  <ServicesSection widget={section.widget as ServicesWidget} styles={website.globalStyles} />
+                )}
+                {section.type === 'contact' && (
+                  <ContactSection widget={section.widget as ContactWidget} styles={website.globalStyles} />
+                )}
+              </SectionAnimationScope>
             </div>
           ))}
           {showScrollBackdrop && <div className="h-[150vh] bg-gray-200" />}
@@ -377,7 +549,7 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
   const defaultLayout = {
     height: { type: 'vh' as const, value: 60 },
     width: 'full' as const,
-    padding: { top: 80, right: 40, bottom: 80, left: 40 },
+    padding: { top: 80, right: 24, bottom: 80, left: 24 },
     margin: { top: 0, right: 0, bottom: 0, left: 0 },
   };
   const layoutCfg = {
@@ -537,7 +709,7 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
       <div 
         className={cn(
           'relative z-10 w-full',
-          resolvedWidth === 'container' && 'max-w-6xl mx-auto',
+          resolvedWidth === 'container' && 'max-w-[1200px] mx-auto',
           horizontal === 'left' && 'text-left',
           horizontal === 'center' && 'text-center',
           horizontal === 'right' && 'text-right'
@@ -555,6 +727,7 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
           return (
             <TitleTag 
           className="mb-4"
+              data-anim-role="header"
               style={titleStyles}
         >
           {title}
@@ -567,6 +740,7 @@ function HeroSection({ widget, styles }: { widget: HeroWidget; styles: any }) {
           return (
             <SubtitleTag 
           className="mb-8"
+              data-anim-role="subheader"
               style={subtitleStyles}
         >
           {subtitle}
@@ -1034,6 +1208,7 @@ function ImageTextSection({ widget, globalStyles }: { widget: ImageTextWidget; g
           )}
           {bgType === 'image' && widget.background?.url && (
             <img
+              data-anim-image="background"
               src={widget.background.url}
               alt="Section background"
               className="w-full h-full object-cover"
@@ -1499,10 +1674,48 @@ function ImageNavigationSection({ widget }: { widget: ImageNavigationWidget }) {
     deviceView,
     titleTypography.fontSize,
   );
+  const defaultLayout = {
+    height: { type: 'auto' as const },
+    width: 'container' as const,
+    padding: { top: 80, right: 24, bottom: 80, left: 24 },
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
+  };
+  const rawLayout = widget.layout as any;
+  const layoutCfg = (rawLayout && typeof rawLayout === 'object' && 'height' in rawLayout)
+    ? {
+        ...defaultLayout,
+        ...rawLayout,
+        height: rawLayout.height || defaultLayout.height,
+        width: rawLayout.width || defaultLayout.width,
+        padding: { ...defaultLayout.padding, ...(rawLayout.padding || {}) },
+        margin: { ...defaultLayout.margin, ...(rawLayout.margin || {}) },
+      }
+    : {
+        ...defaultLayout,
+        width: rawLayout?.fullWidth ? 'full' : 'container',
+        padding: {
+          top: rawLayout?.paddingTop ?? defaultLayout.padding.top,
+          right: rawLayout?.paddingRight ?? defaultLayout.padding.right,
+          bottom: rawLayout?.paddingBottom ?? defaultLayout.padding.bottom,
+          left: rawLayout?.paddingLeft ?? defaultLayout.padding.left,
+        },
+      };
+  const resolvedWidth = resolveResponsiveValue<'full' | 'container'>(
+    (layoutCfg as any).widthResponsive,
+    deviceView,
+    (layoutCfg.width as 'full' | 'container') || 'container',
+  );
 
   return (
-    <div className="py-16 px-6">
-      <div className="max-w-6xl mx-auto">
+    <div
+      style={{
+        paddingTop: `${layoutCfg.padding?.top || 80}px`,
+        paddingBottom: `${layoutCfg.padding?.bottom || 80}px`,
+        paddingLeft: `${layoutCfg.padding?.left || 24}px`,
+        paddingRight: `${layoutCfg.padding?.right || 24}px`,
+      }}
+    >
+      <div style={{ maxWidth: resolvedWidth === 'container' ? '1200px' : '100%', margin: '0 auto' }}>
         <div 
           className="grid"
           style={{ 
@@ -1729,6 +1942,7 @@ function IconTextSection({ widget }: { widget: IconTextWidget }) {
           )}
           {bgType === 'image' && widget.background?.url && (
             <img
+              data-anim-image="background"
               src={widget.background.url}
               alt="Section background"
               className="w-full h-full object-cover"
@@ -2176,6 +2390,7 @@ function TextSectionComponent({ widget, globalStyles }: { widget: TextSectionWid
           )}
           {bgType === 'image' && widget.background?.url && (
             <img
+              data-anim-image="background"
               src={widget.background.url}
               alt="Section background"
               className="w-full h-full object-cover"
@@ -3770,14 +3985,37 @@ function StepsSection({ widget, globalStyles }: { widget: StepsWidget; globalSty
   const cardShadow = widget.cardShadow ?? true;
   
   // Ensure layout config has defaults
-  const layoutConfig = widget.layout || {
-    fullWidth: true,
-    maxWidth: 1200,
-    paddingTop: 80,
-    paddingBottom: 80,
-    paddingLeft: 24,
-    paddingRight: 24,
+  const defaultLayout = {
+    height: { type: 'auto' as const },
+    width: 'container' as const,
+    padding: { top: 80, right: 24, bottom: 80, left: 24 },
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
   };
+  const rawLayout = widget.layout as any;
+  const layoutCfg = (rawLayout && typeof rawLayout === 'object' && 'height' in rawLayout)
+    ? {
+        ...defaultLayout,
+        ...rawLayout,
+        height: rawLayout.height || defaultLayout.height,
+        width: rawLayout.width || defaultLayout.width,
+        padding: { ...defaultLayout.padding, ...(rawLayout.padding || {}) },
+        margin: { ...defaultLayout.margin, ...(rawLayout.margin || {}) },
+      }
+    : {
+        ...defaultLayout,
+        width: rawLayout?.fullWidth ? 'full' : 'container',
+        padding: {
+          top: rawLayout?.paddingTop ?? defaultLayout.padding.top,
+          right: rawLayout?.paddingRight ?? defaultLayout.padding.right,
+          bottom: rawLayout?.paddingBottom ?? defaultLayout.padding.bottom,
+          left: rawLayout?.paddingLeft ?? defaultLayout.padding.left,
+        },
+      };
+  const resolvedWidth = resolveResponsiveValue<'full' | 'container'>(
+    (layoutCfg as any).widthResponsive,
+    deviceView,
+    (layoutCfg.width as 'full' | 'container') || 'container',
+  );
   
   // Ensure background config has defaults
   const backgroundConfig = widget.background || {
@@ -3946,15 +4184,15 @@ function StepsSection({ widget, globalStyles }: { widget: StepsWidget; globalSty
       className="relative overflow-hidden"
       style={{
         ...getBackgroundStyle(),
-        paddingTop: `${layoutConfig.paddingTop || 80}px`,
-        paddingBottom: `${layoutConfig.paddingBottom || 80}px`,
-        paddingLeft: `${layoutConfig.paddingLeft || 24}px`,
-        paddingRight: `${layoutConfig.paddingRight || 24}px`,
+        paddingTop: `${layoutCfg.padding?.top || 80}px`,
+        paddingBottom: `${layoutCfg.padding?.bottom || 80}px`,
+        paddingLeft: `${layoutCfg.padding?.left || 24}px`,
+        paddingRight: `${layoutCfg.padding?.right || 24}px`,
       }}
     >
       <div
         style={{
-          maxWidth: layoutConfig.fullWidth ? '100%' : `${layoutConfig.maxWidth || 1200}px`,
+          maxWidth: resolvedWidth === 'container' ? '1200px' : '100%',
           margin: '0 auto',
         }}
       >
@@ -4177,14 +4415,37 @@ function ImageTextColumnsSection({ widget, globalStyles }: { widget: ImageTextCo
   const sectionSubheadingColor = widget.sectionSubheadingColor || '#6b7280';
   const sectionSubheadingSize = widget.sectionSubheadingSize ?? 18;
 
-  const layoutConfig = widget.layout || {
-    fullWidth: true,
-    maxWidth: 1200,
-    paddingTop: 80,
-    paddingBottom: 80,
-    paddingLeft: 24,
-    paddingRight: 24,
+  const defaultLayout = {
+    height: { type: 'auto' as const },
+    width: 'container' as const,
+    padding: { top: 80, right: 24, bottom: 80, left: 24 },
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
   };
+  const rawLayout = widget.layout as any;
+  const layoutCfg = (rawLayout && typeof rawLayout === 'object' && 'height' in rawLayout)
+    ? {
+        ...defaultLayout,
+        ...rawLayout,
+        height: rawLayout.height || defaultLayout.height,
+        width: rawLayout.width || defaultLayout.width,
+        padding: { ...defaultLayout.padding, ...(rawLayout.padding || {}) },
+        margin: { ...defaultLayout.margin, ...(rawLayout.margin || {}) },
+      }
+    : {
+        ...defaultLayout,
+        width: rawLayout?.fullWidth ? 'full' : 'container',
+        padding: {
+          top: rawLayout?.paddingTop ?? defaultLayout.padding.top,
+          right: rawLayout?.paddingRight ?? defaultLayout.padding.right,
+          bottom: rawLayout?.paddingBottom ?? defaultLayout.padding.bottom,
+          left: rawLayout?.paddingLeft ?? defaultLayout.padding.left,
+        },
+      };
+  const resolvedWidth = resolveResponsiveValue<'full' | 'container'>(
+    (layoutCfg as any).widthResponsive,
+    deviceView,
+    (layoutCfg.width as 'full' | 'container') || 'container',
+  );
 
   const backgroundConfig = widget.background || {
     type: 'color',
@@ -4247,15 +4508,15 @@ function ImageTextColumnsSection({ widget, globalStyles }: { widget: ImageTextCo
       className="relative overflow-hidden"
       style={{
         ...getBackgroundStyle(),
-        paddingTop: `${layoutConfig.paddingTop || 80}px`,
-        paddingBottom: `${layoutConfig.paddingBottom || 80}px`,
-        paddingLeft: `${layoutConfig.paddingLeft || 24}px`,
-        paddingRight: `${layoutConfig.paddingRight || 24}px`,
+        paddingTop: `${layoutCfg.padding?.top || 80}px`,
+        paddingBottom: `${layoutCfg.padding?.bottom || 80}px`,
+        paddingLeft: `${layoutCfg.padding?.left || 24}px`,
+        paddingRight: `${layoutCfg.padding?.right || 24}px`,
       }}
     >
       <div
         style={{
-          maxWidth: layoutConfig.fullWidth ? '100%' : `${layoutConfig.maxWidth || 1200}px`,
+          maxWidth: resolvedWidth === 'container' ? '1200px' : '100%',
           margin: '0 auto',
         }}
       >
@@ -4515,14 +4776,37 @@ function StickyFormSection({ widget, globalStyles }: { widget: StickyFormWidget;
   const buttonTextColor = widget.buttonStyle?.textColor || '#ffffff';
   const buttonRadius = widget.buttonStyle?.radius ?? 8;
 
-  const layoutConfig = widget.layout || {
-    fullWidth: true,
-    maxWidth: 1200,
-    paddingTop: 80,
-    paddingBottom: 80,
-    paddingLeft: 24,
-    paddingRight: 24,
+  const defaultLayout = {
+    height: { type: 'auto' as const },
+    width: 'container' as const,
+    padding: { top: 80, right: 24, bottom: 80, left: 24 },
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
   };
+  const rawLayout = widget.layout as any;
+  const layoutCfg = (rawLayout && typeof rawLayout === 'object' && 'height' in rawLayout)
+    ? {
+        ...defaultLayout,
+        ...rawLayout,
+        height: rawLayout.height || defaultLayout.height,
+        width: rawLayout.width || defaultLayout.width,
+        padding: { ...defaultLayout.padding, ...(rawLayout.padding || {}) },
+        margin: { ...defaultLayout.margin, ...(rawLayout.margin || {}) },
+      }
+    : {
+        ...defaultLayout,
+        width: rawLayout?.fullWidth ? 'full' : 'container',
+        padding: {
+          top: rawLayout?.paddingTop ?? defaultLayout.padding.top,
+          right: rawLayout?.paddingRight ?? defaultLayout.padding.right,
+          bottom: rawLayout?.paddingBottom ?? defaultLayout.padding.bottom,
+          left: rawLayout?.paddingLeft ?? defaultLayout.padding.left,
+        },
+      };
+  const resolvedWidth = resolveResponsiveValue<'full' | 'container'>(
+    (layoutCfg as any).widthResponsive,
+    deviceView,
+    (layoutCfg.width as 'full' | 'container') || 'container',
+  );
 
   const backgroundConfig = widget.background || {
     type: 'color',
@@ -4790,15 +5074,15 @@ function StickyFormSection({ widget, globalStyles }: { widget: StickyFormWidget;
       className="relative"
       style={{
         ...getBackgroundStyle(),
-        paddingTop: `${layoutConfig.paddingTop || 80}px`,
-        paddingBottom: `${layoutConfig.paddingBottom || 80}px`,
-        paddingLeft: `${layoutConfig.paddingLeft || 24}px`,
-        paddingRight: `${layoutConfig.paddingRight || 24}px`,
+        paddingTop: `${layoutCfg.padding?.top || 80}px`,
+        paddingBottom: `${layoutCfg.padding?.bottom || 80}px`,
+        paddingLeft: `${layoutCfg.padding?.left || 24}px`,
+        paddingRight: `${layoutCfg.padding?.right || 24}px`,
       }}
     >
       <div
         style={{
-          maxWidth: layoutConfig.fullWidth ? '100%' : `${layoutConfig.maxWidth || 1200}px`,
+          maxWidth: resolvedWidth === 'container' ? '1200px' : '100%',
           margin: '0 auto',
         }}
       >

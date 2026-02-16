@@ -16,6 +16,7 @@ import { IconPicker } from '../IconPicker';
 import { cn } from '@/lib/utils';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { GlobalColorInput } from '../controls/GlobalColorInput';
+import { SectionAnimationsControl } from '../controls/SectionAnimationsControl';
 import { ResponsiveDevicePicker } from '../controls/ResponsiveControlShell';
 
 interface IconTextEditorNewProps {
@@ -46,6 +47,7 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
   const [iconStyleOpen, setIconStyleOpen] = useState(true);
   const [boxStyleOpen, setBoxStyleOpen] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(false);
+  const [animationsOpen, setAnimationsOpen] = useState(false);
 
   const CollapsibleSection = ({ 
     title, 
@@ -727,6 +729,15 @@ export function IconTextEditorNew({ widget, onChange }: IconTextEditorNewProps) 
             </div>
           )}
         </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection showBreakpointIcon title="Animations" open={animationsOpen} onToggle={() => setAnimationsOpen(!animationsOpen)}>
+        <SectionAnimationsControl
+          sectionType="icon-text"
+          widget={widget as any}
+          onChange={(updates) => onChange(updates as any)}
+          globalStyles={globalStyles}
+        />
       </CollapsibleSection>
     </div>
   );

@@ -15,6 +15,7 @@ import { ImageUpload } from '../ImageUpload';
 import { TypographyControl } from '../controls/TypographyControl';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { GlobalColorInput } from '../controls/GlobalColorInput';
+import { SectionAnimationsControl } from '../controls/SectionAnimationsControl';
 import { ResponsiveDevicePicker } from '../controls/ResponsiveControlShell';
 
 interface ReviewsSliderEditorNewProps {
@@ -41,6 +42,7 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
   const [cardStyleOpen, setCardStyleOpen] = useState(true);
   const [starStyleOpen, setStarStyleOpen] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(false);
+  const [animationsOpen, setAnimationsOpen] = useState(false);
 
   // Helper functions to get typography configs
   const getSectionHeaderTypography = (): TypographyConfig => {
@@ -636,6 +638,15 @@ export function ReviewsSliderEditorNew({ widget, onChange }: ReviewsSliderEditor
             </div>
           )}
         </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection showBreakpointIcon title="Animations" open={animationsOpen} onToggle={() => setAnimationsOpen(!animationsOpen)}>
+        <SectionAnimationsControl
+          sectionType="reviews-slider"
+          widget={widget as any}
+          onChange={(updates) => onChange(updates as any)}
+          globalStyles={website?.globalStyles}
+        />
       </CollapsibleSection>
     </div>
   );

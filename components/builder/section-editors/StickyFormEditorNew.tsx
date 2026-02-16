@@ -13,6 +13,7 @@ import { TypographyControl } from '../controls/TypographyControl';
 import { ButtonControl } from '../controls/ButtonControl';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { GlobalColorInput } from '../controls/GlobalColorInput';
+import { SectionAnimationsControl } from '../controls/SectionAnimationsControl';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { resolveResponsiveValue, updateResponsiveValue } from '@/lib/responsive';
 import { ResponsiveControlShell } from '../controls/ResponsiveControlShell';
@@ -29,13 +30,46 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
   const [contentOpen, setContentOpen] = useState(true);
   const [formSettingsOpen, setFormSettingsOpen] = useState(false);
   const [positionOpen, setPositionOpen] = useState(true);
+  const [sectionWidthOpen, setSectionWidthOpen] = useState(false);
   const [typographyOpen, setTypographyOpen] = useState(false);
   const [buttonStyleOpen, setButtonStyleOpen] = useState(false);
   const [cardStyleOpen, setCardStyleOpen] = useState(true);
+  const [animationsOpen, setAnimationsOpen] = useState(false);
   const activeMobileStackOrder = resolveResponsiveValue<'form-first' | 'text-first'>(
     (widget as any).mobileStackOrderResponsive,
     deviceView,
     (widget as any).mobileStackOrder || 'form-first',
+  );
+  const defaultLayout = {
+    height: { type: 'auto' as const },
+    width: 'container' as const,
+    padding: { top: 80, right: 24, bottom: 80, left: 24 },
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
+  };
+  const rawLayout = widget.layout as any;
+  const layoutCfg = (rawLayout && typeof rawLayout === 'object' && 'height' in rawLayout)
+    ? {
+        ...defaultLayout,
+        ...rawLayout,
+        height: rawLayout.height || defaultLayout.height,
+        width: rawLayout.width || defaultLayout.width,
+        padding: { ...defaultLayout.padding, ...(rawLayout.padding || {}) },
+        margin: { ...defaultLayout.margin, ...(rawLayout.margin || {}) },
+      }
+    : {
+        ...defaultLayout,
+        width: rawLayout?.fullWidth ? 'full' : 'container',
+        padding: {
+          top: rawLayout?.paddingTop ?? defaultLayout.padding.top,
+          right: rawLayout?.paddingRight ?? defaultLayout.padding.right,
+          bottom: rawLayout?.paddingBottom ?? defaultLayout.padding.bottom,
+          left: rawLayout?.paddingLeft ?? defaultLayout.padding.left,
+        },
+      };
+  const activeWidth = resolveResponsiveValue<'full' | 'container'>(
+    (layoutCfg as any).widthResponsive,
+    deviceView,
+    (layoutCfg.width as 'full' | 'container') || 'container',
   );
 
   // Migration: Initialize submitButton for existing widgets
@@ -284,6 +318,28 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
           </div>
         </div>
       </CollapsibleSection>
+      <CollapsibleSection showBreakpointIcon title="Section Width" open={sectionWidthOpen} onToggle={() => setSectionWidthOpen(!sectionWidthOpen)}>
+        <Select
+          value={activeWidth}
+          onValueChange={(value: 'full' | 'container') =>
+            onChange({
+              layout: {
+                ...layoutCfg,
+                width: deviceView === 'desktop' ? value : layoutCfg.width,
+                widthResponsive: updateResponsiveValue((layoutCfg as any).widthResponsive, deviceView, value),
+              } as any,
+            })
+          }
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="container">Container</SelectItem>
+            <SelectItem value="full">Full Width</SelectItem>
+          </SelectContent>
+        </Select>
+      </CollapsibleSection>
     </div>
   );
 
@@ -371,22 +427,24 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
       />
 
       {/* Submit Button */}
-      <ButtonControl
-        headerLabel="Button Styling"
-        value={getSubmitButton()}
-        onChange={(updates) => {
-          const currentButton = getSubmitButton();
-          onChange({
-            submitButton: {
-              ...currentButton,
-              ...updates,
-            } as any,
-            buttonText: updates.text || currentButton.text,
-          });
-        }}
-        showGlobalStyleSelector={true}
-        globalStyles={website?.globalStyles}
-      />
+      <CollapsibleSection title="Button Styling" open={buttonStyleOpen} onToggle={() => setButtonStyleOpen(!buttonStyleOpen)}>
+        <ButtonControl
+          headerLabel=""
+          value={getSubmitButton()}
+          onChange={(updates) => {
+            const currentButton = getSubmitButton();
+            onChange({
+              submitButton: {
+                ...currentButton,
+                ...updates,
+              } as any,
+              buttonText: updates.text || currentButton.text,
+            });
+          }}
+          showGlobalStyleSelector={true}
+          globalStyles={website?.globalStyles}
+        />
+      </CollapsibleSection>
 
       <CollapsibleSection showBreakpointIcon title="Card Style" open={cardStyleOpen} onToggle={() => setCardStyleOpen(!cardStyleOpen)}>
         <div className="space-y-3">
@@ -405,6 +463,15 @@ export function StickyFormEditorNew({ widget, onChange }: StickyFormEditorNewPro
             <input type="range" min="0" max="30" value={(widget as any).cardBorderRadius || 12} onChange={(e) => onChange({ cardBorderRadius: parseInt(e.target.value) } as any)} className="w-full" />
           </div>
         </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection showBreakpointIcon title="Animations" open={animationsOpen} onToggle={() => setAnimationsOpen(!animationsOpen)}>
+        <SectionAnimationsControl
+          sectionType="sticky-form"
+          widget={widget as any}
+          onChange={(updates) => onChange(updates as any)}
+          globalStyles={website?.globalStyles}
+        />
       </CollapsibleSection>
     </div>
   );

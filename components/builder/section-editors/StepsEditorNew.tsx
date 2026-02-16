@@ -14,6 +14,7 @@ import { ImageUpload } from '../ImageUpload';
 import { TypographyControl } from '../controls/TypographyControl';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { GlobalColorInput } from '../controls/GlobalColorInput';
+import { SectionAnimationsControl } from '../controls/SectionAnimationsControl';
 import { ResponsiveDevicePicker } from '../controls/ResponsiveControlShell';
 
 interface StepsEditorNewProps {
@@ -38,6 +39,7 @@ export function StepsEditorNew({ widget, onChange }: StepsEditorNewProps) {
   const [stepHeadingStyleOpen, setStepHeadingStyleOpen] = useState(false);
   const [stepDescStyleOpen, setStepDescStyleOpen] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(true);
+  const [animationsOpen, setAnimationsOpen] = useState(false);
 
   // Helper functions to get typography configs
   const getSectionHeaderTypography = (): TypographyConfig => {
@@ -570,6 +572,15 @@ export function StepsEditorNew({ widget, onChange }: StepsEditorNewProps) {
             </div>
           )}
         </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection showBreakpointIcon title="Animations" open={animationsOpen} onToggle={() => setAnimationsOpen(!animationsOpen)}>
+        <SectionAnimationsControl
+          sectionType="steps"
+          widget={widget as any}
+          onChange={(updates) => onChange(updates as any)}
+          globalStyles={website?.globalStyles}
+        />
       </CollapsibleSection>
     </div>
   );

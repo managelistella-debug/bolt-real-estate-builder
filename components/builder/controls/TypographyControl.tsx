@@ -183,7 +183,7 @@ export function TypographyControl({
     <div className={cn("space-y-3 p-3 border rounded-lg", className)}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Label className="text-sm font-semibold">{label}</Label>
+          <Label className="text-sm font-medium">{label}</Label>
           {onResponsiveFontSizeChange && <ResponsiveDevicePicker className="h-6 w-6" />}
         </div>
         <div className="flex items-center gap-2">

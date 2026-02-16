@@ -13,6 +13,7 @@ import { useAuthStore } from '@/lib/stores/auth';
 import { useImageCollectionsStore } from '@/lib/stores/imageCollections';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { GlobalColorInput } from '../controls/GlobalColorInput';
+import { SectionAnimationsControl } from '../controls/SectionAnimationsControl';
 import { ResponsiveDevicePicker } from '../controls/ResponsiveControlShell';
 import Link from 'next/link';
 
@@ -45,6 +46,7 @@ export function ImageGalleryEditorNew({ widget, onChange }: ImageGalleryEditorNe
   const [sectionWidthOpen, setSectionWidthOpen] = useState(false);
   const [paddingOpen, setPaddingOpen] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(true);
+  const [animationsOpen, setAnimationsOpen] = useState(false);
 
   const CollapsibleSection = ({ 
     title, 
@@ -399,6 +401,15 @@ export function ImageGalleryEditorNew({ widget, onChange }: ImageGalleryEditorNe
             </div>
           )}
         </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection showBreakpointIcon title="Animations" open={animationsOpen} onToggle={() => setAnimationsOpen(!animationsOpen)}>
+        <SectionAnimationsControl
+          sectionType="image-gallery"
+          widget={widget as any}
+          onChange={(updates) => onChange(updates as any)}
+          globalStyles={currentWebsite?.globalStyles}
+        />
       </CollapsibleSection>
     </div>
   );
