@@ -40,6 +40,106 @@ export interface Page {
   updatedAt: Date;
 }
 
+export type ListingStatus = 'for_sale' | 'pending' | 'sold';
+export type LotAreaUnit = 'sqft' | 'acres';
+export type ListingRepresentation = 'buyer_representation' | 'seller_representation';
+
+export interface ListingGalleryImage {
+  id: string;
+  url: string;
+  caption?: string;
+  order: number;
+}
+
+export interface Listing {
+  id: string;
+  userId: string;
+  slug: string;
+  address: string;
+  description: string;
+  listPrice: number;
+  neighborhood: string;
+  city: string;
+  listingStatus: ListingStatus;
+  bedrooms: number;
+  bathrooms: number;
+  propertyType: string;
+  yearBuilt: number;
+  livingAreaSqft: number;
+  lotAreaValue: number;
+  lotAreaUnit: LotAreaUnit;
+  taxesAnnual: number;
+  listingBrokerage: string;
+  mlsNumber: string;
+  representation?: ListingRepresentation;
+  gallery: ListingGalleryImage[];
+  customOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type ListingsSortOption = 'price_desc' | 'price_asc' | 'date_added_desc' | 'custom_order';
+export type ListingsPaginationMode = 'paged' | 'infinite';
+export type ListingCollectionTemplatePreset = 'editorial' | 'hero-featured' | 'compact';
+
+export interface ListingTemplateTypography {
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: string;
+  color: string;
+}
+
+export interface ListingTemplateBadgeStyle {
+  enabled: boolean;
+  backgroundColor: string;
+  textColor: string;
+  borderRadius: number;
+}
+
+export interface ListingCollectionTemplate {
+  id: string;
+  userId: string;
+  name: string;
+  pageSlug: string;
+  preset: ListingCollectionTemplatePreset;
+  isActive: boolean;
+  statuses: ListingStatus[];
+  sortBy: ListingsSortOption;
+  columns: {
+    desktop: number;
+    tablet: number;
+    mobile: number;
+  };
+  showFields: {
+    address: boolean;
+    city: boolean;
+    price: boolean;
+    status: boolean;
+    representation: boolean;
+  };
+  typography: {
+    address: ListingTemplateTypography;
+    city: ListingTemplateTypography;
+    price: ListingTemplateTypography;
+  };
+  statusBadgeStyles: Record<ListingStatus, ListingTemplateBadgeStyle>;
+  representationBadgeStyles: Record<ListingRepresentation, ListingTemplateBadgeStyle>;
+  backgroundColor: string;
+  hero: {
+    enabled: boolean;
+    imageUrl?: string;
+    heading?: string;
+    subheading?: string;
+  };
+  pagination: {
+    mode: ListingsPaginationMode;
+    itemsPerPage: number;
+    infiniteBatch: number;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Template Types
 export interface Template {
   id: string;
@@ -54,7 +154,7 @@ export interface Template {
 }
 
 // Section and Widget Types
-export type SectionType = 'hero' | 'headline' | 'image-text' | 'image-gallery' | 'icon-text' | 'text-section' | 'faq' | 'testimonials' | 'steps' | 'image-text-columns' | 'sticky-form' | 'reviews-slider' | 'custom-code' | 'image-navigation' | 'contact-form' | 'about' | 'services' | 'contact';
+export type SectionType = 'hero' | 'headline' | 'image-text' | 'image-gallery' | 'icon-text' | 'text-section' | 'faq' | 'testimonials' | 'steps' | 'image-text-columns' | 'sticky-form' | 'reviews-slider' | 'listings' | 'custom-code' | 'image-navigation' | 'contact-form' | 'about' | 'services' | 'contact';
 
 export type TextEntranceAnimationType = 'none' | 'fadeIn' | 'fadeInUp';
 export type ImageEntranceAnimationType = 'none' | 'fadeIn' | 'curtainExpandReveal' | 'fadeInZoomOut';
@@ -101,6 +201,7 @@ export type Widget = (
   | ImageTextColumnsWidget
   | StickyFormWidget
   | ReviewsSliderWidget
+  | ListingsWidget
   | CustomCodeWidget
   | ImageNavigationWidget
   | ContactFormWidget
@@ -410,6 +511,18 @@ export interface ImageGalleryWidget {
     alt?: string;
     caption?: string;
   }[];
+}
+
+export interface ListingsWidget {
+  type: 'listings';
+  statuses: ListingStatus[];
+  sortBy: ListingsSortOption;
+  maxItems?: number;
+  columns: number;
+  showStatusBadge: boolean;
+  templateId?: string;
+  background?: BackgroundConfig;
+  layout?: LayoutConfig;
 }
 
 // Icon + Text Widget Types

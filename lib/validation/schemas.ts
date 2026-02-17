@@ -82,3 +82,39 @@ export const globalStylesSchema = z.object({
     accent: colorSchema,
   }),
 });
+
+const numericField = (fieldName: string) =>
+  z.coerce.number({
+    invalid_type_error: `${fieldName} must be a number`,
+  });
+
+export const listingSchema = z.object({
+  address: z.string().min(1, 'Address is required').max(200),
+  description: z.string().min(1, 'Description is required').max(5000),
+  listPrice: numericField('List price').nonnegative('List price must be 0 or greater'),
+  neighborhood: z.string().min(1, 'Neighborhood is required').max(120),
+  city: z.string().min(1, 'City is required').max(120),
+  listingStatus: z.enum(['for_sale', 'pending', 'sold']),
+  bedrooms: numericField('Bedrooms').min(0, 'Bedrooms must be 0 or greater'),
+  bathrooms: numericField('Bathrooms').min(0, 'Bathrooms must be 0 or greater'),
+  propertyType: z.string().min(1, 'Property type is required').max(120),
+  yearBuilt: numericField('Year built')
+    .int('Year built must be a whole number')
+    .min(1800, 'Year built looks too early')
+    .max(3000, 'Year built looks invalid'),
+  livingAreaSqft: numericField('Living area').nonnegative('Living area must be 0 or greater'),
+  lotAreaValue: numericField('Lot area').nonnegative('Lot area must be 0 or greater'),
+  lotAreaUnit: z.enum(['sqft', 'acres']),
+  taxesAnnual: numericField('Taxes').nonnegative('Taxes must be 0 or greater'),
+  listingBrokerage: z.string().min(1, 'Listing brokerage is required').max(160),
+  mlsNumber: z.string().min(1, 'MLS listing number is required').max(80),
+  representation: z.enum(['buyer_representation', 'seller_representation']).optional(),
+  gallery: z.array(
+    z.object({
+      id: z.string(),
+      url: z.string().min(1),
+      caption: z.string().optional(),
+      order: z.number(),
+    })
+  ),
+});

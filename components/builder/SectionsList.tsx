@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Section, SectionType } from '@/lib/types';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { useWebsiteStore } from '@/lib/stores/website';
-import { Plus, GripVertical, Edit, Trash2, Sparkles, Type, Image, Grid3x3, Boxes, AlignLeft, HelpCircle, Quote, ListOrdered, Columns, StickyNote, Star, Code, Navigation, Mail, FileText, Wrench } from 'lucide-react';
+import { Plus, GripVertical, Edit, Trash2, Sparkles, Type, Image, Grid3x3, Building2, Boxes, AlignLeft, HelpCircle, Quote, ListOrdered, Columns, StickyNote, Star, Code, Navigation, Mail, FileText, Wrench } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { SectionPickerDialog } from './SectionPickerDialog';
 
@@ -20,6 +20,7 @@ const sectionIcons: Record<string, any> = {
   headline: Type,
   'image-text': Image,
   'image-gallery': Grid3x3,
+  listings: Building2,
   'icon-text': Boxes,
   'text-section': AlignLeft,
   'faq': HelpCircle,
@@ -41,6 +42,7 @@ const sectionLabels: Record<string, string> = {
   headline: 'Headline',
   'image-text': 'Image + Text',
   'image-gallery': 'Image Gallery',
+  listings: 'Listings Collection',
   'icon-text': 'Icon + Text',
   'text-section': 'Text Section',
   'faq': 'FAQ',
@@ -853,6 +855,27 @@ function createDefaultWidget(type: SectionType): any {
           paddingBottom: 80,
           paddingLeft: 24,
           paddingRight: 24,
+        },
+      };
+    case 'listings':
+      return {
+        type: 'listings',
+        statuses: [],
+        sortBy: 'date_added_desc',
+        maxItems: 6,
+        columns: 3,
+        showStatusBadge: true,
+        background: {
+          type: 'color',
+          color: 'transparent',
+          opacity: 100,
+          blur: 0,
+        },
+        layout: {
+          height: { type: 'auto' },
+          width: 'container',
+          padding: { top: 60, right: 20, bottom: 60, left: 20 },
+          margin: { top: 0, right: 0, bottom: 0, left: 0 },
         },
       };
     case 'custom-code':

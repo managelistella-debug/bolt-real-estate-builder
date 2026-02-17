@@ -31,9 +31,11 @@
  */
 
 import { useState, useEffect, useMemo, useRef, type ReactNode } from 'react';
-import { Page, Website, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, FAQWidget, FAQIconStyle, TestimonialWidget, StepsWidget, ImageTextColumnsWidget, StickyFormWidget, ReviewsSliderWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget, SectionType, Breakpoint } from '@/lib/types';
+import { Page, Website, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, FAQWidget, FAQIconStyle, TestimonialWidget, StepsWidget, ImageTextColumnsWidget, StickyFormWidget, ReviewsSliderWidget, ListingsWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget, SectionType, Breakpoint } from '@/lib/types';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { useImageCollectionsStore } from '@/lib/stores/imageCollections';
+import { useListingsStore } from '@/lib/stores/listings';
+import { useListingsTemplatesStore } from '@/lib/stores/listingsTemplates';
 import { cn } from '@/lib/utils';
 import { getGlobalColorCssVars } from '@/lib/global-colors';
 import { Lightbox } from './Lightbox';
@@ -46,6 +48,8 @@ import { SiteFooter } from '@/components/site-footer/SiteFooter';
 import { normalizeFooterConfig } from '@/lib/footer-config';
 import { resolveResponsiveColumns, resolveResponsiveSpacing, resolveResponsiveValue } from '@/lib/responsive';
 import { normalizeSectionAnimationSettings } from '@/lib/animations/sectionElementRegistry';
+import { ListingCard } from '@/components/listings/ListingCard';
+import { ListingsCollectionRenderer } from '@/components/listings/templates/ListingsCollectionRenderer';
 
 interface LivePreviewProps {
   page: Page;
@@ -488,6 +492,9 @@ export function LivePreview({
                 )}
                 {section.type === 'reviews-slider' && (
                   <ReviewsSliderSection widget={section.widget as ReviewsSliderWidget} globalStyles={website.globalStyles} />
+                )}
+                {section.type === 'listings' && (
+                  <ListingsSection widget={section.widget as ListingsWidget} />
                 )}
                 {section.type === 'custom-code' && (
                   <CustomCodeSection widget={section.widget as CustomCodeWidget} />
@@ -1759,6 +1766,90 @@ function ImageNavigationSection({ widget }: { widget: ImageNavigationWidget }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function ListingsSection({ widget }: { widget: ListingsWidget }) {
+  const { deviceView } = useBuilderStore();
+  const { listings, filterAndSortListings } = useListingsStore();
+  const { getTemplateById } = useListingsTemplatesStore();
+
+  const defaultLayout = {
+    height: { type: 'auto' as const },
+    width: 'container' as const,
+    padding: { top: 60, right: 20, bottom: 60, left: 20 },
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
+  };
+  const layoutCfg = {
+    ...defaultLayout,
+    ...(widget.layout || {}),
+    padding: { ...defaultLayout.padding, ...(widget.layout?.padding || {}) },
+    margin: { ...defaultLayout.margin, ...(widget.layout?.margin || {}) },
+  };
+  const resolvedWidth = resolveResponsiveValue<'full' | 'container'>(
+    layoutCfg.widthResponsive,
+    deviceView,
+    layoutCfg.width || 'container',
+  );
+
+  const statuses = widget.statuses || [];
+  const sortedListings = filterAndSortListings(listings, {
+    statuses: statuses.length ? statuses : undefined,
+    sortBy: widget.sortBy || 'date_added_desc',
+  });
+  const listingItems = widget.maxItems ? sortedListings.slice(0, widget.maxItems) : sortedListings;
+  const columns = resolveResponsiveColumns(
+    {
+      desktop: widget.columns || 3,
+      tablet: Math.max(1, Math.min(2, widget.columns || 2)),
+      mobile: 1,
+      min: 1,
+      max: 4,
+    },
+    deviceView,
+  );
+  const backgroundColor = widget.background?.color || 'transparent';
+  const backgroundOpacity = widget.background?.opacity ?? 100;
+  const selectedTemplate = widget.templateId ? getTemplateById(widget.templateId) : undefined;
+
+  if (selectedTemplate) {
+    return <ListingsCollectionRenderer template={selectedTemplate} listings={listings} previewMode />;
+  }
+
+  return (
+    <section
+      style={{
+        backgroundColor: colorWithOpacity(backgroundColor, backgroundOpacity),
+        paddingTop: `${layoutCfg.padding.top}px`,
+        paddingRight: `${layoutCfg.padding.right}px`,
+        paddingBottom: `${layoutCfg.padding.bottom}px`,
+        paddingLeft: `${layoutCfg.padding.left}px`,
+      }}
+    >
+      <div style={{ maxWidth: resolvedWidth === 'container' ? '1200px' : '100%', margin: '0 auto' }}>
+        {listingItems.length === 0 ? (
+          <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
+            No listings available for this block yet.
+          </div>
+        ) : (
+          <div
+            className="grid gap-5"
+            style={{
+              gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+            }}
+          >
+            {listingItems.map((listing) => (
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+                href={`/listings/${listing.slug}`}
+                showStatusBadge={widget.showStatusBadge}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 

@@ -22,6 +22,7 @@ export default function DashboardLayout({
   const isBuilderMode = pathname?.includes('/builder');
   const isPreviewMode = pathname?.includes('/preview');
   const isHeaderEditorMode = pathname?.startsWith('/header-footer');
+  const isListingsTemplateEditorMode = pathname?.startsWith('/listings/templates/editor');
 
   // Wait for Zustand to rehydrate from localStorage
   useEffect(() => {
@@ -61,7 +62,7 @@ export default function DashboardLayout({
   }
 
   // Full-screen layout for editor-focused routes
-  if (isBuilderMode || isPreviewMode || isHeaderEditorMode) {
+  if (isBuilderMode || isPreviewMode || isHeaderEditorMode || isListingsTemplateEditorMode) {
     return (
       <>
         {children}

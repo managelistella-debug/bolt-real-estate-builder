@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Globe, Users, CheckSquare, Plus } from 'lucide-react';
+import { Globe, Users, CheckSquare, Plus, Building2 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { useLeadsStore } from '@/lib/stores/leads';
@@ -117,6 +117,12 @@ export default function DashboardPage() {
               <Button variant="outline" className="w-full justify-start">
                 <Plus className="h-4 w-4 mr-2" />
                 Browse Templates
+              </Button>
+            </Link>
+            <Link href="/listings">
+              <Button variant="outline" className="w-full justify-start">
+                <Building2 className="h-4 w-4 mr-2" />
+                Manage Listings
               </Button>
             </Link>
           </CardContent>

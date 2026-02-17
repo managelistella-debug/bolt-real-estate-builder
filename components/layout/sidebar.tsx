@@ -11,6 +11,8 @@ import {
   FolderKanban,
   MenuSquare,
   PanelsTopLeft,
+  Building2,
+  LayoutTemplate,
   LogOut,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth';
@@ -22,6 +24,8 @@ const navigation = [
   { name: 'Header & Footer', href: '/header-footer', icon: PanelsTopLeft },
   { name: 'Navigation', href: '/navigation', icon: MenuSquare },
   { name: 'Collections', href: '/collections', icon: Images },
+  { name: 'Listings', href: '/listings', icon: Building2 },
+  { name: 'Listings Templates', href: '/listings/templates', icon: LayoutTemplate },
   { name: 'Leads', href: '/leads', icon: Users },
   { name: 'Templates', href: '/templates', icon: FolderKanban, adminOnly: true },
 ];

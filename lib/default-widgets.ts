@@ -628,6 +628,28 @@ export function createDefaultWidget(type: SectionType): any {
           opacity: 100,
         },
       };
+
+    case 'listings':
+      return {
+        type: 'listings',
+        statuses: [],
+        sortBy: 'date_added_desc',
+        maxItems: 6,
+        columns: 3,
+        showStatusBadge: true,
+        background: {
+          type: 'color',
+          color: 'transparent',
+          opacity: 100,
+          blur: 0,
+        },
+        layout: {
+          height: { type: 'auto' },
+          width: 'container',
+          padding: { top: 60, right: 20, bottom: 60, left: 20 },
+          margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        },
+      };
     
     case 'image-text-columns':
       return {

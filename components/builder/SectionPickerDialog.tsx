@@ -7,6 +7,7 @@ import {
   Type, 
   Image as ImageIcon, 
   Grid3x3,
+  Building2,
   Boxes,
   HelpCircle,
   Quote,
@@ -62,6 +63,13 @@ const sectionOptions: SectionOption[] = [
     icon: Boxes,
     title: 'Icon + Text',
     description: 'Display features or services with icons and descriptions',
+  },
+  {
+    id: 'listings',
+    type: 'listings',
+    icon: Building2,
+    title: 'Listings Collection',
+    description: 'Display listing cards with status filtering and sorting',
   },
   {
     id: 'text-section',

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Section, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, FAQWidget, TestimonialWidget, StepsWidget, ImageTextColumnsWidget, StickyFormWidget, ReviewsSliderWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
+import { Section, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, FAQWidget, TestimonialWidget, StepsWidget, ImageTextColumnsWidget, StickyFormWidget, ReviewsSliderWidget, ListingsWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget } from '@/lib/types';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
@@ -22,6 +22,7 @@ import { StepsEditorNew } from './section-editors/StepsEditorNew';
 import { TestimonialsEditorNew } from './section-editors/TestimonialsEditorNew';
 import { FAQEditorNew } from './section-editors/FAQEditorNew';
 import { ReviewsSliderEditorNew } from './section-editors/ReviewsSliderEditorNew';
+import { ListingsEditorNew } from './section-editors/ListingsEditorNew';
 import { ContactFormEditorNew } from './section-editors/ContactFormEditorNew';
 import { StickyFormEditorNew } from './section-editors/StickyFormEditorNew';
 import { ImageNavigationEditorNew } from './section-editors/ImageNavigationEditorNew';
@@ -125,6 +126,12 @@ export function SectionEditor({ pageId, sections }: SectionEditorProps) {
         {section.type === 'reviews-slider' && (
           <ReviewsSliderEditorNew
             widget={section.widget as ReviewsSliderWidget}
+            onChange={updateWidget}
+          />
+        )}
+        {section.type === 'listings' && (
+          <ListingsEditorNew
+            widget={section.widget as ListingsWidget}
             onChange={updateWidget}
           />
         )}
