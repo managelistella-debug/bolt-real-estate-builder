@@ -25,7 +25,7 @@ const STATUS_FILTERS: Array<{ label: string; value: 'all' | BlogStatus }> = [
 export default function BlogsPage() {
   const { user } = useAuthStore();
   const { toast } = useToast();
-  const { blogs, createBlog, createSampleBlog, updateBlog, deleteBlog, duplicateBlog } = useBlogsStore();
+  const { createBlog, createSampleBlog, updateBlog, deleteBlog, duplicateBlog, getBlogsForCurrentUser } = useBlogsStore();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | BlogStatus>('all');
@@ -33,8 +33,8 @@ export default function BlogsPage() {
   const [editingBlog, setEditingBlog] = useState<BlogPost | null>(null);
 
   const userBlogs = useMemo(
-    () => blogs.filter((blog) => (user?.id ? blog.userId === user.id : true)),
-    [blogs, user?.id]
+    () => getBlogsForCurrentUser(user?.id),
+    [getBlogsForCurrentUser, user?.id]
   );
 
   const filteredBlogs = useMemo(() => {

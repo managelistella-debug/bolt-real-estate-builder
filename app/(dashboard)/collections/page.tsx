@@ -11,12 +11,12 @@ import { ImageManager } from '@/components/collections/ImageManager';
 
 export default function CollectionsPage() {
   const { user } = useAuthStore();
-  const { collections, deleteCollection } = useImageCollectionsStore();
+  const { deleteCollection, getCollectionsForCurrentUser } = useImageCollectionsStore();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingCollectionId, setEditingCollectionId] = useState<string | null>(null);
   const [managingCollectionId, setManagingCollectionId] = useState<string | null>(null);
 
-  const userCollections = collections.filter((c) => c.userId === user?.id);
+  const userCollections = getCollectionsForCurrentUser(user?.id);
 
   const handleDelete = (collectionId: string) => {
     if (confirm('Are you sure you want to delete this collection? This action cannot be undone.')) {

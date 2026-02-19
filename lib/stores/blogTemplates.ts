@@ -1,15 +1,18 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { BlogPostTemplateConfig, BlogPostTemplateId } from '@/lib/types';
+import { useTenantContextStore } from './tenantContext';
 
 interface BlogTemplatesState {
   templates: BlogPostTemplateConfig[];
   activeTemplateId: BlogPostTemplateId;
   getTemplateById: (id: BlogPostTemplateId) => BlogPostTemplateConfig | undefined;
+  getTemplatesForCurrentUser: (userId?: string) => BlogPostTemplateConfig[];
   getActiveTemplate: () => BlogPostTemplateConfig | undefined;
   setActiveTemplate: (id: BlogPostTemplateId) => void;
   updateTemplate: (id: BlogPostTemplateId, updates: Partial<BlogPostTemplateConfig>) => void;
   createTemplate: (name: string, sourceTemplateId?: BlogPostTemplateId) => BlogPostTemplateConfig;
+  publishTemplateGlobally: (id: BlogPostTemplateId) => void;
 }
 
 const DEFAULT_BLOG_TEMPLATES: BlogPostTemplateConfig[] = [
@@ -17,6 +20,7 @@ const DEFAULT_BLOG_TEMPLATES: BlogPostTemplateConfig[] = [
     id: 'classic',
     name: 'Classic Article',
     description: 'Hero image and title with a sticky right-column contact form.',
+    scope: 'global',
     layoutVariant: 'newsletter',
     showSidebarContact: true,
     showBottomBlogCards: true,
@@ -109,6 +113,7 @@ const DEFAULT_BLOG_TEMPLATES: BlogPostTemplateConfig[] = [
     id: 'feature',
     name: 'Feature Header',
     description: 'Minimal article page with date, tags, hero image, and body content.',
+    scope: 'global',
     layoutVariant: 'insights',
     showSidebarContact: false,
     showBottomBlogCards: false,
@@ -211,11 +216,18 @@ export const useBlogTemplatesStore = create<BlogTemplatesState>()(
       activeTemplateId: 'classic',
 
       getTemplateById: (id) => get().templates.find((template) => template.id === id),
+      getTemplatesForCurrentUser: (userId) => {
+        const effectiveUserId = userId || useTenantContextStore.getState().effectiveUserId;
+        return get().templates.filter(
+          (template) => template.scope === 'global' || (!effectiveUserId ? true : template.ownerUserId === effectiveUserId)
+        );
+      },
       getActiveTemplate: () => {
         const state = get();
+        const visibleTemplates = state.getTemplatesForCurrentUser();
         return (
-          state.templates.find((template) => template.id === state.activeTemplateId) ||
-          state.templates[0] ||
+          visibleTemplates.find((template) => template.id === state.activeTemplateId) ||
+          visibleTemplates[0] ||
           DEFAULT_BLOG_TEMPLATES[0]
         );
       },
@@ -255,6 +267,9 @@ export const useBlogTemplatesStore = create<BlogTemplatesState>()(
           id: `template_${Date.now()}`,
           name: name.trim() || 'Untitled Template',
           description: 'Custom blog template',
+          scope: 'tenant',
+          ownerUserId: useTenantContextStore.getState().effectiveUserId,
+          sourceTemplateId: source.id,
           dynamicBindings: {
             ...DEFAULT_DYNAMIC_BINDINGS,
             ...source.dynamicBindings,
@@ -267,10 +282,24 @@ export const useBlogTemplatesStore = create<BlogTemplatesState>()(
         set((state) => ({ templates: [...state.templates, template] }));
         return template;
       },
+      publishTemplateGlobally: (id) => {
+        set((state) => ({
+          templates: state.templates.map((template) =>
+            template.id === id
+              ? {
+                  ...template,
+                  scope: 'global',
+                  ownerUserId: undefined,
+                  publishedAt: new Date(),
+                }
+              : template
+          ),
+        }));
+      },
     }),
     {
       name: 'blog-templates-storage',
-      version: 6,
+      version: 7,
       storage: createJSONStorage(() => localStorage),
       migrate: (persistedState: any) => {
         const state = persistedState as Partial<BlogTemplatesState> | undefined;
@@ -306,6 +335,10 @@ export const useBlogTemplatesStore = create<BlogTemplatesState>()(
               ? { name: defaultSource.name, description: defaultSource.description }
               : template),
             id: mappedId,
+            scope: template?.scope || (isLegacyBaseTemplate ? 'global' : 'tenant'),
+            ownerUserId: template?.ownerUserId,
+            sourceTemplateId: template?.sourceTemplateId,
+            publishedAt: template?.publishedAt ? new Date(template.publishedAt) : undefined,
             relatedPostsLayout: 'grid',
             showRelatedPostDate:
               typeof template?.showRelatedPostDate === 'boolean'

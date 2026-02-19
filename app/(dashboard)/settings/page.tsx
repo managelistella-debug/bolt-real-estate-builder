@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { getPlatformBaseDomain } from '@/lib/domain/config';
 import { isValidDomain, normalizeDomainInput } from '@/lib/domain/dns';
 import { DomainConnectionStatus } from '@/lib/types';
+import { useApiKeysStore } from '@/lib/stores/apiKeys';
 
 const statusStyles: Record<DomainConnectionStatus, string> = {
   not_started: 'bg-slate-100 text-slate-700',
@@ -43,6 +44,9 @@ export default function SettingsPage() {
 
   const [domainInput, setDomainInput] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
+  const [apiKeyLabel, setApiKeyLabel] = useState('');
+  const [apiKeyRawValue, setApiKeyRawValue] = useState('');
+  const { createKey, getKeysForUser } = useApiKeysStore();
 
   useEffect(() => {
     if (user) initializeUserWebsite(user.id);
@@ -60,6 +64,7 @@ export default function SettingsPage() {
   if (!website || !domainSettings) {
     return <div className="p-6">Loading settings...</div>;
   }
+  const apiKeys = user ? getKeysForUser(user.id) : [];
 
   const handleSaveDomain = () => {
     if (!isDomainValid) {
@@ -227,12 +232,55 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="general">
-            <Card className="p-4">
-              <h2 className="text-lg font-semibold">General Settings</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Additional website settings can be added here as this section grows.
-              </p>
-            </Card>
+            <div className="space-y-4">
+              <Card className="p-4">
+                <h2 className="text-lg font-semibold">Public API Keys</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Generate API keys used by coded websites to read CMS content.
+                </p>
+                <div className="mt-4 grid gap-2 md:grid-cols-2">
+                  <Input
+                    placeholder="Key label (e.g. production-site)"
+                    value={apiKeyLabel}
+                    onChange={(event) => setApiKeyLabel(event.target.value)}
+                  />
+                  <Input
+                    placeholder="Raw key value"
+                    value={apiKeyRawValue}
+                    onChange={(event) => setApiKeyRawValue(event.target.value)}
+                  />
+                </div>
+                <Button
+                  className="mt-3"
+                  onClick={() => {
+                    if (!user || !apiKeyLabel || !apiKeyRawValue) return;
+                    createKey({
+                      userId: user.id,
+                      websiteId: website.id,
+                      label: apiKeyLabel,
+                      rawKey: apiKeyRawValue,
+                      scopes: ['content:read', 'forms:write'],
+                    });
+                    setApiKeyLabel('');
+                    setApiKeyRawValue('');
+                    toast({ title: 'API key created', description: 'Use this key in x-api-key headers.' });
+                  }}
+                >
+                  Create API Key
+                </Button>
+                <div className="mt-4 space-y-2">
+                  {apiKeys.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No API keys created yet.</p>
+                  )}
+                  {apiKeys.map((entry) => (
+                    <div key={entry.id} className="rounded-md border p-3 text-sm">
+                      <p className="font-medium">{entry.label}</p>
+                      <p className="text-xs text-muted-foreground">Preview: {entry.keyPreview}</p>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

@@ -1,17 +1,20 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { Website, Page, WebsiteDomainSettings } from '@/lib/types';
+import { Website, Page, WebsiteDomainSettings, Template } from '@/lib/types';
 import { getDefaultHeaderConfig, normalizeHeaderConfig } from '@/lib/header-config';
 import { getDefaultFooterConfig, normalizeFooterConfig } from '@/lib/footer-config';
 import { buildPlatformUrl, generateDefaultSubdomainSlug } from '@/lib/domain/config';
 import { buildVercelDnsRecords, normalizeDomainInput } from '@/lib/domain/dns';
 import { DomainVerificationResult, MockDomainVerificationProvider } from '@/lib/domain/verification';
+import { useTenantContextStore } from './tenantContext';
 
 interface WebsiteState {
   currentWebsite: Website | null;
   websites: Website[];
   getCurrentUserWebsite: () => Website | null;
   initializeUserWebsite: (userId: string) => void;
+  addWebsite: (website: Website) => void;
+  applyTemplateToUserWebsite: (template: Template, userId: string) => Website;
   setCurrentWebsite: (website: Website) => void;
   updateWebsite: (websiteId: string, updates: Partial<Website>) => void;
   addPage: (page: Page) => void;
@@ -96,26 +99,30 @@ export const useWebsiteStore = create<WebsiteState>()(
   
   getCurrentUserWebsite: () => {
     const state = get();
-    // Assuming one website per user, return a normalized first website.
-    return state.websites.length > 0 ? normalizeWebsiteData(state.websites[0]) : null;
+    const effectiveUserId = useTenantContextStore.getState().effectiveUserId;
+    if (!effectiveUserId) return null;
+    const scopedWebsite = state.websites.find((website) => website.userId === effectiveUserId);
+    return scopedWebsite ? normalizeWebsiteData(scopedWebsite) : null;
   },
 
   initializeUserWebsite: (userId: string) => {
     const state = get();
+    const effectiveUserId = useTenantContextStore.getState().effectiveUserId || userId;
     if (state.websites.length > 0) {
       const normalizedWebsites = state.websites.map((website) => normalizeWebsiteData(website));
+      const existingForUser = normalizedWebsites.find((website) => website.userId === effectiveUserId);
       set({
         websites: normalizedWebsites,
-        currentWebsite: normalizedWebsites[0],
+        currentWebsite: existingForUser || normalizedWebsites[0] || null,
       });
-      return;
+      if (existingForUser) return;
     }
 
-    if (state.websites.length === 0) {
+    if (state.websites.filter((website) => website.userId === effectiveUserId).length === 0) {
       // Create a default home page
       const defaultHomePage: Page = {
         id: `page-${Date.now()}`,
-        websiteId: `website-${userId}`,
+        websiteId: `website-${effectiveUserId}`,
         name: 'Home',
         slug: '/',
         isHomepage: true,
@@ -134,9 +141,9 @@ export const useWebsiteStore = create<WebsiteState>()(
 
       // Create a default website for the user
       const defaultWebsite: Website = {
-        id: `website-${userId}`,
+        id: `website-${effectiveUserId}`,
         name: 'My Website',
-        userId: userId,
+        userId: effectiveUserId,
         templateId: 'default',
         published: false,
         globalStyles: {
@@ -165,13 +172,58 @@ export const useWebsiteStore = create<WebsiteState>()(
         header: getDefaultHeaderConfig(),
         footer: getDefaultFooterConfig(),
         pages: [defaultHomePage],
-        domains: getDefaultDomainSettings({ userId, websiteId: `website-${userId}` }),
+        domains: getDefaultDomainSettings({ userId: effectiveUserId, websiteId: `website-${effectiveUserId}` }),
         createdAt: new Date(),
         updatedAt: new Date(),
       };
       const normalizedWebsite = normalizeWebsiteData(defaultWebsite);
-      set({ websites: [normalizedWebsite], currentWebsite: normalizedWebsite });
+      set({ websites: [...state.websites, normalizedWebsite], currentWebsite: normalizedWebsite });
     }
+  },
+
+  addWebsite: (website) => {
+    const normalizedWebsite = normalizeWebsiteData(website);
+    set((state) => ({
+      websites: [...state.websites, normalizedWebsite],
+      currentWebsite: normalizedWebsite,
+    }));
+  },
+
+  applyTemplateToUserWebsite: (template, userId) => {
+    const state = get();
+    const targetWebsite = state.websites.find((website) => website.userId === userId);
+    const now = new Date();
+    const nextPages = template.defaultPages.map((page, index) => ({
+      ...page,
+      id: `page_${Date.now()}_${index}`,
+      websiteId: targetWebsite?.id || `website-${userId}`,
+      createdAt: now,
+      updatedAt: now,
+    }));
+
+    const nextWebsite: Website = normalizeWebsiteData({
+      id: targetWebsite?.id || `website-${userId}`,
+      name: targetWebsite?.name || `${template.name} Website`,
+      userId,
+      templateId: template.id,
+      published: false,
+      globalStyles: template.defaultGlobalStyles,
+      header: template.defaultHeader,
+      footer: template.defaultFooter,
+      pages: nextPages,
+      domains: targetWebsite?.domains || getDefaultDomainSettings({ userId, websiteId: targetWebsite?.id || `website-${userId}` }),
+      createdAt: targetWebsite?.createdAt || now,
+      updatedAt: now,
+    });
+
+    set((prev) => ({
+      websites: targetWebsite
+        ? prev.websites.map((website) => (website.id === targetWebsite.id ? nextWebsite : website))
+        : [...prev.websites, nextWebsite],
+      currentWebsite: nextWebsite,
+    }));
+
+    return nextWebsite;
   },
   
   setCurrentWebsite: (website) => {
@@ -477,7 +529,7 @@ export const useWebsiteStore = create<WebsiteState>()(
 }),
     {
       name: 'website-storage',
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => ({
         getItem: (name) => localStorage.getItem(name),
         setItem: (name, value) => {
@@ -494,6 +546,12 @@ export const useWebsiteStore = create<WebsiteState>()(
       partialize: (state) => ({
         websites: state.websites,
       }),
+      migrate: (persistedState: any) => {
+        const state = persistedState as Partial<WebsiteState> | undefined;
+        return {
+          websites: Array.isArray(state?.websites) ? state!.websites : [],
+        };
+      },
     }
   )
 );

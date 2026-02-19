@@ -3,12 +3,12 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-// This page redirects to the new pages route since we now have one website per user
+// Legacy route: redirect to dashboard in headless mode.
 export default function SitesPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/pages');
+    router.replace('/dashboard');
   }, [router]);
 
   return (

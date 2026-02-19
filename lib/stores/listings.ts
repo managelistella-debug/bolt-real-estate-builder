@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { Listing, ListingStatus, ListingsSortOption } from '@/lib/types';
+import { useTenantContextStore } from './tenantContext';
 
 interface ListingsFilterConfig {
   statuses?: ListingStatus[];
@@ -205,12 +206,17 @@ export const useListingsStore = create<ListingsState>()(
 
       getListingsForCurrentUser: (userId) => {
         const normalizedListings = get().listings.map(normalizeListing);
-        if (!userId) return normalizedListings;
-        return normalizedListings.filter((listing) => listing.userId === userId);
+        const effectiveUserId = userId || useTenantContextStore.getState().effectiveUserId;
+        if (!effectiveUserId) return [];
+        return normalizedListings.filter((listing) => listing.userId === effectiveUserId);
       },
 
       getListingBySlug: (slug) => {
-        const listing = get().listings.find((item) => item.slug === slug);
+        const effectiveUserId = useTenantContextStore.getState().effectiveUserId;
+        if (!effectiveUserId) return undefined;
+        const listing = get().listings.find(
+          (item) => item.slug === slug && item.userId === effectiveUserId
+        );
         return listing ? normalizeListing(listing) : undefined;
       },
 

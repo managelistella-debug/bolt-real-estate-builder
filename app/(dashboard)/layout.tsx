@@ -6,6 +6,9 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { Toaster } from '@/components/ui/toaster';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useWebsiteStore } from '@/lib/stores/website';
+import { useTenantContextStore } from '@/lib/stores/tenantContext';
+import { ImpersonationBanner } from '@/components/admin/ImpersonationBanner';
+import { featureFlags } from '@/lib/featureFlags';
 
 export default function DashboardLayout({
   children,
@@ -14,15 +17,16 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, actorUser, isImpersonating } = useAuthStore();
   const { initializeUserWebsite } = useWebsiteStore();
+  const { setActor, startImpersonation } = useTenantContextStore();
   const [isHydrated, setIsHydrated] = useState(false);
 
   // Check if we're in builder or preview mode (hide sidebar)
-  const isBuilderMode = pathname?.includes('/builder');
-  const isPreviewMode = pathname?.includes('/preview');
-  const isHeaderEditorMode = pathname?.startsWith('/header-footer');
-  const isBlogTemplateEditorMode = pathname?.includes('/blogs/templates/editor');
+  const isBuilderMode = featureFlags.enableVisualBuilder && pathname?.includes('/builder');
+  const isPreviewMode = featureFlags.enableVisualBuilder && pathname?.includes('/preview');
+  const isHeaderEditorMode = false;
+  const isBlogTemplateEditorMode = featureFlags.enableTemplateEditor && pathname?.includes('/blogs/templates/editor');
 
   // Wait for Zustand to rehydrate from localStorage
   useEffect(() => {
@@ -39,11 +43,16 @@ export default function DashboardLayout({
     if (!isAuthenticated) {
       router.push('/login');
       } else if (user) {
+        const actor = actorUser || user;
+        setActor({ id: actor.id, role: actor.role });
+        if (isImpersonating) {
+          startImpersonation(user.id);
+        }
         // Initialize user's website if not already done
         initializeUserWebsite(user.id);
       }
     }
-  }, [isHydrated, isAuthenticated, user, router, initializeUserWebsite]);
+  }, [isHydrated, isAuthenticated, user, actorUser, isImpersonating, router, initializeUserWebsite, setActor, startImpersonation]);
 
   // Show loading while hydrating to prevent flash and false redirects
   if (!isHydrated) {
@@ -65,6 +74,7 @@ export default function DashboardLayout({
   if (isBuilderMode || isPreviewMode || isHeaderEditorMode || isBlogTemplateEditorMode) {
     return (
       <>
+        <ImpersonationBanner />
         {children}
         <Toaster />
       </>
@@ -76,6 +86,7 @@ export default function DashboardLayout({
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
       <main className="flex-1 overflow-auto">
+        <ImpersonationBanner />
         {children}
       </main>
       <Toaster />

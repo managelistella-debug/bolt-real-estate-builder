@@ -10,6 +10,10 @@ import { LeadDetailDrawer } from '@/components/crm/LeadDetailDrawer';
 import { AddLeadDialog } from '@/components/crm/AddLeadDialog';
 import { Lead, LeadStatus, Task, Note } from '@/lib/types';
 import { useToast } from '@/components/ui/use-toast';
+import { useFormSubmissionsStore } from '@/lib/stores/formSubmissions';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 export default function LeadsPage() {
   const { user } = useAuthStore();
@@ -30,6 +34,14 @@ export default function LeadsPage() {
   } = useLeadsStore();
 
   const { toast } = useToast();
+  const {
+    getSubmissionsForCurrentUser,
+    getFieldMappingsForCurrentUser,
+    upsertFieldMapping,
+  } = useFormSubmissionsStore();
+  const [mappingFormKey, setMappingFormKey] = useState('contact-form');
+  const [mappingExternalField, setMappingExternalField] = useState('');
+  const [mappingInternalField, setMappingInternalField] = useState('');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
@@ -44,7 +56,7 @@ export default function LeadsPage() {
       initializeTasks(mockTasks);
       initializeNotes(mockNotes);
     }
-  }, []);
+  }, [initializeLeads, initializeNotes, initializeTasks, leads.length]);
 
   // Filter and search logic
   const filteredLeads = useMemo(() => {
@@ -89,6 +101,8 @@ export default function LeadsPage() {
     });
     return Array.from(tags).sort();
   }, [leads]);
+  const submissions = user ? getSubmissionsForCurrentUser(user.id) : [];
+  const fieldMappings = user ? getFieldMappingsForCurrentUser(user.id) : [];
 
   const handleTagToggle = (tag: string) => {
     setSelectedTags((prev) =>
@@ -192,6 +206,70 @@ export default function LeadsPage() {
     <div className="flex flex-col h-screen bg-gray-50">
       <div className="flex-1 overflow-auto">
         <div className="max-w-7xl mx-auto p-6 space-y-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="p-4">
+              <h3 className="font-semibold">Recent Form Submissions</h3>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Headless form submissions sync into CRM contacts.
+              </p>
+              {submissions.slice(0, 5).map((submission) => (
+                <div key={submission.id} className="mb-2 rounded border p-2 text-sm">
+                  <p className="font-medium">{submission.contact.email}</p>
+                  <p className="text-xs text-muted-foreground">{submission.formKey}</p>
+                </div>
+              ))}
+              {submissions.length === 0 && (
+                <p className="text-sm text-muted-foreground">No submissions yet.</p>
+              )}
+            </Card>
+
+            <Card className="p-4">
+              <h3 className="font-semibold">Form Field Mapping</h3>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Map incoming payload keys to CRM fields.
+              </p>
+              <div className="grid gap-2">
+                <Input
+                  value={mappingFormKey}
+                  onChange={(event) => setMappingFormKey(event.target.value)}
+                  placeholder="Form key"
+                />
+                <Input
+                  value={mappingExternalField}
+                  onChange={(event) => setMappingExternalField(event.target.value)}
+                  placeholder="External field (e.g. full_name)"
+                />
+                <Input
+                  value={mappingInternalField}
+                  onChange={(event) => setMappingInternalField(event.target.value)}
+                  placeholder="Internal field (e.g. firstName)"
+                />
+                <Button
+                  onClick={() => {
+                    if (!user || !mappingExternalField || !mappingInternalField) return;
+                    upsertFieldMapping({
+                      userId: user.id,
+                      formKey: mappingFormKey,
+                      externalField: mappingExternalField,
+                      internalField: mappingInternalField,
+                    });
+                    setMappingExternalField('');
+                    setMappingInternalField('');
+                  }}
+                >
+                  Save Mapping
+                </Button>
+              </div>
+              <div className="mt-3 space-y-1">
+                {fieldMappings.slice(0, 4).map((entry) => (
+                  <p key={entry.id} className="text-xs text-muted-foreground">
+                    {entry.formKey}: {entry.externalField} -&gt; {entry.internalField}
+                  </p>
+                ))}
+              </div>
+            </Card>
+          </div>
+
           {/* Search and Filters */}
           <SearchAndFilters
             searchQuery={searchQuery}

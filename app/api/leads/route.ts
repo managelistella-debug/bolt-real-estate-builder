@@ -1,10 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { assertTenantAccess, readSessionTenantContext } from '@/lib/server/tenantGuard';
+import { createLeadAndSubmission } from '@/lib/server/cmsData';
 
 export async function POST(request: NextRequest) {
   try {
+    const sessionContext = readSessionTenantContext(request);
+    if (!sessionContext) {
+      return NextResponse.json({ error: 'Missing authenticated tenant context' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { firstName, lastName, email, phone, message, customFields, websiteId, sourcePage } = body;
-    
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      message,
+      customFields,
+      sourcePage,
+      formKey,
+      tenantId,
+    } = body;
+
     // Validate required fields
     if (!email) {
       return NextResponse.json(
@@ -22,36 +39,27 @@ export async function POST(request: NextRequest) {
       parsedFirstName = nameParts[0] || '';
       parsedLastName = nameParts.slice(1).join(' ') || '';
     }
-    
-    // Create lead object
-    const lead = {
-      id: `lead_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-      websiteId: websiteId || 'default',
-      firstName: parsedFirstName || 'Unknown',
-      lastName: parsedLastName || '',
+
+    const effectiveTenantId = String(tenantId || sessionContext.effectiveUserId).trim();
+    if (!effectiveTenantId || !assertTenantAccess(sessionContext, effectiveTenantId)) {
+      return NextResponse.json({ error: 'Forbidden tenant access' }, { status: 403 });
+    }
+
+    const { lead, submission } = createLeadAndSubmission(effectiveTenantId, {
+      firstName: parsedFirstName || undefined,
+      lastName: parsedLastName || undefined,
       email,
       phone: phone || undefined,
       message: message || undefined,
-      status: 'new' as const,
-      tags: [],
       sourcePage: sourcePage || 'contact-form',
-      customFields: customFields || {},
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    
-    // In a real application, this would:
-    // 1. Save to database
-    // 2. Send notification emails
-    // 3. Trigger webhooks
-    // 4. Update CRM
-    
-    // For now, we'll return the lead data
-    // The client will handle adding it to the local store
-    
+      formKey: formKey || 'contact-form',
+      payload: customFields || {},
+    });
+
     return NextResponse.json({
       success: true,
       lead,
+      submission,
       message: 'Lead submitted successfully',
     });
   } catch (error) {

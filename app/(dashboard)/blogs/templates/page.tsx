@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { CheckCircle2, Plus } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { useBlogTemplatesStore } from '@/lib/stores/blogTemplates';
+import { useAuthStore } from '@/lib/stores/auth';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -13,9 +14,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function BlogTemplatesPage() {
-  const { templates, createTemplate, activeTemplateId, setActiveTemplate } = useBlogTemplatesStore();
+  const { user, canManageTenants } = useAuthStore();
+  const { createTemplate, activeTemplateId, setActiveTemplate, getTemplatesForCurrentUser, publishTemplateGlobally } = useBlogTemplatesStore();
   const [newTemplateName, setNewTemplateName] = useState('');
   const [baseTemplateId, setBaseTemplateId] = useState<'classic' | 'feature'>('classic');
+  const templates = getTemplatesForCurrentUser(user?.id);
   const visibleTemplates = templates.filter(
     (template) =>
       template.id !== 'sidebar' &&
@@ -95,6 +98,11 @@ export default function BlogTemplatesPage() {
                 <Link href={`/blogs/templates/editor/${template.id}`}>
                   <Button className="w-full">Open Editor</Button>
                 </Link>
+                {canManageTenants() && template.scope !== 'global' && (
+                  <Button variant="outline" className="col-span-2" onClick={() => publishTemplateGlobally(template.id)}>
+                    Publish Globally
+                  </Button>
+                )}
               </div>
             </Card>
           ))}

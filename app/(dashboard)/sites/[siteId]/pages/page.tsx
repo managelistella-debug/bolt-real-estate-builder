@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation';
 
 // This page redirects to the new pages route structure
 export default function LegacySitePagesPage({ params }: { params: { siteId: string } }) {
-  const { siteId } = params;
+  const { siteId: _siteId } = params;
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to new pages route
-    router.replace('/pages');
+    // Redirect to dashboard in headless mode
+    router.replace('/dashboard');
   }, [router]);
 
   return (

@@ -1,14 +1,23 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User } from '@/lib/types';
-import { useWebsiteStore } from './website';
+import { useTenantContextStore } from './tenantContext';
+import { useAuditLogStore } from './auditLog';
 
 interface AuthState {
+  users: User[];
   user: User | null;
+  actorUser: User | null;
+  isImpersonating: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   register: (email: string, password: string, name: string, role: User['role']) => Promise<boolean>;
+  getAllUsers: () => User[];
+  getUserById: (id: string) => User | undefined;
+  startImpersonation: (targetUserId: string, reason?: string) => boolean;
+  stopImpersonation: () => void;
+  canManageTenants: () => boolean;
 }
 
 // Mock users for prototype
@@ -42,8 +51,11 @@ const MOCK_USERS: (User & { password: string })[] = [
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
+      users: MOCK_USERS.map(({ password: _password, ...user }) => user),
       user: null,
+      actorUser: null,
+      isImpersonating: false,
       isAuthenticated: false,
       
       login: async (email: string, password: string) => {
@@ -52,13 +64,23 @@ export const useAuthStore = create<AuthState>()(
         // Simulate API delay
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        const user = MOCK_USERS.find(
+        const matchedMock = MOCK_USERS.find(
           u => u.email === email && u.password === password
         );
+        const user = matchedMock || get().users.find((candidate) => candidate.email === email);
         
         if (user) {
-          const { password: _, ...userWithoutPassword } = user;
-          set({ user: userWithoutPassword, isAuthenticated: true });
+          const userWithoutPassword = 'password' in user ? (({ password: _, ...rest }) => rest)(user) : user;
+          set({
+            user: userWithoutPassword,
+            actorUser: userWithoutPassword,
+            isAuthenticated: true,
+            isImpersonating: false,
+          });
+          useTenantContextStore.getState().setActor({
+            id: userWithoutPassword.id,
+            role: userWithoutPassword.role,
+          });
           return true;
         }
         
@@ -66,7 +88,13 @@ export const useAuthStore = create<AuthState>()(
       },
       
       logout: () => {
-        set({ user: null, isAuthenticated: false });
+        set({ user: null, actorUser: null, isAuthenticated: false, isImpersonating: false });
+        useTenantContextStore.setState({
+          actorUserId: '',
+          effectiveUserId: '',
+          isImpersonating: false,
+          actorRole: undefined,
+        });
       },
       
       register: async (email: string, password: string, name: string, role: User['role']) => {
@@ -90,17 +118,90 @@ export const useAuthStore = create<AuthState>()(
           businessId: role === 'business_user' ? `business-${Date.now()}` : undefined,
         };
         
-        set({ user: newUser, isAuthenticated: true });
+        set((state) => ({
+          users: [...state.users, newUser],
+          user: newUser,
+          actorUser: newUser,
+          isAuthenticated: true,
+          isImpersonating: false,
+        }));
+        useTenantContextStore.getState().setActor({ id: newUser.id, role: newUser.role });
         return true;
+      },
+      getAllUsers: () => get().users,
+      getUserById: (id) => get().users.find((entry) => entry.id === id),
+      startImpersonation: (targetUserId, reason) => {
+        const state = get();
+        const actor = state.actorUser || state.user;
+        if (!actor) return false;
+        if (actor.role !== 'super_admin' && actor.role !== 'internal_admin') return false;
+        const targetUser = state.users.find((entry) => entry.id === targetUserId);
+        if (!targetUser) return false;
+        set({
+          actorUser: actor,
+          user: targetUser,
+          isImpersonating: true,
+          isAuthenticated: true,
+        });
+        useTenantContextStore.getState().setActor({ id: actor.id, role: actor.role });
+        useTenantContextStore.getState().startImpersonation(targetUser.id);
+        useAuditLogStore.getState().addEvent({
+          type: 'impersonation_started',
+          actorUserId: actor.id,
+          effectiveUserId: targetUser.id,
+          targetUserId: targetUser.id,
+          metadata: reason ? { reason } : undefined,
+        });
+        return true;
+      },
+      stopImpersonation: () => {
+        const state = get();
+        if (!state.isImpersonating || !state.actorUser) return;
+        const actor = state.actorUser;
+        const previousEffective = state.user?.id;
+        set({
+          user: actor,
+          actorUser: actor,
+          isImpersonating: false,
+          isAuthenticated: true,
+        });
+        useTenantContextStore.getState().setActor({ id: actor.id, role: actor.role });
+        useTenantContextStore.getState().stopImpersonation();
+        useAuditLogStore.getState().addEvent({
+          type: 'impersonation_stopped',
+          actorUserId: actor.id,
+          effectiveUserId: previousEffective,
+          targetUserId: previousEffective,
+        });
+      },
+      canManageTenants: () => {
+        const role = (get().actorUser || get().user)?.role;
+        return role === 'super_admin' || role === 'internal_admin';
       },
     }),
     {
       name: 'auth-storage',
-      version: 1,
+      version: 2,
       partialize: (state) => ({
+        users: state.users,
         user: state.user,
+        actorUser: state.actorUser,
+        isImpersonating: state.isImpersonating,
         isAuthenticated: state.isAuthenticated,
       }),
+      migrate: (persistedState: any) => {
+        const state = persistedState as Partial<AuthState> | undefined;
+        const users = Array.isArray(state?.users) && state?.users.length
+          ? state.users
+          : MOCK_USERS.map(({ password: _password, ...user }) => user);
+        return {
+          users,
+          user: state?.user || null,
+          actorUser: state?.actorUser || state?.user || null,
+          isImpersonating: !!state?.isImpersonating,
+          isAuthenticated: !!state?.isAuthenticated,
+        };
+      },
     }
   )
 );

@@ -25,7 +25,7 @@ const STATUS_FILTERS: Array<{ label: string; value: 'all' | ListingStatus }> = [
 export default function ListingsPage() {
   const { user } = useAuthStore();
   const { toast } = useToast();
-  const { listings, createListing, createSampleListing, updateListing, deleteListing, duplicateListing } = useListingsStore();
+  const { createListing, createSampleListing, updateListing, deleteListing, duplicateListing, getListingsForCurrentUser } = useListingsStore();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | ListingStatus>('all');
@@ -33,8 +33,8 @@ export default function ListingsPage() {
   const [editingListing, setEditingListing] = useState<Listing | null>(null);
 
   const userListings = useMemo(
-    () => listings.filter((listing) => (user?.id ? listing.userId === user.id : true)),
-    [listings, user?.id]
+    () => getListingsForCurrentUser(user?.id),
+    [getListingsForCurrentUser, user?.id]
   );
 
   const filteredListings = useMemo(() => {

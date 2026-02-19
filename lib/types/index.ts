@@ -1,4 +1,6 @@
 // User and Authentication Types
+export * from './headless';
+
 export type UserRole = 'super_admin' | 'internal_admin' | 'business_user';
 
 export interface User {
@@ -8,6 +10,24 @@ export interface User {
   role: UserRole;
   createdAt: Date;
   businessId?: string; // Only for business users
+}
+
+export type TenantScope = 'global' | 'tenant' | 'assigned_private';
+export type TemplateAssetKind = 'section' | 'page' | 'full_site' | 'blog_template';
+
+export interface SessionActorContext {
+  actorUserId: string;
+  effectiveUserId: string;
+  isImpersonating: boolean;
+}
+
+export interface TemplateAssetProvenance {
+  createdByUserId: string;
+  ownerUserId?: string;
+  sourceTemplateId?: string;
+  publishedAt?: Date;
+  assignedByUserId?: string;
+  assignedAt?: Date;
 }
 
 // Website and Page Types
@@ -197,6 +217,10 @@ export interface BlogPostTemplateConfig {
   id: BlogPostTemplateId;
   name: string;
   description: string;
+  scope?: TenantScope;
+  ownerUserId?: string;
+  sourceTemplateId?: string;
+  publishedAt?: Date;
   layoutVariant: 'newsletter' | 'insights';
   showSidebarContact: boolean;
   showBottomBlogCards: boolean;
@@ -343,10 +367,31 @@ export interface Template {
   description: string;
   industry: string[];
   previewImage: string;
+  scope?: TenantScope;
+  ownerUserId?: string;
+  sourceTemplateId?: string;
+  publishedAt?: Date;
   defaultGlobalStyles: GlobalStyles;
   defaultHeader: HeaderConfig;
   defaultFooter: FooterConfig;
   defaultPages: Omit<Page, 'id' | 'websiteId' | 'createdAt' | 'updatedAt'>[];
+}
+
+export interface TemplateCatalogAsset {
+  id: string;
+  name: string;
+  description: string;
+  kind: TemplateAssetKind;
+  scope: TenantScope;
+  ownerUserId?: string;
+  createdByUserId: string;
+  sourceTemplateId?: string;
+  assignedByUserId?: string;
+  assignedAt?: Date;
+  publishedAt?: Date;
+  payload: unknown;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // Section and Widget Types

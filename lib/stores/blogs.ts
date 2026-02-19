@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { BlogPost, BlogSortOption, BlogStatus } from '@/lib/types';
+import { useTenantContextStore } from './tenantContext';
 
 interface BlogsFilterConfig {
   statuses?: BlogStatus[];
@@ -142,12 +143,17 @@ export const useBlogsStore = create<BlogsState>()(
 
       getBlogsForCurrentUser: (userId) => {
         const normalizedBlogs = get().blogs.map(normalizeBlog);
-        if (!userId) return normalizedBlogs;
-        return normalizedBlogs.filter((post) => post.userId === userId);
+        const effectiveUserId = userId || useTenantContextStore.getState().effectiveUserId;
+        if (!effectiveUserId) return [];
+        return normalizedBlogs.filter((post) => post.userId === effectiveUserId);
       },
 
       getBlogBySlug: (slug) => {
-        const post = get().blogs.find((item) => item.slug === slug);
+        const effectiveUserId = useTenantContextStore.getState().effectiveUserId;
+        if (!effectiveUserId) return undefined;
+        const post = get().blogs.find(
+          (item) => item.slug === slug && item.userId === effectiveUserId
+        );
         return post ? normalizeBlog(post) : undefined;
       },
 

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { ImageCollection, CollectionImage } from '@/lib/types';
+import { useTenantContextStore } from './tenantContext';
 
 interface ImageCollectionsState {
   collections: ImageCollection[];
@@ -12,6 +13,7 @@ interface ImageCollectionsState {
   updateImageOrder: (collectionId: string, images: CollectionImage[]) => void;
   updateImageCaption: (collectionId: string, imageId: string, caption: string) => void;
   getCollectionById: (id: string) => ImageCollection | undefined;
+  getCollectionsForCurrentUser: (userId?: string) => ImageCollection[];
 }
 
 export const useImageCollectionsStore = create<ImageCollectionsState>()(
@@ -118,6 +120,11 @@ export const useImageCollectionsStore = create<ImageCollectionsState>()(
 
       getCollectionById: (id) => {
         return get().collections.find((collection) => collection.id === id);
+      },
+      getCollectionsForCurrentUser: (userId) => {
+        const effectiveUserId = userId || useTenantContextStore.getState().effectiveUserId;
+        if (!effectiveUserId) return [];
+        return get().collections.filter((collection) => collection.userId === effectiveUserId);
       },
     }),
     {
