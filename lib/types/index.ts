@@ -11,12 +11,40 @@ export interface User {
 }
 
 // Website and Page Types
+export type DomainConnectionStatus =
+  | 'not_started'
+  | 'pending_dns'
+  | 'verifying'
+  | 'connected'
+  | 'error';
+
+export interface DomainDnsRecord {
+  type: 'A' | 'CNAME' | 'TXT';
+  name: string;
+  value: string;
+  ttl: string;
+  required: boolean;
+  notes?: string;
+}
+
+export interface WebsiteDomainSettings {
+  platformSubdomain: string;
+  platformUrl: string;
+  customDomain?: string;
+  status: DomainConnectionStatus;
+  expectedDnsRecords: DomainDnsRecord[];
+  verificationToken?: string;
+  lastVerifiedAt?: Date;
+  verificationError?: string;
+}
+
 export interface Website {
   id: string;
   name: string;
   userId: string;
   templateId: string;
   domain?: string;
+  domains?: WebsiteDomainSettings;
   published: boolean;
   globalStyles: GlobalStyles;
   header: HeaderConfig;

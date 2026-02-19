@@ -14,6 +14,7 @@ import {
   PanelsTopLeft,
   Building2,
   FileText,
+  Settings,
   Plus,
   LogOut,
 } from 'lucide-react';
@@ -29,6 +30,7 @@ const navigation = [
   { name: 'Listings', href: '/listings', icon: Building2 },
   { name: 'Blogs', href: '/blogs', icon: FileText },
   { name: 'Leads', href: '/leads', icon: Users },
+  { name: 'Settings', href: '/settings', icon: Settings },
   { name: 'Templates', href: '/templates', icon: FolderKanban, adminOnly: true },
 ];
 

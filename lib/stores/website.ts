@@ -1,8 +1,11 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { Website, Page, Section } from '@/lib/types';
+import { Website, Page, WebsiteDomainSettings } from '@/lib/types';
 import { getDefaultHeaderConfig, normalizeHeaderConfig } from '@/lib/header-config';
 import { getDefaultFooterConfig, normalizeFooterConfig } from '@/lib/footer-config';
+import { buildPlatformUrl, generateDefaultSubdomainSlug } from '@/lib/domain/config';
+import { buildVercelDnsRecords, normalizeDomainInput } from '@/lib/domain/dns';
+import { DomainVerificationResult, MockDomainVerificationProvider } from '@/lib/domain/verification';
 
 interface WebsiteState {
   currentWebsite: Website | null;
@@ -16,6 +19,11 @@ interface WebsiteState {
   deletePage: (pageId: string) => void;
   duplicatePage: (pageId: string) => void;
   setHomepage: (pageId: string) => void;
+  setCustomDomain: (websiteId: string, customDomain: string) => void;
+  startDomainVerification: (websiteId: string) => void;
+  completeDomainVerification: (websiteId: string, result: DomainVerificationResult) => void;
+  verifyCustomDomain: (websiteId: string) => Promise<boolean>;
+  disconnectCustomDomain: (websiteId: string) => void;
 }
 
 const normalizePageData = (page: Page): Page => ({
@@ -23,8 +31,58 @@ const normalizePageData = (page: Page): Page => ({
   headerSettings: page.headerSettings || { useCustomHeader: false },
 });
 
+const domainVerificationProvider = new MockDomainVerificationProvider();
+
+function createVerificationToken(): string {
+  return `verify_${Math.random().toString(36).slice(2, 8)}_${Date.now().toString(36)}`;
+}
+
+function getDefaultDomainSettings(params: { userId: string; websiteId: string; platformSubdomain?: string }): WebsiteDomainSettings {
+  const platformSubdomain = generateDefaultSubdomainSlug(
+    params.platformSubdomain || params.userId || params.websiteId
+  );
+  return {
+    platformSubdomain,
+    platformUrl: buildPlatformUrl(platformSubdomain),
+    status: 'not_started',
+    expectedDnsRecords: [],
+  };
+}
+
+function normalizeDomainSettings(website: Website): WebsiteDomainSettings {
+  if (!website.domains) {
+    const defaults = getDefaultDomainSettings({ userId: website.userId, websiteId: website.id });
+    if (!website.domain) return defaults;
+
+    const normalizedDomain = normalizeDomainInput(website.domain);
+    const verificationToken = createVerificationToken();
+
+    return {
+      ...defaults,
+      customDomain: normalizedDomain,
+      status: 'connected',
+      expectedDnsRecords: buildVercelDnsRecords(normalizedDomain, verificationToken),
+      verificationToken,
+      lastVerifiedAt: new Date(),
+    };
+  }
+
+  const normalizedSubdomain = generateDefaultSubdomainSlug(website.domains.platformSubdomain || website.userId || website.id);
+  const customDomain = website.domains.customDomain ? normalizeDomainInput(website.domains.customDomain) : undefined;
+
+  return {
+    ...website.domains,
+    platformSubdomain: normalizedSubdomain,
+    platformUrl: buildPlatformUrl(normalizedSubdomain),
+    customDomain,
+    expectedDnsRecords: website.domains.expectedDnsRecords || [],
+    lastVerifiedAt: website.domains.lastVerifiedAt ? new Date(website.domains.lastVerifiedAt) : undefined,
+  };
+}
+
 const normalizeWebsiteData = (website: Website): Website => ({
   ...website,
+  domains: normalizeDomainSettings(website),
   header: normalizeHeaderConfig(website.header),
   footer: normalizeFooterConfig(website.footer),
   pages: website.pages.map(normalizePageData),
@@ -38,12 +96,21 @@ export const useWebsiteStore = create<WebsiteState>()(
   
   getCurrentUserWebsite: () => {
     const state = get();
-    // Assuming one website per user, return the first website
-    return state.websites.length > 0 ? state.websites[0] : null;
+    // Assuming one website per user, return a normalized first website.
+    return state.websites.length > 0 ? normalizeWebsiteData(state.websites[0]) : null;
   },
 
   initializeUserWebsite: (userId: string) => {
     const state = get();
+    if (state.websites.length > 0) {
+      const normalizedWebsites = state.websites.map((website) => normalizeWebsiteData(website));
+      set({
+        websites: normalizedWebsites,
+        currentWebsite: normalizedWebsites[0],
+      });
+      return;
+    }
+
     if (state.websites.length === 0) {
       // Create a default home page
       const defaultHomePage: Page = {
@@ -98,6 +165,7 @@ export const useWebsiteStore = create<WebsiteState>()(
         header: getDefaultHeaderConfig(),
         footer: getDefaultFooterConfig(),
         pages: [defaultHomePage],
+        domains: getDefaultDomainSettings({ userId, websiteId: `website-${userId}` }),
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -235,6 +303,176 @@ export const useWebsiteStore = create<WebsiteState>()(
         currentWebsite: state.currentWebsite?.id === website.id ? updatedWebsite : state.currentWebsite,
       };
     });
+  },
+
+  setCustomDomain: (websiteId, customDomain) => {
+    const normalizedDomain = normalizeDomainInput(customDomain);
+    const verificationToken = createVerificationToken();
+    const expectedDnsRecords = buildVercelDnsRecords(normalizedDomain, verificationToken);
+
+    set((state) => ({
+      websites: state.websites.map((website) =>
+        website.id === websiteId
+          ? normalizeWebsiteData({
+              ...website,
+              domain: normalizedDomain,
+              domains: {
+                ...(website.domains || getDefaultDomainSettings({ userId: website.userId, websiteId: website.id })),
+                customDomain: normalizedDomain,
+                status: 'pending_dns',
+                verificationToken,
+                verificationError: undefined,
+                expectedDnsRecords,
+              },
+              updatedAt: new Date(),
+            })
+          : website
+      ),
+      currentWebsite:
+        state.currentWebsite?.id === websiteId
+          ? normalizeWebsiteData({
+              ...state.currentWebsite,
+              domain: normalizedDomain,
+              domains: {
+                ...(state.currentWebsite.domains || getDefaultDomainSettings({
+                  userId: state.currentWebsite.userId,
+                  websiteId: state.currentWebsite.id,
+                })),
+                customDomain: normalizedDomain,
+                status: 'pending_dns',
+                verificationToken,
+                verificationError: undefined,
+                expectedDnsRecords,
+              },
+              updatedAt: new Date(),
+            })
+          : state.currentWebsite,
+    }));
+  },
+
+  startDomainVerification: (websiteId) => {
+    set((state) => ({
+      websites: state.websites.map((website) =>
+        website.id === websiteId
+          ? normalizeWebsiteData({
+              ...website,
+              domains: {
+                ...(website.domains || getDefaultDomainSettings({ userId: website.userId, websiteId: website.id })),
+                status: 'verifying',
+                verificationError: undefined,
+              },
+              updatedAt: new Date(),
+            })
+          : website
+      ),
+      currentWebsite:
+        state.currentWebsite?.id === websiteId
+          ? normalizeWebsiteData({
+              ...state.currentWebsite,
+              domains: {
+                ...(state.currentWebsite.domains || getDefaultDomainSettings({
+                  userId: state.currentWebsite.userId,
+                  websiteId: state.currentWebsite.id,
+                })),
+                status: 'verifying',
+                verificationError: undefined,
+              },
+              updatedAt: new Date(),
+            })
+          : state.currentWebsite,
+    }));
+  },
+
+  completeDomainVerification: (websiteId, result) => {
+    set((state) => ({
+      websites: state.websites.map((website) =>
+        website.id === websiteId
+          ? normalizeWebsiteData({
+              ...website,
+              domains: {
+                ...(website.domains || getDefaultDomainSettings({ userId: website.userId, websiteId: website.id })),
+                status: result.success ? 'connected' : 'error',
+                lastVerifiedAt: result.verifiedAt,
+                verificationError: result.success ? undefined : result.message,
+              },
+              updatedAt: new Date(),
+            })
+          : website
+      ),
+      currentWebsite:
+        state.currentWebsite?.id === websiteId
+          ? normalizeWebsiteData({
+              ...state.currentWebsite,
+              domains: {
+                ...(state.currentWebsite.domains || getDefaultDomainSettings({
+                  userId: state.currentWebsite.userId,
+                  websiteId: state.currentWebsite.id,
+                })),
+                status: result.success ? 'connected' : 'error',
+                lastVerifiedAt: result.verifiedAt,
+                verificationError: result.success ? undefined : result.message,
+              },
+              updatedAt: new Date(),
+            })
+          : state.currentWebsite,
+    }));
+  },
+
+  verifyCustomDomain: async (websiteId) => {
+    const website = get().websites.find((entry) => entry.id === websiteId);
+    const customDomain = website?.domains?.customDomain;
+
+    if (!website || !customDomain) {
+      return false;
+    }
+
+    get().startDomainVerification(websiteId);
+    const result = await domainVerificationProvider.verifyDomain(customDomain, website.domains?.expectedDnsRecords || []);
+    get().completeDomainVerification(websiteId, result);
+    return result.success;
+  },
+
+  disconnectCustomDomain: (websiteId) => {
+    set((state) => ({
+      websites: state.websites.map((website) =>
+        website.id === websiteId
+          ? normalizeWebsiteData({
+              ...website,
+              domain: undefined,
+              domains: {
+                ...(website.domains || getDefaultDomainSettings({ userId: website.userId, websiteId: website.id })),
+                customDomain: undefined,
+                status: 'not_started',
+                expectedDnsRecords: [],
+                verificationToken: undefined,
+                verificationError: undefined,
+                lastVerifiedAt: undefined,
+              },
+              updatedAt: new Date(),
+            })
+          : website
+      ),
+      currentWebsite:
+        state.currentWebsite?.id === websiteId
+          ? normalizeWebsiteData({
+              ...state.currentWebsite,
+              domain: undefined,
+              domains: {
+                ...(state.currentWebsite.domains || getDefaultDomainSettings({
+                  userId: state.currentWebsite.userId,
+                  websiteId: state.currentWebsite.id,
+                })),
+                customDomain: undefined,
+                status: 'not_started',
+                expectedDnsRecords: [],
+                verificationToken: undefined,
+                verificationError: undefined,
+                lastVerifiedAt: undefined,
+              },
+              updatedAt: new Date(),
+            })
+          : state.currentWebsite,
+    }));
   },
 }),
     {
