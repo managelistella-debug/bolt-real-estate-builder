@@ -8,6 +8,7 @@ import {
   Image as ImageIcon, 
   Grid3x3,
   Building2,
+  Newspaper,
   Boxes,
   HelpCircle,
   Quote,
@@ -70,6 +71,13 @@ const sectionOptions: SectionOption[] = [
     icon: Building2,
     title: 'Listings Collection',
     description: 'Display listing cards with status filtering and sorting',
+  },
+  {
+    id: 'blog-feed',
+    type: 'blog-feed',
+    icon: Newspaper,
+    title: 'Blog Feed',
+    description: 'Display blog posts with filtering, sorting, and pagination options',
   },
   {
     id: 'text-section',

@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Section, SectionType } from '@/lib/types';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { useWebsiteStore } from '@/lib/stores/website';
-import { Plus, GripVertical, Edit, Trash2, Sparkles, Type, Image, Grid3x3, Building2, Boxes, AlignLeft, HelpCircle, Quote, ListOrdered, Columns, StickyNote, Star, Code, Navigation, Mail, FileText, Wrench } from 'lucide-react';
+import { Plus, GripVertical, Edit, Trash2, Sparkles, Type, Image, Grid3x3, Building2, Newspaper, Boxes, AlignLeft, HelpCircle, Quote, ListOrdered, Columns, StickyNote, Star, Code, Navigation, Mail, FileText, Wrench } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { SectionPickerDialog } from './SectionPickerDialog';
 
@@ -21,6 +21,7 @@ const sectionIcons: Record<string, any> = {
   'image-text': Image,
   'image-gallery': Grid3x3,
   listings: Building2,
+  'blog-feed': Newspaper,
   'icon-text': Boxes,
   'text-section': AlignLeft,
   'faq': HelpCircle,
@@ -43,6 +44,7 @@ const sectionLabels: Record<string, string> = {
   'image-text': 'Image + Text',
   'image-gallery': 'Image Gallery',
   listings: 'Listings Collection',
+  'blog-feed': 'Blog Feed',
   'icon-text': 'Icon + Text',
   'text-section': 'Text Section',
   'faq': 'FAQ',
@@ -871,6 +873,73 @@ function createDefaultWidget(type: SectionType): any {
           opacity: 100,
           blur: 0,
         },
+        layout: {
+          height: { type: 'auto' },
+          width: 'container',
+          padding: { top: 60, right: 20, bottom: 60, left: 20 },
+          margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        },
+      };
+    case 'blog-feed':
+      return {
+        type: 'blog-feed',
+        layoutVariant: 'modern-grid',
+        query: {
+          mode: 'filters',
+          manualBlogIds: [],
+          filters: {
+            statuses: ['published'],
+            category: '',
+            tags: [],
+            search: '',
+          },
+        },
+        sortBy: 'date_desc',
+        columns: { desktop: 3, tablet: 2, mobile: 1 },
+        perPage: { desktop: 9, tablet: 6, mobile: 3 },
+        spacing: 20,
+        pagination: {
+          mode: 'paged',
+          loadMoreLabel: 'Load More',
+          previousLabel: 'Previous',
+          nextLabel: 'Next',
+          infiniteBatchSize: 3,
+          showPageIndicator: true,
+        },
+        showDate: true,
+        showExcerpt: true,
+        showReadMore: true,
+        readMoreLabel: 'Read More',
+        style: {
+          cardBackgroundColor: '#ffffff',
+          cardBackgroundOpacity: 100,
+          cardBorderColor: '#e5e7eb',
+          cardBorderOpacity: 100,
+          cardBorderWidth: 1,
+          cardBorderRadius: 12,
+          cardShadow: true,
+          imageBorderRadius: 8,
+          imageBorderColor: '#e5e7eb',
+          imageBorderOpacity: 100,
+          imageBorderWidth: 0,
+          imageShadow: false,
+          typography: {
+            title: { fontFamily: 'Inter', fontSize: 22, fontWeight: '700', color: '#111827', colorOpacity: 100 },
+            date: { fontFamily: 'Inter', fontSize: 13, fontWeight: '500', color: '#6b7280', colorOpacity: 100 },
+            excerpt: { fontFamily: 'Inter', fontSize: 15, fontWeight: '400', color: '#374151', colorOpacity: 100 },
+            action: { fontFamily: 'Inter', fontSize: 13, fontWeight: '600', color: '#111827', colorOpacity: 100 },
+          },
+          paginationButton: {
+            textColor: '#111827',
+            textColorOpacity: 100,
+            backgroundColor: '#ffffff',
+            backgroundColorOpacity: 100,
+            borderColor: '#d1d5db',
+            borderColorOpacity: 100,
+            borderRadius: 8,
+          },
+        },
+        background: { type: 'color', color: 'transparent', opacity: 100, blur: 0 },
         layout: {
           height: { type: 'auto' },
           width: 'container',

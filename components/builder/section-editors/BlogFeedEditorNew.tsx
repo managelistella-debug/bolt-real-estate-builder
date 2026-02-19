@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
-import { Listing, ListingsSortOption, ListingsWidget, ListingStatus } from '@/lib/types';
+import { BlogFeedWidget, BlogPost, BlogSortOption, BlogStatus } from '@/lib/types';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useBuilderStore } from '@/lib/stores/builder';
-import { useListingsStore } from '@/lib/stores/listings';
+import { useBlogsStore } from '@/lib/stores/blogs';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { resolveResponsiveValue, updateResponsiveValue } from '@/lib/responsive';
 import { SectionEditorTabs } from '../SectionEditorTabs';
@@ -17,41 +17,43 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-interface ListingsEditorNewProps {
-  widget: ListingsWidget;
-  onChange: (updates: Partial<ListingsWidget>) => void;
+interface BlogFeedEditorNewProps {
+  widget: BlogFeedWidget;
+  onChange: (updates: Partial<BlogFeedWidget>) => void;
 }
 
-const LISTING_STATUS_OPTIONS: Array<{ value: ListingStatus; label: string }> = [
-  { value: 'for_sale', label: 'For Sale' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'sold', label: 'Sold' },
+const BLOG_STATUS_OPTIONS: Array<{ value: BlogStatus; label: string }> = [
+  { value: 'published', label: 'Published' },
+  { value: 'draft', label: 'Draft' },
+  { value: 'archived', label: 'Archived' },
 ];
 
-const SORT_OPTIONS: Array<{ value: ListingsSortOption; label: string }> = [
-  { value: 'date_added_desc', label: 'Date Added (Newest First)' },
-  { value: 'price_desc', label: 'Price (High to Low)' },
-  { value: 'price_asc', label: 'Price (Low to High)' },
+const SORT_OPTIONS: Array<{ value: BlogSortOption; label: string }> = [
+  { value: 'date_desc', label: 'Date (Newest First)' },
+  { value: 'date_asc', label: 'Date (Oldest First)' },
+  { value: 'title_asc', label: 'Title (A-Z)' },
+  { value: 'title_desc', label: 'Title (Z-A)' },
   { value: 'custom_order', label: 'Custom Order' },
 ];
 
-export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) {
+export function BlogFeedEditorNew({ widget, onChange }: BlogFeedEditorNewProps) {
   const { currentWebsite } = useWebsiteStore();
   const { user } = useAuthStore();
   const { deviceView } = useBuilderStore();
-  const { listings } = useListingsStore();
+  const { blogs } = useBlogsStore();
+
   const [manualSearch, setManualSearch] = useState('');
   const [queryOpen, setQueryOpen] = useState(true);
   const [visibilityOpen, setVisibilityOpen] = useState(false);
-  const [gridLayoutOpen, setGridLayoutOpen] = useState(true);
+  const [layoutOpen, setLayoutOpen] = useState(true);
   const [paginationOpen, setPaginationOpen] = useState(true);
   const [sectionLayoutOpen, setSectionLayoutOpen] = useState(false);
-  const [backgroundOpen, setBackgroundOpen] = useState(false);
   const [cardStyleOpen, setCardStyleOpen] = useState(true);
   const [imageStyleOpen, setImageStyleOpen] = useState(true);
-  const [statusStyleOpen, setStatusStyleOpen] = useState(false);
   const [paginationStyleOpen, setPaginationStyleOpen] = useState(false);
-  const normalizedWidget = normalizeListingsWidget(widget);
+  const [backgroundOpen, setBackgroundOpen] = useState(false);
+
+  const normalizedWidget = normalizeBlogFeedWidget(widget);
   const query = normalizedWidget.query;
 
   const layout = normalizedWidget.layout || {
@@ -67,26 +69,26 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
     blur: 0,
   };
 
-  const userListings = useMemo(
-    () => listings.filter((listing) => (user?.id ? listing.userId === user.id : true)),
-    [listings, user?.id]
+  const userBlogs = useMemo(
+    () => blogs.filter((post) => (user?.id ? post.userId === user.id : true)),
+    [blogs, user?.id]
   );
-  const selectableManualListings = useMemo(() => {
-    const selectedSet = new Set(query.manualListingIds);
+  const selectableManualBlogs = useMemo(() => {
+    const selectedSet = new Set(query.manualBlogIds);
     const needle = manualSearch.trim().toLowerCase();
-    return userListings.filter((listing) => {
-      if (selectedSet.has(listing.id)) return false;
+    return userBlogs.filter((post) => {
+      if (selectedSet.has(post.id)) return false;
       if (!needle) return true;
       return (
-        listing.address.toLowerCase().includes(needle) ||
-        listing.city.toLowerCase().includes(needle) ||
-        listing.neighborhood.toLowerCase().includes(needle)
+        post.title.toLowerCase().includes(needle) ||
+        (post.category || '').toLowerCase().includes(needle) ||
+        (post.excerpt || '').toLowerCase().includes(needle)
       );
     });
-  }, [manualSearch, query.manualListingIds, userListings]);
-  const manualSelection = query.manualListingIds
-    .map((id) => userListings.find((listing) => listing.id === id))
-    .filter(Boolean) as Listing[];
+  }, [manualSearch, query.manualBlogIds, userBlogs]);
+  const manualSelection = query.manualBlogIds
+    .map((id) => userBlogs.find((post) => post.id === id))
+    .filter(Boolean) as BlogPost[];
 
   const activeColumns = resolveResponsiveValue<number>(
     normalizedWidget.columns as any,
@@ -99,15 +101,15 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
     normalizedWidget.perPage.desktop
   );
 
-  const updateQuery = (updates: Partial<ListingsWidget['query']>) => {
+  const updateQuery = (updates: Partial<BlogFeedWidget['query']>) => {
     onChange({ query: { ...query, ...updates } });
   };
 
-  const updateFilters = (updates: Partial<ListingsWidget['query']['filters']>) => {
+  const updateFilters = (updates: Partial<BlogFeedWidget['query']['filters']>) => {
     updateQuery({ filters: { ...query.filters, ...updates } });
   };
 
-  const toggleStatus = (status: ListingStatus, enabled: boolean) => {
+  const toggleStatus = (status: BlogStatus, enabled: boolean) => {
     const statuses = query.filters.statuses || [];
     if (enabled) {
       updateFilters({ statuses: Array.from(new Set([...statuses, status])) });
@@ -116,22 +118,49 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
     updateFilters({ statuses: statuses.filter((item) => item !== status) });
   };
 
-  const addManualListing = (listingId: string) => {
-    updateQuery({ manualListingIds: [...query.manualListingIds, listingId] });
+  const addManualBlog = (blogId: string) => {
+    updateQuery({ manualBlogIds: [...query.manualBlogIds, blogId] });
   };
 
-  const removeManualListing = (listingId: string) => {
-    updateQuery({ manualListingIds: query.manualListingIds.filter((id) => id !== listingId) });
+  const removeManualBlog = (blogId: string) => {
+    updateQuery({ manualBlogIds: query.manualBlogIds.filter((id) => id !== blogId) });
   };
 
-  const moveManualListing = (listingId: string, direction: 'up' | 'down') => {
-    const ids = [...query.manualListingIds];
-    const index = ids.indexOf(listingId);
+  const moveManualBlog = (blogId: string, direction: 'up' | 'down') => {
+    const ids = [...query.manualBlogIds];
+    const index = ids.indexOf(blogId);
     if (index === -1) return;
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= ids.length) return;
     [ids[index], ids[targetIndex]] = [ids[targetIndex], ids[index]];
-    updateQuery({ manualListingIds: ids });
+    updateQuery({ manualBlogIds: ids });
+  };
+
+  const updateTypography = (
+    key: keyof BlogFeedWidget['style']['typography'],
+    updates: Record<string, any>,
+    colorOpacity?: number
+  ) => {
+    const current = normalizedWidget.style.typography[key];
+    const next = {
+      ...current,
+      ...updates,
+      fontSize:
+        typeof updates.fontSize === 'object' && updates.fontSize && 'value' in updates.fontSize
+          ? Number(updates.fontSize.value)
+          : current.fontSize,
+      colorOpacity: typeof colorOpacity === 'number' ? colorOpacity : current.colorOpacity,
+    };
+
+    onChange({
+      style: {
+        ...normalizedWidget.style,
+        typography: {
+          ...normalizedWidget.style.typography,
+          [key]: next,
+        },
+      },
+    });
   };
 
   const contentTab = (
@@ -157,53 +186,53 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
           {query.mode === 'manual' ? (
             <div className="space-y-3">
               <div className="space-y-2">
-                <Label>Search Listings to Add</Label>
+                <Label>Search Blog Posts to Add</Label>
                 <Input
                   value={manualSearch}
                   onChange={(event) => setManualSearch(event.target.value)}
-                  placeholder="Search by address, city, neighborhood"
+                  placeholder="Search by title, category, excerpt"
                 />
               </div>
               <div className="max-h-40 overflow-auto space-y-2 rounded-md border p-2">
-                {selectableManualListings.length ? (
-                  selectableManualListings.slice(0, 30).map((listing) => (
+                {selectableManualBlogs.length ? (
+                  selectableManualBlogs.slice(0, 30).map((post) => (
                     <button
-                      key={listing.id}
+                      key={post.id}
                       type="button"
                       className="w-full text-left rounded px-2 py-1.5 hover:bg-muted text-sm"
-                      onClick={() => addManualListing(listing.id)}
+                      onClick={() => addManualBlog(post.id)}
                     >
                       <Plus className="h-3 w-3 inline mr-2" />
-                      {listing.address} - {listing.city}
+                      {post.title}
                     </button>
                   ))
                 ) : (
-                  <p className="text-xs text-muted-foreground px-1 py-2">No listings found.</p>
+                  <p className="text-xs text-muted-foreground px-1 py-2">No blog posts found.</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Selected Listings</Label>
+                <Label>Selected Blog Posts</Label>
                 <div className="space-y-2">
-                  {manualSelection.map((listing, index) => (
-                    <div key={listing.id} className="flex items-center justify-between rounded-md border p-2">
+                  {manualSelection.map((post, index) => (
+                    <div key={post.id} className="flex items-center justify-between rounded-md border p-2">
                       <p className="text-sm">
-                        {index + 1}. {listing.address}
+                        {index + 1}. {post.title}
                       </p>
                       <div className="flex items-center gap-1">
-                        <button type="button" onClick={() => moveManualListing(listing.id, 'up')}>
+                        <button type="button" onClick={() => moveManualBlog(post.id, 'up')}>
                           <ArrowUp className="h-4 w-4" />
                         </button>
-                        <button type="button" onClick={() => moveManualListing(listing.id, 'down')}>
+                        <button type="button" onClick={() => moveManualBlog(post.id, 'down')}>
                           <ArrowDown className="h-4 w-4" />
                         </button>
-                        <button type="button" onClick={() => removeManualListing(listing.id)}>
+                        <button type="button" onClick={() => removeManualBlog(post.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </button>
                       </div>
                     </div>
                   ))}
                   {manualSelection.length === 0 && (
-                    <p className="text-xs text-muted-foreground">No manual listings selected yet.</p>
+                    <p className="text-xs text-muted-foreground">No manual blog posts selected yet.</p>
                   )}
                 </div>
               </div>
@@ -211,17 +240,17 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
           ) : (
             <div className="space-y-3">
               <div className="space-y-2">
-                <Label>Filter by Listing Status</Label>
+                <Label>Filter by Status</Label>
                 <p className="text-xs text-muted-foreground">Leave all unchecked to show all statuses.</p>
                 <div className="space-y-2">
-                  {LISTING_STATUS_OPTIONS.map((option) => (
+                  {BLOG_STATUS_OPTIONS.map((option) => (
                     <div key={option.value} className="flex items-center space-x-2">
                       <Checkbox
-                        id={`listings-status-${option.value}`}
+                        id={`blog-feed-status-${option.value}`}
                         checked={query.filters.statuses.includes(option.value)}
                         onCheckedChange={(checked) => toggleStatus(option.value, !!checked)}
                       />
-                      <Label htmlFor={`listings-status-${option.value}`} className="text-sm font-normal">
+                      <Label htmlFor={`blog-feed-status-${option.value}`} className="text-sm font-normal">
                         {option.label}
                       </Label>
                     </div>
@@ -229,19 +258,11 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>City (optional)</Label>
+                <Label>Category (optional)</Label>
                 <Input
-                  value={query.filters.city || ''}
-                  onChange={(event) => updateFilters({ city: event.target.value })}
-                  placeholder="Austin"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Neighborhood (optional)</Label>
-                <Input
-                  value={query.filters.neighborhood || ''}
-                  onChange={(event) => updateFilters({ neighborhood: event.target.value })}
-                  placeholder="Brentwood"
+                  value={query.filters.category || ''}
+                  onChange={(event) => updateFilters({ category: event.target.value })}
+                  placeholder="Real Estate Tips"
                 />
               </div>
               <div className="space-y-2">
@@ -249,17 +270,17 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
                 <Input
                   value={query.filters.search || ''}
                   onChange={(event) => updateFilters({ search: event.target.value })}
-                  placeholder="Address keyword"
+                  placeholder="Keyword"
                 />
               </div>
             </div>
           )}
 
           <div className="space-y-2">
-            <Label>Sort Listings</Label>
+            <Label>Sort Blog Posts</Label>
             <Select
               value={normalizedWidget.sortBy}
-              onValueChange={(value: ListingsSortOption) => onChange({ sortBy: value })}
+              onValueChange={(value: BlogSortOption) => onChange({ sortBy: value })}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -276,34 +297,44 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Listing Details Visibility" open={visibilityOpen} onToggle={() => setVisibilityOpen(!visibilityOpen)}>
+      <CollapsibleSection title="Blog Details Visibility" open={visibilityOpen} onToggle={() => setVisibilityOpen(!visibilityOpen)}>
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Checkbox
-              id="listings-show-status"
-              checked={normalizedWidget.showStatusBadge}
-              onCheckedChange={(checked) => onChange({ showStatusBadge: !!checked })}
+              id="blog-feed-show-date"
+              checked={normalizedWidget.showDate}
+              onCheckedChange={(checked) => onChange({ showDate: !!checked })}
             />
-            <Label htmlFor="listings-show-status" className="text-sm font-normal">
-              Show status badge
+            <Label htmlFor="blog-feed-show-date" className="text-sm font-normal">
+              Show date
             </Label>
           </div>
           <div className="flex items-center gap-2">
             <Checkbox
-              id="listings-show-view-property"
-              checked={normalizedWidget.showViewPropertyCta}
-              onCheckedChange={(checked) => onChange({ showViewPropertyCta: !!checked })}
+              id="blog-feed-show-excerpt"
+              checked={normalizedWidget.showExcerpt}
+              onCheckedChange={(checked) => onChange({ showExcerpt: !!checked })}
             />
-            <Label htmlFor="listings-show-view-property" className="text-sm font-normal">
-              Show View Property CTA
+            <Label htmlFor="blog-feed-show-excerpt" className="text-sm font-normal">
+              Show excerpt
             </Label>
           </div>
-          {normalizedWidget.showViewPropertyCta && (
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="blog-feed-show-read-more"
+              checked={normalizedWidget.showReadMore}
+              onCheckedChange={(checked) => onChange({ showReadMore: !!checked })}
+            />
+            <Label htmlFor="blog-feed-show-read-more" className="text-sm font-normal">
+              Show Read More CTA
+            </Label>
+          </div>
+          {normalizedWidget.showReadMore && (
             <div className="space-y-2">
-              <Label>View Property Label</Label>
+              <Label>Read More Label</Label>
               <Input
-                value={normalizedWidget.viewPropertyLabel}
-                onChange={(event) => onChange({ viewPropertyLabel: event.target.value })}
+                value={normalizedWidget.readMoreLabel}
+                onChange={(event) => onChange({ readMoreLabel: event.target.value })}
               />
             </div>
           )}
@@ -314,13 +345,13 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
 
   const layoutTab = (
     <div className="space-y-2">
-      <CollapsibleSection showBreakpointIcon title="Listings Layout" open={gridLayoutOpen} onToggle={() => setGridLayoutOpen(!gridLayoutOpen)}>
+      <CollapsibleSection showBreakpointIcon title="Blog Feed Layout" open={layoutOpen} onToggle={() => setLayoutOpen(!layoutOpen)}>
         <div className="space-y-3">
           <div className="space-y-2">
             <Label>Layout Variant</Label>
             <Select
               value={normalizedWidget.layoutVariant}
-              onValueChange={(value: ListingsWidget['layoutVariant']) => onChange({ layoutVariant: value })}
+              onValueChange={(value: BlogFeedWidget['layoutVariant']) => onChange({ layoutVariant: value })}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -357,7 +388,7 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
           </ResponsiveControlShell>
 
           <ResponsiveControlShell
-            label="Listings per Page"
+            label="Posts per Page"
             hasOverride={
               normalizedWidget.perPage.tablet !== normalizedWidget.perPage.desktop ||
               normalizedWidget.perPage.mobile !== normalizedWidget.perPage.desktop
@@ -399,7 +430,7 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
             <Label>Mode</Label>
             <Select
               value={normalizedWidget.pagination.mode}
-              onValueChange={(value: ListingsWidget['pagination']['mode']) =>
+              onValueChange={(value: BlogFeedWidget['pagination']['mode']) =>
                 onChange({ pagination: { ...normalizedWidget.pagination, mode: value } })
               }
             >
@@ -414,7 +445,6 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
               </SelectContent>
             </Select>
           </div>
-
           {(normalizedWidget.pagination.mode === 'paged' || normalizedWidget.pagination.mode === 'load_more') && (
             <div className="space-y-2">
               <Label>Previous Button Label</Label>
@@ -433,7 +463,6 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
               />
             </div>
           )}
-
           {(normalizedWidget.pagination.mode === 'load_more' || normalizedWidget.pagination.mode === 'infinite') && (
             <div className="space-y-2">
               <Label>Load More Button Label</Label>
@@ -460,18 +489,15 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
               />
             </div>
           )}
-
           <div className="flex items-center gap-2">
             <Checkbox
-              id="listings-show-page-indicator"
+              id="blog-feed-show-page-indicator"
               checked={normalizedWidget.pagination.showPageIndicator}
               onCheckedChange={(checked) =>
-                onChange({
-                  pagination: { ...normalizedWidget.pagination, showPageIndicator: !!checked },
-                })
+                onChange({ pagination: { ...normalizedWidget.pagination, showPageIndicator: !!checked } })
               }
             />
-            <Label htmlFor="listings-show-page-indicator" className="text-sm font-normal">
+            <Label htmlFor="blog-feed-show-page-indicator" className="text-sm font-normal">
               Show page indicator text
             </Label>
           </div>
@@ -542,10 +568,7 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
                 value={layout.padding.right || 0}
                 onChange={(event) =>
                   onChange({
-                    layout: {
-                      ...layout,
-                      padding: { ...layout.padding, right: parseInt(event.target.value, 10) || 0 },
-                    },
+                    layout: { ...layout, padding: { ...layout.padding, right: parseInt(event.target.value, 10) || 0 } },
                   })
                 }
               />
@@ -564,63 +587,37 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
             <Label>Card Background</Label>
             <GlobalColorInput
               value={normalizedWidget.style.cardBackgroundColor}
-              onChange={(nextColor) =>
-                onChange({ style: { ...normalizedWidget.style, cardBackgroundColor: nextColor } })
-              }
+              onChange={(nextColor) => onChange({ style: { ...normalizedWidget.style, cardBackgroundColor: nextColor } })}
               globalStyles={currentWebsite?.globalStyles}
               defaultColor="#ffffff"
             />
           </div>
-          <div className="space-y-2">
-            <Label>Card Background Opacity ({normalizedWidget.style.cardBackgroundOpacity}%)</Label>
-            <Input
-              type="range"
-              min={0}
-              max={100}
-              value={normalizedWidget.style.cardBackgroundOpacity}
-              onChange={(event) =>
-                onChange({
-                  style: { ...normalizedWidget.style, cardBackgroundOpacity: parseInt(event.target.value, 10) || 0 },
-                })
-              }
-            />
-          </div>
+          <OpacitySlider
+            label="Card Background Opacity"
+            value={normalizedWidget.style.cardBackgroundOpacity}
+            onChange={(next) => onChange({ style: { ...normalizedWidget.style, cardBackgroundOpacity: next } })}
+          />
           <div className="space-y-2">
             <Label>Card Border Color</Label>
             <GlobalColorInput
               value={normalizedWidget.style.cardBorderColor}
-              onChange={(nextColor) =>
-                onChange({ style: { ...normalizedWidget.style, cardBorderColor: nextColor } })
-              }
+              onChange={(nextColor) => onChange({ style: { ...normalizedWidget.style, cardBorderColor: nextColor } })}
               globalStyles={currentWebsite?.globalStyles}
               defaultColor="#e5e7eb"
             />
           </div>
-          <div className="space-y-2">
-            <Label>Card Border Opacity ({normalizedWidget.style.cardBorderOpacity}%)</Label>
-            <Input
-              type="range"
-              min={0}
-              max={100}
-              value={normalizedWidget.style.cardBorderOpacity}
-              onChange={(event) =>
-                onChange({
-                  style: { ...normalizedWidget.style, cardBorderOpacity: parseInt(event.target.value, 10) || 0 },
-                })
-              }
-            />
-          </div>
+          <OpacitySlider
+            label="Card Border Opacity"
+            value={normalizedWidget.style.cardBorderOpacity}
+            onChange={(next) => onChange({ style: { ...normalizedWidget.style, cardBorderOpacity: next } })}
+          />
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label className="text-xs">Border Width</Label>
               <Input
                 type="number"
                 value={normalizedWidget.style.cardBorderWidth}
-                onChange={(event) =>
-                  onChange({
-                    style: { ...normalizedWidget.style, cardBorderWidth: parseInt(event.target.value, 10) || 0 },
-                  })
-                }
+                onChange={(event) => onChange({ style: { ...normalizedWidget.style, cardBorderWidth: parseInt(event.target.value, 10) || 0 } })}
               />
             </div>
             <div className="space-y-2">
@@ -628,23 +625,17 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
               <Input
                 type="number"
                 value={normalizedWidget.style.cardBorderRadius}
-                onChange={(event) =>
-                  onChange({
-                    style: { ...normalizedWidget.style, cardBorderRadius: parseInt(event.target.value, 10) || 0 },
-                  })
-                }
+                onChange={(event) => onChange({ style: { ...normalizedWidget.style, cardBorderRadius: parseInt(event.target.value, 10) || 0 } })}
               />
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Checkbox
-              id="listings-card-shadow"
+              id="blog-feed-card-shadow"
               checked={normalizedWidget.style.cardShadow}
-              onCheckedChange={(checked) =>
-                onChange({ style: { ...normalizedWidget.style, cardShadow: !!checked } })
-              }
+              onCheckedChange={(checked) => onChange({ style: { ...normalizedWidget.style, cardShadow: !!checked } })}
             />
-            <Label htmlFor="listings-card-shadow" className="text-sm font-normal">
+            <Label htmlFor="blog-feed-card-shadow" className="text-sm font-normal">
               Card Drop Shadow
             </Label>
           </div>
@@ -657,38 +648,23 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
             <Label>Image Border Color</Label>
             <GlobalColorInput
               value={normalizedWidget.style.imageBorderColor}
-              onChange={(nextColor) =>
-                onChange({ style: { ...normalizedWidget.style, imageBorderColor: nextColor } })
-              }
+              onChange={(nextColor) => onChange({ style: { ...normalizedWidget.style, imageBorderColor: nextColor } })}
               globalStyles={currentWebsite?.globalStyles}
               defaultColor="#e5e7eb"
             />
           </div>
-          <div className="space-y-2">
-            <Label>Image Border Opacity ({normalizedWidget.style.imageBorderOpacity}%)</Label>
-            <Input
-              type="range"
-              min={0}
-              max={100}
-              value={normalizedWidget.style.imageBorderOpacity}
-              onChange={(event) =>
-                onChange({
-                  style: { ...normalizedWidget.style, imageBorderOpacity: parseInt(event.target.value, 10) || 0 },
-                })
-              }
-            />
-          </div>
+          <OpacitySlider
+            label="Image Border Opacity"
+            value={normalizedWidget.style.imageBorderOpacity}
+            onChange={(next) => onChange({ style: { ...normalizedWidget.style, imageBorderOpacity: next } })}
+          />
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label className="text-xs">Image Border Width</Label>
               <Input
                 type="number"
                 value={normalizedWidget.style.imageBorderWidth}
-                onChange={(event) =>
-                  onChange({
-                    style: { ...normalizedWidget.style, imageBorderWidth: parseInt(event.target.value, 10) || 0 },
-                  })
-                }
+                onChange={(event) => onChange({ style: { ...normalizedWidget.style, imageBorderWidth: parseInt(event.target.value, 10) || 0 } })}
               />
             </div>
             <div className="space-y-2">
@@ -696,262 +672,67 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
               <Input
                 type="number"
                 value={normalizedWidget.style.imageBorderRadius}
-                onChange={(event) =>
-                  onChange({
-                    style: { ...normalizedWidget.style, imageBorderRadius: parseInt(event.target.value, 10) || 0 },
-                  })
-                }
+                onChange={(event) => onChange({ style: { ...normalizedWidget.style, imageBorderRadius: parseInt(event.target.value, 10) || 0 } })}
               />
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Checkbox
-              id="listings-image-shadow"
+              id="blog-feed-image-shadow"
               checked={normalizedWidget.style.imageShadow}
-              onCheckedChange={(checked) =>
-                onChange({ style: { ...normalizedWidget.style, imageShadow: !!checked } })
-              }
+              onCheckedChange={(checked) => onChange({ style: { ...normalizedWidget.style, imageShadow: !!checked } })}
             />
-            <Label htmlFor="listings-image-shadow" className="text-sm font-normal">
+            <Label htmlFor="blog-feed-image-shadow" className="text-sm font-normal">
               Image Drop Shadow
             </Label>
           </div>
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection showBreakpointIcon title="Status Style" open={statusStyleOpen} onToggle={() => setStatusStyleOpen(!statusStyleOpen)}>
-        <div className="space-y-3">
-          <div className="space-y-2">
-            <Label>Status Text Color</Label>
-            <GlobalColorInput
-              value={normalizedWidget.style.statusTextColor}
-              onChange={(nextColor) =>
-                onChange({ style: { ...normalizedWidget.style, statusTextColor: nextColor } })
-              }
-              globalStyles={currentWebsite?.globalStyles}
-              defaultColor="#ffffff"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Status Text Opacity ({normalizedWidget.style.statusTextOpacity}%)</Label>
-            <Input
-              type="range"
-              min={0}
-              max={100}
-              value={normalizedWidget.style.statusTextOpacity}
-              onChange={(event) =>
-                onChange({
-                  style: { ...normalizedWidget.style, statusTextOpacity: parseInt(event.target.value, 10) || 0 },
-                })
-              }
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Status Background</Label>
-            <GlobalColorInput
-              value={normalizedWidget.style.statusBackgroundColor}
-              onChange={(nextColor) =>
-                onChange({ style: { ...normalizedWidget.style, statusBackgroundColor: nextColor } })
-              }
-              globalStyles={currentWebsite?.globalStyles}
-              defaultColor="#111827"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Status Background Opacity ({normalizedWidget.style.statusBackgroundOpacity}%)</Label>
-            <Input
-              type="range"
-              min={0}
-              max={100}
-              value={normalizedWidget.style.statusBackgroundOpacity}
-              onChange={(event) =>
-                onChange({
-                  style: { ...normalizedWidget.style, statusBackgroundOpacity: parseInt(event.target.value, 10) || 0 },
-                })
-              }
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Status Radius</Label>
-            <Input
-              type="number"
-              value={normalizedWidget.style.statusBorderRadius}
-              onChange={(event) =>
-                onChange({
-                  style: { ...normalizedWidget.style, statusBorderRadius: parseInt(event.target.value, 10) || 0 },
-                })
-              }
-            />
-          </div>
-        </div>
-      </CollapsibleSection>
-
       <TypographyControl
-        label="Address Typography"
+        label="Title Typography"
         defaultOpen={false}
         value={{
-          fontFamily: normalizedWidget.style.typography.address.fontFamily,
-          fontSize: { value: normalizedWidget.style.typography.address.fontSize, unit: 'px' as const },
-          fontWeight: normalizedWidget.style.typography.address.fontWeight,
-          color: normalizedWidget.style.typography.address.color,
+          fontFamily: normalizedWidget.style.typography.title.fontFamily,
+          fontSize: { value: normalizedWidget.style.typography.title.fontSize, unit: 'px' as const },
+          fontWeight: normalizedWidget.style.typography.title.fontWeight,
+          color: normalizedWidget.style.typography.title.color,
         }}
-        onChange={(updates) =>
-          onChange({
-            style: {
-              ...normalizedWidget.style,
-              typography: {
-                ...normalizedWidget.style.typography,
-                address: {
-                  ...normalizedWidget.style.typography.address,
-                  ...updates,
-                  fontSize:
-                    typeof updates.fontSize === 'object' && updates.fontSize && 'value' in updates.fontSize
-                      ? Number(updates.fontSize.value)
-                      : normalizedWidget.style.typography.address.fontSize,
-                },
-              },
-            },
-          })
-        }
-        colorOpacity={normalizedWidget.style.typography.address.colorOpacity}
-        onColorOpacityChange={(next) =>
-          onChange({
-            style: {
-              ...normalizedWidget.style,
-              typography: {
-                ...normalizedWidget.style.typography,
-                address: { ...normalizedWidget.style.typography.address, colorOpacity: next },
-              },
-            },
-          })
-        }
+        onChange={(updates) => updateTypography('title', updates)}
+        colorOpacity={normalizedWidget.style.typography.title.colorOpacity}
+        onColorOpacityChange={(next) => updateTypography('title', {}, next)}
       />
 
       <TypographyControl
-        label="City Typography"
+        label="Date Typography"
         defaultOpen={false}
         value={{
-          fontFamily: normalizedWidget.style.typography.city.fontFamily,
-          fontSize: { value: normalizedWidget.style.typography.city.fontSize, unit: 'px' as const },
-          fontWeight: normalizedWidget.style.typography.city.fontWeight,
-          color: normalizedWidget.style.typography.city.color,
+          fontFamily: normalizedWidget.style.typography.date.fontFamily,
+          fontSize: { value: normalizedWidget.style.typography.date.fontSize, unit: 'px' as const },
+          fontWeight: normalizedWidget.style.typography.date.fontWeight,
+          color: normalizedWidget.style.typography.date.color,
         }}
-        onChange={(updates) =>
-          onChange({
-            style: {
-              ...normalizedWidget.style,
-              typography: {
-                ...normalizedWidget.style.typography,
-                city: {
-                  ...normalizedWidget.style.typography.city,
-                  ...updates,
-                  fontSize:
-                    typeof updates.fontSize === 'object' && updates.fontSize && 'value' in updates.fontSize
-                      ? Number(updates.fontSize.value)
-                      : normalizedWidget.style.typography.city.fontSize,
-                },
-              },
-            },
-          })
-        }
-        colorOpacity={normalizedWidget.style.typography.city.colorOpacity}
-        onColorOpacityChange={(next) =>
-          onChange({
-            style: {
-              ...normalizedWidget.style,
-              typography: {
-                ...normalizedWidget.style.typography,
-                city: { ...normalizedWidget.style.typography.city, colorOpacity: next },
-              },
-            },
-          })
-        }
+        onChange={(updates) => updateTypography('date', updates)}
+        colorOpacity={normalizedWidget.style.typography.date.colorOpacity}
+        onColorOpacityChange={(next) => updateTypography('date', {}, next)}
       />
 
       <TypographyControl
-        label="Price Typography"
+        label="Excerpt Typography"
         defaultOpen={false}
         value={{
-          fontFamily: normalizedWidget.style.typography.price.fontFamily,
-          fontSize: { value: normalizedWidget.style.typography.price.fontSize, unit: 'px' as const },
-          fontWeight: normalizedWidget.style.typography.price.fontWeight,
-          color: normalizedWidget.style.typography.price.color,
+          fontFamily: normalizedWidget.style.typography.excerpt.fontFamily,
+          fontSize: { value: normalizedWidget.style.typography.excerpt.fontSize, unit: 'px' as const },
+          fontWeight: normalizedWidget.style.typography.excerpt.fontWeight,
+          color: normalizedWidget.style.typography.excerpt.color,
         }}
-        onChange={(updates) =>
-          onChange({
-            style: {
-              ...normalizedWidget.style,
-              typography: {
-                ...normalizedWidget.style.typography,
-                price: {
-                  ...normalizedWidget.style.typography.price,
-                  ...updates,
-                  fontSize:
-                    typeof updates.fontSize === 'object' && updates.fontSize && 'value' in updates.fontSize
-                      ? Number(updates.fontSize.value)
-                      : normalizedWidget.style.typography.price.fontSize,
-                },
-              },
-            },
-          })
-        }
-        colorOpacity={normalizedWidget.style.typography.price.colorOpacity}
-        onColorOpacityChange={(next) =>
-          onChange({
-            style: {
-              ...normalizedWidget.style,
-              typography: {
-                ...normalizedWidget.style.typography,
-                price: { ...normalizedWidget.style.typography.price, colorOpacity: next },
-              },
-            },
-          })
-        }
+        onChange={(updates) => updateTypography('excerpt', updates)}
+        colorOpacity={normalizedWidget.style.typography.excerpt.colorOpacity}
+        onColorOpacityChange={(next) => updateTypography('excerpt', {}, next)}
       />
 
       <TypographyControl
-        label="Status Typography"
-        defaultOpen={false}
-        value={{
-          fontFamily: normalizedWidget.style.typography.status.fontFamily,
-          fontSize: { value: normalizedWidget.style.typography.status.fontSize, unit: 'px' as const },
-          fontWeight: normalizedWidget.style.typography.status.fontWeight,
-          color: normalizedWidget.style.typography.status.color,
-        }}
-        onChange={(updates) =>
-          onChange({
-            style: {
-              ...normalizedWidget.style,
-              typography: {
-                ...normalizedWidget.style.typography,
-                status: {
-                  ...normalizedWidget.style.typography.status,
-                  ...updates,
-                  fontSize:
-                    typeof updates.fontSize === 'object' && updates.fontSize && 'value' in updates.fontSize
-                      ? Number(updates.fontSize.value)
-                      : normalizedWidget.style.typography.status.fontSize,
-                },
-              },
-            },
-          })
-        }
-        colorOpacity={normalizedWidget.style.typography.status.colorOpacity}
-        onColorOpacityChange={(next) =>
-          onChange({
-            style: {
-              ...normalizedWidget.style,
-              typography: {
-                ...normalizedWidget.style.typography,
-                status: { ...normalizedWidget.style.typography.status, colorOpacity: next },
-              },
-            },
-          })
-        }
-      />
-
-      <TypographyControl
-        label="Action Typography"
+        label="Read More Typography"
         defaultOpen={false}
         value={{
           fontFamily: normalizedWidget.style.typography.action.fontFamily,
@@ -959,36 +740,9 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
           fontWeight: normalizedWidget.style.typography.action.fontWeight,
           color: normalizedWidget.style.typography.action.color,
         }}
-        onChange={(updates) =>
-          onChange({
-            style: {
-              ...normalizedWidget.style,
-              typography: {
-                ...normalizedWidget.style.typography,
-                action: {
-                  ...normalizedWidget.style.typography.action,
-                  ...updates,
-                  fontSize:
-                    typeof updates.fontSize === 'object' && updates.fontSize && 'value' in updates.fontSize
-                      ? Number(updates.fontSize.value)
-                      : normalizedWidget.style.typography.action.fontSize,
-                },
-              },
-            },
-          })
-        }
+        onChange={(updates) => updateTypography('action', updates)}
         colorOpacity={normalizedWidget.style.typography.action.colorOpacity}
-        onColorOpacityChange={(next) =>
-          onChange({
-            style: {
-              ...normalizedWidget.style,
-              typography: {
-                ...normalizedWidget.style.typography,
-                action: { ...normalizedWidget.style.typography.action, colorOpacity: next },
-              },
-            },
-          })
-        }
+        onColorOpacityChange={(next) => updateTypography('action', {}, next)}
       />
 
       <CollapsibleSection
@@ -1116,26 +870,17 @@ export function ListingsEditorNew({ widget, onChange }: ListingsEditorNewProps) 
               placeholder="transparent"
             />
           </div>
-          <div className="space-y-2">
-            <Label>Background Opacity ({background.opacity ?? 100}%)</Label>
-            <Input
-              type="range"
-              min={0}
-              max={100}
-              value={background.opacity ?? 100}
-              onChange={(event) =>
-                onChange({
-                  background: { ...background, opacity: parseInt(event.target.value, 10) || 0 },
-                })
-              }
-            />
-          </div>
+          <OpacitySlider
+            label="Background Opacity"
+            value={background.opacity ?? 100}
+            onChange={(next) => onChange({ background: { ...background, opacity: next } })}
+          />
         </div>
       </CollapsibleSection>
     </div>
   );
 
-  return <SectionEditorTabs sectionType="listings" contentTab={contentTab} layoutTab={layoutTab} styleTab={styleTab} />;
+  return <SectionEditorTabs sectionType="blog-feed" contentTab={contentTab} layoutTab={layoutTab} styleTab={styleTab} />;
 }
 
 function CollapsibleSection({
@@ -1196,29 +941,9 @@ function OpacitySlider({
   );
 }
 
-function normalizeListingsWidget(widget: ListingsWidget): ListingsWidget {
+function normalizeBlogFeedWidget(widget: BlogFeedWidget): BlogFeedWidget {
   const oldWidget = widget as any;
-  const legacyColumns = typeof oldWidget.columns === 'number' ? oldWidget.columns : undefined;
-  const legacyMaxItems = typeof oldWidget.maxItems === 'number' ? oldWidget.maxItems : undefined;
-  const legacyStatuses = Array.isArray(oldWidget.statuses) ? oldWidget.statuses : [];
-  const existingColumns =
-    oldWidget.columns && typeof oldWidget.columns === 'object' && 'desktop' in oldWidget.columns
-      ? oldWidget.columns
-      : undefined;
-
-  const columns = existingColumns || {
-    desktop: legacyColumns || 3,
-    tablet: Math.max(1, Math.min(2, legacyColumns || 2)),
-    mobile: 1,
-  };
-
-  const perPage = oldWidget.perPage || {
-    desktop: legacyMaxItems || 9,
-    tablet: Math.min(legacyMaxItems || 9, 6),
-    mobile: Math.min(legacyMaxItems || 9, 3),
-  };
-
-  const styleDefaults: ListingsWidget['style'] = {
+  const styleDefaults: BlogFeedWidget['style'] = {
     cardBackgroundColor: '#ffffff',
     cardBackgroundOpacity: 100,
     cardBorderColor: '#e5e7eb',
@@ -1231,16 +956,10 @@ function normalizeListingsWidget(widget: ListingsWidget): ListingsWidget {
     imageBorderOpacity: 100,
     imageBorderWidth: 0,
     imageShadow: false,
-    statusTextColor: '#ffffff',
-    statusTextOpacity: 100,
-    statusBackgroundColor: '#111827',
-    statusBackgroundOpacity: 100,
-    statusBorderRadius: 9999,
     typography: {
-      address: { fontFamily: 'Inter', fontSize: 18, fontWeight: '700', color: '#111827', colorOpacity: 100 },
-      city: { fontFamily: 'Inter', fontSize: 14, fontWeight: '400', color: '#6b7280', colorOpacity: 100 },
-      price: { fontFamily: 'Inter', fontSize: 20, fontWeight: '700', color: '#111827', colorOpacity: 100 },
-      status: { fontFamily: 'Inter', fontSize: 11, fontWeight: '700', color: '#ffffff', colorOpacity: 100 },
+      title: { fontFamily: 'Inter', fontSize: 22, fontWeight: '700', color: '#111827', colorOpacity: 100 },
+      date: { fontFamily: 'Inter', fontSize: 13, fontWeight: '500', color: '#6b7280', colorOpacity: 100 },
+      excerpt: { fontFamily: 'Inter', fontSize: 15, fontWeight: '400', color: '#374151', colorOpacity: 100 },
       action: { fontFamily: 'Inter', fontSize: 13, fontWeight: '600', color: '#111827', colorOpacity: 100 },
     },
     paginationButton: {
@@ -1256,58 +975,50 @@ function normalizeListingsWidget(widget: ListingsWidget): ListingsWidget {
 
   return {
     ...widget,
-    layoutVariant:
-      oldWidget.layoutVariant === 'compact-rows'
-        ? 'text-over-image'
-        : oldWidget.layoutVariant === 'editorial-split'
-          ? 'modern-grid'
-          : (oldWidget.layoutVariant || 'modern-grid'),
+    layoutVariant: oldWidget.layoutVariant || 'modern-grid',
     query: oldWidget.query || {
       mode: 'filters',
-      manualListingIds: [],
+      manualBlogIds: [],
       filters: {
-        statuses: legacyStatuses,
-        city: '',
-        neighborhood: '',
+        statuses: ['published'],
+        category: '',
+        tags: [],
         search: '',
       },
     },
-    sortBy: oldWidget.sortBy || 'date_added_desc',
-    columns,
-    perPage,
+    sortBy: oldWidget.sortBy || 'date_desc',
+    columns: oldWidget.columns || { desktop: 3, tablet: 2, mobile: 1 },
+    perPage: oldWidget.perPage || { desktop: 9, tablet: 6, mobile: 3 },
     spacing: typeof oldWidget.spacing === 'number' ? oldWidget.spacing : 20,
     pagination: oldWidget.pagination || {
-      mode: legacyMaxItems ? 'none' : 'paged',
-      loadMoreLabel: 'View More',
+      mode: 'paged',
+      loadMoreLabel: 'Load More',
       previousLabel: 'Previous',
       nextLabel: 'Next',
       infiniteBatchSize: 3,
       showPageIndicator: true,
     },
-    showStatusBadge: typeof oldWidget.showStatusBadge === 'boolean' ? oldWidget.showStatusBadge : true,
-    showViewPropertyCta: typeof oldWidget.showViewPropertyCta === 'boolean' ? oldWidget.showViewPropertyCta : true,
-    viewPropertyLabel: oldWidget.viewPropertyLabel || 'View Property',
+    showDate: typeof oldWidget.showDate === 'boolean' ? oldWidget.showDate : true,
+    showExcerpt: typeof oldWidget.showExcerpt === 'boolean' ? oldWidget.showExcerpt : true,
+    showReadMore: typeof oldWidget.showReadMore === 'boolean' ? oldWidget.showReadMore : true,
+    readMoreLabel: oldWidget.readMoreLabel || 'Read More',
     style: {
       ...styleDefaults,
       ...(oldWidget.style || {}),
       typography: {
         ...styleDefaults.typography,
         ...(oldWidget.style?.typography || {}),
-        address: {
-          ...styleDefaults.typography.address,
-          ...(oldWidget.style?.typography?.address || {}),
+        title: {
+          ...styleDefaults.typography.title,
+          ...(oldWidget.style?.typography?.title || {}),
         },
-        city: {
-          ...styleDefaults.typography.city,
-          ...(oldWidget.style?.typography?.city || {}),
+        date: {
+          ...styleDefaults.typography.date,
+          ...(oldWidget.style?.typography?.date || {}),
         },
-        price: {
-          ...styleDefaults.typography.price,
-          ...(oldWidget.style?.typography?.price || {}),
-        },
-        status: {
-          ...styleDefaults.typography.status,
-          ...(oldWidget.style?.typography?.status || {}),
+        excerpt: {
+          ...styleDefaults.typography.excerpt,
+          ...(oldWidget.style?.typography?.excerpt || {}),
         },
         action: {
           ...styleDefaults.typography.action,

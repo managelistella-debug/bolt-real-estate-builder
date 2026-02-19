@@ -31,11 +31,12 @@
  */
 
 import { useState, useEffect, useMemo, useRef, type ReactNode } from 'react';
-import { Page, Website, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, FAQWidget, FAQIconStyle, TestimonialWidget, StepsWidget, ImageTextColumnsWidget, StickyFormWidget, ReviewsSliderWidget, ListingsWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget, SectionType, Breakpoint } from '@/lib/types';
+import Image from 'next/image';
+import { Page, Website, HeroWidget, AboutWidget, ServicesWidget, ContactWidget, HeadlineWidget, ImageTextWidget, ImageGalleryWidget, IconTextWidget, TextSectionWidget, FAQWidget, FAQIconStyle, TestimonialWidget, StepsWidget, ImageTextColumnsWidget, StickyFormWidget, ReviewsSliderWidget, ListingsWidget, BlogFeedWidget, CustomCodeWidget, ImageNavigationWidget, ContactFormWidget, SectionType, Breakpoint } from '@/lib/types';
 import { useBuilderStore } from '@/lib/stores/builder';
 import { useImageCollectionsStore } from '@/lib/stores/imageCollections';
 import { useListingsStore } from '@/lib/stores/listings';
-import { useListingsTemplatesStore } from '@/lib/stores/listingsTemplates';
+import { useBlogsStore } from '@/lib/stores/blogs';
 import { cn } from '@/lib/utils';
 import { getGlobalColorCssVars } from '@/lib/global-colors';
 import { Lightbox } from './Lightbox';
@@ -48,8 +49,8 @@ import { SiteFooter } from '@/components/site-footer/SiteFooter';
 import { normalizeFooterConfig } from '@/lib/footer-config';
 import { resolveResponsiveColumns, resolveResponsiveSpacing, resolveResponsiveValue } from '@/lib/responsive';
 import { normalizeSectionAnimationSettings } from '@/lib/animations/sectionElementRegistry';
-import { ListingCard } from '@/components/listings/ListingCard';
-import { ListingsCollectionRenderer } from '@/components/listings/templates/ListingsCollectionRenderer';
+import { LISTING_STATUS_LABELS, formatListingPrice, getPrimaryListingImage } from '@/lib/listings';
+import { formatBlogDate, getBlogDisplayDate, getBlogPreviewText } from '@/lib/blogs';
 
 interface LivePreviewProps {
   page: Page;
@@ -495,6 +496,9 @@ export function LivePreview({
                 )}
                 {section.type === 'listings' && (
                   <ListingsSection widget={section.widget as ListingsWidget} />
+                )}
+                {section.type === 'blog-feed' && (
+                  <BlogFeedSection widget={section.widget as BlogFeedWidget} />
                 )}
                 {section.type === 'custom-code' && (
                   <CustomCodeSection widget={section.widget as CustomCodeWidget} />
@@ -1771,8 +1775,14 @@ function ImageNavigationSection({ widget }: { widget: ImageNavigationWidget }) {
 
 function ListingsSection({ widget }: { widget: ListingsWidget }) {
   const { deviceView } = useBuilderStore();
-  const { listings, filterAndSortListings } = useListingsStore();
-  const { getTemplateById } = useListingsTemplatesStore();
+  const { listings } = useListingsStore();
+  const normalizedWidget = normalizeListingsWidgetConfig(widget);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [visibleCount, setVisibleCount] = useState(
+    normalizedWidget.pagination.mode === 'load_more' || normalizedWidget.pagination.mode === 'infinite'
+      ? normalizedWidget.pagination.infiniteBatchSize
+      : normalizedWidget.perPage.desktop
+  );
 
   const defaultLayout = {
     height: { type: 'auto' as const },
@@ -1792,29 +1802,68 @@ function ListingsSection({ widget }: { widget: ListingsWidget }) {
     layoutCfg.width || 'container',
   );
 
-  const statuses = widget.statuses || [];
-  const sortedListings = filterAndSortListings(listings, {
-    statuses: statuses.length ? statuses : undefined,
-    sortBy: widget.sortBy || 'date_added_desc',
-  });
-  const listingItems = widget.maxItems ? sortedListings.slice(0, widget.maxItems) : sortedListings;
-  const columns = resolveResponsiveColumns(
-    {
-      desktop: widget.columns || 3,
-      tablet: Math.max(1, Math.min(2, widget.columns || 2)),
-      mobile: 1,
-      min: 1,
-      max: 4,
-    },
+  const perPage = resolveResponsiveValue<number>(
+    normalizedWidget.perPage as any,
     deviceView,
+    normalizedWidget.perPage.desktop
   );
-  const backgroundColor = widget.background?.color || 'transparent';
-  const backgroundOpacity = widget.background?.opacity ?? 100;
-  const selectedTemplate = widget.templateId ? getTemplateById(widget.templateId) : undefined;
+  const columns = resolveResponsiveValue<number>(
+    normalizedWidget.columns as any,
+    deviceView,
+    normalizedWidget.columns.desktop
+  );
+  const backgroundColor = normalizedWidget.background?.color || 'transparent';
+  const backgroundOpacity = normalizedWidget.background?.opacity ?? 100;
+  const query = normalizedWidget.query;
+  const cityFilter = (query.filters.city || '').trim().toLowerCase();
+  const neighborhoodFilter = (query.filters.neighborhood || '').trim().toLowerCase();
+  const searchFilter = (query.filters.search || '').trim().toLowerCase();
 
-  if (selectedTemplate) {
-    return <ListingsCollectionRenderer template={selectedTemplate} listings={listings} previewMode />;
+  const sourceListings = query.mode === 'manual'
+    ? query.manualListingIds
+        .map((id) => listings.find((listing) => listing.id === id))
+        .filter(Boolean)
+    : listings.filter((listing) => {
+        const statusMatch = !query.filters.statuses.length || query.filters.statuses.includes(listing.listingStatus);
+        const cityMatch = !cityFilter || listing.city.toLowerCase().includes(cityFilter);
+        const neighborhoodMatch = !neighborhoodFilter || listing.neighborhood.toLowerCase().includes(neighborhoodFilter);
+        const searchMatch =
+          !searchFilter ||
+          listing.address.toLowerCase().includes(searchFilter) ||
+          listing.city.toLowerCase().includes(searchFilter) ||
+          listing.neighborhood.toLowerCase().includes(searchFilter);
+        return statusMatch && cityMatch && neighborhoodMatch && searchMatch;
+      });
+
+  const sortedListings = [...sourceListings];
+  if (normalizedWidget.sortBy === 'price_desc') sortedListings.sort((a, b) => b.listPrice - a.listPrice);
+  if (normalizedWidget.sortBy === 'price_asc') sortedListings.sort((a, b) => a.listPrice - b.listPrice);
+  if (normalizedWidget.sortBy === 'custom_order') sortedListings.sort((a, b) => a.customOrder - b.customOrder);
+  if (normalizedWidget.sortBy === 'date_added_desc') {
+    sortedListings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setVisibleCount(
+      normalizedWidget.pagination.mode === 'load_more' || normalizedWidget.pagination.mode === 'infinite'
+        ? normalizedWidget.pagination.infiniteBatchSize
+        : perPage
+    );
+  }, [normalizedWidget.pagination.mode, normalizedWidget.pagination.infiniteBatchSize, perPage, query.mode, query.manualListingIds, query.filters.city, query.filters.neighborhood, query.filters.search, query.filters.statuses, normalizedWidget.sortBy]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedListings.length / Math.max(1, perPage)));
+  const listingItems = normalizedWidget.pagination.mode === 'none'
+    ? sortedListings.slice(0, perPage)
+    : normalizedWidget.pagination.mode === 'paged'
+      ? sortedListings.slice((currentPage - 1) * perPage, currentPage * perPage)
+      : sortedListings.slice(0, visibleCount);
+
+  const showPagedControls = normalizedWidget.pagination.mode === 'paged' && sortedListings.length > perPage;
+  const showLoadMoreControls =
+    (normalizedWidget.pagination.mode === 'load_more' || normalizedWidget.pagination.mode === 'infinite') &&
+    visibleCount < sortedListings.length;
+  const gridColumns = Math.max(1, Math.min(4, columns));
 
   return (
     <section
@@ -1833,24 +1882,821 @@ function ListingsSection({ widget }: { widget: ListingsWidget }) {
           </div>
         ) : (
           <div
-            className="grid gap-5"
+            className="grid"
             style={{
-              gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+              gap: `${normalizedWidget.spacing}px`,
+              gridTemplateColumns:
+                normalizedWidget.layoutVariant === 'text-over-image'
+                  ? `repeat(${gridColumns}, minmax(0, 1fr))`
+                  : `repeat(${gridColumns}, minmax(0, 1fr))`,
+              border:
+                normalizedWidget.layoutVariant === 'text-over-image' && resolvedWidth === 'container'
+                  ? `${normalizedWidget.style.cardBorderWidth}px solid ${colorWithOpacity(normalizedWidget.style.cardBorderColor, normalizedWidget.style.cardBorderOpacity)}`
+                  : undefined,
+              borderRadius:
+                normalizedWidget.layoutVariant === 'text-over-image' && resolvedWidth === 'container'
+                  ? `${normalizedWidget.style.cardBorderRadius}px`
+                  : undefined,
+              padding:
+                normalizedWidget.layoutVariant === 'text-over-image' && resolvedWidth === 'container'
+                  ? `${Math.max(8, normalizedWidget.spacing)}px`
+                  : undefined,
             }}
           >
             {listingItems.map((listing) => (
-              <ListingCard
+              <a
                 key={listing.id}
-                listing={listing}
                 href={`/listings/${listing.slug}`}
-                showStatusBadge={widget.showStatusBadge}
-              />
+                className="group block"
+              >
+                {normalizedWidget.layoutVariant === 'text-over-image' ? (
+                  <article
+                    className="relative overflow-hidden"
+                    style={{
+                      backgroundColor: colorWithOpacity(
+                        normalizedWidget.style.cardBackgroundColor,
+                        normalizedWidget.style.cardBackgroundOpacity
+                      ),
+                      borderColor: colorWithOpacity(
+                        normalizedWidget.style.cardBorderColor,
+                        normalizedWidget.style.cardBorderOpacity
+                      ),
+                      borderWidth: `${normalizedWidget.style.cardBorderWidth}px`,
+                      borderStyle: 'solid',
+                      borderRadius: `${normalizedWidget.style.cardBorderRadius}px`,
+                      boxShadow: normalizedWidget.style.cardShadow
+                        ? '0 8px 22px rgba(0,0,0,0.08)'
+                        : 'none',
+                    }}
+                  >
+                    <div
+                      className="relative aspect-[16/10] overflow-hidden bg-muted"
+                      style={{
+                        borderRadius: `${normalizedWidget.style.imageBorderRadius}px`,
+                        border: `${normalizedWidget.style.imageBorderWidth}px solid ${colorWithOpacity(normalizedWidget.style.imageBorderColor, normalizedWidget.style.imageBorderOpacity)}`,
+                        boxShadow: normalizedWidget.style.imageShadow ? '0 6px 18px rgba(0,0,0,0.12)' : 'none',
+                      }}
+                    >
+                      {getPrimaryListingImage(listing) ? (
+                        <img
+                          src={getPrimaryListingImage(listing)}
+                          alt={listing.address}
+                          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                        />
+                      ) : (
+                        <div className="grid h-full place-items-center text-xs text-muted-foreground">No image</div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+                      {normalizedWidget.showStatusBadge && (
+                        <span
+                          className="absolute right-3 top-3"
+                          style={{
+                            ...getTypographyStyles(normalizedWidget.style.typography.status),
+                            backgroundColor: colorWithOpacity(
+                              normalizedWidget.style.statusBackgroundColor,
+                              normalizedWidget.style.statusBackgroundOpacity
+                            ),
+                            color: colorWithOpacity(
+                              normalizedWidget.style.statusTextColor,
+                              normalizedWidget.style.statusTextOpacity
+                            ),
+                            borderRadius: `${normalizedWidget.style.statusBorderRadius}px`,
+                            padding: '4px 9px',
+                          }}
+                        >
+                          {LISTING_STATUS_LABELS[listing.listingStatus]}
+                        </span>
+                      )}
+                      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
+                        <div className="min-w-0">
+                          <h3 className="truncate" style={{ ...getTypographyStyles(normalizedWidget.style.typography.address) }}>
+                            {listing.address}
+                          </h3>
+                          <p className="truncate" style={{ ...getTypographyStyles(normalizedWidget.style.typography.city) }}>
+                            {listing.city}
+                          </p>
+                        </div>
+                        <p style={{ ...getTypographyStyles(normalizedWidget.style.typography.price) }}>
+                          {formatListingPrice(listing.listPrice)}
+                        </p>
+                      </div>
+                    </div>
+                    {normalizedWidget.showViewPropertyCta && (
+                      <div className="px-1 pt-2">
+                        <span style={getTypographyStyles(normalizedWidget.style.typography.action)}>
+                          {normalizedWidget.viewPropertyLabel}
+                        </span>
+                      </div>
+                    )}
+                  </article>
+                ) : (
+                  <article
+                    className="overflow-hidden"
+                    style={{
+                      backgroundColor: colorWithOpacity(
+                        normalizedWidget.style.cardBackgroundColor,
+                        normalizedWidget.style.cardBackgroundOpacity
+                      ),
+                      borderColor: colorWithOpacity(
+                        normalizedWidget.style.cardBorderColor,
+                        normalizedWidget.style.cardBorderOpacity
+                      ),
+                      borderWidth: `${normalizedWidget.style.cardBorderWidth}px`,
+                      borderStyle: 'solid',
+                      borderRadius: `${normalizedWidget.style.cardBorderRadius}px`,
+                      boxShadow: normalizedWidget.style.cardShadow
+                        ? '0 8px 22px rgba(0,0,0,0.08)'
+                        : 'none',
+                    }}
+                  >
+                    <div
+                      className={
+                        'aspect-[4/3] overflow-hidden bg-muted'
+                      }
+                      style={{
+                        borderRadius: `${normalizedWidget.style.imageBorderRadius}px`,
+                        border: `${normalizedWidget.style.imageBorderWidth}px solid ${colorWithOpacity(normalizedWidget.style.imageBorderColor, normalizedWidget.style.imageBorderOpacity)}`,
+                        boxShadow: normalizedWidget.style.imageShadow ? '0 6px 18px rgba(0,0,0,0.12)' : 'none',
+                      }}
+                    >
+                      {getPrimaryListingImage(listing) ? (
+                        <img
+                          src={getPrimaryListingImage(listing)}
+                          alt={listing.address}
+                          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                        />
+                      ) : (
+                        <div className="grid h-full place-items-center text-xs text-muted-foreground">No image</div>
+                      )}
+                    </div>
+                    <div className="space-y-2 p-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 style={getTypographyStyles(normalizedWidget.style.typography.address)}>{listing.address}</h3>
+                        {normalizedWidget.showStatusBadge && (
+                          <span
+                            style={{
+                              ...getTypographyStyles(normalizedWidget.style.typography.status),
+                              backgroundColor: colorWithOpacity(
+                                normalizedWidget.style.statusBackgroundColor,
+                                normalizedWidget.style.statusBackgroundOpacity
+                              ),
+                              color: colorWithOpacity(
+                                normalizedWidget.style.statusTextColor,
+                                normalizedWidget.style.statusTextOpacity
+                              ),
+                              borderRadius: `${normalizedWidget.style.statusBorderRadius}px`,
+                              padding: '4px 9px',
+                            }}
+                          >
+                            {LISTING_STATUS_LABELS[listing.listingStatus]}
+                          </span>
+                        )}
+                      </div>
+                      <p style={getTypographyStyles(normalizedWidget.style.typography.city)}>{listing.city}</p>
+                      <div className="flex items-center justify-between gap-3">
+                        <p style={getTypographyStyles(normalizedWidget.style.typography.price)}>
+                          {formatListingPrice(listing.listPrice)}
+                        </p>
+                        {normalizedWidget.showViewPropertyCta && (
+                          <span style={getTypographyStyles(normalizedWidget.style.typography.action)}>
+                            {normalizedWidget.viewPropertyLabel}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                )}
+              </a>
             ))}
+          </div>
+        )}
+
+        {showPagedControls && (
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={currentPage === 1}
+              style={getPaginationButtonStyle(normalizedWidget)}
+            >
+              {normalizedWidget.pagination.previousLabel}
+            </button>
+            {normalizedWidget.pagination.showPageIndicator && (
+              <span className="text-sm text-muted-foreground">
+                {currentPage} / {totalPages}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              disabled={currentPage >= totalPages}
+              style={getPaginationButtonStyle(normalizedWidget)}
+            >
+              {normalizedWidget.pagination.nextLabel}
+            </button>
+          </div>
+        )}
+
+        {showLoadMoreControls && (
+          <div className="mt-4 flex justify-center">
+            <button
+              type="button"
+              onClick={() =>
+                setVisibleCount((count) =>
+                  Math.min(
+                    sortedListings.length,
+                    count + Math.max(1, normalizedWidget.pagination.infiniteBatchSize)
+                  )
+                )
+              }
+              style={getPaginationButtonStyle(normalizedWidget)}
+            >
+              {normalizedWidget.pagination.loadMoreLabel}
+            </button>
           </div>
         )}
       </div>
     </section>
   );
+}
+
+function BlogFeedSection({ widget }: { widget: BlogFeedWidget }) {
+  const { deviceView } = useBuilderStore();
+  const { blogs } = useBlogsStore();
+  const normalizedWidget = normalizeBlogFeedWidgetConfig(widget);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [visibleCount, setVisibleCount] = useState(
+    normalizedWidget.pagination.mode === 'load_more' || normalizedWidget.pagination.mode === 'infinite'
+      ? normalizedWidget.pagination.infiniteBatchSize
+      : normalizedWidget.perPage.desktop
+  );
+
+  const defaultLayout = {
+    height: { type: 'auto' as const },
+    width: 'container' as const,
+    padding: { top: 60, right: 20, bottom: 60, left: 20 },
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
+  };
+  const layoutCfg = {
+    ...defaultLayout,
+    ...(widget.layout || {}),
+    padding: { ...defaultLayout.padding, ...(widget.layout?.padding || {}) },
+    margin: { ...defaultLayout.margin, ...(widget.layout?.margin || {}) },
+  };
+  const resolvedWidth = resolveResponsiveValue<'full' | 'container'>(
+    layoutCfg.widthResponsive,
+    deviceView,
+    layoutCfg.width || 'container'
+  );
+
+  const perPage = resolveResponsiveValue<number>(
+    normalizedWidget.perPage as any,
+    deviceView,
+    normalizedWidget.perPage.desktop
+  );
+  const columns = resolveResponsiveValue<number>(
+    normalizedWidget.columns as any,
+    deviceView,
+    normalizedWidget.columns.desktop
+  );
+  const backgroundColor = normalizedWidget.background?.color || 'transparent';
+  const backgroundOpacity = normalizedWidget.background?.opacity ?? 100;
+  const query = normalizedWidget.query;
+  const categoryFilter = (query.filters.category || '').trim().toLowerCase();
+  const searchFilter = (query.filters.search || '').trim().toLowerCase();
+
+  const sourceBlogs = query.mode === 'manual'
+    ? query.manualBlogIds
+        .map((id) => blogs.find((blog) => blog.id === id))
+        .filter(Boolean)
+    : blogs.filter((blog) => {
+        const statusMatch = !query.filters.statuses.length || query.filters.statuses.includes(blog.status);
+        const categoryMatch = !categoryFilter || (blog.category || '').toLowerCase().includes(categoryFilter);
+        const searchMatch =
+          !searchFilter ||
+          blog.title.toLowerCase().includes(searchFilter) ||
+          (blog.excerpt || '').toLowerCase().includes(searchFilter) ||
+          blog.tags.some((tag) => tag.toLowerCase().includes(searchFilter));
+        return statusMatch && categoryMatch && searchMatch;
+      });
+
+  const sortedBlogs = [...sourceBlogs];
+  if (normalizedWidget.sortBy === 'title_asc') sortedBlogs.sort((a, b) => a.title.localeCompare(b.title));
+  if (normalizedWidget.sortBy === 'title_desc') sortedBlogs.sort((a, b) => b.title.localeCompare(a.title));
+  if (normalizedWidget.sortBy === 'custom_order') sortedBlogs.sort((a, b) => a.customOrder - b.customOrder);
+  if (normalizedWidget.sortBy === 'date_desc') {
+    sortedBlogs.sort((a, b) => new Date(getBlogDisplayDate(b)).getTime() - new Date(getBlogDisplayDate(a)).getTime());
+  }
+  if (normalizedWidget.sortBy === 'date_asc') {
+    sortedBlogs.sort((a, b) => new Date(getBlogDisplayDate(a)).getTime() - new Date(getBlogDisplayDate(b)).getTime());
+  }
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setVisibleCount(
+      normalizedWidget.pagination.mode === 'load_more' || normalizedWidget.pagination.mode === 'infinite'
+        ? normalizedWidget.pagination.infiniteBatchSize
+        : perPage
+    );
+  }, [normalizedWidget.pagination.mode, normalizedWidget.pagination.infiniteBatchSize, perPage, query.mode, query.manualBlogIds, query.filters.category, query.filters.search, query.filters.statuses, normalizedWidget.sortBy]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedBlogs.length / Math.max(1, perPage)));
+  const blogItems = normalizedWidget.pagination.mode === 'none'
+    ? sortedBlogs.slice(0, perPage)
+    : normalizedWidget.pagination.mode === 'paged'
+      ? sortedBlogs.slice((currentPage - 1) * perPage, currentPage * perPage)
+      : sortedBlogs.slice(0, visibleCount);
+
+  const showPagedControls = normalizedWidget.pagination.mode === 'paged' && sortedBlogs.length > perPage;
+  const showLoadMoreControls =
+    (normalizedWidget.pagination.mode === 'load_more' || normalizedWidget.pagination.mode === 'infinite') &&
+    visibleCount < sortedBlogs.length;
+  const gridColumns = Math.max(1, Math.min(4, columns));
+
+  return (
+    <section
+      style={{
+        backgroundColor: colorWithOpacity(backgroundColor, backgroundOpacity),
+        paddingTop: `${layoutCfg.padding.top}px`,
+        paddingRight: `${layoutCfg.padding.right}px`,
+        paddingBottom: `${layoutCfg.padding.bottom}px`,
+        paddingLeft: `${layoutCfg.padding.left}px`,
+      }}
+    >
+      <div style={{ maxWidth: resolvedWidth === 'container' ? '1200px' : '100%', margin: '0 auto' }}>
+        {blogItems.length === 0 ? (
+          <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
+            No blog posts available for this block yet.
+          </div>
+        ) : (
+          <div
+            className="grid"
+            style={{
+              gap: `${normalizedWidget.spacing}px`,
+              gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))`,
+            }}
+          >
+            {blogItems.map((blog) => (
+              <a key={blog.id} href={`/blog/${blog.slug}`} className="group block">
+                {normalizedWidget.layoutVariant === 'text-over-image' ? (
+                  <article
+                    className="relative overflow-hidden"
+                    style={{
+                      backgroundColor: colorWithOpacity(
+                        normalizedWidget.style.cardBackgroundColor,
+                        normalizedWidget.style.cardBackgroundOpacity
+                      ),
+                      borderColor: colorWithOpacity(
+                        normalizedWidget.style.cardBorderColor,
+                        normalizedWidget.style.cardBorderOpacity
+                      ),
+                      borderWidth: `${normalizedWidget.style.cardBorderWidth}px`,
+                      borderStyle: 'solid',
+                      borderRadius: `${normalizedWidget.style.cardBorderRadius}px`,
+                      boxShadow: normalizedWidget.style.cardShadow ? '0 8px 22px rgba(0,0,0,0.08)' : 'none',
+                    }}
+                  >
+                    <div
+                      className="relative aspect-[16/10] overflow-hidden bg-muted"
+                      style={{
+                        borderRadius: `${normalizedWidget.style.imageBorderRadius}px`,
+                        border: `${normalizedWidget.style.imageBorderWidth}px solid ${colorWithOpacity(normalizedWidget.style.imageBorderColor, normalizedWidget.style.imageBorderOpacity)}`,
+                        boxShadow: normalizedWidget.style.imageShadow ? '0 6px 18px rgba(0,0,0,0.12)' : 'none',
+                      }}
+                    >
+                      {blog.featuredImage ? (
+                        <img
+                          src={blog.featuredImage}
+                          alt={blog.title}
+                          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                        />
+                      ) : (
+                        <div className="grid h-full place-items-center text-xs text-muted-foreground">No image</div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+                      <div className="absolute inset-x-0 bottom-0 p-4">
+                        {normalizedWidget.showDate && (
+                          <p className="truncate" style={{ ...getTypographyStyles(normalizedWidget.style.typography.date), color: '#f3f4f6' }}>
+                            {formatBlogDate(getBlogDisplayDate(blog))}
+                          </p>
+                        )}
+                        <h3 className="truncate" style={{ ...getTypographyStyles(normalizedWidget.style.typography.title), color: '#ffffff' }}>
+                          {blog.title}
+                        </h3>
+                      </div>
+                    </div>
+                    {normalizedWidget.showReadMore && (
+                      <div className="px-1 pt-2">
+                        <span style={getTypographyStyles(normalizedWidget.style.typography.action)}>
+                          {normalizedWidget.readMoreLabel}
+                        </span>
+                      </div>
+                    )}
+                  </article>
+                ) : (
+                  <article
+                    className="overflow-hidden"
+                    style={{
+                      backgroundColor: colorWithOpacity(
+                        normalizedWidget.style.cardBackgroundColor,
+                        normalizedWidget.style.cardBackgroundOpacity
+                      ),
+                      borderColor: colorWithOpacity(
+                        normalizedWidget.style.cardBorderColor,
+                        normalizedWidget.style.cardBorderOpacity
+                      ),
+                      borderWidth: `${normalizedWidget.style.cardBorderWidth}px`,
+                      borderStyle: 'solid',
+                      borderRadius: `${normalizedWidget.style.cardBorderRadius}px`,
+                      boxShadow: normalizedWidget.style.cardShadow ? '0 8px 22px rgba(0,0,0,0.08)' : 'none',
+                    }}
+                  >
+                    <div
+                      className="aspect-[4/3] overflow-hidden bg-muted"
+                      style={{
+                        borderRadius: `${normalizedWidget.style.imageBorderRadius}px`,
+                        border: `${normalizedWidget.style.imageBorderWidth}px solid ${colorWithOpacity(normalizedWidget.style.imageBorderColor, normalizedWidget.style.imageBorderOpacity)}`,
+                        boxShadow: normalizedWidget.style.imageShadow ? '0 6px 18px rgba(0,0,0,0.12)' : 'none',
+                      }}
+                    >
+                      {blog.featuredImage ? (
+                        <img
+                          src={blog.featuredImage}
+                          alt={blog.title}
+                          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                        />
+                      ) : (
+                        <div className="grid h-full place-items-center text-xs text-muted-foreground">No image</div>
+                      )}
+                    </div>
+                    <div className="space-y-2 p-4">
+                      {normalizedWidget.showDate && (
+                        <p style={getTypographyStyles(normalizedWidget.style.typography.date)}>
+                          {formatBlogDate(getBlogDisplayDate(blog))}
+                        </p>
+                      )}
+                      <h3 style={getTypographyStyles(normalizedWidget.style.typography.title)}>{blog.title}</h3>
+                      {normalizedWidget.showExcerpt && (
+                        <p style={getTypographyStyles(normalizedWidget.style.typography.excerpt)}>
+                          {getBlogPreviewText(blog)}
+                        </p>
+                      )}
+                      {normalizedWidget.showReadMore && (
+                        <span style={getTypographyStyles(normalizedWidget.style.typography.action)}>
+                          {normalizedWidget.readMoreLabel}
+                        </span>
+                      )}
+                    </div>
+                  </article>
+                )}
+              </a>
+            ))}
+          </div>
+        )}
+
+        {showPagedControls && (
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={currentPage === 1}
+              style={getBlogPaginationButtonStyle(normalizedWidget)}
+            >
+              {normalizedWidget.pagination.previousLabel}
+            </button>
+            {normalizedWidget.pagination.showPageIndicator && (
+              <span className="text-sm text-muted-foreground">
+                {currentPage} / {totalPages}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              disabled={currentPage >= totalPages}
+              style={getBlogPaginationButtonStyle(normalizedWidget)}
+            >
+              {normalizedWidget.pagination.nextLabel}
+            </button>
+          </div>
+        )}
+
+        {showLoadMoreControls && (
+          <div className="mt-4 flex justify-center">
+            <button
+              type="button"
+              onClick={() =>
+                setVisibleCount((count) =>
+                  Math.min(
+                    sortedBlogs.length,
+                    count + Math.max(1, normalizedWidget.pagination.infiniteBatchSize)
+                  )
+                )
+              }
+              style={getBlogPaginationButtonStyle(normalizedWidget)}
+            >
+              {normalizedWidget.pagination.loadMoreLabel}
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function getTypographyStyles(config: ListingsWidget['style']['typography']['address']): React.CSSProperties {
+  const colorOpacity = typeof config.colorOpacity === 'number' ? config.colorOpacity : 100;
+  return {
+    fontFamily: config.fontFamily,
+    fontSize: `${config.fontSize}px`,
+    fontWeight: config.fontWeight as any,
+    color: colorWithOpacity(config.color, colorOpacity),
+  };
+}
+
+function getPaginationButtonStyle(widget: ListingsWidget): React.CSSProperties {
+  const textOpacity =
+    typeof widget.style.paginationButton.textColorOpacity === 'number'
+      ? widget.style.paginationButton.textColorOpacity
+      : 100;
+  const backgroundOpacity =
+    typeof widget.style.paginationButton.backgroundColorOpacity === 'number'
+      ? widget.style.paginationButton.backgroundColorOpacity
+      : 100;
+  const borderOpacity =
+    typeof widget.style.paginationButton.borderColorOpacity === 'number'
+      ? widget.style.paginationButton.borderColorOpacity
+      : 100;
+  return {
+    color: colorWithOpacity(
+      widget.style.paginationButton.textColor,
+      textOpacity
+    ),
+    backgroundColor: colorWithOpacity(
+      widget.style.paginationButton.backgroundColor,
+      backgroundOpacity
+    ),
+    borderColor: colorWithOpacity(
+      widget.style.paginationButton.borderColor,
+      borderOpacity
+    ),
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderRadius: `${widget.style.paginationButton.borderRadius}px`,
+    padding: '8px 14px',
+    fontSize: '13px',
+    lineHeight: '1',
+  };
+}
+
+function getBlogPaginationButtonStyle(widget: BlogFeedWidget): React.CSSProperties {
+  const textOpacity =
+    typeof widget.style.paginationButton.textColorOpacity === 'number'
+      ? widget.style.paginationButton.textColorOpacity
+      : 100;
+  const backgroundOpacity =
+    typeof widget.style.paginationButton.backgroundColorOpacity === 'number'
+      ? widget.style.paginationButton.backgroundColorOpacity
+      : 100;
+  const borderOpacity =
+    typeof widget.style.paginationButton.borderColorOpacity === 'number'
+      ? widget.style.paginationButton.borderColorOpacity
+      : 100;
+
+  return {
+    color: colorWithOpacity(widget.style.paginationButton.textColor, textOpacity),
+    backgroundColor: colorWithOpacity(widget.style.paginationButton.backgroundColor, backgroundOpacity),
+    borderColor: colorWithOpacity(widget.style.paginationButton.borderColor, borderOpacity),
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderRadius: `${widget.style.paginationButton.borderRadius}px`,
+    padding: '8px 14px',
+    fontSize: '13px',
+    lineHeight: '1',
+  };
+}
+
+function normalizeListingsWidgetConfig(widget: ListingsWidget): ListingsWidget {
+  const oldWidget = widget as any;
+  const legacyColumns = typeof oldWidget.columns === 'number' ? oldWidget.columns : undefined;
+  const legacyMaxItems = typeof oldWidget.maxItems === 'number' ? oldWidget.maxItems : undefined;
+  const legacyStatuses = Array.isArray(oldWidget.statuses) ? oldWidget.statuses : [];
+  const existingColumns =
+    oldWidget.columns && typeof oldWidget.columns === 'object' && 'desktop' in oldWidget.columns
+      ? oldWidget.columns
+      : undefined;
+
+  const columns = existingColumns || {
+    desktop: legacyColumns || 3,
+    tablet: Math.max(1, Math.min(2, legacyColumns || 2)),
+    mobile: 1,
+  };
+
+  const styleDefaults: ListingsWidget['style'] = {
+    cardBackgroundColor: '#ffffff',
+    cardBackgroundOpacity: 100,
+    cardBorderColor: '#e5e7eb',
+    cardBorderOpacity: 100,
+    cardBorderWidth: 1,
+    cardBorderRadius: 12,
+    cardShadow: true,
+    imageBorderRadius: 8,
+    imageBorderColor: '#e5e7eb',
+    imageBorderOpacity: 100,
+    imageBorderWidth: 0,
+    imageShadow: false,
+    statusTextColor: '#ffffff',
+    statusTextOpacity: 100,
+    statusBackgroundColor: '#111827',
+    statusBackgroundOpacity: 100,
+    statusBorderRadius: 9999,
+    typography: {
+      address: { fontFamily: 'Inter', fontSize: 18, fontWeight: '700', color: '#111827', colorOpacity: 100 },
+      city: { fontFamily: 'Inter', fontSize: 14, fontWeight: '400', color: '#6b7280', colorOpacity: 100 },
+      price: { fontFamily: 'Inter', fontSize: 20, fontWeight: '700', color: '#111827', colorOpacity: 100 },
+      status: { fontFamily: 'Inter', fontSize: 11, fontWeight: '700', color: '#ffffff', colorOpacity: 100 },
+      action: { fontFamily: 'Inter', fontSize: 13, fontWeight: '600', color: '#111827', colorOpacity: 100 },
+    },
+    paginationButton: {
+      textColor: '#111827',
+      textColorOpacity: 100,
+      backgroundColor: '#ffffff',
+      backgroundColorOpacity: 100,
+      borderColor: '#d1d5db',
+      borderColorOpacity: 100,
+      borderRadius: 8,
+    },
+  };
+
+  return {
+    ...widget,
+    layoutVariant:
+      oldWidget.layoutVariant === 'compact-rows'
+        ? 'text-over-image'
+        : oldWidget.layoutVariant === 'editorial-split'
+          ? 'modern-grid'
+          : (oldWidget.layoutVariant || 'modern-grid'),
+    query: oldWidget.query || {
+      mode: 'filters',
+      manualListingIds: [],
+      filters: {
+        statuses: legacyStatuses,
+        city: '',
+        neighborhood: '',
+        search: '',
+      },
+    },
+    sortBy: oldWidget.sortBy || 'date_added_desc',
+    columns,
+    perPage: oldWidget.perPage || {
+      desktop: legacyMaxItems || 9,
+      tablet: Math.min(legacyMaxItems || 9, 6),
+      mobile: Math.min(legacyMaxItems || 9, 3),
+    },
+    spacing: typeof oldWidget.spacing === 'number' ? oldWidget.spacing : 20,
+    pagination: oldWidget.pagination || {
+      mode: legacyMaxItems ? 'none' : 'paged',
+      loadMoreLabel: 'View More',
+      previousLabel: 'Previous',
+      nextLabel: 'Next',
+      infiniteBatchSize: 3,
+      showPageIndicator: true,
+    },
+    showStatusBadge: typeof oldWidget.showStatusBadge === 'boolean' ? oldWidget.showStatusBadge : true,
+    showViewPropertyCta: typeof oldWidget.showViewPropertyCta === 'boolean' ? oldWidget.showViewPropertyCta : true,
+    viewPropertyLabel: oldWidget.viewPropertyLabel || 'View Property',
+    style: {
+      ...styleDefaults,
+      ...(oldWidget.style || {}),
+      typography: {
+        ...styleDefaults.typography,
+        ...(oldWidget.style?.typography || {}),
+        address: {
+          ...styleDefaults.typography.address,
+          ...(oldWidget.style?.typography?.address || {}),
+        },
+        city: {
+          ...styleDefaults.typography.city,
+          ...(oldWidget.style?.typography?.city || {}),
+        },
+        price: {
+          ...styleDefaults.typography.price,
+          ...(oldWidget.style?.typography?.price || {}),
+        },
+        status: {
+          ...styleDefaults.typography.status,
+          ...(oldWidget.style?.typography?.status || {}),
+        },
+        action: {
+          ...styleDefaults.typography.action,
+          ...(oldWidget.style?.typography?.action || {}),
+        },
+      },
+      paginationButton: {
+        ...styleDefaults.paginationButton,
+        ...(oldWidget.style?.paginationButton || {}),
+      },
+    },
+  };
+}
+
+function normalizeBlogFeedWidgetConfig(widget: BlogFeedWidget): BlogFeedWidget {
+  const oldWidget = widget as any;
+  const styleDefaults: BlogFeedWidget['style'] = {
+    cardBackgroundColor: '#ffffff',
+    cardBackgroundOpacity: 100,
+    cardBorderColor: '#e5e7eb',
+    cardBorderOpacity: 100,
+    cardBorderWidth: 1,
+    cardBorderRadius: 12,
+    cardShadow: true,
+    imageBorderRadius: 8,
+    imageBorderColor: '#e5e7eb',
+    imageBorderOpacity: 100,
+    imageBorderWidth: 0,
+    imageShadow: false,
+    typography: {
+      title: { fontFamily: 'Inter', fontSize: 22, fontWeight: '700', color: '#111827', colorOpacity: 100 },
+      date: { fontFamily: 'Inter', fontSize: 13, fontWeight: '500', color: '#6b7280', colorOpacity: 100 },
+      excerpt: { fontFamily: 'Inter', fontSize: 15, fontWeight: '400', color: '#374151', colorOpacity: 100 },
+      action: { fontFamily: 'Inter', fontSize: 13, fontWeight: '600', color: '#111827', colorOpacity: 100 },
+    },
+    paginationButton: {
+      textColor: '#111827',
+      textColorOpacity: 100,
+      backgroundColor: '#ffffff',
+      backgroundColorOpacity: 100,
+      borderColor: '#d1d5db',
+      borderColorOpacity: 100,
+      borderRadius: 8,
+    },
+  };
+
+  return {
+    ...widget,
+    layoutVariant: oldWidget.layoutVariant || 'modern-grid',
+    query: oldWidget.query || {
+      mode: 'filters',
+      manualBlogIds: [],
+      filters: {
+        statuses: ['published'],
+        category: '',
+        tags: [],
+        search: '',
+      },
+    },
+    sortBy: oldWidget.sortBy || 'date_desc',
+    columns: oldWidget.columns || {
+      desktop: 3,
+      tablet: 2,
+      mobile: 1,
+    },
+    perPage: oldWidget.perPage || {
+      desktop: 9,
+      tablet: 6,
+      mobile: 3,
+    },
+    spacing: typeof oldWidget.spacing === 'number' ? oldWidget.spacing : 20,
+    pagination: oldWidget.pagination || {
+      mode: 'paged',
+      loadMoreLabel: 'Load More',
+      previousLabel: 'Previous',
+      nextLabel: 'Next',
+      infiniteBatchSize: 3,
+      showPageIndicator: true,
+    },
+    showDate: typeof oldWidget.showDate === 'boolean' ? oldWidget.showDate : true,
+    showExcerpt: typeof oldWidget.showExcerpt === 'boolean' ? oldWidget.showExcerpt : true,
+    showReadMore: typeof oldWidget.showReadMore === 'boolean' ? oldWidget.showReadMore : true,
+    readMoreLabel: oldWidget.readMoreLabel || 'Read More',
+    style: {
+      ...styleDefaults,
+      ...(oldWidget.style || {}),
+      typography: {
+        ...styleDefaults.typography,
+        ...(oldWidget.style?.typography || {}),
+        title: {
+          ...styleDefaults.typography.title,
+          ...(oldWidget.style?.typography?.title || {}),
+        },
+        date: {
+          ...styleDefaults.typography.date,
+          ...(oldWidget.style?.typography?.date || {}),
+        },
+        excerpt: {
+          ...styleDefaults.typography.excerpt,
+          ...(oldWidget.style?.typography?.excerpt || {}),
+        },
+        action: {
+          ...styleDefaults.typography.action,
+          ...(oldWidget.style?.typography?.action || {}),
+        },
+      },
+      paginationButton: {
+        ...styleDefaults.paginationButton,
+        ...(oldWidget.style?.paginationButton || {}),
+      },
+    },
+  };
 }
 
 function IconTextSection({ widget }: { widget: IconTextWidget }) {

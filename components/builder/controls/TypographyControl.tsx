@@ -27,6 +27,8 @@ interface TypographyControlProps {
   responsiveFontSize?: ResponsiveValue<FontSizeValue | string | number>;
   onResponsiveFontSizeChange?: (value: ResponsiveValue<FontSizeValue | string | number>) => void;
   defaultOpen?: boolean;
+  colorOpacity?: number;
+  onColorOpacityChange?: (value: number) => void;
 }
 
 const FONT_FAMILIES = [
@@ -76,6 +78,8 @@ export function TypographyControl({
   responsiveFontSize,
   onResponsiveFontSizeChange,
   defaultOpen = true,
+  colorOpacity = 100,
+  onColorOpacityChange,
 }: TypographyControlProps) {
   const [open, setOpen] = useState(defaultOpen);
   const allGlobalTypographyStyles: ('h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'body')[] = [
@@ -369,6 +373,19 @@ export function TypographyControl({
               placeholder="#000000"
               disabled={controlsLockedByGlobal}
             />
+            {typeof onColorOpacityChange === 'function' && (
+              <div className="space-y-2 pt-1">
+                <Label className="text-xs">Color Opacity ({colorOpacity}%)</Label>
+                <Input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={colorOpacity}
+                  onChange={(event) => onColorOpacityChange(parseInt(event.target.value, 10) || 0)}
+                  disabled={controlsLockedByGlobal}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -17,7 +17,8 @@ import {
   Grid3x3,
   Code,
   Navigation,
-  Mail
+  Mail,
+  Newspaper
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -31,6 +32,7 @@ const sectionIcons: Record<string, any> = {
   headline: Type,
   'image-text': ImageIcon,
   'image-gallery': Grid3x3,
+  'blog-feed': Newspaper,
   'custom-code': Code,
   'image-navigation': Navigation,
   'contact-form': Mail,
@@ -44,6 +46,7 @@ const sectionLabels: Record<string, string> = {
   headline: 'Headline',
   'image-text': 'Image + Text',
   'image-gallery': 'Image Gallery',
+  'blog-feed': 'Blog Feed',
   'custom-code': 'Custom Code',
   'image-navigation': 'Image Navigation',
   'contact-form': 'Contact Form',

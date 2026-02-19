@@ -118,3 +118,27 @@ export const listingSchema = z.object({
     })
   ),
 });
+
+export const BLOG_SEO_LIMITS = {
+  title: { recommendedMin: 50, recommendedMax: 60 },
+  excerpt: { recommendedMin: 120, recommendedMax: 160 },
+  metaDescription: { recommendedMin: 150, recommendedMax: 160 },
+} as const;
+
+export const blogSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(120),
+  slug: z
+    .string()
+    .min(1, 'Slug is required')
+    .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
+  excerpt: z.string().max(220).optional(),
+  metaDescription: z.string().max(180).optional(),
+  contentHtml: z.string().min(1, 'Content is required'),
+  featuredImage: z.string().optional(),
+  authorName: z.string().max(120).optional(),
+  tags: z.array(z.string().max(60)).default([]),
+  category: z.string().max(80).optional(),
+  status: z.enum(['draft', 'published', 'archived']),
+  templateId: z.string().min(1, 'Template is required'),
+  publishedAt: z.coerce.date().optional(),
+});

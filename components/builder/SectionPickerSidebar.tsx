@@ -9,6 +9,7 @@ import {
   Image as ImageIcon, 
   Grid3x3,
   Building2,
+  Newspaper,
   Boxes,
   HelpCircle,
   Quote,
@@ -73,6 +74,13 @@ const sectionOptions: SectionOption[] = [
     icon: Building2,
     title: 'Listings Collection',
     description: 'Display listing cards with status filters and sorting options',
+  },
+  {
+    id: 'blog-feed',
+    type: 'blog-feed',
+    icon: Newspaper,
+    title: 'Blog Feed',
+    description: 'Display blog posts with filtering, sorting, and pagination options',
   },
   {
     id: 'text-section',
@@ -187,7 +195,7 @@ export function SectionPickerSidebar({ onSelectSection }: SectionPickerSidebarPr
         {filteredSections.length === 0 ? (
           <div className="text-center py-8 px-4">
             <p className="text-sm text-muted-foreground">
-              No sections found matching "{searchQuery}"
+              No sections found matching &quot;{searchQuery}&quot;
             </p>
           </div>
         ) : (

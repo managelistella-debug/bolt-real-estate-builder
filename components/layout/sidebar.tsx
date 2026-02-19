@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -12,7 +13,8 @@ import {
   MenuSquare,
   PanelsTopLeft,
   Building2,
-  LayoutTemplate,
+  FileText,
+  Plus,
   LogOut,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth';
@@ -25,7 +27,7 @@ const navigation = [
   { name: 'Navigation', href: '/navigation', icon: MenuSquare },
   { name: 'Collections', href: '/collections', icon: Images },
   { name: 'Listings', href: '/listings', icon: Building2 },
-  { name: 'Listings Templates', href: '/listings/templates', icon: LayoutTemplate },
+  { name: 'Blogs', href: '/blogs', icon: FileText },
   { name: 'Leads', href: '/leads', icon: Users },
   { name: 'Templates', href: '/templates', icon: FolderKanban, adminOnly: true },
 ];
@@ -33,6 +35,7 @@ const navigation = [
 export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
+  const [blogsMenuOpen, setBlogsMenuOpen] = useState(pathname?.startsWith('/blogs'));
 
   const filteredNavigation = navigation.filter(item => {
     if (item.adminOnly && user?.role !== 'super_admin') {
@@ -52,6 +55,61 @@ export function Sidebar() {
       <nav className="flex-1 space-y-1 px-3 py-4">
         {filteredNavigation.map((item) => {
           const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
+          if (item.name === 'Blogs') {
+            const isArticlesActive = pathname === '/blogs';
+            const isTemplatesActive = pathname?.startsWith('/blogs/templates');
+            return (
+              <div key={item.name} className="space-y-1">
+                <div
+                  className={cn(
+                    'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  )}
+                >
+                  <Link href="/blogs" className="flex min-w-0 flex-1 items-center gap-3">
+                    <item.icon className="h-5 w-5" />
+                    {item.name}
+                  </Link>
+                  <button
+                    type="button"
+                    aria-label="Toggle blog submenu"
+                    onClick={() => setBlogsMenuOpen((prev) => !prev)}
+                    className="rounded p-1 hover:bg-black/10"
+                  >
+                    <Plus className={cn('h-4 w-4 transition-transform', blogsMenuOpen && 'rotate-45')} />
+                  </button>
+                </div>
+                {blogsMenuOpen && (
+                  <div className="ml-8 space-y-1">
+                    <Link
+                      href="/blogs"
+                      className={cn(
+                        'block rounded-md px-3 py-1.5 text-sm transition-colors',
+                        isArticlesActive
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                      )}
+                    >
+                      Articles
+                    </Link>
+                    <Link
+                      href="/blogs/templates"
+                      className={cn(
+                        'block rounded-md px-3 py-1.5 text-sm transition-colors',
+                        isTemplatesActive
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                      )}
+                    >
+                      Templates
+                    </Link>
+                  </div>
+                )}
+              </div>
+            );
+          }
           return (
             <Link
               key={item.name}

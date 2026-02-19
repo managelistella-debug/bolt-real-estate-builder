@@ -26,7 +26,8 @@ import {
   ListOrdered,
   Columns,
   StickyNote,
-  Star
+  Star,
+  Newspaper
 } from 'lucide-react';
 
 interface FloatingLayersPanelProps {
@@ -48,6 +49,7 @@ const sectionIcons: Record<string, any> = {
   'image-text-columns': Columns,
   'sticky-form': StickyNote,
   'reviews-slider': Star,
+  'blog-feed': Newspaper,
   'custom-code': Code,
   'image-navigation': Navigation,
   'contact-form': Mail,
@@ -69,6 +71,7 @@ const sectionLabels: Record<string, string> = {
   'image-text-columns': 'Multi-Column Image + Text',
   'sticky-form': 'Sticky Form + Text',
   'reviews-slider': 'Reviews Slider',
+  'blog-feed': 'Blog Feed',
   'custom-code': 'Custom Code',
   'image-navigation': 'Image Navigation',
   'contact-form': 'Contact Form',

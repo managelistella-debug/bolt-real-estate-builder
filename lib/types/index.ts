@@ -79,65 +79,233 @@ export interface Listing {
 }
 
 export type ListingsSortOption = 'price_desc' | 'price_asc' | 'date_added_desc' | 'custom_order';
-export type ListingsPaginationMode = 'paged' | 'infinite';
-export type ListingCollectionTemplatePreset = 'editorial' | 'hero-featured' | 'compact';
+export type ListingsLayoutVariant = 'modern-grid' | 'text-over-image';
+export type ListingsQueryMode = 'manual' | 'filters';
+export type ListingsLoadMode = 'none' | 'paged' | 'load_more' | 'infinite';
+export type BlogStatus = 'draft' | 'published' | 'archived';
+export type BlogSortOption = 'date_desc' | 'date_asc' | 'title_asc' | 'title_desc' | 'custom_order';
+export type BlogFeedLayoutVariant = 'modern-grid' | 'text-over-image';
+export type BlogFeedQueryMode = 'manual' | 'filters';
+export type BlogFeedLoadMode = 'none' | 'paged' | 'load_more' | 'infinite';
+export type BlogPostTemplateId = string;
 
-export interface ListingTemplateTypography {
-  fontFamily: string;
-  fontSize: number;
-  fontWeight: string;
-  color: string;
+export interface ListingsResponsiveNumberConfig {
+  desktop: number;
+  tablet: number;
+  mobile: number;
 }
 
-export interface ListingTemplateBadgeStyle {
-  enabled: boolean;
-  backgroundColor: string;
+export interface ListingsQueryFilters {
+  statuses: ListingStatus[];
+  city?: string;
+  neighborhood?: string;
+  search?: string;
+}
+
+export interface ListingsTypographyConfig {
+  fontFamily: string;
+  fontSize: number;
+  fontSizeResponsive?: ResponsiveValue<number>;
+  fontWeight: string;
+  lineHeight?: string;
+  textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  letterSpacing?: string;
+  color: string;
+  colorOpacity: number;
+}
+
+export type BlogDynamicField =
+  | 'title'
+  | 'slug'
+  | 'excerpt'
+  | 'metaDescription'
+  | 'contentHtml'
+  | 'featuredImage'
+  | 'authorName'
+  | 'publishedAt'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'category';
+
+export interface ListingsButtonStyleConfig {
   textColor: string;
+  textColorOpacity: number;
+  backgroundColor: string;
+  backgroundColorOpacity: number;
+  borderColor: string;
+  borderColorOpacity: number;
   borderRadius: number;
 }
 
-export interface ListingCollectionTemplate {
+export interface ListingsSectionStyleConfig {
+  cardBackgroundColor: string;
+  cardBackgroundOpacity: number;
+  cardBorderColor: string;
+  cardBorderOpacity: number;
+  cardBorderWidth: number;
+  cardBorderRadius: number;
+  cardShadow: boolean;
+  imageBorderRadius: number;
+  imageBorderColor: string;
+  imageBorderOpacity: number;
+  imageBorderWidth: number;
+  imageShadow: boolean;
+  statusTextColor: string;
+  statusTextOpacity: number;
+  statusBackgroundColor: string;
+  statusBackgroundOpacity: number;
+  statusBorderRadius: number;
+  typography: {
+    address: ListingsTypographyConfig;
+    city: ListingsTypographyConfig;
+    price: ListingsTypographyConfig;
+    status: ListingsTypographyConfig;
+    action: ListingsTypographyConfig;
+  };
+  paginationButton: ListingsButtonStyleConfig;
+}
+
+export interface BlogPostTemplateConfig {
+  id: BlogPostTemplateId;
+  name: string;
+  description: string;
+  layoutVariant: 'newsletter' | 'insights';
+  showSidebarContact: boolean;
+  showBottomBlogCards: boolean;
+  bottomBlogCardsCount: number;
+  sidebarStickyOffset: number;
+  sidebarForm: {
+    heading: string;
+    description?: string;
+    buttonText: string;
+    fields: Array<{
+      id: string;
+      type: 'text' | 'email' | 'phone' | 'textarea';
+      label: string;
+      placeholder?: string;
+      required: boolean;
+    }>;
+  };
+  dynamicBindings: {
+    heroImageField: BlogDynamicField;
+    titleField: BlogDynamicField;
+    dateField: 'publishedAt' | 'createdAt' | 'updatedAt';
+    contentField: BlogDynamicField;
+  };
+  showTags: boolean;
+  heroImageFullWidth: boolean;
+  relatedPostsHeading: string;
+  relatedPostsLayout: 'grid';
+  relatedPostsFilter: 'latest' | 'same_category' | 'same_tag';
+  relatedPostsFilterCategory?: string;
+  relatedPostsFilterTag?: string;
+  showRelatedPostDate: boolean;
+  showRelatedPostExcerpt: boolean;
+  relatedCardContentPadding: number;
+  style: {
+    containerWidth: 'narrow' | 'wide';
+    headerBackgroundColor: string;
+    headerBackgroundOpacity: number;
+    headerOverlayColor: string;
+    headerOverlayOpacity: number;
+    heroImageBorderRadius: number;
+    bodyBackgroundColor: string;
+    bodyBackgroundOpacity: number;
+    sidebarBackgroundColor: string;
+    sidebarBackgroundOpacity: number;
+    sidebarBorderColor: string;
+    sidebarBorderOpacity: number;
+    sidebarBorderWidth: number;
+    sidebarBorderRadius: number;
+    formFieldBackgroundColor: string;
+    formFieldBackgroundOpacity: number;
+    formFieldBorderColor: string;
+    formFieldBorderOpacity: number;
+    formFieldBorderWidth: number;
+    formFieldBorderRadius: number;
+    formButtonBackgroundColor: string;
+    formButtonBackgroundOpacity: number;
+    formButtonBorderRadius: number;
+    formButtonHoverBackgroundColor: string;
+    formButtonHoverBackgroundOpacity: number;
+    formButtonHoverTextColor: string;
+    formButtonHoverTextOpacity: number;
+    borderColor: string;
+    borderColorOpacity: number;
+    borderWidth: number;
+    tagBackgroundColor: string;
+    tagBackgroundOpacity: number;
+    tagBorderColor: string;
+    tagBorderOpacity: number;
+    tagBorderWidth: number;
+    tagBorderRadius: number;
+    relatedCardBackgroundColor: string;
+    relatedCardBackgroundOpacity: number;
+    relatedCardBorderColor: string;
+    relatedCardBorderOpacity: number;
+    relatedCardBorderWidth: number;
+    relatedCardBorderRadius: number;
+    relatedImageBorderRadius: number;
+    typography: {
+      title: ListingsTypographyConfig;
+      date: ListingsTypographyConfig;
+      tags: ListingsTypographyConfig;
+      body: ListingsTypographyConfig;
+      formHeading: ListingsTypographyConfig;
+      formLabel: ListingsTypographyConfig;
+      formButton: ListingsTypographyConfig;
+      relatedHeading: ListingsTypographyConfig;
+    };
+  };
+}
+
+export interface BlogPost {
   id: string;
   userId: string;
-  name: string;
-  pageSlug: string;
-  preset: ListingCollectionTemplatePreset;
-  isActive: boolean;
-  statuses: ListingStatus[];
-  sortBy: ListingsSortOption;
-  columns: {
-    desktop: number;
-    tablet: number;
-    mobile: number;
-  };
-  showFields: {
-    address: boolean;
-    city: boolean;
-    price: boolean;
-    status: boolean;
-    representation: boolean;
-  };
-  typography: {
-    address: ListingTemplateTypography;
-    city: ListingTemplateTypography;
-    price: ListingTemplateTypography;
-  };
-  statusBadgeStyles: Record<ListingStatus, ListingTemplateBadgeStyle>;
-  representationBadgeStyles: Record<ListingRepresentation, ListingTemplateBadgeStyle>;
-  backgroundColor: string;
-  hero: {
-    enabled: boolean;
-    imageUrl?: string;
-    heading?: string;
-    subheading?: string;
-  };
-  pagination: {
-    mode: ListingsPaginationMode;
-    itemsPerPage: number;
-    infiniteBatch: number;
-  };
+  title: string;
+  slug: string;
+  excerpt?: string;
+  metaDescription?: string;
+  contentHtml: string;
+  featuredImage?: string;
+  authorName?: string;
+  tags: string[];
+  category?: string;
+  status: BlogStatus;
+  templateId: BlogPostTemplateId;
+  customOrder: number;
+  publishedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface BlogFeedQueryFilters {
+  statuses: BlogStatus[];
+  category?: string;
+  tags?: string[];
+  search?: string;
+}
+
+export interface BlogFeedStyleConfig {
+  cardBackgroundColor: string;
+  cardBackgroundOpacity: number;
+  cardBorderColor: string;
+  cardBorderOpacity: number;
+  cardBorderWidth: number;
+  cardBorderRadius: number;
+  cardShadow: boolean;
+  imageBorderRadius: number;
+  imageBorderColor: string;
+  imageBorderOpacity: number;
+  imageBorderWidth: number;
+  imageShadow: boolean;
+  typography: {
+    title: ListingsTypographyConfig;
+    date: ListingsTypographyConfig;
+    excerpt: ListingsTypographyConfig;
+    action: ListingsTypographyConfig;
+  };
+  paginationButton: ListingsButtonStyleConfig;
 }
 
 // Template Types
@@ -154,7 +322,7 @@ export interface Template {
 }
 
 // Section and Widget Types
-export type SectionType = 'hero' | 'headline' | 'image-text' | 'image-gallery' | 'icon-text' | 'text-section' | 'faq' | 'testimonials' | 'steps' | 'image-text-columns' | 'sticky-form' | 'reviews-slider' | 'listings' | 'custom-code' | 'image-navigation' | 'contact-form' | 'about' | 'services' | 'contact';
+export type SectionType = 'hero' | 'headline' | 'image-text' | 'image-gallery' | 'icon-text' | 'text-section' | 'faq' | 'testimonials' | 'steps' | 'image-text-columns' | 'sticky-form' | 'reviews-slider' | 'listings' | 'blog-feed' | 'custom-code' | 'image-navigation' | 'contact-form' | 'about' | 'services' | 'contact';
 
 export type TextEntranceAnimationType = 'none' | 'fadeIn' | 'fadeInUp';
 export type ImageEntranceAnimationType = 'none' | 'fadeIn' | 'curtainExpandReveal' | 'fadeInZoomOut';
@@ -202,6 +370,7 @@ export type Widget = (
   | StickyFormWidget
   | ReviewsSliderWidget
   | ListingsWidget
+  | BlogFeedWidget
   | CustomCodeWidget
   | ImageNavigationWidget
   | ContactFormWidget
@@ -515,12 +684,57 @@ export interface ImageGalleryWidget {
 
 export interface ListingsWidget {
   type: 'listings';
-  statuses: ListingStatus[];
+  layoutVariant: ListingsLayoutVariant;
+  query: {
+    mode: ListingsQueryMode;
+    manualListingIds: string[];
+    filters: ListingsQueryFilters;
+  };
   sortBy: ListingsSortOption;
-  maxItems?: number;
-  columns: number;
+  columns: ListingsResponsiveNumberConfig;
+  perPage: ListingsResponsiveNumberConfig;
+  spacing: number;
+  pagination: {
+    mode: ListingsLoadMode;
+    loadMoreLabel: string;
+    previousLabel: string;
+    nextLabel: string;
+    infiniteBatchSize: number;
+    showPageIndicator: boolean;
+  };
   showStatusBadge: boolean;
-  templateId?: string;
+  showViewPropertyCta: boolean;
+  viewPropertyLabel: string;
+  style: ListingsSectionStyleConfig;
+  background?: BackgroundConfig;
+  layout?: LayoutConfig;
+}
+
+export interface BlogFeedWidget {
+  type: 'blog-feed';
+  layoutVariant: BlogFeedLayoutVariant;
+  query: {
+    mode: BlogFeedQueryMode;
+    manualBlogIds: string[];
+    filters: BlogFeedQueryFilters;
+  };
+  sortBy: BlogSortOption;
+  columns: ListingsResponsiveNumberConfig;
+  perPage: ListingsResponsiveNumberConfig;
+  spacing: number;
+  pagination: {
+    mode: BlogFeedLoadMode;
+    loadMoreLabel: string;
+    previousLabel: string;
+    nextLabel: string;
+    infiniteBatchSize: number;
+    showPageIndicator: boolean;
+  };
+  showDate: boolean;
+  showExcerpt: boolean;
+  showReadMore: boolean;
+  readMoreLabel: string;
+  style: BlogFeedStyleConfig;
   background?: BackgroundConfig;
   layout?: LayoutConfig;
 }

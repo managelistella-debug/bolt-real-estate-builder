@@ -138,7 +138,7 @@ export function ListingDetailTemplate({ slug }: ListingDetailTemplateProps) {
 
         <main className="mx-auto max-w-[1300px] px-4 py-6 sm:px-6 sm:py-8">
           <div className="mb-4 flex items-center justify-between text-sm">
-            <a href="/listings/collection" className="text-black/70 hover:text-black">← Back to Search</a>
+            <a href="/" className="text-black/70 hover:text-black">← Back</a>
             <span className="text-black/50">MLS# {listing.mlsNumber}</span>
           </div>
 
