@@ -78,6 +78,13 @@ export const useListingsStore = create<ListingsState>()(
         set((state) => ({
           listings: [...state.listings, listing],
         }));
+        if (typeof window !== 'undefined') {
+          fetch(`/api/cms/${payload.userId}/listings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...listing, tenantId: payload.userId }),
+          }).catch(() => undefined);
+        }
 
         return listing;
       },
@@ -140,20 +147,29 @@ export const useListingsStore = create<ListingsState>()(
       },
 
       updateListing: (id, updates) => {
+        let updatedListing: Listing | undefined;
         set((state) => ({
           listings: state.listings.map((listing) => {
             if (listing.id !== id) return listing;
             const nextAddress = updates.address ?? listing.address;
             const nextSlug = ensureUniqueSlug(slugify(nextAddress), state.listings, id);
-            return normalizeListing({
+            updatedListing = normalizeListing({
               ...listing,
               ...updates,
               slug: nextSlug,
               updatedAt: new Date(),
               gallery: updates.gallery ?? listing.gallery,
             });
+            return updatedListing;
           }),
         }));
+        if (typeof window !== 'undefined' && updatedListing) {
+          fetch(`/api/cms/${updatedListing.userId}/listings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...updatedListing, tenantId: updatedListing.userId }),
+          }).catch(() => undefined);
+        }
       },
 
       deleteListing: (id) => {

@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden tenant access' }, { status: 403 });
     }
 
-    const { lead, submission } = createLeadAndSubmission(effectiveTenantId, {
+    const { lead, submission } = await createLeadAndSubmission(effectiveTenantId, {
       firstName: parsedFirstName || undefined,
       lastName: parsedLastName || undefined,
       email,

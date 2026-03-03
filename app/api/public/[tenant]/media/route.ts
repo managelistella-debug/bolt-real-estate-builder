@@ -7,11 +7,12 @@ export async function GET(
   { params }: { params: Promise<{ tenant: string }> }
 ) {
   const { tenant } = await params;
-  const unauthorized = requirePublicApiKey(request, tenant, 'content:read');
+  const unauthorized = await requirePublicApiKey(request, tenant, 'content:read');
   if (unauthorized) return unauthorized;
 
-  const dataset = ensureTenantDataset(tenant);
+  const dataset = await ensureTenantDataset(tenant);
   return NextResponse.json({
+    apiVersion: 'v1',
     tenant,
     items: dataset.mediaCollections,
   });

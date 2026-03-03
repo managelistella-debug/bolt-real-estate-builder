@@ -7,7 +7,7 @@ export async function POST(
   { params }: { params: Promise<{ tenant: string }> }
 ) {
   const { tenant } = await params;
-  const unauthorized = requirePublicApiKey(request, tenant, 'forms:write');
+  const unauthorized = await requirePublicApiKey(request, tenant, 'forms:write');
   if (unauthorized) return unauthorized;
 
   const body = await request.json();
@@ -15,7 +15,7 @@ export async function POST(
     return NextResponse.json({ error: 'Email is required' }, { status: 400 });
   }
 
-  const result = createLeadAndSubmission(tenant, {
+  const result = await createLeadAndSubmission(tenant, {
     firstName: body.firstName,
     lastName: body.lastName,
     email: body.email,
@@ -27,6 +27,7 @@ export async function POST(
   });
 
   return NextResponse.json({
+    apiVersion: 'v1',
     success: true,
     lead: result.lead,
     submission: result.submission,

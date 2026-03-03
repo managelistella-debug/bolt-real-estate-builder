@@ -77,6 +77,13 @@ export const useBlogsStore = create<BlogsState>()(
           updatedAt: now,
         };
         set((state) => ({ blogs: [...state.blogs, normalizeBlog(blog)] }));
+        if (typeof window !== 'undefined') {
+          fetch(`/api/cms/${payload.userId}/blogs`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...blog, tenantId: payload.userId }),
+          }).catch(() => undefined);
+        }
         return blog;
       },
 
@@ -104,21 +111,30 @@ export const useBlogsStore = create<BlogsState>()(
       },
 
       updateBlog: (id, updates) => {
+        let updatedPost: BlogPost | undefined;
         set((state) => ({
           blogs: state.blogs.map((post) => {
             if (post.id !== id) return post;
             const nextTitle = updates.title ?? post.title;
             const nextBaseSlug = updates.slug || slugify(nextTitle);
             const nextSlug = ensureUniqueSlug(nextBaseSlug, state.blogs, id);
-            return normalizeBlog({
+            updatedPost = normalizeBlog({
               ...post,
               ...updates,
               slug: nextSlug,
               updatedAt: new Date(),
               tags: updates.tags ?? post.tags,
             });
+            return updatedPost;
           }),
         }));
+        if (typeof window !== 'undefined' && updatedPost) {
+          fetch(`/api/cms/${updatedPost.userId}/blogs`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...updatedPost, tenantId: updatedPost.userId }),
+          }).catch(() => undefined);
+        }
       },
 
       deleteBlog: (id) => {

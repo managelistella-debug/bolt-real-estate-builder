@@ -2,12 +2,11 @@
 
 import { useState } from 'react';
 import { Header } from '@/components/layout/header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useTestimonialsStore } from '@/lib/stores/testimonials';
+import { Trash2 } from 'lucide-react';
+
+const darkInput = 'h-[34px] w-full rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-3 text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none focus:ring-1 focus:ring-[#DAFF07]';
 
 export default function TestimonialsPage() {
   const { user } = useAuthStore();
@@ -19,67 +18,58 @@ export default function TestimonialsPage() {
   const testimonials = user ? getTestimonialsForCurrentUser(user.id) : [];
 
   return (
-    <div>
-      <Header title="Testimonials" description="Manage customer testimonials for your coded websites." />
-      <div className="grid gap-6 p-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Add Testimonial</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="space-y-2">
-              <Label htmlFor="quote">Quote</Label>
-              <Input id="quote" value={quote} onChange={(e) => setQuote(e.target.value)} />
+    <div className="min-h-screen bg-[#F5F5F3]" style={{ fontFamily: "'Geist', 'Inter', system-ui, sans-serif" }}>
+      <div className="border-b border-[#EBEBEB] bg-white">
+        <Header title="Testimonials" description="Manage customer testimonials for your coded websites." />
+      </div>
+      <div className="grid gap-4 p-6 lg:grid-cols-2">
+        <div className="rounded-xl border border-[#EBEBEB] bg-white p-5">
+          <h2 className="mb-4 text-[15px] font-normal text-black">Add Testimonial</h2>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-[13px] text-[#888C99]">Quote</label>
+              <input value={quote} onChange={(e) => setQuote(e.target.value)} className={darkInput} />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="authorName">Author Name</Label>
-              <Input id="authorName" value={authorName} onChange={(e) => setAuthorName(e.target.value)} />
+            <div className="space-y-1.5">
+              <label className="text-[13px] text-[#888C99]">Author Name</label>
+              <input value={authorName} onChange={(e) => setAuthorName(e.target.value)} className={darkInput} />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="authorTitle">Author Title</Label>
-              <Input id="authorTitle" value={authorTitle} onChange={(e) => setAuthorTitle(e.target.value)} />
+            <div className="space-y-1.5">
+              <label className="text-[13px] text-[#888C99]">Author Title</label>
+              <input value={authorTitle} onChange={(e) => setAuthorTitle(e.target.value)} className={darkInput} />
             </div>
-            <Button
+            <button
+              type="button"
+              className="h-[30px] rounded-lg bg-[#DAFF07] px-3 text-[13px] text-black hover:bg-[#C8ED00]"
               onClick={() => {
                 if (!user || !quote || !authorName) return;
-                addTestimonial({
-                  userId: user.id,
-                  quote,
-                  authorName,
-                  authorTitle,
-                  sortOrder: testimonials.length,
-                  source: 'manual',
-                });
-                setQuote('');
-                setAuthorName('');
-                setAuthorTitle('');
+                addTestimonial({ userId: user.id, quote, authorName, authorTitle, sortOrder: testimonials.length, source: 'manual' });
+                setQuote(''); setAuthorName(''); setAuthorTitle('');
               }}
             >
               Save Testimonial
-            </Button>
-          </CardContent>
-        </Card>
+            </button>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Saved Testimonials</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
+        <div className="rounded-xl border border-[#EBEBEB] bg-white p-5">
+          <h2 className="mb-4 text-[15px] font-normal text-black">Saved Testimonials</h2>
+          <div className="space-y-2.5">
             {testimonials.length === 0 && (
-              <p className="text-sm text-muted-foreground">No testimonials yet.</p>
+              <p className="text-[13px] text-[#888C99]">No testimonials yet.</p>
             )}
             {testimonials.map((item) => (
-              <div key={item.id} className="rounded-md border p-3">
-                <p className="font-medium">{item.authorName}</p>
-                {item.authorTitle && <p className="text-xs text-muted-foreground">{item.authorTitle}</p>}
-                <p className="mt-2 text-sm">{item.quote}</p>
-                <Button className="mt-2" variant="outline" size="sm" onClick={() => deleteTestimonial(item.id)}>
-                  Delete
-                </Button>
+              <div key={item.id} className="rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] p-3">
+                <p className="text-[13px] font-medium text-black">{item.authorName}</p>
+                {item.authorTitle && <p className="text-[11px] text-[#888C99]">{item.authorTitle}</p>}
+                <p className="mt-1.5 text-[13px] text-[#888C99]">{item.quote}</p>
+                <button type="button" className="mt-2 flex h-[26px] items-center gap-1 rounded-lg border border-[#EBEBEB] bg-white px-2 text-[11px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-red-500" onClick={() => deleteTestimonial(item.id)}>
+                  <Trash2 className="h-3 w-3" /> Delete
+                </button>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

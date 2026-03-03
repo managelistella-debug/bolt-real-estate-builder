@@ -3,17 +3,13 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useListingsStore } from '@/lib/stores/listings';
 import { Listing, ListingStatus } from '@/lib/types';
 import { ListingFormDialog } from '@/components/listings/ListingFormDialog';
 import { formatListingPrice, LISTING_REPRESENTATION_LABELS, LISTING_STATUS_LABELS } from '@/lib/listings';
-import { Copy, Edit, ExternalLink, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { Copy, Edit, ExternalLink, Plus, Search, Sparkles, Trash2 } from 'lucide-react';
 
 const STATUS_FILTERS: Array<{ label: string; value: 'all' | ListingStatus }> = [
   { label: 'All', value: 'all' },
@@ -21,6 +17,12 @@ const STATUS_FILTERS: Array<{ label: string; value: 'all' | ListingStatus }> = [
   { label: 'Pending', value: 'pending' },
   { label: 'Sold', value: 'sold' },
 ];
+
+const statusPillClass: Record<string, string> = {
+  for_sale: 'bg-[#DAFF07] text-black',
+  pending: 'bg-[#F5F5F3] text-[#888C99] border border-[#EBEBEB]',
+  sold: 'bg-black text-white',
+};
 
 export default function ListingsPage() {
   const { user } = useAuthStore();
@@ -55,16 +57,9 @@ export default function ListingsPage() {
   const handleCreate = (payload: Omit<Listing, 'id' | 'slug' | 'customOrder' | 'createdAt' | 'updatedAt'>) => {
     try {
       createListing(payload);
-      toast({
-        title: 'Listing created',
-        description: 'Your new listing has been saved.',
-      });
+      toast({ title: 'Listing created', description: 'Your new listing has been saved.' });
     } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Could not create listing',
-        description: error instanceof Error ? error.message : 'Please try again.',
-      });
+      toast({ variant: 'destructive', title: 'Could not create listing', description: error instanceof Error ? error.message : 'Please try again.' });
       throw error;
     }
   };
@@ -74,16 +69,9 @@ export default function ListingsPage() {
     try {
       updateListing(editingListing.id, payload);
       setEditingListing(null);
-      toast({
-        title: 'Listing updated',
-        description: 'Your listing changes were saved.',
-      });
+      toast({ title: 'Listing updated', description: 'Your listing changes were saved.' });
     } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Could not update listing',
-        description: error instanceof Error ? error.message : 'Please try again.',
-      });
+      toast({ variant: 'destructive', title: 'Could not update listing', description: error instanceof Error ? error.message : 'Please try again.' });
       throw error;
     }
   };
@@ -91,132 +79,154 @@ export default function ListingsPage() {
   const handleDelete = (listingId: string) => {
     if (!confirm('Delete this listing? This action cannot be undone.')) return;
     deleteListing(listingId);
-    toast({
-      title: 'Listing deleted',
-      description: 'The listing has been removed.',
-    });
+    toast({ title: 'Listing deleted', description: 'The listing has been removed.' });
   };
 
   const handleDuplicate = (listingId: string) => {
     duplicateListing(listingId);
-    toast({
-      title: 'Listing duplicated',
-      description: 'A copy of the listing has been created.',
-    });
+    toast({ title: 'Listing duplicated', description: 'A copy of the listing has been created.' });
   };
 
   const handleCreateSample = () => {
     if (!user) return;
     createSampleListing(user.id);
-    toast({
-      title: 'Sample listing created',
-      description: 'A sample listing was added to help you test interactions.',
-    });
+    toast({ title: 'Sample listing created', description: 'A sample listing was added to help you test interactions.' });
   };
 
   return (
-    <div>
-      <Header
-        title="Listings"
-        description="Manage your real estate property listings"
-        action={
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleCreateSample}>
-              <Sparkles className="h-4 w-4 mr-2" />
-              Add Sample Listing
-            </Button>
-            <Button onClick={() => setIsCreateOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Listing
-            </Button>
-          </div>
-        }
-      />
+    <div className="min-h-screen bg-[#F5F5F3]" style={{ fontFamily: "'Geist', 'Inter', system-ui, sans-serif" }}>
+      <div className="border-b border-[#EBEBEB] bg-white">
+        <Header
+          title="Listings"
+          description="Manage your real estate property listings"
+          action={
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCreateSample}
+                className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-black transition-colors hover:bg-[#F5F5F3]"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-[#888C99]" />
+                Add Sample
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsCreateOpen(true)}
+                className="flex h-[30px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-3 text-[13px] font-normal text-black transition-colors hover:bg-[#C8ED00]"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                New Listing
+              </button>
+            </div>
+          }
+        />
+      </div>
 
-      <div className="p-6 space-y-4">
-        <Card className="p-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <Input
+      <div className="space-y-4 p-6">
+        {/* Filters */}
+        <div className="flex flex-col gap-3 rounded-xl border border-[#EBEBEB] bg-white p-4 md:flex-row md:items-center md:justify-between">
+          <div className="relative md:max-w-md md:flex-1">
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#CCCCCC]" />
+            <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search address, city, neighborhood, or MLS #"
-              className="md:max-w-md"
+              className="h-[34px] w-full rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] pl-9 pr-3 text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none focus:ring-1 focus:ring-[#DAFF07]"
             />
-            <div className="flex flex-wrap gap-2">
-              {STATUS_FILTERS.map((item) => (
-                <Button
-                  key={item.value}
-                  type="button"
-                  variant={statusFilter === item.value ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatusFilter(item.value)}
-                >
-                  {item.label}
-                </Button>
-              ))}
-            </div>
           </div>
-        </Card>
+          <div className="flex flex-wrap gap-1.5">
+            {STATUS_FILTERS.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => setStatusFilter(item.value)}
+                className={`h-[30px] rounded-lg px-3 text-[13px] transition-colors ${
+                  statusFilter === item.value
+                    ? 'bg-black text-white'
+                    : 'border border-[#EBEBEB] bg-white text-[#888C99] hover:bg-[#F5F5F3] hover:text-black'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-        <Card>
+        {/* Listing rows */}
+        <div className="rounded-xl border border-[#EBEBEB] bg-white">
           {filteredListings.length === 0 ? (
-            <div className="p-10 text-center">
-              <h3 className="text-lg font-semibold">No listings yet</h3>
-              <p className="text-sm text-muted-foreground mt-2 mb-5">
+            <div className="py-16 text-center">
+              <p className="text-[15px] text-black">No listings yet</p>
+              <p className="mt-1 text-[13px] text-[#888C99]">
                 Create your first property listing to start building your listing feed.
               </p>
-              <Button onClick={() => setIsCreateOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Listing
-              </Button>
-              <Button variant="outline" className="ml-2" onClick={handleCreateSample}>
-                <Sparkles className="h-4 w-4 mr-2" />
-                Add Sample Listing
-              </Button>
+              <div className="mt-5 flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateOpen(true)}
+                  className="flex h-[30px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-3 text-[13px] text-black hover:bg-[#C8ED00]"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Create Listing
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateSample}
+                  className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Add Sample
+                </button>
+              </div>
             </div>
           ) : (
-            <div className="divide-y">
+            <div className="divide-y divide-[#EBEBEB]">
               {filteredListings.map((listing) => (
-                <div key={listing.id} className="flex flex-col gap-4 p-4 md:flex-row md:items-center md:justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold">{listing.address}</h3>
-                      <Badge variant="outline">{LISTING_STATUS_LABELS[listing.listingStatus]}</Badge>
+                <div key={listing.id} className="flex flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-[13px] font-medium text-black">{listing.address}</h3>
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] ${statusPillClass[listing.listingStatus] || 'bg-[#F5F5F3] text-[#888C99]'}`}>
+                        {LISTING_STATUS_LABELS[listing.listingStatus]}
+                      </span>
                       {listing.representation && (
-                        <Badge variant="secondary">{LISTING_REPRESENTATION_LABELS[listing.representation]}</Badge>
+                        <span className="inline-flex rounded-full border border-[#EBEBEB] bg-white px-2 py-0.5 text-[11px] text-[#888C99]">
+                          {LISTING_REPRESENTATION_LABELS[listing.representation]}
+                        </span>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="mt-0.5 text-[13px] text-[#888C99]">
                       {listing.neighborhood}, {listing.city}
                     </p>
-                    <p className="text-sm mt-1">
-                      <span className="font-medium">{formatListingPrice(listing.listPrice)}</span> - MLS#{' '}
-                      {listing.mlsNumber}
+                    <p className="mt-0.5 text-[13px]">
+                      <span className="font-medium text-black">{formatListingPrice(listing.listPrice)}</span>
+                      <span className="mx-1.5 text-[#CCCCCC]">·</span>
+                      <span className="text-[#888C99]">MLS# {listing.mlsNumber}</span>
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-1.5">
                     <Link href={`/listings/${listing.slug}`}>
-                      <Button variant="outline" size="sm">
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        View Live
-                      </Button>
+                      <button type="button" className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-2.5 text-[12px] text-[#888C99] transition-colors hover:bg-[#F5F5F3] hover:text-black">
+                        <ExternalLink className="h-3 w-3" />
+                        View
+                      </button>
                     </Link>
-                    <Button variant="outline" size="sm" onClick={() => setEditingListing(listing)}>
-                      <Edit className="h-4 w-4 mr-2" />
+                    <button type="button" onClick={() => setEditingListing(listing)} className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-2.5 text-[12px] text-[#888C99] transition-colors hover:bg-[#F5F5F3] hover:text-black">
+                      <Edit className="h-3 w-3" />
                       Edit
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDuplicate(listing.id)}>
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDelete(listing.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    </button>
+                    <button type="button" onClick={() => handleDuplicate(listing.id)} className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#EBEBEB] bg-white text-[#CCCCCC] transition-colors hover:bg-[#F5F5F3] hover:text-black">
+                      <Copy className="h-3 w-3" />
+                    </button>
+                    <button type="button" onClick={() => handleDelete(listing.id)} className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#EBEBEB] bg-white text-[#CCCCCC] transition-colors hover:bg-[#F5F5F3] hover:text-red-500">
+                      <Trash2 className="h-3 w-3" />
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </Card>
+        </div>
       </div>
 
       {user && (

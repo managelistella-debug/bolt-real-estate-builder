@@ -5,6 +5,8 @@ interface ListingDetailsPageProps {
   params: { slug: string };
 }
 
+export const revalidate = 300;
+
 const toTitleCase = (value: string) =>
   value
     .split('-')

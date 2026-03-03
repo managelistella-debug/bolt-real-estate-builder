@@ -2,34 +2,26 @@
 
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 
 export default function PagesListPage() {
   return (
-    <div>
-      <Header 
-        title="Page Builder Retired"
-        description="Visual page editing has been removed for headless CMS mode."
-      />
-
+    <div className="min-h-screen bg-[#F5F5F3]" style={{ fontFamily: "'Geist', 'Inter', system-ui, sans-serif" }}>
+      <div className="border-b border-[#EBEBEB] bg-white">
+        <Header title="Page Builder Retired" description="Visual page editing has been removed for headless CMS mode." />
+      </div>
       <div className="p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Use API-driven content instead</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Build pages directly in your codebase and consume content from this CMS via API.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Link href="/blogs"><Button variant="outline">Blogs</Button></Link>
-              <Link href="/listings"><Button variant="outline">Listings</Button></Link>
-              <Link href="/collections"><Button variant="outline">Media</Button></Link>
-              <Link href="/integrations"><Button>Open Integrations</Button></Link>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-[#EBEBEB] bg-white p-5">
+          <h2 className="mb-2 text-[15px] font-normal text-black">Use API-driven content instead</h2>
+          <p className="mb-4 text-[13px] text-[#888C99]">
+            Build pages directly in your codebase and consume content from this CMS via API.
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            <Link href="/blogs" className="inline-flex h-[30px] items-center rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black">Blogs</Link>
+            <Link href="/listings" className="inline-flex h-[30px] items-center rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black">Listings</Link>
+            <Link href="/collections" className="inline-flex h-[30px] items-center rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black">Media</Link>
+            <Link href="/integrations" className="inline-flex h-[30px] items-center rounded-lg bg-[#DAFF07] px-3 text-[13px] text-black hover:bg-[#C8ED00]">Open Integrations</Link>
+          </div>
+        </div>
       </div>
     </div>
   );

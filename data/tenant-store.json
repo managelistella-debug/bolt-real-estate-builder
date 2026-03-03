@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "tenants": {
+    "3": {
+      "tenantId": "3",
+      "userId": "3",
+      "websiteId": "website-3",
+      "apiKeys": [
+        {
+          "key": "demo_public_key_3",
+          "scopes": [
+            "content:read",
+            "forms:write"
+          ],
+          "createdAt": "2026-02-24T02:21:20.934Z"
+        }
+      ],
+      "listings": [],
+      "blogs": [],
+      "testimonials": [],
+      "mediaCollections": [],
+      "leads": [],
+      "submissions": [],
+      "integrations": {
+        "userId": "3",
+        "google": {
+          "enabled": false
+        },
+        "resend": {
+          "enabled": false
+        },
+        "createdAt": "2026-02-24T02:21:20.934Z",
+        "updatedAt": "2026-02-24T02:21:20.934Z"
+      },
+      "globals": {
+        "updatedAt": "2026-02-24T02:21:20.934Z"
+      },
+      "domains": [],
+      "infra": {
+        "revalidationStatus": "idle",
+        "updatedAt": "2026-02-24T02:21:20.934Z"
+      }
+    },
+    "dev-super-admin": {
+      "tenantId": "dev-super-admin",
+      "userId": "dev-super-admin",
+      "websiteId": "website-dev-super-admin",
+      "apiKeys": [
+        {
+          "key": "demo_public_key_dev-super-admin",
+          "scopes": [
+            "content:read",
+            "forms:write"
+          ],
+          "createdAt": "2026-03-01T01:21:06.755Z"
+        }
+      ],
+      "listings": [],
+      "blogs": [],
+      "testimonials": [],
+      "mediaCollections": [],
+      "leads": [],
+      "submissions": [],
+      "integrations": {
+        "userId": "dev-super-admin",
+        "google": {
+          "enabled": false
+        },
+        "resend": {
+          "enabled": false
+        },
+        "createdAt": "2026-03-01T01:21:06.755Z",
+        "updatedAt": "2026-03-01T01:21:06.755Z"
+      },
+      "globals": {
+        "updatedAt": "2026-03-01T01:21:06.755Z"
+      },
+      "domains": [],
+      "infra": {
+        "revalidationStatus": "idle",
+        "updatedAt": "2026-03-01T01:21:06.755Z"
+      }
+    }
+  }
+}

@@ -29,7 +29,7 @@ export function ListingDetailTemplate({ slug }: ListingDetailTemplateProps) {
     () => (listing ? [...listing.gallery].sort((a, b) => a.order - b.order) : []),
     [listing]
   );
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [activeImageIndex] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [showAssumptions, setShowAssumptions] = useState(false);
   const [downPaymentPercent, setDownPaymentPercent] = useState(20);
@@ -38,19 +38,19 @@ export function ListingDetailTemplate({ slug }: ListingDetailTemplateProps) {
 
   if (!listing) {
     return (
-      <div className="bg-white text-black min-h-screen">
+      <div className="min-h-screen bg-[#F5F5F3] text-black" style={{ fontFamily: "'Geist', 'Inter', system-ui, sans-serif" }}>
         {website && (
           <SiteHeader
             websiteName={website.name}
             header={website.header}
             globalStyles={website.globalStyles}
             deviceView="desktop"
-            className="border-b border-black/10"
+            className="border-b border-[#EBEBEB]"
           />
         )}
         <main className="mx-auto max-w-5xl px-4 py-12">
-          <h1 className="text-2xl font-semibold">Listing not found</h1>
-          <p className="text-black/60 mt-2">
+          <h1 className="text-[24px] font-medium text-black">Listing not found</h1>
+          <p className="mt-2 text-[13px] text-[#888C99]">
             This listing may have been removed or the URL slug is incorrect.
           </p>
         </main>
@@ -114,6 +114,13 @@ export function ListingDetailTemplate({ slug }: ListingDetailTemplateProps) {
     },
   };
 
+  const statusClass =
+    listing.listingStatus === 'for_sale'
+      ? 'bg-[#DAFF07] text-black'
+      : listing.listingStatus === 'pending'
+        ? 'bg-[#F5F5F3] text-[#888C99] border border-[#EBEBEB]'
+        : 'bg-black text-white';
+
   return (
     <>
       <Head>
@@ -125,29 +132,30 @@ export function ListingDetailTemplate({ slug }: ListingDetailTemplateProps) {
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Head>
 
-      <div className="bg-white text-black min-h-screen">
+      <div className="min-h-screen bg-[#F5F5F3] text-black" style={{ fontFamily: "'Geist', 'Inter', system-ui, sans-serif" }}>
         {website && (
           <SiteHeader
             websiteName={website.name}
             header={website.header}
             globalStyles={website.globalStyles}
             deviceView="desktop"
-            className="border-b border-black/10"
+            className="border-b border-[#EBEBEB]"
           />
         )}
 
         <main className="mx-auto max-w-[1300px] px-4 py-6 sm:px-6 sm:py-8">
-          <div className="mb-4 flex items-center justify-between text-sm">
-            <a href="/" className="text-black/70 hover:text-black">← Back</a>
-            <span className="text-black/50">MLS# {listing.mlsNumber}</span>
+          <div className="mb-4 flex items-center justify-between text-[13px]">
+            <a href="/" className="text-[#888C99] hover:text-black">← Back</a>
+            <span className="text-[#CCCCCC]">MLS# {listing.mlsNumber}</span>
           </div>
 
+          {/* Gallery */}
           <section className="mb-8">
             {sortedGallery.length >= 5 ? (
               <div className="grid gap-2 lg:grid-cols-[1.2fr_1fr]">
                 <button
                   type="button"
-                  className="overflow-hidden rounded-lg"
+                  className="overflow-hidden rounded-xl"
                   onClick={() => setLightboxIndex(0)}
                 >
                   <img src={sortedGallery[0].url} alt={listing.address} className="h-[420px] w-full object-cover lg:h-[540px]" />
@@ -157,12 +165,12 @@ export function ListingDetailTemplate({ slug }: ListingDetailTemplateProps) {
                     <button
                       key={image.id}
                       type="button"
-                      className="relative overflow-hidden rounded-lg"
+                      className="relative overflow-hidden rounded-xl"
                       onClick={() => setLightboxIndex(idx + 1)}
                     >
                       <img src={image.url} alt={image.caption || `Listing image ${idx + 2}`} className="h-[206px] w-full object-cover lg:h-[266px]" />
                       {idx === 3 && sortedGallery.length > 5 && (
-                        <span className="absolute bottom-3 right-3 rounded-md bg-black px-3 py-1.5 text-xs font-semibold text-white">
+                        <span className="absolute bottom-3 right-3 rounded-lg bg-black px-3 py-1.5 text-[12px] font-medium text-white">
                           All photos
                         </span>
                       )}
@@ -173,13 +181,13 @@ export function ListingDetailTemplate({ slug }: ListingDetailTemplateProps) {
             ) : (
               <button
                 type="button"
-                className="w-full overflow-hidden rounded-lg bg-black/5"
+                className="w-full overflow-hidden rounded-xl bg-[#EBEBEB]"
                 onClick={() => (sortedGallery.length ? setLightboxIndex(0) : null)}
               >
                 {activeImage ? (
                   <img src={activeImage} alt={listing.address} className="h-[320px] w-full object-cover lg:h-[560px]" />
                 ) : (
-                  <div className="grid h-[320px] place-items-center text-sm text-black/50 lg:h-[560px]">
+                  <div className="grid h-[320px] place-items-center text-[13px] text-[#CCCCCC] lg:h-[560px]">
                     No gallery images uploaded.
                   </div>
                 )}
@@ -188,129 +196,115 @@ export function ListingDetailTemplate({ slug }: ListingDetailTemplateProps) {
           </section>
 
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+            {/* Main content */}
             <section className="space-y-6">
-              <div className="space-y-3 border-b border-black/10 pb-5">
+              <div className="space-y-3 border-b border-[#EBEBEB] pb-5">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-4xl font-bold">{formatListingPrice(listing.listPrice)}</h1>
-                  <span className="rounded-full bg-black px-2.5 py-1 text-xs font-semibold text-white">
+                  <h1 className="text-[32px] font-medium text-black">{formatListingPrice(listing.listPrice)}</h1>
+                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${statusClass}`}>
                     {LISTING_STATUS_LABELS[listing.listingStatus]}
                   </span>
                 </div>
-                <h2 className="text-3xl font-semibold">{listing.address}</h2>
-                <p className="text-black/60">{listing.neighborhood}, {listing.city}</p>
-                <div className="grid grid-cols-2 gap-4 border-t border-black/10 pt-4 text-sm sm:grid-cols-5">
-                  <p><span className="text-black/55">Beds</span><br /><span className="font-semibold">{listing.bedrooms}</span></p>
-                  <p><span className="text-black/55">Baths</span><br /><span className="font-semibold">{listing.bathrooms}</span></p>
-                  <p><span className="text-black/55">Sq Ft</span><br /><span className="font-semibold">{formatNumber(listing.livingAreaSqft)}</span></p>
-                  <p><span className="text-black/55">Year Built</span><br /><span className="font-semibold">{listing.yearBuilt}</span></p>
-                  <p><span className="text-black/55">Type</span><br /><span className="font-semibold">{listing.propertyType}</span></p>
+                <h2 className="text-[24px] font-medium text-black">{listing.address}</h2>
+                <p className="text-[13px] text-[#888C99]">{listing.neighborhood}, {listing.city}</p>
+                <div className="grid grid-cols-2 gap-4 border-t border-[#EBEBEB] pt-4 text-[13px] sm:grid-cols-5">
+                  <p><span className="text-[#888C99]">Beds</span><br /><span className="font-medium text-black">{listing.bedrooms}</span></p>
+                  <p><span className="text-[#888C99]">Baths</span><br /><span className="font-medium text-black">{listing.bathrooms}</span></p>
+                  <p><span className="text-[#888C99]">Sq Ft</span><br /><span className="font-medium text-black">{formatNumber(listing.livingAreaSqft)}</span></p>
+                  <p><span className="text-[#888C99]">Year Built</span><br /><span className="font-medium text-black">{listing.yearBuilt}</span></p>
+                  <p><span className="text-[#888C99]">Type</span><br /><span className="font-medium text-black">{listing.propertyType}</span></p>
                 </div>
                 {listing.representation && (
-                  <p className="text-sm text-black/60">
+                  <p className="text-[13px] text-[#888C99]">
                     {LISTING_REPRESENTATION_LABELS[listing.representation]}
                   </p>
                 )}
               </div>
 
               <section>
-                <h3 className="text-2xl font-semibold">About This Property</h3>
-                <p className="mt-3 whitespace-pre-wrap text-[15px] leading-7 text-black/70">{listing.description}</p>
+                <h3 className="text-[15px] font-medium text-black">About This Property</h3>
+                <p className="mt-3 whitespace-pre-wrap text-[13px] leading-6 text-[#888C99]">{listing.description}</p>
               </section>
 
               <section>
-                <h3 className="text-2xl font-semibold mb-3">Property Details</h3>
-                <div className="grid gap-3 text-sm sm:grid-cols-3">
-                  <div className="rounded-md border border-black/10 bg-black/[0.02] p-4">
-                    <p className="text-black/55 mb-1">Property Type</p>
-                    <p className="font-semibold">{listing.propertyType}</p>
-                  </div>
-                  <div className="rounded-md border border-black/10 bg-black/[0.02] p-4">
-                    <p className="text-black/55 mb-1">Lot Area</p>
-                    <p className="font-semibold">{formatLotArea(listing.lotAreaValue, listing.lotAreaUnit)}</p>
-                  </div>
-                  <div className="rounded-md border border-black/10 bg-black/[0.02] p-4">
-                    <p className="text-black/55 mb-1">Year Built</p>
-                    <p className="font-semibold">{listing.yearBuilt}</p>
-                  </div>
-                  <div className="rounded-md border border-black/10 bg-black/[0.02] p-4">
-                    <p className="text-black/55 mb-1">Taxes</p>
-                    <p className="font-semibold">{formatListingPrice(listing.taxesAnnual)}</p>
-                  </div>
-                  <div className="rounded-md border border-black/10 bg-black/[0.02] p-4">
-                    <p className="text-black/55 mb-1">MLS</p>
-                    <p className="font-semibold">{listing.mlsNumber}</p>
-                  </div>
-                  <div className="rounded-md border border-black/10 bg-black/[0.02] p-4">
-                    <p className="text-black/55 mb-1">Brokerage</p>
-                    <p className="font-semibold">{listing.listingBrokerage}</p>
-                  </div>
-                  {listing.representation && (
-                    <div className="rounded-md border border-black/10 bg-black/[0.02] p-4">
-                      <p className="text-black/55 mb-1">Representation</p>
-                      <p className="font-semibold">{LISTING_REPRESENTATION_LABELS[listing.representation]}</p>
+                <h3 className="mb-3 text-[15px] font-medium text-black">Property Details</h3>
+                <div className="grid gap-2.5 text-[13px] sm:grid-cols-3">
+                  {[
+                    { label: 'Property Type', value: listing.propertyType },
+                    { label: 'Lot Area', value: formatLotArea(listing.lotAreaValue, listing.lotAreaUnit) },
+                    { label: 'Year Built', value: String(listing.yearBuilt) },
+                    { label: 'Taxes', value: formatListingPrice(listing.taxesAnnual) },
+                    { label: 'MLS', value: listing.mlsNumber },
+                    { label: 'Brokerage', value: listing.listingBrokerage },
+                    ...(listing.representation ? [{ label: 'Representation', value: LISTING_REPRESENTATION_LABELS[listing.representation] }] : []),
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-xl border border-[#EBEBEB] bg-white p-4">
+                      <p className="mb-1 text-[#888C99]">{item.label}</p>
+                      <p className="font-medium text-black">{item.value}</p>
                     </div>
-                  )}
+                  ))}
                 </div>
               </section>
             </section>
 
+            {/* Sidebar */}
             <aside className="space-y-4 lg:sticky lg:top-5 lg:self-start">
-              <div className="rounded-lg border border-black/15 p-5">
-                <h3 className="text-xl font-semibold">Contact Agent</h3>
-                <p className="mt-2 text-lg font-medium">Reed Jackson</p>
-                <div className="mt-3 space-y-2 text-sm text-black/65">
-                  <p className="flex items-center gap-2"><Mail className="h-4 w-4" /> redacted@email.com</p>
-                  <p className="flex items-center gap-2"><Phone className="h-4 w-4" /> (000) 000-0000</p>
+              <div className="rounded-xl border border-[#EBEBEB] bg-white p-5">
+                <h3 className="text-[15px] font-medium text-black">Contact Agent</h3>
+                <p className="mt-2 text-[13px] font-medium text-black">Reed Jackson</p>
+                <div className="mt-3 space-y-2 text-[13px] text-[#888C99]">
+                  <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> redacted@email.com</p>
+                  <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> (000) 000-0000</p>
                 </div>
-                <button className="mt-4 w-full rounded-md bg-black px-4 py-2.5 text-sm font-medium text-white">
+                <button className="mt-4 w-full rounded-lg bg-[#DAFF07] px-4 py-2.5 text-[13px] font-medium text-black hover:bg-[#C8ED00]">
                   Schedule a Tour
                 </button>
-                <button className="mt-2 w-full rounded-md border border-black px-4 py-2.5 text-sm font-medium">
+                <button className="mt-2 w-full rounded-lg border border-[#EBEBEB] bg-white px-4 py-2.5 text-[13px] font-medium text-black hover:bg-[#F5F5F3]">
                   Request Info
                 </button>
               </div>
 
-              <div className="rounded-lg border border-black/15 p-5">
-                <h3 className="text-xl font-semibold flex items-center gap-2">
-                  <Calculator className="h-5 w-5" />
+              <div className="rounded-xl border border-[#EBEBEB] bg-white p-5">
+                <h3 className="flex items-center gap-2 text-[15px] font-medium text-black">
+                  <Calculator className="h-4 w-4 text-[#888C99]" />
                   Estimated Payment
                 </h3>
 
-                <div className="mt-4 rounded-lg bg-black/[0.03] p-4 text-center">
-                  <p className="text-4xl font-bold leading-tight">{formatListingPrice(Math.round(estimatedMonthlyPayment))}</p>
-                  <p className="mt-1 text-lg text-black/55">per month</p>
+                <div className="mt-4 rounded-xl bg-[#F5F5F3] p-4 text-center">
+                  <p className="text-[28px] font-medium leading-tight text-black">{formatListingPrice(Math.round(estimatedMonthlyPayment))}</p>
+                  <p className="mt-1 text-[13px] text-[#888C99]">per month</p>
                 </div>
 
-                <div className="mt-4 space-y-2 text-sm">
+                <div className="mt-4 space-y-2 text-[13px]">
                   <div className="flex items-center justify-between">
-                    <span className="text-black/60">Principal &amp; Interest</span>
-                    <span className="font-semibold">{formatListingPrice(Math.round(principalAndInterestMonthly))}</span>
+                    <span className="text-[#888C99]">Principal &amp; Interest</span>
+                    <span className="font-medium text-black">{formatListingPrice(Math.round(principalAndInterestMonthly))}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-black/60">Property Tax</span>
-                    <span className="font-semibold">{formatListingPrice(Math.round(propertyTaxMonthly))}</span>
+                    <span className="text-[#888C99]">Property Tax</span>
+                    <span className="font-medium text-black">{formatListingPrice(Math.round(propertyTaxMonthly))}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-black/60">Home Insurance</span>
-                    <span className="font-semibold">{formatListingPrice(Math.round(homeInsuranceMonthly))}</span>
+                    <span className="text-[#888C99]">Home Insurance</span>
+                    <span className="font-medium text-black">{formatListingPrice(Math.round(homeInsuranceMonthly))}</span>
                   </div>
                 </div>
 
                 <button
                   type="button"
-                  className="mt-4 flex w-full items-center justify-center gap-1 text-sm font-medium text-black/75"
+                  className="mt-4 flex w-full items-center justify-center gap-1 text-[13px] text-[#888C99] hover:text-black"
                   onClick={() => setShowAssumptions((prev) => !prev)}
                 >
                   Adjust Assumptions
-                  {showAssumptions ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {showAssumptions ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                 </button>
 
                 {showAssumptions && (
-                  <div className="mt-4 space-y-4 border-t border-black/10 pt-4">
+                  <div className="mt-4 space-y-4 border-t border-[#EBEBEB] pt-4">
                     <div>
-                      <div className="mb-2 flex items-center justify-between text-sm">
-                        <span className="text-black/60">Down Payment</span>
-                        <span className="font-semibold">
+                      <div className="mb-2 flex items-center justify-between text-[13px]">
+                        <span className="text-[#888C99]">Down Payment</span>
+                        <span className="font-medium text-black">
                           {downPaymentPercent}% ({formatListingPrice(Math.round(downPaymentAmount))})
                         </span>
                       </div>
@@ -321,13 +315,13 @@ export function ListingDetailTemplate({ slug }: ListingDetailTemplateProps) {
                         step={1}
                         value={downPaymentPercent}
                         onChange={(event) => setDownPaymentPercent(Number(event.target.value))}
-                        className="w-full accent-black"
+                        className="w-full accent-[#DAFF07]"
                       />
                     </div>
                     <div>
-                      <div className="mb-2 flex items-center justify-between text-sm">
-                        <span className="text-black/60">Interest Rate</span>
-                        <span className="font-semibold">{interestRate.toFixed(1)}%</span>
+                      <div className="mb-2 flex items-center justify-between text-[13px]">
+                        <span className="text-[#888C99]">Interest Rate</span>
+                        <span className="font-medium text-black">{interestRate.toFixed(1)}%</span>
                       </div>
                       <input
                         type="range"
@@ -336,17 +330,17 @@ export function ListingDetailTemplate({ slug }: ListingDetailTemplateProps) {
                         step={0.1}
                         value={interestRate}
                         onChange={(event) => setInterestRate(Number(event.target.value))}
-                        className="w-full accent-black"
+                        className="w-full accent-[#DAFF07]"
                       />
                     </div>
-                    <div className="flex items-center justify-between border-t border-black/10 pt-3 text-sm">
-                      <span className="text-black/60">Loan Amount</span>
-                      <span className="text-2xl font-bold">{formatListingPrice(Math.round(loanAmount))}</span>
+                    <div className="flex items-center justify-between border-t border-[#EBEBEB] pt-3 text-[13px]">
+                      <span className="text-[#888C99]">Loan Amount</span>
+                      <span className="text-[20px] font-medium text-black">{formatListingPrice(Math.round(loanAmount))}</span>
                     </div>
                   </div>
                 )}
 
-                <p className="mt-4 text-center text-xs text-black/45">
+                <p className="mt-4 text-center text-[11px] text-[#CCCCCC]">
                   This is an estimate. Actual payments may vary.
                 </p>
               </div>

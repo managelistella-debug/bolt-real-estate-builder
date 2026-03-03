@@ -1,80 +1,19 @@
-import { BlogPost, CmsFormSubmission, CmsIntegrationConfig, CmsTestimonial, ImageCollection, Lead, Listing } from '@/lib/types';
+import { CmsFormSubmission, Lead } from '@/lib/types';
+import { ensureTenantRecord, getTenantRecord, upsertTenantRecord, verifyTenantApiKey } from './tenantStore';
 
-type TenantDataset = {
-  userId: string;
-  websiteId: string;
-  apiKeys: Array<{ key: string; scopes: Array<'content:read' | 'forms:write'> }>;
-  listings: Listing[];
-  blogs: BlogPost[];
-  testimonials: CmsTestimonial[];
-  mediaCollections: ImageCollection[];
-  leads: Lead[];
-  submissions: CmsFormSubmission[];
-  integrations: CmsIntegrationConfig;
-};
-
-const now = new Date();
-
-const datasets = new Map<string, TenantDataset>([
-  [
-    'business-1',
-    {
-      userId: '3',
-      websiteId: 'website-3',
-      apiKeys: [{ key: 'demo_public_key_business_1', scopes: ['content:read', 'forms:write'] }],
-      listings: [],
-      blogs: [],
-      testimonials: [],
-      mediaCollections: [],
-      leads: [],
-      submissions: [],
-      integrations: {
-        userId: '3',
-        google: { enabled: false },
-        resend: { enabled: false },
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  ],
-]);
-
-export function ensureTenantDataset(tenantId: string): TenantDataset {
-  const existing = datasets.get(tenantId);
-  if (existing) return existing;
-  const created: TenantDataset = {
-    userId: tenantId,
-    websiteId: `website-${tenantId}`,
-    apiKeys: [],
-    listings: [],
-    blogs: [],
-    testimonials: [],
-    mediaCollections: [],
-    leads: [],
-    submissions: [],
-    integrations: {
-      userId: tenantId,
-      google: { enabled: false },
-      resend: { enabled: false },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  };
-  datasets.set(tenantId, created);
-  return created;
+export async function ensureTenantDataset(tenantId: string) {
+  return ensureTenantRecord(tenantId);
 }
 
-export function getTenantDataset(tenantId: string): TenantDataset | undefined {
-  return datasets.get(tenantId);
+export async function getTenantDataset(tenantId: string) {
+  return getTenantRecord(tenantId);
 }
 
-export function verifyPublicApiKey(tenantId: string, apiKey: string, requiredScope: 'content:read' | 'forms:write') {
-  const dataset = getTenantDataset(tenantId);
-  if (!dataset) return false;
-  return dataset.apiKeys.some((entry) => entry.key === apiKey && entry.scopes.includes(requiredScope));
+export async function verifyPublicApiKey(tenantId: string, apiKey: string, requiredScope: 'content:read' | 'forms:write') {
+  return verifyTenantApiKey(tenantId, apiKey, requiredScope);
 }
 
-export function createLeadAndSubmission(tenantId: string, input: {
+export async function createLeadAndSubmission(tenantId: string, input: {
   firstName?: string;
   lastName?: string;
   email: string;
@@ -84,10 +23,11 @@ export function createLeadAndSubmission(tenantId: string, input: {
   formKey: string;
   payload: Record<string, string>;
 }) {
-  const dataset = ensureTenantDataset(tenantId);
+  const dataset = await ensureTenantRecord(tenantId);
   const submission: CmsFormSubmission = {
     id: `submission_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     userId: dataset.userId,
+    tenantId: dataset.tenantId,
     websiteId: dataset.websiteId,
     formKey: input.formKey,
     sourcePage: input.sourcePage,
@@ -100,11 +40,10 @@ export function createLeadAndSubmission(tenantId: string, input: {
     payload: input.payload,
     createdAt: new Date(),
   };
-  dataset.submissions.unshift(submission);
-
   const lead: Lead = {
     id: `lead_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     websiteId: dataset.websiteId,
+    tenantId: dataset.tenantId,
     firstName: input.firstName || 'Unknown',
     lastName: input.lastName || '',
     email: input.email,
@@ -117,7 +56,61 @@ export function createLeadAndSubmission(tenantId: string, input: {
     createdAt: new Date(),
     updatedAt: new Date(),
   };
-  dataset.leads.unshift(lead);
+  await upsertTenantRecord(tenantId, (current) => ({
+    ...current,
+    leads: [lead, ...current.leads],
+    submissions: [submission, ...current.submissions],
+  }));
 
   return { lead, submission };
+}
+
+export async function seedTenantApiKey(tenantId: string, key: string) {
+  await upsertTenantRecord(tenantId, (current) => {
+    if (current.apiKeys.some((entry) => entry.key === key)) {
+      return current;
+    }
+    return {
+      ...current,
+      apiKeys: [
+        ...current.apiKeys,
+        {
+          key,
+          scopes: ['content:read', 'forms:write'],
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    };
+  });
+}
+
+export async function upsertTenantContent(input: {
+  tenantId: string;
+  type: 'listing' | 'blog' | 'testimonial' | 'media';
+  payload: any;
+}) {
+  await upsertTenantRecord(input.tenantId, (current) => {
+    if (input.type === 'listing') {
+      return {
+        ...current,
+        listings: [input.payload, ...current.listings.filter((item) => item.id !== input.payload.id)],
+      };
+    }
+    if (input.type === 'blog') {
+      return {
+        ...current,
+        blogs: [input.payload, ...current.blogs.filter((item) => item.id !== input.payload.id)],
+      };
+    }
+    if (input.type === 'testimonial') {
+      return {
+        ...current,
+        testimonials: [input.payload, ...current.testimonials.filter((item) => item.id !== input.payload.id)],
+      };
+    }
+    return {
+      ...current,
+      mediaCollections: [input.payload, ...current.mediaCollections.filter((item) => item.id !== input.payload.id)],
+    };
+  });
 }

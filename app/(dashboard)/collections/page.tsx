@@ -3,8 +3,6 @@
 import { useState } from 'react';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useImageCollectionsStore } from '@/lib/stores/imageCollections';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Plus, Pencil, Trash2, Images as ImagesIcon } from 'lucide-react';
 import { CollectionDialog } from '@/components/collections/CollectionDialog';
 import { ImageManager } from '@/components/collections/ImageManager';
@@ -24,130 +22,76 @@ export default function CollectionsPage() {
     }
   };
 
-  const handleEdit = (collectionId: string) => {
-    setEditingCollectionId(collectionId);
-  };
-
-  const handleManageImages = (collectionId: string) => {
-    setManagingCollectionId(collectionId);
-  };
-
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="border-b bg-background">
-        <div className="flex items-center justify-between px-8 py-4">
+    <div className="flex h-full min-h-screen flex-col bg-[#F5F5F3]" style={{ fontFamily: "'Geist', 'Inter', system-ui, sans-serif" }}>
+      <div className="border-b border-[#EBEBEB] bg-white">
+        <div className="flex items-center justify-between px-6 py-3.5">
           <div>
-            <h1 className="text-2xl font-bold">Image Collections</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Manage your image libraries for gallery widgets
-            </p>
+            <h1 className="text-[15px] font-medium text-black">Image Collections</h1>
+            <p className="text-[13px] text-[#888C99]">Manage your image libraries for gallery widgets</p>
           </div>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Collection
-          </Button>
+          <button type="button" onClick={() => setIsCreateDialogOpen(true)} className="flex h-[30px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-3 text-[13px] text-black hover:bg-[#C8ED00]">
+            <Plus className="h-3.5 w-3.5" /> Create Collection
+          </button>
         </div>
       </div>
 
-      {/* Collections Grid */}
-      <div className="flex-1 overflow-auto p-8">
+      <div className="flex-1 overflow-auto p-6">
         {userCollections.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="p-6 bg-muted/50 rounded-full mb-4">
-              <ImagesIcon className="h-12 w-12 text-muted-foreground" />
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="mb-4 rounded-full bg-[#EBEBEB] p-6">
+              <ImagesIcon className="h-10 w-10 text-[#CCCCCC]" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">No collections yet</h3>
-            <p className="text-sm text-muted-foreground mb-6 max-w-md">
-              Create your first image collection to organize photos for your gallery widgets.
-            </p>
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Your First Collection
-            </Button>
+            <p className="text-[15px] text-black">No collections yet</p>
+            <p className="mt-1 max-w-md text-[13px] text-[#888C99]">Create your first image collection to organize photos for your gallery widgets.</p>
+            <button type="button" onClick={() => setIsCreateDialogOpen(true)} className="mt-5 flex h-[30px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-3 text-[13px] text-black hover:bg-[#C8ED00]">
+              <Plus className="h-3.5 w-3.5" /> Create Your First Collection
+            </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {userCollections.map((collection) => (
-              <Card key={collection.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                {/* Thumbnail Grid */}
-                <div
-                  className="aspect-video bg-muted relative cursor-pointer group"
-                  onClick={() => handleManageImages(collection.id)}
-                >
+              <div key={collection.id} className="overflow-hidden rounded-xl border border-[#EBEBEB] bg-white transition-colors hover:border-[#DAFF07]/50">
+                <div className="group relative aspect-video cursor-pointer bg-[#F5F5F3]" onClick={() => setManagingCollectionId(collection.id)}>
                   {collection.images.length === 0 ? (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <ImagesIcon className="h-12 w-12 text-muted-foreground" />
-                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center"><ImagesIcon className="h-10 w-10 text-[#CCCCCC]" /></div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-1 h-full p-1">
+                    <div className="grid h-full grid-cols-2 gap-1 p-1">
                       {collection.images.slice(0, 4).map((image, idx) => (
-                        <div key={image.id} className="relative overflow-hidden bg-muted rounded">
-                          <img
-                            src={image.url}
-                            alt={image.caption || `Image ${idx + 1}`}
-                            className="w-full h-full object-cover"
-                          />
+                        <div key={image.id} className="relative overflow-hidden rounded-lg bg-[#EBEBEB]">
+                          <img src={image.url} alt={image.caption || `Image ${idx + 1}`} className="h-full w-full object-cover" />
                         </div>
                       ))}
-                      {collection.images.length < 4 &&
-                        Array.from({ length: 4 - collection.images.length }).map((_, idx) => (
-                          <div key={`empty-${idx}`} className="bg-muted/30 rounded" />
-                        ))}
+                      {collection.images.length < 4 && Array.from({ length: 4 - collection.images.length }).map((_, idx) => (
+                        <div key={`empty-${idx}`} className="rounded-lg bg-[#EBEBEB]" />
+                      ))}
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <span className="text-white font-medium">Manage Images</span>
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                    <span className="text-[13px] font-medium text-white">Manage Images</span>
                   </div>
                 </div>
-
-                {/* Card Content */}
                 <div className="p-4">
-                  <h3 className="font-semibold text-lg mb-1 truncate">{collection.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {collection.images.length} {collection.images.length === 1 ? 'image' : 'images'}
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => handleEdit(collection.id)}
-                    >
-                      <Pencil className="h-3 w-3 mr-2" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(collection.id)}
-                    >
+                  <h3 className="truncate text-[13px] font-medium text-black">{collection.name}</h3>
+                  <p className="mb-3 text-[11px] text-[#888C99]">{collection.images.length} {collection.images.length === 1 ? 'image' : 'images'}</p>
+                  <div className="flex gap-1.5">
+                    <button type="button" onClick={() => setEditingCollectionId(collection.id)} className="flex h-[28px] flex-1 items-center justify-center gap-1 rounded-lg border border-[#EBEBEB] bg-white text-[12px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black">
+                      <Pencil className="h-3 w-3" /> Edit
+                    </button>
+                    <button type="button" onClick={() => handleDelete(collection.id)} className="flex h-[28px] w-[28px] items-center justify-center rounded-lg border border-[#EBEBEB] bg-white text-[#CCCCCC] hover:bg-[#F5F5F3] hover:text-red-500">
                       <Trash2 className="h-3 w-3" />
-                    </Button>
+                    </button>
                   </div>
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* Dialogs */}
-      <CollectionDialog
-        open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
-        collectionId={null}
-      />
-      <CollectionDialog
-        open={!!editingCollectionId}
-        onOpenChange={(open) => !open && setEditingCollectionId(null)}
-        collectionId={editingCollectionId}
-      />
-      <ImageManager
-        open={!!managingCollectionId}
-        onOpenChange={(open) => !open && setManagingCollectionId(null)}
-        collectionId={managingCollectionId}
-      />
+      <CollectionDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} collectionId={null} />
+      <CollectionDialog open={!!editingCollectionId} onOpenChange={(open) => !open && setEditingCollectionId(null)} collectionId={editingCollectionId} />
+      <ImageManager open={!!managingCollectionId} onOpenChange={(open) => !open && setManagingCollectionId(null)} collectionId={managingCollectionId} />
     </div>
   );
 }

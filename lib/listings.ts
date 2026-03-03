@@ -12,9 +12,9 @@ export const LISTING_REPRESENTATION_LABELS: Record<ListingRepresentation, string
 };
 
 export const getListingStatusBadgeClass = (status: ListingStatus) => {
-  if (status === 'for_sale') return 'bg-emerald-600 text-white';
-  if (status === 'pending') return 'bg-amber-500 text-white';
-  return 'bg-slate-700 text-white';
+  if (status === 'for_sale') return 'bg-[#DAFF07] text-black';
+  if (status === 'pending') return 'bg-[#F5F5F3] text-[#888C99] border border-[#EBEBEB]';
+  return 'bg-black text-white';
 };
 
 export const formatListingPrice = (value: number) =>

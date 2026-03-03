@@ -3,10 +3,6 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useBlogsStore } from '@/lib/stores/blogs';
@@ -115,110 +111,155 @@ export default function BlogsPage() {
   };
 
   return (
-    <div>
-      <Header
-        title="Blogs"
-        description="Manage your CMS blog posts"
-        action={
-          <div className="flex items-center gap-2">
-            <Link href="/blogs/templates">
-              <Button variant="outline">
-                <Settings2 className="h-4 w-4 mr-2" />
-                Edit Templates
-              </Button>
-            </Link>
-            <Button variant="outline" onClick={handleCreateSample}>
-              <Sparkles className="h-4 w-4 mr-2" />
-              Add Sample Blog
-            </Button>
-            <Button onClick={() => setIsCreateOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Blog Post
-            </Button>
-          </div>
-        }
-      />
+    <div className="min-h-screen bg-[#F5F5F3]" style={{ fontFamily: "'Geist', 'Inter', system-ui, sans-serif" }}>
+      <div className="border-b border-[#EBEBEB] bg-white">
+        <Header
+          title="Blogs"
+          description="Manage your CMS blog posts"
+          action={
+            <div className="flex items-center gap-2">
+              <Link href="/blogs/templates">
+                <button
+                  type="button"
+                  className="h-[30px] rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black inline-flex items-center"
+                >
+                  <Settings2 className="h-4 w-4 mr-2 text-[#888C99]" />
+                  Edit Templates
+                </button>
+              </Link>
+              <button
+                type="button"
+                className="h-[30px] rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black inline-flex items-center"
+                onClick={handleCreateSample}
+              >
+                <Sparkles className="h-4 w-4 mr-2 text-[#888C99]" />
+                Add Sample Blog
+              </button>
+              <button
+                type="button"
+                className="h-[30px] rounded-lg bg-[#DAFF07] px-3 text-[13px] text-black hover:bg-[#C8ED00] inline-flex items-center"
+                onClick={() => setIsCreateOpen(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Blog Post
+              </button>
+            </div>
+          }
+        />
+      </div>
 
-      <div className="p-6 space-y-4">
-        <Card className="p-4">
+      <div className="space-y-4 p-6">
+        <div className="rounded-xl border border-[#EBEBEB] bg-white p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <Input
+            <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search title, slug, excerpt, category"
-              className="md:max-w-md"
+              className="h-[34px] rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none focus:ring-1 focus:ring-[#DAFF07] px-3 md:max-w-md"
             />
             <div className="flex flex-wrap gap-2">
               {STATUS_FILTERS.map((item) => (
-                <Button
+                <button
                   key={item.value}
                   type="button"
-                  variant={statusFilter === item.value ? 'default' : 'outline'}
-                  size="sm"
+                  className={`h-[30px] rounded-lg px-3 text-[13px] inline-flex items-center ${
+                    statusFilter === item.value
+                      ? 'bg-black text-white'
+                      : 'border border-[#EBEBEB] bg-white text-[#888C99] hover:bg-[#F5F5F3] hover:text-black'
+                  }`}
                   onClick={() => setStatusFilter(item.value)}
                 >
                   {item.label}
-                </Button>
+                </button>
               ))}
             </div>
           </div>
-        </Card>
+        </div>
 
-        <Card>
+        <div className="rounded-xl border border-[#EBEBEB] bg-white">
           {filteredBlogs.length === 0 ? (
             <div className="p-10 text-center">
-              <h3 className="text-lg font-semibold">No blog posts yet</h3>
-              <p className="text-sm text-muted-foreground mt-2 mb-5">
+              <h3 className="text-[15px] font-normal text-black">No blog posts yet</h3>
+              <p className="text-[13px] text-[#888C99] mt-2 mb-5">
                 Create your first post to start publishing blog content.
               </p>
-              <Button onClick={() => setIsCreateOpen(true)}>
+              <button
+                type="button"
+                className="h-[30px] rounded-lg bg-[#DAFF07] px-3 text-[13px] text-black hover:bg-[#C8ED00] inline-flex items-center mx-auto"
+                onClick={() => setIsCreateOpen(true)}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Create Blog Post
-              </Button>
-              <Button variant="outline" className="ml-2" onClick={handleCreateSample}>
-                <Sparkles className="h-4 w-4 mr-2" />
+              </button>
+              <button
+                type="button"
+                className="h-[30px] rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black inline-flex items-center ml-2"
+                onClick={handleCreateSample}
+              >
+                <Sparkles className="h-4 w-4 mr-2 text-[#888C99]" />
                 Add Sample Blog
-              </Button>
+              </button>
             </div>
           ) : (
-            <div className="divide-y">
+            <div className="divide-y divide-[#EBEBEB]">
               {filteredBlogs.map((blog) => (
                 <div key={blog.id} className="flex flex-col gap-4 p-4 md:flex-row md:items-center md:justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold">{blog.title}</h3>
-                      <Badge variant="outline">{BLOG_STATUS_LABELS[blog.status]}</Badge>
-                      {blog.category && <Badge variant="secondary">{blog.category}</Badge>}
+                      <h3 className="font-semibold text-black text-[13px]">{blog.title}</h3>
+                      <span className="text-[11px] rounded-full px-2 py-0.5 border border-[#EBEBEB] bg-white text-[#888C99]">
+                        {BLOG_STATUS_LABELS[blog.status]}
+                      </span>
+                      {blog.category && (
+                        <span className="text-[11px] rounded-full px-2 py-0.5 bg-[#F5F5F3] text-[#888C99]">
+                          {blog.category}
+                        </span>
+                      )}
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">/{blog.slug}</p>
-                    <p className="text-sm mt-1 line-clamp-2">{blog.excerpt || 'No excerpt yet.'}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-[13px] text-[#888C99] mt-1">/{blog.slug}</p>
+                    <p className="text-[13px] text-black mt-1 line-clamp-2">{blog.excerpt || 'No excerpt yet.'}</p>
+                    <p className="text-[13px] text-[#888C99] mt-1">
                       {blog.status === 'published' ? 'Published' : 'Created'} {formatBlogDate(getBlogDisplayDate(blog))}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Link href={`/blog/${blog.slug}`}>
-                      <Button variant="outline" size="sm">
-                        <ExternalLink className="h-4 w-4 mr-2" />
+                      <button
+                        type="button"
+                        className="h-[30px] rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black inline-flex items-center"
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2 text-[#888C99]" />
                         View Live
-                      </Button>
+                      </button>
                     </Link>
-                    <Button variant="outline" size="sm" onClick={() => setEditingBlog(blog)}>
-                      <Edit className="h-4 w-4 mr-2" />
+                    <button
+                      type="button"
+                      className="h-[30px] rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black inline-flex items-center"
+                      onClick={() => setEditingBlog(blog)}
+                    >
+                      <Edit className="h-4 w-4 mr-2 text-[#888C99]" />
                       Edit
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDuplicate(blog.id)}>
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDelete(blog.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    </button>
+                    <button
+                      type="button"
+                      className="h-[30px] rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black inline-flex items-center"
+                      onClick={() => handleDuplicate(blog.id)}
+                    >
+                      <Copy className="h-4 w-4 text-[#888C99]" />
+                    </button>
+                    <button
+                      type="button"
+                      className="h-[30px] rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black inline-flex items-center"
+                      onClick={() => handleDelete(blog.id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-[#888C99]" />
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </Card>
+        </div>
       </div>
 
       {user && (

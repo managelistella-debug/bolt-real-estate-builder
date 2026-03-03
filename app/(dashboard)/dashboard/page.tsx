@@ -2,253 +2,150 @@
 
 import { useEffect } from 'react';
 import { Header } from '@/components/layout/header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, CheckSquare, Plus, Building2, FileText, Images, PlugZap } from 'lucide-react';
+import { Users, Plus, Building2, FileText, PlugZap, ArrowUpRight, ChevronRight } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { useLeadsStore } from '@/lib/stores/leads';
 import { useListingsStore } from '@/lib/stores/listings';
 import { useBlogsStore } from '@/lib/stores/blogs';
-import { useImageCollectionsStore } from '@/lib/stores/imageCollections';
 import { mockWebsites } from '@/lib/mock-data/websites';
-import { mockLeads, mockTasks } from '@/lib/mock-data/leads';
+import { mockLeads } from '@/lib/mock-data/leads';
 import Link from 'next/link';
+
+const statusColors: Record<string, string> = {
+  new: 'bg-[#DAFF07]/20 text-[#5A6600]',
+  contacted: 'bg-[#FFF4D6] text-[#8A6200]',
+  in_progress: 'bg-[#F0EDFF] text-[#5B3DC5]',
+  closed: 'bg-[#E4F9EC] text-[#0D7A3E]',
+  lost: 'bg-[#F5F5F3] text-[#888C99]',
+};
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const { websites } = useWebsiteStore();
-  const { leads, tasks } = useLeadsStore();
+  const { leads } = useLeadsStore();
   const { getListingsForCurrentUser } = useListingsStore();
   const { getBlogsForCurrentUser } = useBlogsStore();
-  const { getCollectionsForCurrentUser } = useImageCollectionsStore();
 
-  // Initialize mock data (in real app, this would be fetched from API)
   useEffect(() => {
-    if (websites.length === 0) {
-      useWebsiteStore.setState({ websites: mockWebsites });
-    }
-    if (leads.length === 0) {
-      useLeadsStore.setState({ leads: mockLeads, tasks: mockTasks });
-    }
+    if (websites.length === 0) useWebsiteStore.setState({ websites: mockWebsites });
+    if (leads.length === 0) useLeadsStore.setState({ leads: mockLeads });
   }, [leads.length, websites.length]);
 
-  const scopedWebsites = websites.filter((website) => (user?.id ? website.userId === user.id : true));
-  const scopedWebsiteIds = new Set(scopedWebsites.map((website) => website.id));
-  const scopedLeads = leads.filter((lead) => scopedWebsiteIds.has(lead.websiteId));
-  const activeWebsites = scopedWebsites.filter(w => w.published).length;
-  const newLeads = scopedLeads.filter(l => l.status === 'new').length;
+  const scopedWebsites = websites.filter((w) => (user?.id ? w.userId === user.id : true));
+  const scopedWebsiteIds = new Set(scopedWebsites.map((w) => w.id));
+  const scopedLeads = leads.filter((l) => scopedWebsiteIds.has(l.websiteId));
+  const newLeads = scopedLeads.filter((l) => l.status === 'new').length;
   const listingCount = user ? getListingsForCurrentUser(user.id).length : getListingsForCurrentUser().length;
   const blogCount = user ? getBlogsForCurrentUser(user.id).length : getBlogsForCurrentUser().length;
-  const mediaCount = user ? getCollectionsForCurrentUser(user.id).length : getCollectionsForCurrentUser().length;
-  const scopedLeadIds = new Set(scopedLeads.map((lead) => lead.id));
-  const scopedTasks = tasks.filter((task) => scopedLeadIds.has(task.leadId));
-  const pendingTasks = scopedTasks.filter(t => !t.completed).length;
+
+  const metrics = [
+    { title: 'Listings', value: listingCount, detail: 'published + draft', icon: Building2 },
+    { title: 'Blog Posts', value: blogCount, detail: 'across all statuses', icon: FileText },
+    { title: 'New Leads', value: newLeads, detail: `${scopedLeads.length} total`, icon: Users },
+    { title: 'Active Sites', value: scopedWebsites.filter((w) => w.published).length, detail: `${scopedWebsites.length} configured`, icon: PlugZap },
+  ];
+
+  const quickLinks = [
+    { label: 'Manage Listings', href: '/listings', icon: Building2 },
+    { label: 'Manage Blogs', href: '/blogs', icon: FileText },
+    { label: 'CRM', href: '/leads', icon: Users },
+    { label: 'Integrations', href: '/integrations', icon: PlugZap },
+  ];
 
   return (
-    <div>
-      <Header 
-        title={`Welcome back, ${user?.name?.split(' ')[0]}!`}
-        description="Manage your websites content, media, CRM, and integrations from one place."
-        action={
-          <Link href="/listings">
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Listing
-            </Button>
-          </Link>
-        }
-      />
+    <div className="min-h-screen bg-[#F5F5F3]" style={{ fontFamily: "'Geist', 'Inter', system-ui, sans-serif" }}>
+      <div className="border-b border-[#EBEBEB] bg-white">
+        <Header
+          title={`Welcome back, ${user?.name?.split(' ')[0]}!`}
+          description="Manage your website content, domains, and integrations from one place."
+          action={
+            <Link href="/listings">
+              <Button className="h-[30px] rounded-lg bg-[#DAFF07] px-4 text-[13px] font-normal text-black hover:bg-[#C8ED00]">
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                Add Listing
+              </Button>
+            </Link>
+          }
+        />
+      </div>
 
-      <div className="p-6 space-y-6">
-        {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Listings</CardTitle>
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{listingCount}</div>
-              <p className="text-xs text-muted-foreground">
-                published + draft
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Blog Posts</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{blogCount}</div>
-              <p className="text-xs text-muted-foreground">
-                across all statuses
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Media Collections</CardTitle>
-              <Images className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{mediaCount}</div>
-              <p className="text-xs text-muted-foreground">
-                libraries and galleries
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">New Leads</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{newLeads}</div>
-              <p className="text-xs text-muted-foreground">
-                {scopedLeads.length} total leads
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
-              <CheckSquare className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{pendingTasks}</div>
-              <p className="text-xs text-muted-foreground">
-                {scopedTasks.length} total tasks
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Active Sites</CardTitle>
-              <PlugZap className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{activeWebsites}</div>
-              <p className="text-xs text-muted-foreground">
-                {scopedWebsites.length} configured
-              </p>
-            </CardContent>
-          </Card>
+      <div className="space-y-5 p-4 sm:p-6">
+        {/* Metric tiles */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          {metrics.map((m) => (
+            <div key={m.title} className="rounded-xl border border-[#EBEBEB] bg-white p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-[13px] text-[#888C99]">{m.title}</p>
+                <m.icon className="h-4 w-4 text-[#CCCCCC]" />
+              </div>
+              <p className="mt-2 text-[24px] font-medium leading-tight text-black">{m.value}</p>
+              <p className="mt-0.5 text-[13px] text-[#888C99]">{m.detail}</p>
+            </div>
+          ))}
         </div>
 
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Link href="/listings">
-              <Button variant="outline" className="w-full justify-start">
-                <Building2 className="h-4 w-4 mr-2" />
-                Manage Listings
-              </Button>
-            </Link>
-            <Link href="/blogs">
-              <Button variant="outline" className="w-full justify-start">
-                <FileText className="h-4 w-4 mr-2" />
-                Manage Blogs
-              </Button>
-            </Link>
-            <Link href="/collections">
-              <Button variant="outline" className="w-full justify-start">
-                <Images className="h-4 w-4 mr-2" />
-                Open Media Library
-              </Button>
-            </Link>
-            <Link href="/leads">
-              <Button variant="outline" className="w-full justify-start">
-                <Users className="h-4 w-4 mr-2" />
-                View CRM
-              </Button>
-            </Link>
-            <Link href="/integrations">
-              <Button variant="outline" className="w-full justify-start">
-                <PlugZap className="h-4 w-4 mr-2" />
-                Configure Integrations
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+        {/* Quick actions */}
+        <div className="rounded-xl border border-[#EBEBEB] bg-white p-5">
+          <h2 className="mb-3 text-[15px] font-normal text-black">Quick Actions</h2>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            {quickLinks.map((link) => (
+              <Link key={link.href} href={link.href}>
+                <button
+                  type="button"
+                  className="flex h-[38px] w-full items-center gap-2.5 rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-black transition-colors hover:bg-[#F5F5F3]"
+                >
+                  <link.icon className="h-3.5 w-3.5 text-[#888C99]" />
+                  <span className="truncate">{link.label}</span>
+                  <ArrowUpRight className="ml-auto h-3 w-3 flex-shrink-0 text-[#CCCCCC]" />
+                </button>
+              </Link>
+            ))}
+          </div>
+        </div>
 
-        {/* Recent Leads */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Leads</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {scopedLeads.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                No leads yet. They will appear here when someone submits a form on your website.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {scopedLeads.slice(0, 5).map((lead) => (
-                  <div key={lead.id} className="flex items-center justify-between border-b pb-3 last:border-0">
-                    <div>
-                      <p className="font-medium">{lead.firstName} {lead.lastName}</p>
-                      <p className="text-sm text-muted-foreground">{lead.email}</p>
-                    </div>
-                    <div className="text-right">
-                      <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium
-                        ${lead.status === 'new' ? 'bg-blue-100 text-blue-700' :
-                          lead.status === 'contacted' ? 'bg-yellow-100 text-yellow-700' :
-                          lead.status === 'in_progress' ? 'bg-purple-100 text-purple-700' :
-                          lead.status === 'closed' ? 'bg-green-100 text-green-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>
-                        {lead.status.replace('_', ' ')}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Pending Tasks */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Pending Tasks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {scopedTasks.filter(t => !t.completed).length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                No pending tasks. Great job!
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {scopedTasks.filter(t => !t.completed).slice(0, 5).map((task) => (
-                  <div key={task.id} className="flex items-start gap-3 border-b pb-3 last:border-0">
-                    <CheckSquare className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div className="flex-1">
-                      <p className="font-medium">{task.title}</p>
-                      {task.description && (
-                        <p className="text-sm text-muted-foreground">{task.description}</p>
-                      )}
-                      {task.dueDate && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Due: {new Date(task.dueDate).toLocaleDateString()}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* Recent leads */}
+        <div className="rounded-xl border border-[#EBEBEB] bg-white p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-[15px] font-normal text-black">Recent Leads</h2>
+            <Link href="/leads" className="flex items-center gap-1 text-[13px] text-[#888C99] hover:text-black">
+              View all <ChevronRight className="h-3 w-3" />
+            </Link>
+          </div>
+          {scopedLeads.length === 0 ? (
+            <p className="py-10 text-center text-[13px] text-[#888C99]">
+              No leads yet. They will appear here when someone submits a form on your website.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-[13px]">
+                <thead>
+                  <tr className="border-b border-[#EBEBEB]">
+                    <th className="pb-2.5 font-normal text-[#888C99]">Name</th>
+                    <th className="hidden pb-2.5 font-normal text-[#888C99] sm:table-cell">Email</th>
+                    <th className="pb-2.5 font-normal text-[#888C99]">Status</th>
+                    <th className="hidden pb-2.5 font-normal text-[#888C99] md:table-cell">Source</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {scopedLeads.slice(0, 6).map((lead) => (
+                    <tr key={lead.id} className="border-b border-[#EBEBEB] last:border-0">
+                      <td className="py-3 text-black">{lead.firstName} {lead.lastName}</td>
+                      <td className="hidden py-3 text-[#888C99] sm:table-cell">{lead.email}</td>
+                      <td className="py-3">
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[12px] font-normal ${statusColors[lead.status] || statusColors.lost}`}>
+                          {lead.status.replace('_', ' ')}
+                        </span>
+                      </td>
+                      <td className="hidden py-3 text-[#888C99] md:table-cell">{lead.sourcePage || '–'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

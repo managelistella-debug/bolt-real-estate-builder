@@ -10,11 +10,18 @@ interface IntegrationsState {
 
 const buildDefaultConfig = (userId: string): CmsIntegrationConfig => ({
   userId,
+  tenantId: userId,
   google: {
     enabled: false,
   },
   resend: {
     enabled: false,
+  },
+  revalidationStatus: 'idle',
+  webhookStatus: 'idle',
+  contactRouting: {
+    enabled: true,
+    forwardTo: [],
   },
   createdAt: new Date(),
   updatedAt: new Date(),

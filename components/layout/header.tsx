@@ -11,16 +11,16 @@ interface HeaderProps {
 
 export function Header({ title, description, action }: HeaderProps) {
   return (
-    <header className="border-b bg-background">
-      <div className="flex h-16 items-center justify-between px-6">
+    <header className="border-b border-[#EBEBEB] bg-white">
+      <div className="flex h-14 items-center justify-between px-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" className="lg:hidden">
-            <Menu className="h-5 w-5" />
+            <Menu className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">{title}</h1>
+            <h1 className="text-[15px] font-medium text-black">{title}</h1>
             {description && (
-              <p className="text-sm text-muted-foreground">{description}</p>
+              <p className="text-[13px] text-[#888C99]">{description}</p>
             )}
           </div>
         </div>

@@ -1,349 +1,884 @@
-import { Play, Search } from "lucide-react";
+"use client";
 
-const listings = [
+import { useRef } from "react";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useInView,
+} from "framer-motion";
+import Link from "next/link";
+import {
+  ArrowRight,
+  Building2,
+  Users,
+  FileText,
+  Palette,
+  Code2,
+  BarChart3,
+  Check,
+  Zap,
+  Layers,
+} from "lucide-react";
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Reusable animation wrappers
+   ──────────────────────────────────────────────────────────────────────────── */
+
+function FadeIn({
+  children,
+  delay = 0,
+  className = "",
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 32 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.7, delay, ease: [0.21, 0.47, 0.32, 0.98] }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function ScaleIn({
+  children,
+  delay = 0,
+  className = "",
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-60px" });
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, scale: 0.92 }}
+      animate={inView ? { opacity: 1, scale: 1 } : {}}
+      transition={{ duration: 0.8, delay, ease: [0.21, 0.47, 0.32, 0.98] }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Dashboard mockup (pure CSS)
+   ──────────────────────────────────────────────────────────────────────────── */
+
+function DashboardMockup() {
+  return (
+    <div className="relative w-full max-w-4xl mx-auto">
+      <div className="rounded-xl border border-white/10 bg-[#141414] overflow-hidden shadow-2xl shadow-[#DAFF07]/5">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5">
+          <div className="flex gap-1.5">
+            <div className="w-3 h-3 rounded-full bg-[#ff5f57]" />
+            <div className="w-3 h-3 rounded-full bg-[#febc2e]" />
+            <div className="w-3 h-3 rounded-full bg-[#28c840]" />
+          </div>
+          <div className="flex-1 text-center text-xs text-white/30">
+            HeadlessCMS Dashboard
+          </div>
+        </div>
+        <div className="flex">
+          <div className="w-44 border-r border-white/5 p-3 space-y-1 hidden sm:block">
+            {["Dashboard", "Listings", "Blogs", "CRM", "Pages", "Settings"].map(
+              (item, i) => (
+                <div
+                  key={item}
+                  className={`px-3 py-1.5 rounded-md text-xs ${
+                    i === 0
+                      ? "bg-[#DAFF07] text-black font-medium"
+                      : "text-white/40"
+                  }`}
+                >
+                  {item}
+                </div>
+              )
+            )}
+          </div>
+          <div className="flex-1 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="h-5 w-24 rounded bg-white/10" />
+              <div className="h-7 w-20 rounded bg-[#DAFF07]/20 flex items-center justify-center text-[10px] text-[#DAFF07]">
+                + New
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="rounded-lg bg-white/5 p-3 space-y-2">
+                  <div className="h-16 rounded bg-white/5" />
+                  <div className="h-3 w-3/4 rounded bg-white/10" />
+                  <div className="h-2 w-1/2 rounded bg-white/5" />
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-lg bg-white/5 p-3 h-20" />
+              <div className="rounded-lg bg-white/5 p-3 h-20" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Scroll-responsive marquee
+   ──────────────────────────────────────────────────────────────────────────── */
+
+function ScrollMarquee() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"],
+  });
+  const x1 = useTransform(scrollYProgress, [0, 1], [0, -300]);
+  const x2 = useTransform(scrollYProgress, [0, 1], [-300, 0]);
+
+  const row =
+    "LISTINGS \u00b7 CRM \u00b7 BLOGS \u00b7 TEMPLATES \u00b7 API \u00b7 SEO \u00b7 DOMAINS \u00b7 ANALYTICS \u00b7 ";
+  const row2 =
+    "WEBSITES \u00b7 LEADS \u00b7 CONTENT \u00b7 MEDIA \u00b7 WEBHOOKS \u00b7 MULTI-TENANT \u00b7 ";
+
+  return (
+    <section
+      ref={ref}
+      className="py-14 overflow-hidden border-y border-white/5 select-none"
+    >
+      <motion.div
+        style={{ x: x1 }}
+        className="flex gap-8 text-5xl md:text-7xl font-black text-white/[0.03] whitespace-nowrap"
+      >
+        {Array.from({ length: 4 }).map((_, i) => (
+          <span key={i}>{row}</span>
+        ))}
+      </motion.div>
+      <motion.div
+        style={{ x: x2 }}
+        className="mt-4 flex gap-8 text-5xl md:text-7xl font-black text-white/[0.03] whitespace-nowrap"
+      >
+        {Array.from({ length: 4 }).map((_, i) => (
+          <span key={i}>{row2}</span>
+        ))}
+      </motion.div>
+    </section>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Horizontal-scroll workflow section
+   ──────────────────────────────────────────────────────────────────────────── */
+
+const steps = [
   {
-    title: "Acreage Tracts",
-    image:
-      "https://images.unsplash.com/photo-1472396961693-142e6e269027?auto=format&fit=crop&w=1200&q=80",
+    n: "01",
+    title: "Choose your template",
+    body: "Start with a professionally designed real estate template. Every pixel is crafted for conversion.",
+    accent: "#DAFF07",
   },
   {
-    title: "Hunting Land",
-    image:
-      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80",
+    n: "02",
+    title: "Customize everything",
+    body: "Drag, drop, and tweak. Colors, fonts, layouts — make it unmistakably yours.",
+    accent: "#07DAFF",
   },
   {
-    title: "Cattle Ranches",
-    image:
-      "https://images.unsplash.com/photo-1452378174528-3090a4bba7b2?auto=format&fit=crop&w=1200&q=80",
+    n: "03",
+    title: "Add your listings",
+    body: "Import from MLS or add manually. Rich media, virtual tours, and IDX integration built in.",
+    accent: "#FF07DA",
+  },
+  {
+    n: "04",
+    title: "Capture every lead",
+    body: "Smart forms, automated follow-ups, and a built-in CRM to track every prospect to close.",
+    accent: "#DAFF07",
+  },
+  {
+    n: "05",
+    title: "Launch & grow",
+    body: "One-click publish with custom domain. SEO-optimized. Analytics from day one.",
+    accent: "#07DAFF",
   },
 ];
 
-const team = [
+function HorizontalScroll() {
+  const wrap = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: wrap,
+    offset: ["start start", "end end"],
+  });
+  const x = useTransform(scrollYProgress, [0, 1], ["2%", "-62%"]);
+
+  return (
+    <section ref={wrap} className="relative h-[300vh] bg-[#0A0A0A]">
+      <div className="sticky top-0 flex h-screen flex-col justify-center overflow-hidden">
+        <div className="px-6 md:px-16 mb-12">
+          <FadeIn>
+            <p className="text-[#DAFF07] text-sm font-medium tracking-wider uppercase mb-3">
+              How it works
+            </p>
+            <h2 className="text-4xl md:text-5xl font-bold text-white max-w-xl">
+              From zero to launched in five&nbsp;steps
+            </h2>
+          </FadeIn>
+        </div>
+        <motion.div style={{ x }} className="flex gap-6 pl-6 md:pl-16">
+          {steps.map((s) => (
+            <div
+              key={s.n}
+              className="group relative flex-shrink-0 w-[320px] md:w-[400px] rounded-2xl border border-white/[0.06] bg-[#111] p-8 hover:border-white/20 transition-colors"
+            >
+              <span
+                className="text-7xl font-black opacity-10"
+                style={{ color: s.accent }}
+              >
+                {s.n}
+              </span>
+              <h3 className="mt-4 text-2xl font-bold text-white">{s.title}</h3>
+              <p className="mt-3 text-white/45 leading-relaxed">{s.body}</p>
+              <div
+                className="absolute bottom-0 left-0 right-0 h-[3px] rounded-b-2xl opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ backgroundColor: s.accent }}
+              />
+            </div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Feature data
+   ──────────────────────────────────────────────────────────────────────────── */
+
+const features = [
   {
-    name: "Hannah Cole",
-    role: "Broker",
-    image:
-      "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=900&q=80",
+    icon: Building2,
+    title: "Listing Management",
+    body: "Showcase properties with rich media galleries, virtual tours, and smart filtering. Import from MLS or manage manually.",
+    wide: true,
   },
   {
-    name: "Mike Turner",
-    role: "Partner",
-    image:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=900&q=80",
+    icon: Users,
+    title: "Built-in CRM",
+    body: "Track leads from first click to closing. Automated follow-ups, pipeline views, and contact management.",
+    wide: false,
   },
   {
-    name: "Lena Brooks",
-    role: "Agent",
-    image:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&q=80",
+    icon: FileText,
+    title: "Blog Engine",
+    body: "SEO-optimized content publishing with templates, scheduling, and a rich editor your team will love.",
+    wide: false,
   },
   {
-    name: "Kody Hale",
-    role: "Land Specialist",
-    image:
-      "https://images.unsplash.com/photo-1463453091185-61582044d556?auto=format&fit=crop&w=900&q=80",
+    icon: Palette,
+    title: "Template Library",
+    body: "Dozens of real estate templates. Full visual customization — no code required.",
+    wide: true,
   },
   {
-    name: "Jenna Ruiz",
-    role: "Office Manager",
-    image:
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80",
+    icon: Code2,
+    title: "Headless API",
+    body: "Full REST API for developers who want total control. Build custom frontends powered by our CMS.",
+    wide: false,
+  },
+  {
+    icon: BarChart3,
+    title: "Analytics & SEO",
+    body: "Understand your traffic, optimize pages, and dominate local search results.",
+    wide: false,
   },
 ];
 
-const videos = [
+/* ────────────────────────────────────────────────────────────────────────────
+   Testimonial data
+   ──────────────────────────────────────────────────────────────────────────── */
+
+const testimonials = [
   {
-    title: "Ranch Market Report",
-    image:
-      "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1200&q=80",
+    name: "Sarah Mitchell",
+    role: "Broker, Mitchell Realty",
+    quote:
+      "We switched from WordPress and saw our lead capture rate double in the first month. The CRM alone is worth it.",
   },
   {
-    title: "Cattle Property Tour",
-    image:
-      "https://images.unsplash.com/photo-1500595046743-ddf4d3d753fd?auto=format&fit=crop&w=1200&q=80",
+    name: "James Chen",
+    role: "Team Lead, Pacific Homes",
+    quote:
+      "The headless API let our dev team build exactly what we wanted while the agents manage content themselves.",
   },
   {
-    title: "How To Buy Land",
-    image:
-      "https://images.unsplash.com/photo-1454789548928-9efd52dc4031?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Family Ranch Lifestyle",
-    image:
-      "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Water Rights 101",
-    image:
-      "https://images.unsplash.com/photo-1472396961693-142e6e269027?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Selling Strategies",
-    image:
-      "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1200&q=80",
+    name: "Maria Rodriguez",
+    role: "Solo Agent, Austin TX",
+    quote:
+      "I had my site live in under an hour. The templates are gorgeous and the blog drives serious organic traffic.",
   },
 ];
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Pricing data
+   ──────────────────────────────────────────────────────────────────────────── */
+
+const plans = [
+  {
+    name: "Starter",
+    price: "Free",
+    period: "",
+    desc: "For solo agents getting started",
+    items: [
+      "1 website",
+      "Up to 25 listings",
+      "Basic CRM",
+      "HeadlessCMS subdomain",
+      "Community support",
+    ],
+    cta: "Get started",
+    pop: false,
+  },
+  {
+    name: "Pro",
+    price: "$49",
+    period: "/mo",
+    desc: "For growing teams and brokerages",
+    items: [
+      "Unlimited websites",
+      "Unlimited listings",
+      "Full CRM + automation",
+      "Custom domain",
+      "Priority support",
+      "Blog engine",
+      "Analytics dashboard",
+    ],
+    cta: "Start free trial",
+    pop: true,
+  },
+  {
+    name: "Enterprise",
+    price: "Custom",
+    period: "",
+    desc: "For large brokerages and franchises",
+    items: [
+      "Everything in Pro",
+      "Headless API access",
+      "Multi-tenant management",
+      "White-label option",
+      "Dedicated account manager",
+      "SLA guarantee",
+    ],
+    cta: "Contact sales",
+    pop: false,
+  },
+];
+
+/* ════════════════════════════════════════════════════════════════════════════
+   PAGE
+   ════════════════════════════════════════════════════════════════════════════ */
 
 export default function Home() {
+  const heroRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress: heroProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const heroY = useTransform(heroProgress, [0, 1], [0, 150]);
+  const heroOpacity = useTransform(heroProgress, [0, 0.8], [1, 0]);
+  const mockupY = useTransform(heroProgress, [0, 1], [0, -80]);
+  const mockupScale = useTransform(heroProgress, [0, 0.6], [1, 0.92]);
+
   return (
-    <main className="land-page bg-[#2f211d] text-[#f3ebdf]">
-      <section
-        className="relative min-h-[88vh] overflow-hidden"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(14,10,8,.42), rgba(14,10,8,.58)), url(https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=2000&q=80)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <div className="mx-auto flex h-full max-w-6xl flex-col px-6 pb-16 pt-8">
-          <header className="flex items-center justify-between text-xs tracking-[0.25em] text-[#f8efe2]/85">
-            <span className="font-semibold">Land Unlimited</span>
-            <nav className="hidden gap-8 md:flex">
-              <a href="#">Properties</a>
-              <a href="#">Buyers</a>
-              <a href="#">Sellers</a>
-              <a href="#">Contact</a>
-            </nav>
-            <button className="rounded-full border border-[#f8efe2]/40 px-4 py-2 text-[10px]">
-              Get In Touch
-            </button>
-          </header>
+    <main className="bg-[#0A0A0A] text-white overflow-x-hidden">
+      {/* ── Navbar ──────────────────────────────────────────────────────── */}
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-[#0A0A0A]/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 h-16">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-md bg-[#DAFF07] flex items-center justify-center">
+              <Layers className="h-4 w-4 text-black" />
+            </div>
+            <span className="text-[15px] font-semibold tracking-tight">
+              HeadlessCMS
+            </span>
+          </Link>
 
-          <div className="mt-28 max-w-xl">
-            <p className="text-xs tracking-[0.35em] text-[#f8efe2]/80">
-              TEXAS LAND & RANCH REAL ESTATE
-            </p>
-            <h1 className="mt-4 font-serif text-5xl tracking-[0.18em] md:text-6xl">
-              LAND UNLIMITED
-            </h1>
-            <form className="mt-8 flex w-full items-center gap-2 rounded-full border border-[#f3ebdf]/60 bg-[#f7efe6]/92 p-1 shadow-xl">
-              <Search className="ml-3 h-4 w-4 text-[#4e3a2e]" />
-              <input
-                className="h-10 flex-1 bg-transparent px-2 text-sm text-[#3a2b23] outline-none"
-                placeholder="Search county, acreage, price"
-              />
-              <button className="rounded-full bg-[#49352b] px-6 py-2 text-xs tracking-[0.2em] text-[#f8efe4]">
-                SEARCH
-              </button>
-            </form>
+          <div className="hidden md:flex items-center gap-8 text-sm text-white/50">
+            <a
+              href="#features"
+              className="hover:text-white transition-colors"
+            >
+              Features
+            </a>
+            <a
+              href="#how-it-works"
+              className="hover:text-white transition-colors"
+            >
+              How It Works
+            </a>
+            <a
+              href="#testimonials"
+              className="hover:text-white transition-colors"
+            >
+              Testimonials
+            </a>
+            <a
+              href="#pricing"
+              className="hover:text-white transition-colors"
+            >
+              Pricing
+            </a>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="hidden sm:block text-sm text-white/60 hover:text-white transition-colors"
+            >
+              Log in
+            </Link>
+            <Link
+              href="/register"
+              className="rounded-lg bg-[#DAFF07] px-4 py-2 text-sm font-medium text-black hover:bg-[#c8ec06] transition-colors"
+            >
+              Get Started
+            </Link>
           </div>
         </div>
-      </section>
+      </nav>
 
-      <section className="mx-auto max-w-6xl px-6 py-16">
-        <div className="grid gap-5 md:grid-cols-3">
-          {listings.map((item) => (
-            <article key={item.title} className="group overflow-hidden">
-              <div
-                className="h-40 w-full transition-transform duration-500 group-hover:scale-105"
-                style={{
-                  backgroundImage:
-                    `linear-gradient(rgba(20,14,11,.3), rgba(20,14,11,.56)), url(${item.image})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
-              />
-              <h3 className="mt-3 text-center font-serif text-lg tracking-[0.12em]">
-                {item.title}
-              </h3>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="bg-[#3a2924] py-16">
-        <div className="mx-auto grid max-w-6xl gap-10 px-6 md:grid-cols-[1.2fr_1fr] md:items-center">
+      {/* ── Hero ───────────────────────────────────────────────────────── */}
+      <section
+        ref={heroRef}
+        className="relative min-h-screen flex flex-col items-center justify-center pt-24 pb-8 overflow-hidden"
+      >
+        {/* Background: radial glow + dot grid */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_#DAFF07_0%,_transparent_50%)] opacity-[0.07]" />
           <div
-            className="h-72 rounded-sm"
+            className="absolute inset-0"
             style={{
               backgroundImage:
-                "linear-gradient(rgba(18,12,10,.25), rgba(18,12,10,.5)), url(https://images.unsplash.com/photo-1500595046743-ddf4d3d753fd?auto=format&fit=crop&w=1500&q=80)",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
+                "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0)",
+              backgroundSize: "40px 40px",
             }}
           />
-          <div>
-            <p className="text-xs tracking-[0.28em] text-[#e5d9c8]/80">WHY LANDUNLIMITED</p>
-            <h2 className="mt-3 font-serif text-3xl">We know ranchland by heart</h2>
-            <p className="mt-4 text-sm leading-7 text-[#e9dece]/82">
-              We help buyers and sellers navigate acreage, livestock operations, and
-              investment tracts with confidence. Our team focuses on stewardship,
-              value, and legacy so every closing feels right for your future.
-            </p>
-            <button className="mt-6 border border-[#e7dbc8]/70 px-5 py-2 text-xs tracking-[0.24em]">
-              LEARN MORE
-            </button>
-          </div>
         </div>
-      </section>
 
-      <section className="mx-auto max-w-6xl px-6 py-16">
-        <h2 className="text-center font-serif text-4xl">Our Team</h2>
-        <div className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-5">
-          {team.map((person) => (
-            <article key={person.name} className="text-center">
-              <div
-                className="mx-auto h-40 w-full max-w-[160px] rounded-sm"
-                style={{
-                  backgroundImage: `url(${person.image})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center top",
-                }}
-              />
-              <h3 className="mt-3 text-sm tracking-[0.08em]">{person.name}</h3>
-              <p className="text-xs text-[#d8cbb8]">{person.role}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+        {/* Copy */}
+        <motion.div
+          style={{ y: heroY, opacity: heroOpacity }}
+          className="relative z-10 text-center px-6 max-w-5xl mx-auto"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#DAFF07]/30 bg-[#DAFF07]/10 px-4 py-1.5 text-xs font-medium text-[#DAFF07]">
+              <Zap className="h-3 w-3" />
+              Now with headless API &amp; multi-tenant support
+            </span>
+          </motion.div>
 
-      <section
-        className="py-20"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(16,11,9,.46), rgba(16,11,9,.65)), url(https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=2000&q=80)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <div className="mx-auto grid max-w-5xl gap-8 px-6 text-center md:grid-cols-2">
-          <div className="rounded-sm bg-black/20 p-8 backdrop-blur-[1px]">
-            <h3 className="font-serif text-3xl">Selling a Property?</h3>
-            <p className="mt-3 text-sm leading-7 text-[#ebdfd0]/85">
-              Accurate pricing, modern marketing, and direct outreach to qualified land buyers.
-            </p>
-            <button className="mt-6 border border-[#f1e7da]/70 px-6 py-2 text-xs tracking-[0.2em]">
-              LIST YOUR LAND
-            </button>
-          </div>
-          <div className="rounded-sm bg-black/20 p-8 backdrop-blur-[1px]">
-            <h3 className="font-serif text-3xl">Buying a Property?</h3>
-            <p className="mt-3 text-sm leading-7 text-[#ebdfd0]/85">
-              Find your ideal acreage with local experts who understand water, access, and use.
-            </p>
-            <button className="mt-6 border border-[#f1e7da]/70 px-6 py-2 text-xs tracking-[0.2em]">
-              START SEARCHING
-            </button>
-          </div>
-        </div>
-      </section>
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.15 }}
+            className="mt-8 text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight leading-[1.08]"
+          >
+            The CMS built for
+            <br />
+            <span className="text-[#DAFF07]">real&nbsp;estate</span>
+          </motion.h1>
 
-      <section className="mx-auto max-w-6xl px-6 py-16">
-        <h2 className="text-center font-serif text-4xl">Video Gallery</h2>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {videos.map((video) => (
-            <article key={video.title} className="rounded-sm bg-[#4b3730] p-2">
-              <div
-                className="relative h-40 rounded-sm"
-                style={{
-                  backgroundImage:
-                    `linear-gradient(rgba(13,9,8,.35), rgba(13,9,8,.5)), url(${video.image})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
-              >
-                <div className="absolute inset-0 grid place-items-center">
-                  <span className="grid h-11 w-11 place-items-center rounded-full border border-[#f2e8db] bg-black/30">
-                    <Play className="ml-0.5 h-4 w-4 fill-[#f2e8db] text-[#f2e8db]" />
-                  </span>
-                </div>
-              </div>
-              <p className="px-1 pb-1 pt-3 text-sm">{video.title}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+          <motion.p
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.3 }}
+            className="mt-6 text-lg md:text-xl text-white/45 max-w-2xl mx-auto leading-relaxed"
+          >
+            Build stunning agent websites, manage listings, capture leads, and
+            grow your brokerage — all from one platform.
+          </motion.p>
 
-      <section className="bg-[#3a2924] py-16">
-        <div className="mx-auto max-w-4xl px-6 text-center">
-          <div
-            className="mx-auto h-20 w-20 rounded-full border border-[#f1e6d7]/60"
-            style={{
-              backgroundImage:
-                "url(https://images.unsplash.com/photo-1463453091185-61582044d556?auto=format&fit=crop&w=600&q=80)",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          />
-          <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-[#efe4d4]">
-            &ldquo;The Land Unlimited team guided us through every step with honesty and local
-            expertise. We found the exact ranch we had been searching for.&rdquo;
-          </p>
-          <p className="mt-4 text-xs tracking-[0.2em] text-[#dacdb8]">- JENNY M.</p>
-        </div>
-      </section>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.45 }}
+            className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
+          >
+            <Link
+              href="/register"
+              className="group flex items-center gap-2 rounded-lg bg-[#DAFF07] px-7 py-3.5 text-sm font-semibold text-black hover:bg-[#c8ec06] transition-all"
+            >
+              Start building free
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+            <Link
+              href="#how-it-works"
+              className="flex items-center gap-2 rounded-lg border border-white/15 px-7 py-3.5 text-sm text-white/60 hover:border-white/30 hover:text-white transition-all"
+            >
+              See how it works
+            </Link>
+          </motion.div>
+        </motion.div>
 
-      <section className="mx-auto grid max-w-6xl gap-8 px-6 py-16 md:grid-cols-2">
-        <div
-          className="min-h-64 rounded-sm"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(16,11,9,.25), rgba(16,11,9,.45)), url(https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1500&q=80)",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
+        {/* Dashboard mockup — parallax layer */}
+        <motion.div
+          style={{ y: mockupY, scale: mockupScale }}
+          initial={{ opacity: 0, y: 60 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            duration: 1,
+            delay: 0.65,
+            ease: [0.21, 0.47, 0.32, 0.98],
           }}
-        />
-        <div className="flex flex-col justify-center">
-          <p className="text-xs tracking-[0.28em] text-[#deceba]">HOMES + LAND</p>
-          <h2 className="mt-3 font-serif text-4xl">Looking for Home?</h2>
-          <p className="mt-4 max-w-md text-sm leading-7 text-[#e7d9c8]/85">
-            From barndominiums to turnkey ranch homes, we connect you with spaces where
-            your family can thrive.
-          </p>
-          <button className="mt-6 w-fit border border-[#ebdece]/70 px-6 py-2 text-xs tracking-[0.2em]">
-            VIEW HOMES
-          </button>
+          className="relative z-10 mt-16 w-full max-w-5xl px-6"
+        >
+          <DashboardMockup />
+          <div className="absolute -bottom-24 left-1/2 -translate-x-1/2 w-3/4 h-48 bg-[#DAFF07]/10 blur-[120px] rounded-full pointer-events-none" />
+        </motion.div>
+      </section>
+
+      {/* ── Trust bar ──────────────────────────────────────────────────── */}
+      <section className="relative z-10 border-y border-white/5">
+        <div className="mx-auto max-w-7xl px-6 py-14">
+          <FadeIn>
+            <p className="text-center text-sm text-white/25 mb-10">
+              Trusted by brokerages and agents nationwide
+            </p>
+          </FadeIn>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {[
+              { value: "2,400+", label: "Websites launched" },
+              { value: "180K", label: "Listings managed" },
+              { value: "94%", label: "Client retention" },
+              { value: "3.2M", label: "Leads captured" },
+            ].map((s, i) => (
+              <FadeIn key={s.label} delay={i * 0.1} className="text-center">
+                <div className="text-3xl md:text-4xl font-bold">{s.value}</div>
+                <div className="mt-1 text-sm text-white/35">{s.label}</div>
+              </FadeIn>
+            ))}
+          </div>
         </div>
       </section>
 
-      <section className="bg-[#3b2a24] px-6 py-16 text-center">
-        <h2 className="font-serif text-3xl">Receive Exclusive Listings in Your Inbox</h2>
-        <p className="mx-auto mt-4 max-w-2xl text-sm text-[#e8dccd]/85">
-          Join our weekly email and get fresh ranch listings, pricing updates, and market
-          insights from local experts.
-        </p>
-        <form className="mx-auto mt-7 flex max-w-xl flex-col gap-3 sm:flex-row">
-          <input
-            className="h-12 flex-1 border border-[#e7dbc9]/40 bg-transparent px-4 text-sm outline-none"
-            placeholder="Email Address"
-          />
-          <button className="h-12 border border-[#e7dbc9]/70 px-7 text-xs tracking-[0.2em]">
-            SUBSCRIBE
-          </button>
-        </form>
-      </section>
+      {/* ── Scrolling marquee ──────────────────────────────────────────── */}
+      <ScrollMarquee />
 
-      <section
-        className="py-20 text-center"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(18,12,10,.3), rgba(18,12,10,.65)), url(https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2000&q=80)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <h2 className="font-serif text-4xl">Work with Us</h2>
-        <button className="mt-6 border border-[#f0e4d5]/80 px-8 py-3 text-xs tracking-[0.24em]">
-          CONTACT LAND UNLIMITED
-        </button>
-      </section>
+      {/* ── Features bento ─────────────────────────────────────────────── */}
+      <section id="features" className="py-24 md:py-32">
+        <div className="mx-auto max-w-7xl px-6">
+          <FadeIn className="text-center mb-16">
+            <p className="text-[#DAFF07] text-sm font-medium tracking-wider uppercase mb-3">
+              Features
+            </p>
+            <h2 className="text-4xl md:text-5xl font-bold">
+              Everything you need, nothing you don&apos;t
+            </h2>
+            <p className="mt-4 text-white/35 max-w-2xl mx-auto text-lg">
+              Purpose-built tools for real estate professionals. No plugins, no
+              patchwork — just a platform that works.
+            </p>
+          </FadeIn>
 
-      <footer className="border-t border-[#e8dbc7]/20 bg-[#2a1d18]">
-        <div className="mx-auto flex max-w-6xl flex-col justify-between gap-8 px-6 py-10 text-sm md:flex-row">
-          <div>
-            <h3 className="font-serif text-2xl">Land Unlimited</h3>
-            <p className="mt-2 text-[#dbcdb8]/80">Texas Ranch & Land Real Estate</p>
-            <p className="mt-4 text-[#dbcdb8]/80">(555) 867-2311</p>
-            <p className="text-[#dbcdb8]/80">info@landunlimitedtx.com</p>
+          <div className="grid md:grid-cols-3 gap-4">
+            {features.map((f, i) => (
+              <FadeIn
+                key={f.title}
+                delay={i * 0.08}
+                className={f.wide ? "md:col-span-2" : ""}
+              >
+                <div className="group h-full rounded-2xl border border-white/[0.06] bg-[#111] p-8 hover:border-[#DAFF07]/20 hover:bg-[#131313] transition-all duration-300">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#DAFF07]/10 text-[#DAFF07] group-hover:bg-[#DAFF07]/15 transition-colors">
+                    <f.icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="mt-5 text-xl font-semibold">{f.title}</h3>
+                  <p className="mt-2 text-white/40 leading-relaxed">{f.body}</p>
+                </div>
+              </FadeIn>
+            ))}
           </div>
-          <div className="grid grid-cols-2 gap-8 text-xs tracking-[0.18em] text-[#e7dbc8]/85">
-            <a href="#">PROPERTIES</a>
-            <a href="#">BUYERS</a>
-            <a href="#">SELLERS</a>
-            <a href="#">ABOUT</a>
-            <a href="#">VIDEOS</a>
-            <a href="#">CONTACT</a>
+        </div>
+      </section>
+
+      {/* ── Horizontal-scroll workflow ──────────────────────────────────── */}
+      <div id="how-it-works">
+        <HorizontalScroll />
+      </div>
+
+      {/* ── Developer / API showcase ───────────────────────────────────── */}
+      <section className="py-24 md:py-32">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="grid md:grid-cols-2 gap-16 items-center">
+            <FadeIn>
+              <p className="text-[#DAFF07] text-sm font-medium tracking-wider uppercase mb-3">
+                Developer friendly
+              </p>
+              <h2 className="text-4xl md:text-5xl font-bold leading-tight">
+                Headless by design, beautiful by default
+              </h2>
+              <p className="mt-6 text-white/40 text-lg leading-relaxed">
+                Use our stunning templates out of the box, or go fully headless.
+                The REST API gives you complete control over content while your
+                team manages everything through the dashboard.
+              </p>
+              <ul className="mt-8 space-y-4">
+                {[
+                  "Full REST API with tenant isolation",
+                  "Webhook-driven revalidation",
+                  "Custom domain mapping",
+                  "Multi-tenant architecture",
+                ].map((t) => (
+                  <li
+                    key={t}
+                    className="flex items-center gap-3 text-white/55"
+                  >
+                    <Check className="h-4 w-4 text-[#DAFF07] flex-shrink-0" />
+                    {t}
+                  </li>
+                ))}
+              </ul>
+            </FadeIn>
+
+            <ScaleIn delay={0.15}>
+              <div className="rounded-2xl border border-white/10 bg-[#111] p-6 font-mono text-sm overflow-hidden">
+                <div className="flex items-center gap-2 mb-4 text-white/30 text-xs">
+                  <div className="h-3 w-3 rounded-full bg-[#ff5f57]" />
+                  <div className="h-3 w-3 rounded-full bg-[#febc2e]" />
+                  <div className="h-3 w-3 rounded-full bg-[#28c840]" />
+                  <span className="ml-2">api-example.ts</span>
+                </div>
+                <pre className="text-white/60 overflow-x-auto leading-relaxed">
+                  <code>{`const res = await fetch(
+  'https://api.headlesscms.io/v1/listings',
+  {
+    headers: {
+      'X-Tenant': 'your-site-id',
+      'Authorization': 'Bearer <token>'
+    }
+  }
+);
+
+const { listings, total } = await res.json();
+// → { listings: [...], total: 42 }`}</code>
+                </pre>
+              </div>
+            </ScaleIn>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Testimonials ───────────────────────────────────────────────── */}
+      <section
+        id="testimonials"
+        className="py-24 md:py-32 border-t border-white/5"
+      >
+        <div className="mx-auto max-w-7xl px-6">
+          <FadeIn className="text-center mb-16">
+            <p className="text-[#DAFF07] text-sm font-medium tracking-wider uppercase mb-3">
+              Testimonials
+            </p>
+            <h2 className="text-4xl md:text-5xl font-bold">
+              Loved by agents everywhere
+            </h2>
+          </FadeIn>
+          <div className="grid md:grid-cols-3 gap-6">
+            {testimonials.map((t, i) => (
+              <FadeIn key={t.name} delay={i * 0.12}>
+                <div className="h-full flex flex-col rounded-2xl border border-white/[0.06] bg-[#111] p-8">
+                  <p className="text-white/55 leading-relaxed flex-1">
+                    &ldquo;{t.quote}&rdquo;
+                  </p>
+                  <div className="mt-6 pt-6 border-t border-white/5">
+                    <p className="font-semibold">{t.name}</p>
+                    <p className="text-sm text-white/30">{t.role}</p>
+                  </div>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Pricing ────────────────────────────────────────────────────── */}
+      <section id="pricing" className="py-24 md:py-32">
+        <div className="mx-auto max-w-7xl px-6">
+          <FadeIn className="text-center mb-16">
+            <p className="text-[#DAFF07] text-sm font-medium tracking-wider uppercase mb-3">
+              Pricing
+            </p>
+            <h2 className="text-4xl md:text-5xl font-bold">
+              Simple, transparent pricing
+            </h2>
+            <p className="mt-4 text-white/35 max-w-xl mx-auto text-lg">
+              Start free, upgrade when you&apos;re ready.
+            </p>
+          </FadeIn>
+
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {plans.map((p, i) => (
+              <FadeIn key={p.name} delay={i * 0.1}>
+                <div
+                  className={`relative h-full flex flex-col rounded-2xl border p-8 ${
+                    p.pop
+                      ? "border-[#DAFF07]/40 bg-[#DAFF07]/[0.03]"
+                      : "border-white/[0.06] bg-[#111]"
+                  }`}
+                >
+                  {p.pop && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#DAFF07] px-4 py-1 text-xs font-semibold text-black">
+                      Most popular
+                    </div>
+                  )}
+                  <h3 className="text-lg font-semibold">{p.name}</h3>
+                  <div className="mt-4 flex items-baseline gap-1">
+                    <span className="text-4xl font-bold">{p.price}</span>
+                    {p.period && (
+                      <span className="text-white/30">{p.period}</span>
+                    )}
+                  </div>
+                  <p className="mt-2 text-sm text-white/35">{p.desc}</p>
+                  <ul className="mt-8 space-y-3 flex-1">
+                    {p.items.map((f) => (
+                      <li
+                        key={f}
+                        className="flex items-center gap-2 text-sm text-white/55"
+                      >
+                        <Check className="h-4 w-4 text-[#DAFF07] flex-shrink-0" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href="/register"
+                    className={`mt-8 block rounded-lg py-3 text-center text-sm font-semibold transition-colors ${
+                      p.pop
+                        ? "bg-[#DAFF07] text-black hover:bg-[#c8ec06]"
+                        : "border border-white/10 text-white hover:border-white/20"
+                    }`}
+                  >
+                    {p.cta}
+                  </Link>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Final CTA ──────────────────────────────────────────────────── */}
+      <section className="relative py-32 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#DAFF07_0%,_transparent_70%)] opacity-[0.05] pointer-events-none" />
+        <FadeIn className="relative z-10 mx-auto max-w-3xl px-6 text-center">
+          <h2 className="text-4xl md:text-6xl font-bold leading-tight">
+            Ready to build your real&nbsp;estate empire?
+          </h2>
+          <p className="mt-6 text-white/40 text-lg">
+            Join thousands of agents and brokerages already growing with
+            HeadlessCMS. Free to start, no credit card required.
+          </p>
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              href="/register"
+              className="group flex items-center gap-2 rounded-lg bg-[#DAFF07] px-8 py-4 text-base font-semibold text-black hover:bg-[#c8ec06] transition-all"
+            >
+              Get started for free
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
+        </FadeIn>
+      </section>
+
+      {/* ── Footer ─────────────────────────────────────────────────────── */}
+      <footer className="border-t border-white/5">
+        <div className="mx-auto max-w-7xl px-6 py-14">
+          <div className="grid md:grid-cols-4 gap-10">
+            <div>
+              <div className="flex items-center gap-2">
+                <div className="h-7 w-7 rounded-md bg-[#DAFF07] flex items-center justify-center">
+                  <Layers className="h-4 w-4 text-black" />
+                </div>
+                <span className="text-[15px] font-semibold tracking-tight">
+                  HeadlessCMS
+                </span>
+              </div>
+              <p className="mt-4 text-sm text-white/25 leading-relaxed">
+                The all-in-one platform for real estate websites, CRM, and
+                content management.
+              </p>
+            </div>
+            {[
+              {
+                heading: "Product",
+                links: ["Features", "Pricing", "Templates", "API Docs"],
+              },
+              {
+                heading: "Company",
+                links: ["About", "Blog", "Careers", "Contact"],
+              },
+              {
+                heading: "Legal",
+                links: ["Privacy", "Terms", "Security"],
+              },
+            ].map((col) => (
+              <div key={col.heading}>
+                <h4 className="text-sm font-semibold text-white/50">
+                  {col.heading}
+                </h4>
+                <ul className="mt-4 space-y-3">
+                  {col.links.map((link) => (
+                    <li key={link}>
+                      <a
+                        href="#"
+                        className="text-sm text-white/25 hover:text-white/50 transition-colors"
+                      >
+                        {link}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div className="mt-14 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs text-white/20">
+              &copy; {new Date().getFullYear()} HeadlessCMS. All rights
+              reserved.
+            </p>
+            <div className="flex items-center gap-6">
+              <a
+                href="#"
+                className="text-xs text-white/20 hover:text-white/40 transition-colors"
+              >
+                Twitter
+              </a>
+              <a
+                href="#"
+                className="text-xs text-white/20 hover:text-white/40 transition-colors"
+              >
+                GitHub
+              </a>
+              <a
+                href="#"
+                className="text-xs text-white/20 hover:text-white/40 transition-colors"
+              >
+                Discord
+              </a>
+            </div>
           </div>
         </div>
       </footer>

@@ -1,13 +1,25 @@
 'use client';
 
 import { Header } from '@/components/layout/header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useIntegrationsStore } from '@/lib/stores/integrations';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useToast } from '@/components/ui/use-toast';
+
+const inputClass =
+  'h-[34px] rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none focus:ring-1 focus:ring-[#DAFF07]';
+const labelClass = 'text-[13px] text-[#888C99]';
+const secondaryButtonClass =
+  'h-[30px] rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black';
+
+function statusColor(status: string) {
+  const active = ['connected', 'active', 'syncing', 'ok'].some((s) =>
+    status.toLowerCase().includes(s)
+  );
+  return active ? 'text-[#DAFF07]' : 'text-[#888C99]';
+}
 
 export default function IntegrationsPage() {
   const { user } = useAuthStore();
@@ -25,23 +37,29 @@ export default function IntegrationsPage() {
   };
 
   return (
-    <div>
-      <Header
-        title="Integrations"
-        description="Connect third-party services used by your coded websites."
-      />
-      <div className="space-y-6 p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Google Reviews</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+    <div
+      className="min-h-screen bg-[#F5F5F3]"
+      style={{ fontFamily: "'Geist', 'Inter', system-ui, sans-serif" }}
+    >
+      <div className="border-b border-[#EBEBEB] bg-white">
+        <Header
+          title="Integrations"
+          description="Connect third-party services used by your coded websites."
+        />
+      </div>
+      <div className="space-y-4 p-6">
+        <div className="rounded-xl border border-[#EBEBEB] bg-white p-5">
+          <h2 className="text-[15px] font-normal text-black">Google Reviews</h2>
+          <div className="mt-4 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="googleApiKey">Google API Key</Label>
+              <Label htmlFor="googleApiKey" className={labelClass}>
+                Google API Key
+              </Label>
               <Input
                 id="googleApiKey"
                 placeholder="AIza..."
                 defaultValue={config?.google.apiKey || ''}
+                className={inputClass}
                 onBlur={(event) =>
                   save({
                     google: {
@@ -54,11 +72,14 @@ export default function IntegrationsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="googlePlaceId">Place ID</Label>
+              <Label htmlFor="googlePlaceId" className={labelClass}>
+                Place ID
+              </Label>
               <Input
                 id="googlePlaceId"
                 placeholder="ChIJ..."
                 defaultValue={config?.google.placeId || ''}
+                className={inputClass}
                 onBlur={(event) =>
                   save({
                     google: {
@@ -72,24 +93,31 @@ export default function IntegrationsPage() {
             </div>
             <Button
               variant="outline"
-              onClick={() => toast({ title: 'Sync queued', description: 'Google reviews sync has been queued.' })}
+              className={secondaryButtonClass}
+              onClick={() =>
+                toast({
+                  title: 'Sync queued',
+                  description: 'Google reviews sync has been queued.',
+                })
+              }
             >
               Sync Reviews
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Resend</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="rounded-xl border border-[#EBEBEB] bg-white p-5">
+          <h2 className="text-[15px] font-normal text-black">Resend</h2>
+          <div className="mt-4 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="resendApiKey">Resend API Key</Label>
+              <Label htmlFor="resendApiKey" className={labelClass}>
+                Resend API Key
+              </Label>
               <Input
                 id="resendApiKey"
                 placeholder="re_..."
                 defaultValue={config?.resend.apiKey || ''}
+                className={inputClass}
                 onBlur={(event) =>
                   save({
                     resend: {
@@ -102,11 +130,14 @@ export default function IntegrationsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="resendTo">Default Recipient Email</Label>
+              <Label htmlFor="resendTo" className={labelClass}>
+                Default Recipient Email
+              </Label>
               <Input
                 id="resendTo"
                 placeholder="team@example.com"
                 defaultValue={config?.resend.defaultRecipient || ''}
+                className={inputClass}
                 onBlur={(event) =>
                   save({
                     resend: {
@@ -118,8 +149,58 @@ export default function IntegrationsPage() {
                 }
               />
             </div>
-          </CardContent>
-        </Card>
+            <div className="space-y-2">
+              <Label htmlFor="vercelProjectId" className={labelClass}>
+                Vercel Project ID
+              </Label>
+              <Input
+                id="vercelProjectId"
+                placeholder="prj_..."
+                defaultValue={config?.vercelProjectId || ''}
+                className={inputClass}
+                onBlur={(event) =>
+                  save({
+                    vercelProjectId: event.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="revalidationWebhookUrl" className={labelClass}>
+                Revalidation Webhook URL
+              </Label>
+              <Input
+                id="revalidationWebhookUrl"
+                placeholder="https://..."
+                defaultValue={config?.revalidationWebhookUrl || ''}
+                className={inputClass}
+                onBlur={(event) =>
+                  save({
+                    revalidationWebhookUrl: event.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="grid gap-2 text-[13px] md:grid-cols-2">
+              <div className="rounded-lg border border-[#EBEBEB] p-3">
+                <p className={labelClass}>Webhook status</p>
+                <p
+                  className={`font-medium ${statusColor(config?.webhookStatus || 'idle')}`}
+                >
+                  {config?.webhookStatus || 'idle'}
+                </p>
+              </div>
+              <div className="rounded-lg border border-[#EBEBEB] p-3">
+                <p className={labelClass}>Revalidation status</p>
+                <p
+                  className={`font-medium ${statusColor(config?.revalidationStatus || 'idle')}`}
+                >
+                  {config?.revalidationStatus || 'idle'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

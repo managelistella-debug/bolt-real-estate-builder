@@ -102,6 +102,7 @@ export interface ListingGalleryImage {
 export interface Listing {
   id: string;
   userId: string;
+  tenantId?: string;
   slug: string;
   address: string;
   description: string;
@@ -314,6 +315,7 @@ export interface BlogPostTemplateConfig {
 export interface BlogPost {
   id: string;
   userId: string;
+  tenantId?: string;
   title: string;
   slug: string;
   excerpt?: string;
@@ -1740,6 +1742,7 @@ export interface SocialLink {
 export interface MediaAsset {
   id: string;
   userId: string;
+  tenantId?: string;
   filename: string;
   url: string;
   type: 'image' | 'video';
@@ -1760,6 +1763,7 @@ export type LeadStatus = 'new' | 'contacted' | 'in_progress' | 'closed' | 'lost'
 export interface Lead {
   id: string;
   websiteId: string;
+  tenantId?: string;
   firstName: string;
   lastName: string;
   email: string;
