@@ -107,12 +107,10 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-6 rounded-xl border border-[#EBEBEB] bg-[#F5F5F3] p-4">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#888C99]">Demo Credentials</p>
-            <div className="space-y-1 text-[12px] text-[#888C99]">
-              <p><span className="font-medium text-black">Super Admin:</span> admin@superadmin.com / admin123</p>
-              <p><span className="font-medium text-black">Support:</span> support@company.com / support123</p>
-              <p><span className="font-medium text-black">Business:</span> john@plumbing.com / john123</p>
-            </div>
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#888C99]">Getting Started</p>
+            <p className="text-[12px] text-[#888C99]">
+              <Link href="/register" className="font-medium text-black hover:underline">Create an account</Link> to start managing your listings, blog, and integrations.
+            </p>
           </div>
         </section>
       </div>

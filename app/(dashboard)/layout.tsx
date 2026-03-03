@@ -9,6 +9,7 @@ import { useWebsiteStore } from '@/lib/stores/website';
 import { useTenantContextStore } from '@/lib/stores/tenantContext';
 import { ImpersonationBanner } from '@/components/admin/ImpersonationBanner';
 import { featureFlags } from '@/lib/featureFlags';
+import { useDataLoader } from '@/lib/hooks/useDataLoader';
 
 export default function DashboardLayout({
   children,
@@ -21,6 +22,8 @@ export default function DashboardLayout({
   const { initializeUserWebsite } = useWebsiteStore();
   const { setActor, startImpersonation } = useTenantContextStore();
   const [isHydrated, setIsHydrated] = useState(false);
+
+  useDataLoader();
 
   // Check if we're in builder or preview mode (hide sidebar)
   const isBuilderMode = featureFlags.enableVisualBuilder && pathname?.includes('/builder');

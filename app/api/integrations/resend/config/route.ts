@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { assertTenantAccess, readSessionTenantContext } from '@/lib/server/tenantGuard';
-import { ensureTenantDataset } from '@/lib/server/cmsData';
+import { upsertTenantRecord } from '@/lib/server/tenantStore';
 
 export async function POST(request: NextRequest) {
   const sessionContext = readSessionTenantContext(request);
@@ -14,16 +14,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Forbidden tenant access' }, { status: 403 });
   }
 
-  const dataset = ensureTenantDataset(tenantId);
-  dataset.integrations.resend = {
-    apiKey: body?.apiKey || dataset.integrations.resend.apiKey,
-    defaultRecipient: body?.defaultRecipient || dataset.integrations.resend.defaultRecipient,
-    enabled: true,
-  };
-  dataset.integrations.updatedAt = new Date();
+  const updated = await upsertTenantRecord(tenantId, (current) => ({
+    ...current,
+    integrations: {
+      ...current.integrations,
+      resend: {
+        apiKey: body?.apiKey || current.integrations.resend.apiKey,
+        defaultRecipient: body?.defaultRecipient || current.integrations.resend.defaultRecipient,
+        enabled: true,
+      },
+      updatedAt: new Date(),
+    },
+  }));
 
   return NextResponse.json({
     success: true,
-    resend: dataset.integrations.resend,
+    resend: updated.integrations.resend,
   });
 }

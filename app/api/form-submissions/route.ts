@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Forbidden tenant access' }, { status: 403 });
   }
 
-  const dataset = ensureTenantDataset(tenantId);
+  const dataset = await ensureTenantDataset(tenantId);
   return NextResponse.json({ items: dataset.submissions });
 }
 
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Email is required' }, { status: 400 });
   }
 
-  const result = createLeadAndSubmission(tenantId, {
+  const result = await createLeadAndSubmission(tenantId, {
     firstName: body.firstName,
     lastName: body.lastName,
     email: body.email,

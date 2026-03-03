@@ -1,10 +1,12 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { ImageCollection, CollectionImage } from '@/lib/types';
 import { useTenantContextStore } from './tenantContext';
 
 interface ImageCollectionsState {
   collections: ImageCollection[];
+  loaded: boolean;
+  loading: boolean;
+  fetchCollections: (tenantId: string) => Promise<void>;
   addCollection: (collection: Omit<ImageCollection, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateCollection: (id: string, updates: Partial<Omit<ImageCollection, 'id' | 'createdAt' | 'updatedAt'>>) => void;
   deleteCollection: (id: string) => void;
@@ -16,119 +18,150 @@ interface ImageCollectionsState {
   getCollectionsForCurrentUser: (userId?: string) => ImageCollection[];
 }
 
+function rowToCollection(r: any): ImageCollection {
+  return {
+    id: r.id,
+    userId: r.user_id,
+    name: r.name,
+    images: r.images ?? [],
+    createdAt: new Date(r.created_at),
+    updatedAt: new Date(r.updated_at),
+  };
+}
+
+function collectionToRow(c: ImageCollection) {
+  const tenantId = (c as any).tenantId || c.userId;
+  return {
+    id: c.id,
+    tenant_id: tenantId,
+    user_id: c.userId,
+    name: c.name,
+    images: c.images,
+    created_at: c.createdAt instanceof Date ? c.createdAt.toISOString() : c.createdAt,
+    updated_at: c.updatedAt instanceof Date ? c.updatedAt.toISOString() : c.updatedAt,
+  };
+}
+
+function persistToApi(row: ReturnType<typeof collectionToRow>) {
+  fetch('/api/data/collections', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(row),
+  }).catch(() => undefined);
+}
+
+function deleteFromApi(id: string) {
+  fetch(`/api/data/collections?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => undefined);
+}
+
 export const useImageCollectionsStore = create<ImageCollectionsState>()(
-  persist(
-    (set, get) => ({
-      collections: [],
+  (set, get) => ({
+    collections: [],
+    loaded: false,
+    loading: false,
 
-      addCollection: (collection) => {
-        const newCollection: ImageCollection = {
-          ...collection,
-          id: `collection_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        set((state) => ({
-          collections: [...state.collections, newCollection],
-        }));
-      },
+    fetchCollections: async (tenantId) => {
+      if (get().loading) return;
+      set({ loading: true });
+      try {
+        const res = await fetch(`/api/data/collections?tenantId=${encodeURIComponent(tenantId)}`);
+        if (!res.ok) throw new Error('fetch failed');
+        const rows = await res.json();
+        set({ collections: rows.map(rowToCollection), loaded: true });
+      } catch {
+        set({ loaded: true });
+      } finally {
+        set({ loading: false });
+      }
+    },
 
-      updateCollection: (id, updates) => {
-        set((state) => ({
-          collections: state.collections.map((collection) =>
-            collection.id === id
-              ? { ...collection, ...updates, updatedAt: new Date() }
-              : collection
-          ),
-        }));
-      },
+    addCollection: (collection) => {
+      const newCollection: ImageCollection = {
+        ...collection,
+        id: `collection_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      set((state) => ({ collections: [...state.collections, newCollection] }));
+      persistToApi(collectionToRow(newCollection));
+    },
 
-      deleteCollection: (id) => {
-        set((state) => ({
-          collections: state.collections.filter((collection) => collection.id !== id),
-        }));
-      },
+    updateCollection: (id, updates) => {
+      let updated: ImageCollection | undefined;
+      set((state) => ({
+        collections: state.collections.map((c) => {
+          if (c.id !== id) return c;
+          updated = { ...c, ...updates, updatedAt: new Date() };
+          return updated;
+        }),
+      }));
+      if (updated) persistToApi(collectionToRow(updated));
+    },
 
-      addImageToCollection: (collectionId, image) => {
-        set((state) => ({
-          collections: state.collections.map((collection) => {
-            if (collection.id === collectionId) {
-              const maxOrder = collection.images.length > 0
-                ? Math.max(...collection.images.map((img) => img.order))
-                : -1;
-              const newImage: CollectionImage = {
-                ...image,
-                order: maxOrder + 1,
-              };
-              return {
-                ...collection,
-                images: [...collection.images, newImage],
-                updatedAt: new Date(),
-              };
-            }
-            return collection;
-          }),
-        }));
-      },
+    deleteCollection: (id) => {
+      set((state) => ({ collections: state.collections.filter((c) => c.id !== id) }));
+      deleteFromApi(id);
+    },
 
-      removeImageFromCollection: (collectionId, imageId) => {
-        set((state) => ({
-          collections: state.collections.map((collection) => {
-            if (collection.id === collectionId) {
-              return {
-                ...collection,
-                images: collection.images.filter((img) => img.id !== imageId),
-                updatedAt: new Date(),
-              };
-            }
-            return collection;
-          }),
-        }));
-      },
+    addImageToCollection: (collectionId, image) => {
+      let updated: ImageCollection | undefined;
+      set((state) => ({
+        collections: state.collections.map((c) => {
+          if (c.id !== collectionId) return c;
+          const maxOrder = c.images.length > 0 ? Math.max(...c.images.map((img) => img.order)) : -1;
+          updated = { ...c, images: [...c.images, { ...image, order: maxOrder + 1 }], updatedAt: new Date() };
+          return updated;
+        }),
+      }));
+      if (updated) persistToApi(collectionToRow(updated));
+    },
 
-      updateImageOrder: (collectionId, images) => {
-        set((state) => ({
-          collections: state.collections.map((collection) => {
-            if (collection.id === collectionId) {
-              return {
-                ...collection,
-                images: images,
-                updatedAt: new Date(),
-              };
-            }
-            return collection;
-          }),
-        }));
-      },
+    removeImageFromCollection: (collectionId, imageId) => {
+      let updated: ImageCollection | undefined;
+      set((state) => ({
+        collections: state.collections.map((c) => {
+          if (c.id !== collectionId) return c;
+          updated = { ...c, images: c.images.filter((img) => img.id !== imageId), updatedAt: new Date() };
+          return updated;
+        }),
+      }));
+      if (updated) persistToApi(collectionToRow(updated));
+    },
 
-      updateImageCaption: (collectionId, imageId, caption) => {
-        set((state) => ({
-          collections: state.collections.map((collection) => {
-            if (collection.id === collectionId) {
-              return {
-                ...collection,
-                images: collection.images.map((img) =>
-                  img.id === imageId ? { ...img, caption } : img
-                ),
-                updatedAt: new Date(),
-              };
-            }
-            return collection;
-          }),
-        }));
-      },
+    updateImageOrder: (collectionId, images) => {
+      let updated: ImageCollection | undefined;
+      set((state) => ({
+        collections: state.collections.map((c) => {
+          if (c.id !== collectionId) return c;
+          updated = { ...c, images, updatedAt: new Date() };
+          return updated;
+        }),
+      }));
+      if (updated) persistToApi(collectionToRow(updated));
+    },
 
-      getCollectionById: (id) => {
-        return get().collections.find((collection) => collection.id === id);
-      },
-      getCollectionsForCurrentUser: (userId) => {
-        const effectiveUserId = userId || useTenantContextStore.getState().effectiveUserId;
-        if (!effectiveUserId) return [];
-        return get().collections.filter((collection) => collection.userId === effectiveUserId);
-      },
-    }),
-    {
-      name: 'image-collections-storage',
-    }
-  )
+    updateImageCaption: (collectionId, imageId, caption) => {
+      let updated: ImageCollection | undefined;
+      set((state) => ({
+        collections: state.collections.map((c) => {
+          if (c.id !== collectionId) return c;
+          updated = {
+            ...c,
+            images: c.images.map((img) => (img.id === imageId ? { ...img, caption } : img)),
+            updatedAt: new Date(),
+          };
+          return updated;
+        }),
+      }));
+      if (updated) persistToApi(collectionToRow(updated));
+    },
+
+    getCollectionById: (id) => get().collections.find((c) => c.id === id),
+
+    getCollectionsForCurrentUser: (userId) => {
+      const effectiveUserId = userId || useTenantContextStore.getState().effectiveUserId;
+      if (!effectiveUserId) return [];
+      return get().collections.filter((c) => c.userId === effectiveUserId);
+    },
+  })
 );

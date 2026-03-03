@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
 import { Listing, ListingStatus, ListingsSortOption } from '@/lib/types';
 import { useTenantContextStore } from './tenantContext';
 
@@ -10,6 +9,9 @@ interface ListingsFilterConfig {
 
 interface ListingsState {
   listings: Listing[];
+  loaded: boolean;
+  loading: boolean;
+  fetchListings: (tenantId: string) => Promise<void>;
   createListing: (payload: Omit<Listing, 'id' | 'slug' | 'customOrder' | 'createdAt' | 'updatedAt'>) => Listing;
   createSampleListing: (userId: string) => Listing;
   updateListing: (id: string, updates: Partial<Omit<Listing, 'id' | 'userId' | 'createdAt'>>) => void;
@@ -37,13 +39,9 @@ const ensureUniqueSlug = (baseSlug: string, listings: Listing[], excludeId?: str
       .filter((listing) => (excludeId ? listing.id !== excludeId : true))
       .map((listing) => listing.slug)
   );
-
   if (!used.has(initialSlug)) return initialSlug;
-
   let index = 2;
-  while (used.has(`${initialSlug}-${index}`)) {
-    index += 1;
-  }
+  while (used.has(`${initialSlug}-${index}`)) index += 1;
   return `${initialSlug}-${index}`;
 };
 
@@ -56,223 +54,229 @@ const normalizeListing = (listing: Listing): Listing => ({
   gallery: [...listing.gallery].sort((a, b) => a.order - b.order),
 });
 
+function rowToListing(r: any): Listing {
+  return normalizeListing({
+    id: r.id,
+    userId: r.user_id,
+    tenantId: r.tenant_id,
+    slug: r.slug,
+    address: r.address,
+    description: r.description,
+    listPrice: Number(r.list_price),
+    neighborhood: r.neighborhood,
+    city: r.city,
+    listingStatus: r.listing_status,
+    bedrooms: r.bedrooms,
+    bathrooms: r.bathrooms,
+    propertyType: r.property_type,
+    yearBuilt: r.year_built,
+    livingAreaSqft: r.living_area_sqft,
+    lotAreaValue: Number(r.lot_area_value),
+    lotAreaUnit: r.lot_area_unit,
+    taxesAnnual: Number(r.taxes_annual),
+    listingBrokerage: r.listing_brokerage,
+    mlsNumber: r.mls_number,
+    representation: r.representation ?? undefined,
+    gallery: r.gallery ?? [],
+    customOrder: r.custom_order,
+    createdAt: new Date(r.created_at),
+    updatedAt: new Date(r.updated_at),
+  });
+}
+
+function listingToRow(l: Listing, tenantId: string) {
+  return {
+    id: l.id,
+    tenant_id: tenantId,
+    user_id: l.userId,
+    slug: l.slug,
+    address: l.address,
+    description: l.description,
+    list_price: l.listPrice,
+    neighborhood: l.neighborhood,
+    city: l.city,
+    listing_status: l.listingStatus,
+    bedrooms: l.bedrooms,
+    bathrooms: l.bathrooms,
+    property_type: l.propertyType,
+    year_built: l.yearBuilt,
+    living_area_sqft: l.livingAreaSqft,
+    lot_area_value: l.lotAreaValue,
+    lot_area_unit: l.lotAreaUnit,
+    taxes_annual: l.taxesAnnual,
+    listing_brokerage: l.listingBrokerage,
+    mls_number: l.mlsNumber,
+    representation: l.representation ?? null,
+    gallery: l.gallery,
+    custom_order: l.customOrder,
+    created_at: l.createdAt instanceof Date ? l.createdAt.toISOString() : l.createdAt,
+    updated_at: l.updatedAt instanceof Date ? l.updatedAt.toISOString() : l.updatedAt,
+  };
+}
+
+function persistToApi(row: ReturnType<typeof listingToRow>) {
+  fetch('/api/data/listings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(row),
+  }).catch(() => undefined);
+}
+
+function deleteFromApi(id: string) {
+  fetch(`/api/data/listings?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => undefined);
+}
+
 export const useListingsStore = create<ListingsState>()(
-  persist(
-    (set, get) => ({
-      listings: [],
+  (set, get) => ({
+    listings: [],
+    loaded: false,
+    loading: false,
 
-      createListing: (payload) => {
-        const listings = get().listings;
-        const slug = ensureUniqueSlug(slugify(payload.address), listings);
-        const now = new Date();
-        const listing: Listing = {
-          ...payload,
-          id: `listing_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-          slug,
-          customOrder: listings.length,
-          createdAt: now,
-          updatedAt: now,
-          gallery: [...payload.gallery].sort((a, b) => a.order - b.order),
-        };
+    fetchListings: async (tenantId) => {
+      if (get().loading) return;
+      set({ loading: true });
+      try {
+        const res = await fetch(`/api/data/listings?tenantId=${encodeURIComponent(tenantId)}`);
+        if (!res.ok) throw new Error('fetch failed');
+        const rows = await res.json();
+        set({ listings: rows.map(rowToListing), loaded: true });
+      } catch {
+        set({ loaded: true });
+      } finally {
+        set({ loading: false });
+      }
+    },
 
-        set((state) => ({
-          listings: [...state.listings, listing],
-        }));
-        if (typeof window !== 'undefined') {
-          fetch(`/api/cms/${payload.userId}/listings`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...listing, tenantId: payload.userId }),
-          }).catch(() => undefined);
-        }
+    createListing: (payload) => {
+      const listings = get().listings;
+      const slug = ensureUniqueSlug(slugify(payload.address), listings);
+      const now = new Date();
+      const tenantId = payload.tenantId || payload.userId;
+      const listing: Listing = {
+        ...payload,
+        id: `listing_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        slug,
+        customOrder: listings.length,
+        createdAt: now,
+        updatedAt: now,
+        gallery: [...payload.gallery].sort((a, b) => a.order - b.order),
+      };
 
-        return listing;
-      },
+      set((state) => ({ listings: [...state.listings, listing] }));
+      persistToApi(listingToRow(listing, tenantId));
+      return listing;
+    },
 
-      createSampleListing: (userId) => {
-        const sampleAddress = '7523 Grover Ave';
-        return get().createListing({
-          userId,
-          address: sampleAddress,
-          description:
-            'Sample listing data for interaction testing. This modern residence features an open layout, updated finishes, and a private backyard ideal for entertaining.',
-          listPrice: 875000,
-          neighborhood: 'Brentwood',
-          city: 'Austin',
-          listingStatus: 'for_sale',
-          bedrooms: 4,
-          bathrooms: 3,
-          propertyType: 'Residential',
-          yearBuilt: 1954,
-          livingAreaSqft: 2024,
-          lotAreaValue: 0.21,
-          lotAreaUnit: 'acres',
-          taxesAnnual: 10318,
-          listingBrokerage: 'Compass RE Texas, LLC',
-          mlsNumber: `SAMPLE-${Date.now().toString().slice(-6)}`,
-          representation: 'seller_representation',
-          gallery: [
-            {
-              id: `sample_img_${Date.now()}_1`,
-              url: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1400&q=80',
-              caption: 'Front exterior',
-              order: 0,
-            },
-            {
-              id: `sample_img_${Date.now()}_2`,
-              url: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1400&q=80',
-              caption: 'Living room',
-              order: 1,
-            },
-            {
-              id: `sample_img_${Date.now()}_3`,
-              url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=80',
-              caption: 'Kitchen',
-              order: 2,
-            },
-            {
-              id: `sample_img_${Date.now()}_4`,
-              url: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1400&q=80',
-              caption: 'Primary bedroom',
-              order: 3,
-            },
-            {
-              id: `sample_img_${Date.now()}_5`,
-              url: 'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1400&q=80',
-              caption: 'Backyard',
-              order: 4,
-            },
-          ],
-        });
-      },
+    createSampleListing: (userId) => {
+      return get().createListing({
+        userId,
+        address: '7523 Grover Ave',
+        description: 'Sample listing data for interaction testing.',
+        listPrice: 875000,
+        neighborhood: 'Brentwood',
+        city: 'Austin',
+        listingStatus: 'for_sale',
+        bedrooms: 4,
+        bathrooms: 3,
+        propertyType: 'Residential',
+        yearBuilt: 1954,
+        livingAreaSqft: 2024,
+        lotAreaValue: 0.21,
+        lotAreaUnit: 'acres',
+        taxesAnnual: 10318,
+        listingBrokerage: 'Compass RE Texas, LLC',
+        mlsNumber: `SAMPLE-${Date.now().toString().slice(-6)}`,
+        representation: 'seller_representation',
+        gallery: [
+          { id: `sample_img_${Date.now()}_1`, url: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1400&q=80', caption: 'Front exterior', order: 0 },
+          { id: `sample_img_${Date.now()}_2`, url: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1400&q=80', caption: 'Living room', order: 1 },
+          { id: `sample_img_${Date.now()}_3`, url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=80', caption: 'Kitchen', order: 2 },
+          { id: `sample_img_${Date.now()}_4`, url: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1400&q=80', caption: 'Primary bedroom', order: 3 },
+          { id: `sample_img_${Date.now()}_5`, url: 'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1400&q=80', caption: 'Backyard', order: 4 },
+        ],
+      });
+    },
 
-      updateListing: (id, updates) => {
-        let updatedListing: Listing | undefined;
-        set((state) => ({
-          listings: state.listings.map((listing) => {
-            if (listing.id !== id) return listing;
-            const nextAddress = updates.address ?? listing.address;
-            const nextSlug = ensureUniqueSlug(slugify(nextAddress), state.listings, id);
-            updatedListing = normalizeListing({
-              ...listing,
-              ...updates,
-              slug: nextSlug,
-              updatedAt: new Date(),
-              gallery: updates.gallery ?? listing.gallery,
-            });
-            return updatedListing;
-          }),
-        }));
-        if (typeof window !== 'undefined' && updatedListing) {
-          fetch(`/api/cms/${updatedListing.userId}/listings`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...updatedListing, tenantId: updatedListing.userId }),
-          }).catch(() => undefined);
-        }
-      },
+    updateListing: (id, updates) => {
+      let updatedListing: Listing | undefined;
+      set((state) => ({
+        listings: state.listings.map((listing) => {
+          if (listing.id !== id) return listing;
+          const nextAddress = updates.address ?? listing.address;
+          const nextSlug = ensureUniqueSlug(slugify(nextAddress), state.listings, id);
+          updatedListing = normalizeListing({
+            ...listing,
+            ...updates,
+            slug: nextSlug,
+            updatedAt: new Date(),
+            gallery: updates.gallery ?? listing.gallery,
+          });
+          return updatedListing;
+        }),
+      }));
+      if (updatedListing) {
+        const tenantId = updatedListing.tenantId || updatedListing.userId;
+        persistToApi(listingToRow(updatedListing, tenantId));
+      }
+    },
 
-      deleteListing: (id) => {
-        set((state) => ({
-          listings: state.listings.filter((listing) => listing.id !== id),
-        }));
-      },
+    deleteListing: (id) => {
+      set((state) => ({ listings: state.listings.filter((l) => l.id !== id) }));
+      deleteFromApi(id);
+    },
 
-      duplicateListing: (id) => {
-        const existing = get().listings.find((listing) => listing.id === id);
-        if (!existing) return;
-        const listingCopyInput = {
-          ...existing,
-          address: `${existing.address} Copy`,
-          gallery: existing.gallery.map((img) => ({ ...img, id: `img_${Date.now()}_${Math.random().toString(36).slice(2, 7)}` })),
-        };
-        get().createListing({
-          ...listingCopyInput,
-          userId: existing.userId,
-          address: listingCopyInput.address,
-          description: listingCopyInput.description,
-          listPrice: listingCopyInput.listPrice,
-          neighborhood: listingCopyInput.neighborhood,
-          city: listingCopyInput.city,
-          listingStatus: listingCopyInput.listingStatus,
-          bedrooms: listingCopyInput.bedrooms,
-          bathrooms: listingCopyInput.bathrooms,
-          propertyType: listingCopyInput.propertyType,
-          yearBuilt: listingCopyInput.yearBuilt,
-          livingAreaSqft: listingCopyInput.livingAreaSqft,
-          lotAreaValue: listingCopyInput.lotAreaValue,
-          lotAreaUnit: listingCopyInput.lotAreaUnit,
-          taxesAnnual: listingCopyInput.taxesAnnual,
-          listingBrokerage: listingCopyInput.listingBrokerage,
-          mlsNumber: listingCopyInput.mlsNumber,
-          representation: listingCopyInput.representation,
-          gallery: listingCopyInput.gallery,
-        });
-      },
+    duplicateListing: (id) => {
+      const existing = get().listings.find((l) => l.id === id);
+      if (!existing) return;
+      get().createListing({
+        ...existing,
+        address: `${existing.address} Copy`,
+        gallery: existing.gallery.map((img) => ({
+          ...img,
+          id: `img_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        })),
+      });
+    },
 
-      updateListingOrder: (orderedListingIds) => {
-        set((state) => ({
-          listings: state.listings.map((listing) => {
-            const nextOrder = orderedListingIds.indexOf(listing.id);
-            if (nextOrder === -1) return listing;
-            return { ...listing, customOrder: nextOrder, updatedAt: new Date() };
-          }),
-        }));
-      },
+    updateListingOrder: (orderedListingIds) => {
+      set((state) => ({
+        listings: state.listings.map((listing) => {
+          const nextOrder = orderedListingIds.indexOf(listing.id);
+          if (nextOrder === -1) return listing;
+          const updated = { ...listing, customOrder: nextOrder, updatedAt: new Date() };
+          const tenantId = updated.tenantId || updated.userId;
+          persistToApi(listingToRow(updated, tenantId));
+          return updated;
+        }),
+      }));
+    },
 
-      getListingsForCurrentUser: (userId) => {
-        const normalizedListings = get().listings.map(normalizeListing);
-        const effectiveUserId = userId || useTenantContextStore.getState().effectiveUserId;
-        if (!effectiveUserId) return [];
-        return normalizedListings.filter((listing) => listing.userId === effectiveUserId);
-      },
+    getListingsForCurrentUser: (userId) => {
+      const normalizedListings = get().listings.map(normalizeListing);
+      const effectiveUserId = userId || useTenantContextStore.getState().effectiveUserId;
+      if (!effectiveUserId) return [];
+      return normalizedListings.filter((l) => l.userId === effectiveUserId);
+    },
 
-      getListingBySlug: (slug) => {
-        const effectiveUserId = useTenantContextStore.getState().effectiveUserId;
-        if (!effectiveUserId) return undefined;
-        const listing = get().listings.find(
-          (item) => item.slug === slug && item.userId === effectiveUserId
-        );
-        return listing ? normalizeListing(listing) : undefined;
-      },
+    getListingBySlug: (slug) => {
+      const effectiveUserId = useTenantContextStore.getState().effectiveUserId;
+      if (!effectiveUserId) return undefined;
+      const listing = get().listings.find((item) => item.slug === slug && item.userId === effectiveUserId);
+      return listing ? normalizeListing(listing) : undefined;
+    },
 
-      filterAndSortListings: (listings, config) => {
-        const statuses = config?.statuses ?? [];
-        const sortBy = config?.sortBy ?? 'date_added_desc';
-
-        const filtered = statuses.length
-          ? listings.filter((listing) => statuses.includes(listing.listingStatus))
-          : listings;
-
-        const sorted = [...filtered];
-        if (sortBy === 'price_desc') {
-          sorted.sort((a, b) => b.listPrice - a.listPrice);
-        } else if (sortBy === 'price_asc') {
-          sorted.sort((a, b) => a.listPrice - b.listPrice);
-        } else if (sortBy === 'custom_order') {
-          sorted.sort((a, b) => a.customOrder - b.customOrder);
-        } else {
-          sorted.sort((a, b) => toDate(b.createdAt).getTime() - toDate(a.createdAt).getTime());
-        }
-
-        return sorted.map(normalizeListing);
-      },
-    }),
-    {
-      name: 'listings-storage',
-      version: 1,
-      storage: createJSONStorage(() => ({
-        getItem: (name) => localStorage.getItem(name),
-        setItem: (name, value) => {
-          try {
-            localStorage.setItem(name, value);
-          } catch (error) {
-            // Prevent quota exceptions from breaking create/update flows.
-            console.error('Failed to persist listings state:', error);
-          }
-        },
-        removeItem: (name) => localStorage.removeItem(name),
-      })),
-    }
-  )
+    filterAndSortListings: (listings, config) => {
+      const statuses = config?.statuses ?? [];
+      const sortBy = config?.sortBy ?? 'date_added_desc';
+      const filtered = statuses.length
+        ? listings.filter((l) => statuses.includes(l.listingStatus))
+        : listings;
+      const sorted = [...filtered];
+      if (sortBy === 'price_desc') sorted.sort((a, b) => b.listPrice - a.listPrice);
+      else if (sortBy === 'price_asc') sorted.sort((a, b) => a.listPrice - b.listPrice);
+      else if (sortBy === 'custom_order') sorted.sort((a, b) => a.customOrder - b.customOrder);
+      else sorted.sort((a, b) => toDate(b.createdAt).getTime() - toDate(a.createdAt).getTime());
+      return sorted.map(normalizeListing);
+    },
+  })
 );
