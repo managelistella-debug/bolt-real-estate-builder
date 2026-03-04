@@ -17,7 +17,7 @@ const inputClass = 'h-[40px] w-full rounded-lg border border-[#EBEBEB] bg-[#F5F5
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuthStore();
+  const _authStore = useAuthStore;
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -26,14 +26,62 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      const success = await login(data.email, data.password);
-      if (success) {
-        toast({ title: 'Welcome back!', description: "You've successfully logged in." });
-        router.push('/dashboard');
-      } else {
-        toast({ variant: 'destructive', title: 'Login failed', description: 'Invalid email or password.' });
+      // Call login API directly to avoid any stale cached store logic
+      const loginRes = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: data.email, password: data.password }),
+      });
+
+      if (!loginRes.ok) {
+        const err = await loginRes.json().catch(() => ({}));
+        toast({ variant: 'destructive', title: 'Login failed', description: err.error || 'Invalid email or password.' });
+        setIsLoading(false);
+        return;
       }
-    } catch {
+
+      const loginData = await loginRes.json();
+      const userId = loginData.user?.id;
+
+      if (!userId) {
+        toast({ variant: 'destructive', title: 'Login failed', description: 'Could not retrieve user.' });
+        setIsLoading(false);
+        return;
+      }
+
+      const profileRes = await fetch(`/api/auth/profile?userId=${userId}`);
+      const profile = profileRes.ok ? await profileRes.json() : null;
+
+      // Hydrate the auth store directly
+      useAuthStore.setState({
+        user: {
+          id: userId,
+          email: loginData.user.email || data.email,
+          name: profile?.name || data.email.split('@')[0],
+          role: profile?.role || 'business_user',
+          createdAt: new Date(profile?.created_at || Date.now()),
+          businessId: profile?.business_id ?? undefined,
+          lastLoginAt: new Date(),
+          permissions: profile?.permissions ?? undefined,
+        },
+        actorUser: {
+          id: userId,
+          email: loginData.user.email || data.email,
+          name: profile?.name || data.email.split('@')[0],
+          role: profile?.role || 'business_user',
+          createdAt: new Date(profile?.created_at || Date.now()),
+          businessId: profile?.business_id ?? undefined,
+          lastLoginAt: new Date(),
+          permissions: profile?.permissions ?? undefined,
+        },
+        isAuthenticated: true,
+        isImpersonating: false,
+      });
+
+      toast({ title: 'Welcome back!', description: "You've successfully logged in." });
+      router.push('/dashboard');
+    } catch (err) {
+      console.error('Login error:', err);
       toast({ variant: 'destructive', title: 'Error', description: 'Something went wrong. Please try again.' });
     } finally {
       setIsLoading(false);
