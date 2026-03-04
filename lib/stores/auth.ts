@@ -3,7 +3,6 @@ import { persist } from 'zustand/middleware';
 import { User } from '@/lib/types';
 import { useTenantContextStore } from './tenantContext';
 import { useAuditLogStore } from './auditLog';
-import { createClient } from '@/lib/supabase/client';
 
 interface AuthState {
   users: User[];
@@ -32,19 +31,25 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (email: string, password: string) => {
         try {
-          const supabase = createClient();
-          const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-          if (error || !data.user) return false;
+          const loginRes = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+          });
+          if (!loginRes.ok) return false;
+          const loginData = await loginRes.json();
+          const userId = loginData.user?.id;
+          if (!userId) return false;
 
-          const profileRes = await fetch(`/api/auth/profile?userId=${data.user.id}`);
+          const profileRes = await fetch(`/api/auth/profile?userId=${userId}`);
           const profile = profileRes.ok ? await profileRes.json() : null;
 
           const user: User = {
-            id: data.user.id,
-            email: data.user.email || email,
+            id: userId,
+            email: loginData.user.email || email,
             name: profile?.name || email.split('@')[0],
             role: profile?.role || 'business_user',
-            createdAt: new Date(data.user.created_at),
+            createdAt: new Date(profile?.created_at || Date.now()),
             businessId: profile?.business_id ?? undefined,
             lastLoginAt: new Date(),
             permissions: profile?.permissions ?? undefined,
@@ -60,14 +65,12 @@ export const useAuthStore = create<AuthState>()(
 
           useTenantContextStore.getState().setActor({ id: user.id, role: user.role });
 
-          // Update last_login_at in the database
           fetch('/api/data/users', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: user.id, last_login_at: new Date().toISOString() }),
           }).catch(() => undefined);
 
-          // Log admin login event for admin/support users
           if (user.role === 'super_admin' || user.role === 'internal_admin') {
             useAuditLogStore.getState().addEvent({
               type: 'admin_login',
@@ -82,10 +85,6 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        try {
-          const supabase = createClient();
-          supabase.auth.signOut();
-        } catch { /* ignore */ }
         set({ user: null, actorUser: null, isAuthenticated: false, isImpersonating: false });
         useTenantContextStore.setState({
           actorUserId: '',
@@ -105,9 +104,6 @@ export const useAuthStore = create<AuthState>()(
 
           if (!res.ok) return false;
           const { userId } = await res.json();
-
-          const supabase = createClient();
-          await supabase.auth.signInWithPassword({ email, password });
 
           const user: User = {
             id: userId,
