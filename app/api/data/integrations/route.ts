@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/server';
+import { ensureTenant } from '@/lib/server/ensureTenant';
 
 const sb = () => getServiceClient();
 
@@ -21,6 +22,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
+  if (body.tenant_id) await ensureTenant(body.tenant_id);
   const { data, error } = await sb()
     .from('integration_configs')
     .upsert(body)

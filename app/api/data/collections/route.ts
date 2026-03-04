@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/server';
+import { ensureTenant } from '@/lib/server/ensureTenant';
 
 const sb = () => getServiceClient();
 
@@ -18,6 +19,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
+  if (body.tenant_id) await ensureTenant(body.tenant_id);
   const { data, error } = await sb().from('image_collections').upsert(body).select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data, { status: 201 });
