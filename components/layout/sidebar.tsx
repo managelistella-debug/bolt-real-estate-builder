@@ -32,7 +32,8 @@ const navigation = [
 
 const adminNavigation = [
   { name: 'Admin Home', href: '/admin', icon: Shield },
-  { name: 'Admin Users', href: '/admin/users', icon: Users },
+  { name: 'Admin Staff', href: '/admin/users', icon: Shield },
+  { name: 'Client Users', href: '/admin/clients', icon: Users },
   { name: 'Admin Templates', href: '/admin/templates', icon: FolderKanban },
   { name: 'Admin Audit', href: '/admin/audit', icon: Shield },
 ];

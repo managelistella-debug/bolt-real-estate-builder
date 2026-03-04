@@ -46,6 +46,8 @@ export const useAuthStore = create<AuthState>()(
             role: profile?.role || 'business_user',
             createdAt: new Date(data.user.created_at),
             businessId: profile?.business_id ?? undefined,
+            lastLoginAt: new Date(),
+            permissions: profile?.permissions ?? undefined,
           };
 
           set({
@@ -57,6 +59,22 @@ export const useAuthStore = create<AuthState>()(
           });
 
           useTenantContextStore.getState().setActor({ id: user.id, role: user.role });
+
+          // Update last_login_at in the database
+          fetch('/api/data/users', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id, last_login_at: new Date().toISOString() }),
+          }).catch(() => undefined);
+
+          // Log admin login event for admin/support users
+          if (user.role === 'super_admin' || user.role === 'internal_admin') {
+            useAuditLogStore.getState().addEvent({
+              type: 'admin_login',
+              actorUserId: user.id,
+            });
+          }
+
           return true;
         } catch {
           return false;

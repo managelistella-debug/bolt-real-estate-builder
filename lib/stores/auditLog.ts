@@ -7,7 +7,11 @@ export type AuditEventType =
   | 'admin_assigned_theme'
   | 'template_published_global'
   | 'integration_updated'
-  | 'api_key_created';
+  | 'api_key_created'
+  | 'admin_login'
+  | 'password_reset'
+  | 'user_updated'
+  | 'permissions_updated';
 
 export interface AuditEvent {
   id: string;

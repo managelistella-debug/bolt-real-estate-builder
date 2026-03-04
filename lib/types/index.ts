@@ -3,13 +3,29 @@ export * from './headless';
 
 export type UserRole = 'super_admin' | 'internal_admin' | 'business_user';
 
+export interface SupportPermissions {
+  canDeleteUsers: boolean;
+  canResetPasswords: boolean;
+  canManageIntegrations: boolean;
+  canViewAllClients: boolean;
+}
+
+export const DEFAULT_SUPPORT_PERMISSIONS: SupportPermissions = {
+  canDeleteUsers: false,
+  canResetPasswords: true,
+  canManageIntegrations: true,
+  canViewAllClients: true,
+};
+
 export interface User {
   id: string;
   email: string;
   name: string;
   role: UserRole;
   createdAt: Date;
-  businessId?: string; // Only for business users
+  businessId?: string;
+  lastLoginAt?: Date;
+  permissions?: SupportPermissions;
 }
 
 export type TenantScope = 'global' | 'tenant' | 'assigned_private';
