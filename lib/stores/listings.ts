@@ -12,8 +12,8 @@ interface ListingsState {
   loaded: boolean;
   loading: boolean;
   fetchListings: (tenantId: string) => Promise<void>;
-  createListing: (payload: Omit<Listing, 'id' | 'slug' | 'customOrder' | 'createdAt' | 'updatedAt'>) => Listing;
-  createSampleListing: (userId: string) => Listing;
+  createListing: (payload: Omit<Listing, 'id' | 'slug' | 'customOrder' | 'createdAt' | 'updatedAt'>) => Promise<Listing>;
+  createSampleListing: (userId: string) => Promise<Listing>;
   updateListing: (id: string, updates: Partial<Omit<Listing, 'id' | 'userId' | 'createdAt'>>) => void;
   deleteListing: (id: string) => void;
   duplicateListing: (id: string) => void;
@@ -114,12 +114,17 @@ function listingToRow(l: Listing, tenantId: string) {
   };
 }
 
-function persistToApi(row: ReturnType<typeof listingToRow>) {
-  fetch('/api/data/listings', {
+async function persistToApi(row: ReturnType<typeof listingToRow>) {
+  const res = await fetch('/api/data/listings', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(row),
-  }).catch(() => undefined);
+  });
+  if (!res.ok) {
+    const message = await res.text().catch(() => 'Failed to save listing');
+    throw new Error(message || 'Failed to save listing');
+  }
+  return res.json();
 }
 
 function deleteFromApi(id: string) {
@@ -147,13 +152,14 @@ export const useListingsStore = create<ListingsState>()(
       }
     },
 
-    createListing: (payload) => {
+    createListing: async (payload) => {
       const listings = get().listings;
       const slug = ensureUniqueSlug(slugify(payload.address), listings);
       const now = new Date();
       const tenantId = payload.tenantId || payload.userId;
       const listing: Listing = {
         ...payload,
+        tenantId,
         id: `listing_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         slug,
         customOrder: listings.length,
@@ -163,13 +169,24 @@ export const useListingsStore = create<ListingsState>()(
       };
 
       set((state) => ({ listings: [...state.listings, listing] }));
-      persistToApi(listingToRow(listing, tenantId));
-      return listing;
+      try {
+        const savedRow = await persistToApi(listingToRow(listing, tenantId));
+        const saved = rowToListing(savedRow);
+        set((state) => ({
+          listings: state.listings.map((item) => (item.id === listing.id ? saved : item)),
+        }));
+        return saved;
+      } catch (error) {
+        // Roll back optimistic insert if persistence fails.
+        set((state) => ({ listings: state.listings.filter((item) => item.id !== listing.id) }));
+        throw error;
+      }
     },
 
-    createSampleListing: (userId) => {
+    createSampleListing: async (userId) => {
       return get().createListing({
         userId,
+        tenantId: userId,
         address: '7523 Grover Ave',
         description: 'Sample listing data for interaction testing.',
         listPrice: 875000,

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthStore } from '@/lib/stores/auth';
+import { useTenantContextStore } from '@/lib/stores/tenantContext';
 import { useListingsStore } from '@/lib/stores/listings';
 import { Listing, ListingStatus } from '@/lib/types';
 import { ListingFormDialog } from '@/components/listings/ListingFormDialog';
@@ -26,8 +27,9 @@ const statusPillClass: Record<string, string> = {
 
 export default function ListingsPage() {
   const { user } = useAuthStore();
+  const { effectiveUserId } = useTenantContextStore();
   const { toast } = useToast();
-  const { createListing, createSampleListing, updateListing, deleteListing, duplicateListing, getListingsForCurrentUser } = useListingsStore();
+  const { createListing, createSampleListing, fetchListings, updateListing, deleteListing, duplicateListing, getListingsForCurrentUser } = useListingsStore();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | ListingStatus>('all');
@@ -54,9 +56,13 @@ export default function ListingsPage() {
     });
   }, [search, statusFilter, userListings]);
 
-  const handleCreate = (payload: Omit<Listing, 'id' | 'slug' | 'customOrder' | 'createdAt' | 'updatedAt'>) => {
+  const activeTenantId = effectiveUserId || user?.id;
+
+  const handleCreate = async (payload: Omit<Listing, 'id' | 'slug' | 'customOrder' | 'createdAt' | 'updatedAt'>) => {
     try {
-      createListing(payload);
+      const tenantId = activeTenantId || payload.userId;
+      await createListing({ ...payload, tenantId });
+      if (tenantId) await fetchListings(tenantId);
       toast({ title: 'Listing created', description: 'Your new listing has been saved.' });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Could not create listing', description: error instanceof Error ? error.message : 'Please try again.' });
@@ -87,10 +93,19 @@ export default function ListingsPage() {
     toast({ title: 'Listing duplicated', description: 'A copy of the listing has been created.' });
   };
 
-  const handleCreateSample = () => {
-    if (!user) return;
-    createSampleListing(user.id);
-    toast({ title: 'Sample listing created', description: 'A sample listing was added to help you test interactions.' });
+  const handleCreateSample = async () => {
+    if (!activeTenantId) return;
+    try {
+      await createSampleListing(activeTenantId);
+      await fetchListings(activeTenantId);
+      toast({ title: 'Sample listing created', description: 'A sample listing was added to help you test interactions.' });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Could not create sample listing',
+        description: error instanceof Error ? error.message : 'Please try again.',
+      });
+    }
   };
 
   return (
