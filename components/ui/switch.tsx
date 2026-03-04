@@ -24,7 +24,7 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         }}
         className={cn(
           "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-          checked ? "bg-blue-600" : "bg-gray-200 dark:bg-gray-700",
+          checked ? "bg-[#DAFF07]" : "bg-gray-200 dark:bg-gray-700",
           disabled && "cursor-not-allowed opacity-50",
           !disabled && "cursor-pointer",
           className

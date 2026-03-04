@@ -23,7 +23,7 @@ interface ClientProfile {
   business_id: string | null;
   created_at: string;
   last_login_at: string | null;
-  stats: { listings: number; blogs: number; leads: number };
+  stats: { listings: number; blogs: number; leads: number; testimonials: number };
   connectionStatus: 'connected' | 'not_connected';
 }
 
@@ -215,6 +215,9 @@ export default function ClientUsersPage() {
                         <span className="flex items-center gap-1 text-[11px] text-[#888C99]">
                           <UsersIcon className="h-3 w-3" /> {client.stats.leads}
                         </span>
+                        <span className="flex items-center gap-1 text-[11px] text-[#888C99]">
+                          <FileText className="h-3 w-3" /> {client.stats.testimonials}
+                        </span>
                       </div>
                     </div>
                     <div className="flex shrink-0 gap-1.5">
@@ -278,7 +281,7 @@ export default function ClientUsersPage() {
 
                         <div className="rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] p-4">
                           <h4 className="mb-3 text-[13px] font-medium text-black">Content Statistics</h4>
-                          <div className="grid grid-cols-3 gap-3">
+                          <div className="grid grid-cols-4 gap-3">
                             <div className="rounded-lg bg-white p-3 text-center">
                               <Building2 className="mx-auto mb-1 h-4 w-4 text-[#888C99]" />
                               <p className="text-[18px] font-medium text-black">{client.stats.listings}</p>
@@ -293,6 +296,11 @@ export default function ClientUsersPage() {
                               <UsersIcon className="mx-auto mb-1 h-4 w-4 text-[#888C99]" />
                               <p className="text-[18px] font-medium text-black">{client.stats.leads}</p>
                               <p className="text-[11px] text-[#888C99]">Leads</p>
+                            </div>
+                            <div className="rounded-lg bg-white p-3 text-center">
+                              <FileText className="mx-auto mb-1 h-4 w-4 text-[#888C99]" />
+                              <p className="text-[18px] font-medium text-black">{client.stats.testimonials}</p>
+                              <p className="text-[11px] text-[#888C99]">Testimonials</p>
                             </div>
                           </div>
                         </div>

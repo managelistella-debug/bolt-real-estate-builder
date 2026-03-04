@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: 'Tenant not found. Provision the tenant first.',
-      checks: { tenant: false, apiKey: false, listings: false },
+      checks: { tenant: false, apiKey: false, listings: 0, blogs: 0, testimonials: 0, webhook: false },
     });
   }
 
@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
       apiKey: keyValid,
       listings: tenant.listings.length,
       blogs: tenant.blogs.length,
+      testimonials: tenant.testimonials.length,
       webhook: webhookConfigured,
       webhookUrl: tenant.infra.revalidationWebhookUrl ?? null,
       webhookStatus: tenant.infra.revalidationStatus,

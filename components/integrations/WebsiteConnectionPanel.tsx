@@ -14,6 +14,7 @@ interface ConnectionState {
   webhookStatus: string;
   listingsCount: number;
   blogsCount: number;
+  testimonialsCount: number;
 }
 
 interface TestResult {
@@ -21,6 +22,7 @@ interface TestResult {
   apiKey: boolean;
   listings: number;
   blogs: number;
+  testimonials: number;
   webhook: boolean;
   webhookUrl: string | null;
   webhookStatus: string;
@@ -107,6 +109,7 @@ export function WebsiteConnectionPanel({ tenantId, userName, isAdmin }: Props) {
           webhookStatus: data.connection.webhookStatus,
           listingsCount: data.connection.listingsCount,
           blogsCount: data.connection.blogsCount,
+          testimonialsCount: data.connection.testimonialsCount ?? 0,
         });
         if (data.connection.webhookUrl) setWebhookUrl(data.connection.webhookUrl);
       } else {
@@ -144,7 +147,8 @@ export function WebsiteConnectionPanel({ tenantId, userName, isAdmin }: Props) {
           webhookUrl: data.connection.webhookUrl ?? '',
           webhookStatus: data.connection.webhookStatus,
           listingsCount: data.connection.listingsCount,
-          blogsCount: 0,
+          blogsCount: data.connection.blogsCount ?? 0,
+          testimonialsCount: data.connection.testimonialsCount ?? 0,
         });
         setShowCredentials(true);
       }
@@ -197,6 +201,8 @@ export function WebsiteConnectionPanel({ tenantId, userName, isAdmin }: Props) {
 
   const defaultApiKey = conn?.apiKey ?? `demo_public_key_${tenantId}`;
   const listingsEndpoint = `${apiBaseUrl}/api/public/${tenantId}/listings`;
+  const blogsEndpoint = `${apiBaseUrl}/api/public/${tenantId}/blogs`;
+  const testimonialsEndpoint = `${apiBaseUrl}/api/public/${tenantId}/testimonials`;
 
   return (
     <div className="rounded-xl border border-[#EBEBEB] bg-white p-5 space-y-5">
@@ -212,7 +218,7 @@ export function WebsiteConnectionPanel({ tenantId, userName, isAdmin }: Props) {
           <p className="mt-1 text-[13px] text-[#888C99]">
             {isAdmin && userName
               ? `Manage the API connection for ${userName}'s account.`
-              : 'Connect an external website to pull listings from your CMS.'}
+              : 'Connect an external website to pull listings, blogs, and testimonials from your CMS.'}
           </p>
         </div>
         {conn?.provisioned && (
@@ -264,7 +270,7 @@ export function WebsiteConnectionPanel({ tenantId, userName, isAdmin }: Props) {
       {conn?.provisioned && (
         <>
           {/* Stats row */}
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-5">
             <div className="rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] p-3">
               <p className="text-[11px] font-medium uppercase tracking-wide text-[#888C99]">Listings</p>
               <p className="mt-0.5 text-[18px] font-medium text-black">{conn.listingsCount}</p>
@@ -272,6 +278,10 @@ export function WebsiteConnectionPanel({ tenantId, userName, isAdmin }: Props) {
             <div className="rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] p-3">
               <p className="text-[11px] font-medium uppercase tracking-wide text-[#888C99]">Blog Posts</p>
               <p className="mt-0.5 text-[18px] font-medium text-black">{conn.blogsCount}</p>
+            </div>
+            <div className="rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] p-3">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-[#888C99]">Testimonials</p>
+              <p className="mt-0.5 text-[18px] font-medium text-black">{conn.testimonialsCount}</p>
             </div>
             <div className="rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] p-3">
               <p className="text-[11px] font-medium uppercase tracking-wide text-[#888C99]">Webhook</p>
@@ -364,6 +374,12 @@ export function WebsiteConnectionPanel({ tenantId, userName, isAdmin }: Props) {
                   <span className="text-black">{testResult.blogs} blog post{testResult.blogs !== 1 ? 's' : ''} available</span>
                 </div>
                 <div className="flex items-center gap-2 text-[13px]">
+                  <StatusDot ok={testResult.testimonials > 0} />
+                  <span className="text-black">
+                    {testResult.testimonials} testimonial{testResult.testimonials !== 1 ? 's' : ''} available
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-[13px]">
                   <StatusDot ok={testResult.webhook} />
                   <span className="text-black">
                     Revalidation webhook {testResult.webhook ? 'configured' : 'not configured'}
@@ -383,6 +399,8 @@ export function WebsiteConnectionPanel({ tenantId, userName, isAdmin }: Props) {
                 <Field label="API Base URL" value={apiBaseUrl} />
               </div>
               <Field label="Listings Endpoint" value={listingsEndpoint} />
+              <Field label="Blogs Endpoint" value={blogsEndpoint} />
+              <Field label="Testimonials Endpoint" value={testimonialsEndpoint} />
 
               <div className="space-y-1">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-[#888C99]">Environment Variables</p>
@@ -399,13 +417,25 @@ TENANT_ID=${tenantId}`}</pre>
               <div className="space-y-1">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-[#888C99]">Quick Fetch</p>
                 <div className="relative rounded-md border border-[#EBEBEB] bg-white p-3">
-                  <pre className="overflow-x-auto text-[12px] leading-5 text-black">{`const res = await fetch(
+                  <pre className="overflow-x-auto text-[12px] leading-5 text-black">{`const listingsRes = await fetch(
   '${listingsEndpoint}',
   { headers: { 'x-api-key': '${defaultApiKey}' } }
 );
-const { data: listings } = await res.json();`}</pre>
+const { items: listings } = await listingsRes.json();
+
+const blogsRes = await fetch(
+  '${blogsEndpoint}?status=published',
+  { headers: { 'x-api-key': '${defaultApiKey}' } }
+);
+const { items: blogs } = await blogsRes.json();
+
+const testimonialsRes = await fetch(
+  '${testimonialsEndpoint}',
+  { headers: { 'x-api-key': '${defaultApiKey}' } }
+);
+const { items: testimonials } = await testimonialsRes.json();`}</pre>
                   <div className="absolute right-2 top-2">
-                    <CopyBtn value={`const res = await fetch(\n  '${listingsEndpoint}',\n  { headers: { 'x-api-key': '${defaultApiKey}' } }\n);\nconst { data: listings } = await res.json();`} />
+                    <CopyBtn value={`const listingsRes = await fetch(\n  '${listingsEndpoint}',\n  { headers: { 'x-api-key': '${defaultApiKey}' } }\n);\nconst { items: listings } = await listingsRes.json();\n\nconst blogsRes = await fetch(\n  '${blogsEndpoint}?status=published',\n  { headers: { 'x-api-key': '${defaultApiKey}' } }\n);\nconst { items: blogs } = await blogsRes.json();\n\nconst testimonialsRes = await fetch(\n  '${testimonialsEndpoint}',\n  { headers: { 'x-api-key': '${defaultApiKey}' } }\n);\nconst { items: testimonials } = await testimonialsRes.json();`} />
                   </div>
                 </div>
               </div>

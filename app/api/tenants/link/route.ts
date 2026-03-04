@@ -40,6 +40,8 @@ export async function POST(request: NextRequest) {
       webhookUrl: tenant?.infra.revalidationWebhookUrl ?? null,
       webhookStatus: tenant?.infra.revalidationStatus ?? 'idle',
       listingsCount: tenant?.listings.length ?? 0,
+      blogsCount: tenant?.blogs.length ?? 0,
+      testimonialsCount: tenant?.testimonials.length ?? 0,
     },
   });
 }
@@ -66,6 +68,7 @@ export async function GET(request: NextRequest) {
       webhookStatus: tenant.infra.revalidationStatus ?? 'idle',
       listingsCount: tenant.listings.length,
       blogsCount: tenant.blogs.length,
+      testimonialsCount: tenant.testimonials.length,
     },
   });
 }

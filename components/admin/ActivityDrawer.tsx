@@ -10,7 +10,7 @@ interface ActivityDrawerProps {
 }
 
 const eventConfig: Record<AuditEventType, { label: string; icon: typeof Clock; color: string }> = {
-  admin_login: { label: 'Logged in', icon: Clock, color: 'text-blue-500' },
+  admin_login: { label: 'Logged in', icon: Clock, color: 'text-[#A2BD05]' },
   impersonation_started: { label: 'Started impersonation', icon: Shield, color: 'text-orange-500' },
   impersonation_stopped: { label: 'Stopped impersonation', icon: Shield, color: 'text-green-500' },
   password_reset: { label: 'Reset password', icon: KeyRound, color: 'text-red-500' },

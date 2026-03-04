@@ -145,7 +145,10 @@ export function Sidebar() {
             </p>
             <div className="space-y-0.5">
               {adminNavigation.map((item) => {
-                const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
+                const isAdminHome = item.href === '/admin';
+                const isActive = isAdminHome
+                  ? pathname === item.href
+                  : pathname === item.href || pathname?.startsWith(item.href + '/');
                 return (
                   <Link
                     key={item.name}

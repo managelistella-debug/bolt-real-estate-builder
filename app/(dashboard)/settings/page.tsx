@@ -23,7 +23,7 @@ interface DomainApiRecord {
 const statusStyles: Record<DomainConnectionStatus, string> = {
   not_started: 'bg-slate-100 text-slate-700',
   pending_dns: 'bg-amber-100 text-amber-800',
-  verifying: 'bg-blue-100 text-blue-800',
+  verifying: 'bg-[#DAFF07]/20 text-[#556000]',
   connected: 'bg-emerald-100 text-emerald-800',
   error: 'bg-rose-100 text-rose-800',
 };

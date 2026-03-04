@@ -168,7 +168,7 @@ export default function AdminStaffPage() {
                       </div>
                       <p className="text-[13px] text-[#888C99]">{member.email}</p>
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                        <span className={`rounded-full px-2 py-0.5 text-[11px] ${member.role === 'super_admin' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>
+                        <span className={`rounded-full px-2 py-0.5 text-[11px] ${member.role === 'super_admin' ? 'bg-yellow-100 text-yellow-800' : 'bg-[#DAFF07]/20 text-[#556000]'}`}>
                           {member.role === 'super_admin' ? 'Super Admin' : 'Support'}
                         </span>
                         {member.last_login_at && (

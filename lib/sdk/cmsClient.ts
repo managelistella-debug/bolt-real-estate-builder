@@ -1,4 +1,4 @@
-import { BlogPost, Listing } from '@/lib/types';
+import { BlogPost, CmsTestimonial, Listing } from '@/lib/types';
 
 export interface CmsClientConfig {
   baseUrl: string;
@@ -28,6 +28,14 @@ interface SingleResponse<T> {
   apiVersion: 'v1';
   tenant: string;
   item: T;
+}
+
+interface TestimonialsQueryOptions {
+  source?: 'manual' | 'google';
+  minRating?: number;
+  sort?: 'sort_order_asc' | 'rating_desc' | 'created_desc';
+  page?: number;
+  pageSize?: number;
 }
 
 function buildHeaders(apiKey: string): HeadersInit {
@@ -87,8 +95,23 @@ export function createCmsClient(config: CmsClientConfig) {
       return data.item || null;
     },
 
-    async getPosts(): Promise<BlogPost[]> {
-      const data = await getJson<PaginatedResponse<BlogPost>>(`${prefix}/blogs`, config.apiKey);
+    async getPosts(options?: {
+      status?: 'draft' | 'published' | 'archived';
+      category?: string;
+      tag?: string;
+      sort?: 'published_desc' | 'published_asc' | 'title_asc' | 'title_desc';
+      page?: number;
+      pageSize?: number;
+    }): Promise<BlogPost[]> {
+      const url = new URL(`${prefix}/blogs`, 'http://placeholder');
+      const merged = { status: 'published', ...options };
+      if (merged.status) url.searchParams.set('status', merged.status);
+      if (merged.category) url.searchParams.set('category', merged.category);
+      if (merged.tag) url.searchParams.set('tag', merged.tag);
+      if (merged.sort) url.searchParams.set('sort', merged.sort);
+      if (merged.page) url.searchParams.set('page', String(merged.page));
+      if (merged.pageSize) url.searchParams.set('pageSize', String(merged.pageSize));
+      const data = await getJson<PaginatedResponse<BlogPost>>(`${prefix}/blogs${url.search}`, config.apiKey);
       return data.items || [];
     },
 
@@ -106,6 +129,29 @@ export function createCmsClient(config: CmsClientConfig) {
         config.apiKey,
       );
       return data.item || {};
+    },
+
+    async getTestimonials(options?: TestimonialsQueryOptions): Promise<CmsTestimonial[]> {
+      const url = new URL(`${prefix}/testimonials`, 'http://placeholder');
+      if (options?.source) url.searchParams.set('source', options.source);
+      if (options?.minRating) url.searchParams.set('minRating', String(options.minRating));
+      if (options?.sort) url.searchParams.set('sort', options.sort);
+      if (options?.page) url.searchParams.set('page', String(options.page));
+      if (options?.pageSize) url.searchParams.set('pageSize', String(options.pageSize));
+      const data = await getJson<PaginatedResponse<CmsTestimonial>>(`${prefix}/testimonials${url.search}`, config.apiKey);
+      return data.items || [];
+    },
+
+    async getTestimonialById(id: string): Promise<CmsTestimonial | null> {
+      try {
+        const data = await getJson<SingleResponse<CmsTestimonial>>(
+          `${prefix}/testimonials/${encodeURIComponent(id)}`,
+          config.apiKey,
+        );
+        return data.item || null;
+      } catch {
+        return null;
+      }
     },
   };
 }

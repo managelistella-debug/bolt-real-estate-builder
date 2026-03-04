@@ -92,7 +92,7 @@ Copy these files from `lib/sdk/`:
 
 | File                       | Purpose                                          |
 |----------------------------|--------------------------------------------------|
-| `headless-cms-client.ts`   | SDK with types — fetches listings, blogs, globals |
+| `headless-cms-client.ts`   | SDK with types — fetches listings, blogs, testimonials, globals |
 | `ListingDetail.tsx`        | Reference listing detail component (optional)     |
 
 ### Step 4 — Create a CMS client instance
@@ -134,6 +134,36 @@ export default async function HomePage() {
         ))}
       </section>
       <YourFooter />
+    </>
+  );
+}
+```
+
+### Step 5b — Wire blog and testimonial sections
+
+```tsx
+import { cms } from '@/lib/cms';
+
+export default async function MarketingSections() {
+  const posts = await cms.getPosts({ status: 'published', pageSize: 3, sort: 'published_desc' });
+  const testimonials = await cms.getTestimonials({ sort: 'rating_desc', pageSize: 6 });
+
+  return (
+    <>
+      <section>
+        <h2>Latest Articles</h2>
+        {posts.map((post) => (
+          <a key={post.id} href={`/blog/${post.slug}`}>{post.title}</a>
+        ))}
+      </section>
+      <section>
+        <h2>Client Testimonials</h2>
+        {testimonials.map((t) => (
+          <blockquote key={t.id}>
+            {t.quote} — {t.authorName}
+          </blockquote>
+        ))}
+      </section>
     </>
   );
 }
@@ -211,3 +241,4 @@ export async function POST(request: NextRequest) {
 3. Verify the external site homepage shows the new listing.
 4. Click through to the listing detail page.
 5. Edit the listing in the CMS — the webhook should fire and the external site should refresh.
+6. Publish a blog post and add/update testimonials in CMS; verify both API feeds and website sections update.

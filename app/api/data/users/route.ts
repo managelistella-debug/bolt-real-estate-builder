@@ -24,10 +24,11 @@ export async function GET(req: NextRequest) {
       (profiles || []).map(async (p: Record<string, unknown>) => {
         const tenantId = p.business_id || p.id;
 
-        const [listings, blogs, leads] = await Promise.all([
+        const [listings, blogs, leads, testimonials] = await Promise.all([
           supabase.from('listings').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId as string),
           supabase.from('blog_posts').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId as string),
           supabase.from('leads').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId as string),
+          supabase.from('testimonials').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId as string),
         ]);
 
         const { data: tenant } = await supabase
@@ -42,6 +43,7 @@ export async function GET(req: NextRequest) {
             listings: listings.count ?? 0,
             blogs: blogs.count ?? 0,
             leads: leads.count ?? 0,
+            testimonials: testimonials.count ?? 0,
           },
           connectionStatus: tenant?.website_id ? 'connected' : 'not_connected',
         };

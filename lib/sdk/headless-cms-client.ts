@@ -66,12 +66,31 @@ export interface BlogPost {
   tenantId?: string;
   title: string;
   slug: string;
-  excerpt: string;
-  content: string;
-  coverImage?: string;
+  excerpt?: string;
+  metaDescription?: string;
+  contentHtml: string;
+  featuredImage?: string;
+  authorName?: string;
+  tags: string[];
+  templateId: string;
+  customOrder: number;
   category?: string;
-  status: 'draft' | 'published';
+  status: 'draft' | 'published' | 'archived';
   publishedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CmsTestimonial {
+  id: string;
+  userId: string;
+  tenantId?: string;
+  quote: string;
+  authorName: string;
+  authorTitle?: string;
+  rating?: number;
+  source?: 'manual' | 'google';
+  sortOrder: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -107,6 +126,23 @@ export interface Pagination {
   page: number;
   pageSize: number;
   total: number;
+}
+
+export interface BlogQueryOptions {
+  status?: 'draft' | 'published' | 'archived';
+  category?: string;
+  tag?: string;
+  sort?: 'published_desc' | 'published_asc' | 'title_asc' | 'title_desc';
+  page?: number;
+  pageSize?: number;
+}
+
+export interface TestimonialsQueryOptions {
+  source?: 'manual' | 'google';
+  minRating?: number;
+  sort?: 'sort_order_asc' | 'rating_desc' | 'created_desc';
+  page?: number;
+  pageSize?: number;
 }
 
 // ─── Internal helpers ───────────────────────────────────────────────────────────
@@ -148,6 +184,29 @@ function buildListingsQs(prefix: string, opts?: ListingsQueryOptions): string {
   if (opts.pageSize) sp.set('pageSize', String(opts.pageSize));
   const qs = sp.toString();
   return qs ? `${prefix}/listings?${qs}` : `${prefix}/listings`;
+}
+
+function buildBlogQs(prefix: string, opts?: BlogQueryOptions): string {
+  const sp = new URLSearchParams();
+  if (opts?.status) sp.set('status', opts.status);
+  if (opts?.category) sp.set('category', opts.category);
+  if (opts?.tag) sp.set('tag', opts.tag);
+  if (opts?.sort) sp.set('sort', opts.sort);
+  if (opts?.page) sp.set('page', String(opts.page));
+  if (opts?.pageSize) sp.set('pageSize', String(opts.pageSize));
+  const qs = sp.toString();
+  return qs ? `${prefix}/blogs?${qs}` : `${prefix}/blogs`;
+}
+
+function buildTestimonialsQs(prefix: string, opts?: TestimonialsQueryOptions): string {
+  const sp = new URLSearchParams();
+  if (opts?.source) sp.set('source', opts.source);
+  if (opts?.minRating) sp.set('minRating', String(opts.minRating));
+  if (opts?.sort) sp.set('sort', opts.sort);
+  if (opts?.page) sp.set('page', String(opts.page));
+  if (opts?.pageSize) sp.set('pageSize', String(opts.pageSize));
+  const qs = sp.toString();
+  return qs ? `${prefix}/testimonials?${qs}` : `${prefix}/testimonials`;
 }
 
 // ─── Public Client ──────────────────────────────────────────────────────────────
@@ -192,10 +251,11 @@ export function createCmsClient(config: CmsClientConfig) {
       }
     },
 
-    /** Fetch all published blog posts. */
-    async getPosts(): Promise<BlogPost[]> {
+    /** Fetch blog posts (published by default). */
+    async getPosts(options?: BlogQueryOptions): Promise<BlogPost[]> {
+      const merged: BlogQueryOptions = { status: 'published', ...options };
       const data = await request<PaginatedResponse<BlogPost>>(
-        `${prefix}/blogs`,
+        buildBlogQs(prefix, merged),
         config.apiKey,
         ttl,
       );
@@ -207,6 +267,30 @@ export function createCmsClient(config: CmsClientConfig) {
       try {
         const data = await request<SingleResponse<BlogPost>>(
           `${prefix}/blogs/${encodeURIComponent(slug)}`,
+          config.apiKey,
+          ttl,
+        );
+        return data.item ?? null;
+      } catch {
+        return null;
+      }
+    },
+
+    /** Fetch testimonials for this tenant. */
+    async getTestimonials(options?: TestimonialsQueryOptions): Promise<CmsTestimonial[]> {
+      const data = await request<PaginatedResponse<CmsTestimonial>>(
+        buildTestimonialsQs(prefix, options),
+        config.apiKey,
+        ttl,
+      );
+      return data.items ?? [];
+    },
+
+    /** Fetch a single testimonial by id. */
+    async getTestimonialById(id: string): Promise<CmsTestimonial | null> {
+      try {
+        const data = await request<SingleResponse<CmsTestimonial>>(
+          `${prefix}/testimonials/${encodeURIComponent(id)}`,
           config.apiKey,
           ttl,
         );

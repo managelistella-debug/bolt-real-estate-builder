@@ -67,14 +67,51 @@ Returns `404` if the slug does not match any listing.
 
 ## Blogs
 
-- `GET /blogs?page=1&pageSize=25&status=published&category=market-updates`
-- `GET /blogs/[slug]`
+### `GET /blogs`
+
+Returns a paginated blog feed.
+
+Defaults to `status=published` when no status is passed.
+
+| Param      | Type   | Description |
+|------------|--------|-------------|
+| `status`   | string | `draft`, `published`, `archived` |
+| `category` | string | Exact category match (case-insensitive) |
+| `tag`      | string | Exact tag match (case-insensitive) |
+| `sort`     | string | `published_desc`, `published_asc`, `title_asc`, `title_desc` |
+| `page`     | number | Page number (default 1) |
+| `pageSize` | number | Items per page (default 25, max 100) |
+
+### `GET /blogs/[slug]`
+
+Returns a single blog post by slug.
+
+By default, only published posts are returned. Pass `?includeDraft=true` for draft preview use cases.
+
+---
+
+## Testimonials
+
+### `GET /testimonials`
+
+Returns a paginated testimonials feed.
+
+| Param       | Type   | Description |
+|-------------|--------|-------------|
+| `source`    | string | `manual` or `google` |
+| `minRating` | number | Minimum rating threshold |
+| `sort`      | string | `sort_order_asc`, `rating_desc`, `created_desc` |
+| `page`      | number | Page number (default 1) |
+| `pageSize`  | number | Items per page (default 25, max 100) |
+
+### `GET /testimonials/[id]`
+
+Returns one testimonial by ID.
 
 ---
 
 ## Other Endpoints
 
-- `GET /testimonials`
 - `GET /media`
 - `GET /globals` — tenant-level settings (phone, social links, brokerage info)
 - `POST /form-submissions` — requires `forms:write` scope
@@ -123,7 +160,8 @@ const cms = createCmsClient({
 
 const { items, pagination } = await cms.getListings({ status: 'for_sale', sort: 'price_desc' });
 const listing = await cms.getListingBySlug('123-main-st');
-const posts   = await cms.getPosts();
+const posts   = await cms.getPosts(); // published by default
+const testimonials = await cms.getTestimonials({ sort: 'rating_desc' });
 const globals = await cms.getGlobals();
 ```
 

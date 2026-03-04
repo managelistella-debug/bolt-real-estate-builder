@@ -10,6 +10,7 @@ import { useTenantContextStore } from '@/lib/stores/tenantContext';
 import { ImpersonationBanner } from '@/components/admin/ImpersonationBanner';
 import { featureFlags } from '@/lib/featureFlags';
 import { useDataLoader } from '@/lib/hooks/useDataLoader';
+import { BrandLoader } from '@/components/ui/BrandLoader';
 
 export default function DashboardLayout({
   children,
@@ -22,6 +23,7 @@ export default function DashboardLayout({
   const { initializeUserWebsite } = useWebsiteStore();
   const { setActor, startImpersonation } = useTenantContextStore();
   const [isHydrated, setIsHydrated] = useState(false);
+  const [showLoader, setShowLoader] = useState(false);
 
   useDataLoader();
 
@@ -33,11 +35,19 @@ export default function DashboardLayout({
 
   // Wait for Zustand to rehydrate from localStorage
   useEffect(() => {
+    // Avoid flashing a loader on fast transitions.
+    const showLoaderTimer = setTimeout(() => {
+      setShowLoader(true);
+    }, 220);
+
     // Small delay to ensure localStorage has loaded
-    const timer = setTimeout(() => {
+    const hydrateTimer = setTimeout(() => {
       setIsHydrated(true);
-    }, 100);
-    return () => clearTimeout(timer);
+    }, 350);
+    return () => {
+      clearTimeout(showLoaderTimer);
+      clearTimeout(hydrateTimer);
+    };
   }, []);
 
   useEffect(() => {
@@ -59,12 +69,21 @@ export default function DashboardLayout({
 
   // Show loading while hydrating to prevent flash and false redirects
   if (!isHydrated) {
+    if (!showLoader) {
+      return <div style={{ minHeight: '100vh', backgroundColor: '#F5F5F3' }} />;
+    }
+
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
+      <div
+        className="fixed inset-0 z-50"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#F5F5F3',
+        }}
+      >
+        <BrandLoader size={140} />
       </div>
     );
   }
