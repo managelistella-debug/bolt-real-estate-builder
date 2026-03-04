@@ -26,11 +26,14 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
+      const normalizedEmail = data.email.trim().toLowerCase();
+      const normalizedPassword = data.password.trim();
+
       // Call login API directly to avoid any stale cached store logic
       const loginRes = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: data.email, password: data.password }),
+        body: JSON.stringify({ email: normalizedEmail, password: normalizedPassword }),
       });
 
       if (!loginRes.ok) {
@@ -49,15 +52,15 @@ export default function LoginPage() {
         return;
       }
 
-      const profileRes = await fetch(`/api/auth/profile?userId=${userId}`);
+      const profileRes = await fetch(`/api/auth/profile?userId=${encodeURIComponent(userId)}`);
       const profile = profileRes.ok ? await profileRes.json() : null;
 
       // Hydrate the auth store directly
       useAuthStore.setState({
         user: {
           id: userId,
-          email: loginData.user.email || data.email,
-          name: profile?.name || data.email.split('@')[0],
+          email: loginData.user.email || normalizedEmail,
+          name: profile?.name || normalizedEmail.split('@')[0],
           role: profile?.role || 'business_user',
           createdAt: new Date(profile?.created_at || Date.now()),
           businessId: profile?.business_id ?? undefined,
@@ -66,8 +69,8 @@ export default function LoginPage() {
         },
         actorUser: {
           id: userId,
-          email: loginData.user.email || data.email,
-          name: profile?.name || data.email.split('@')[0],
+          email: loginData.user.email || normalizedEmail,
+          name: profile?.name || normalizedEmail.split('@')[0],
           role: profile?.role || 'business_user',
           createdAt: new Date(profile?.created_at || Date.now()),
           businessId: profile?.business_id ?? undefined,

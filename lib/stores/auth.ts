@@ -31,23 +31,25 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (email: string, password: string) => {
         try {
+          const normalizedEmail = email.trim().toLowerCase();
+          const normalizedPassword = password.trim();
           const loginRes = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email: normalizedEmail, password: normalizedPassword }),
           });
           if (!loginRes.ok) return false;
           const loginData = await loginRes.json();
           const userId = loginData.user?.id;
           if (!userId) return false;
 
-          const profileRes = await fetch(`/api/auth/profile?userId=${userId}`);
+          const profileRes = await fetch(`/api/auth/profile?userId=${encodeURIComponent(userId)}`);
           const profile = profileRes.ok ? await profileRes.json() : null;
 
           const user: User = {
             id: userId,
-            email: loginData.user.email || email,
-            name: profile?.name || email.split('@')[0],
+            email: loginData.user.email || normalizedEmail,
+            name: profile?.name || normalizedEmail.split('@')[0],
             role: profile?.role || 'business_user',
             createdAt: new Date(profile?.created_at || Date.now()),
             businessId: profile?.business_id ?? undefined,
