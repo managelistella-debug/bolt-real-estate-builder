@@ -870,12 +870,6 @@ const { listings, total } = await res.json();
                 href="#"
                 className="text-xs text-white/20 hover:text-white/40 transition-colors"
               >
-                GitHub
-              </a>
-              <a
-                href="#"
-                className="text-xs text-white/20 hover:text-white/40 transition-colors"
-              >
                 Discord
               </a>
             </div>

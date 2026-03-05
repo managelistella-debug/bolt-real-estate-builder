@@ -11,6 +11,7 @@ import { ImpersonationBanner } from '@/components/admin/ImpersonationBanner';
 import { featureFlags } from '@/lib/featureFlags';
 import { useDataLoader } from '@/lib/hooks/useDataLoader';
 import { BrandLoader } from '@/components/ui/BrandLoader';
+import { PanelLeftOpen } from 'lucide-react';
 
 export default function DashboardLayout({
   children,
@@ -24,14 +25,19 @@ export default function DashboardLayout({
   const { setActor, startImpersonation } = useTenantContextStore();
   const [isHydrated, setIsHydrated] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useDataLoader();
 
-  // Check if we're in builder or preview mode (hide sidebar)
-  const isBuilderMode = featureFlags.enableVisualBuilder && pathname?.includes('/builder');
-  const isPreviewMode = featureFlags.enableVisualBuilder && pathname?.includes('/preview');
-  const isHeaderEditorMode = false;
+  // Keep fullscreen only for blog template editor and onboarding.
   const isBlogTemplateEditorMode = featureFlags.enableTemplateEditor && pathname?.includes('/blogs/templates/editor');
+  const isOnboardingRoute = pathname === '/ai-builder/onboarding';
+  const isAiBuilderRoute = !isOnboardingRoute && (pathname === '/ai-builder' || pathname?.startsWith('/ai-builder/'));
+
+  useEffect(() => {
+    // AI builder defaults to collapsed sidebar for focus.
+    setIsSidebarOpen(!isAiBuilderRoute);
+  }, [isAiBuilderRoute, pathname]);
 
   // Wait for Zustand to rehydrate from localStorage
   useEffect(() => {
@@ -92,8 +98,8 @@ export default function DashboardLayout({
     return null;
   }
 
-  // Full-screen layout for editor-focused routes
-  if (isBuilderMode || isPreviewMode || isHeaderEditorMode || isBlogTemplateEditorMode) {
+  // Full-screen layout for editor-focused routes and onboarding
+  if (isBlogTemplateEditorMode || isOnboardingRoute) {
     return (
       <>
         <ImpersonationBanner />
@@ -106,9 +112,26 @@ export default function DashboardLayout({
   // Normal dashboard layout with sidebar
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+      {isSidebarOpen && (
+        <Sidebar
+          onCollapse={isAiBuilderRoute ? () => setIsSidebarOpen(false) : undefined}
+          showCollapseButton={isAiBuilderRoute}
+        />
+      )}
       <main className="flex-1 overflow-auto">
         <ImpersonationBanner />
+        {isAiBuilderRoute && !isSidebarOpen && (
+          <div className="fixed left-4 top-4 z-40">
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen(true)}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-[#888C99] shadow-sm hover:bg-[#F5F5F3] hover:text-black"
+            >
+              <PanelLeftOpen className="h-3.5 w-3.5" />
+              Open menu
+            </button>
+          </div>
+        )}
         {children}
       </main>
       <Toaster />

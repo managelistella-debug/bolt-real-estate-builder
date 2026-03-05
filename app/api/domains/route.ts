@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { attachDomainToProject } from '@/lib/server/vercelDomains';
 import { ensureTenantRecord, upsertTenantRecord } from '@/lib/server/tenantStore';
 import { addAuditEvent } from '@/lib/server/auditBuffer';
 
@@ -12,7 +11,6 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     success: true,
     items: tenant.domains,
-    projectId: tenant.infra.vercelProjectId,
   });
 }
 
@@ -24,34 +22,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'tenantId and domain are required' }, { status: 400 });
   }
 
-  const tenant = await ensureTenantRecord(tenantId);
-  const projectId = body?.projectId || tenant.infra.vercelProjectId;
-  const teamId = body?.teamId || tenant.infra.vercelTeamId;
-
-  let providerStatus: 'connected' | 'pending_dns' = 'pending_dns';
-  try {
-    if (projectId && process.env.VERCEL_API_TOKEN) {
-      await attachDomainToProject(projectId, domain, teamId);
-      providerStatus = 'connected';
-    }
-  } catch {
-    providerStatus = 'pending_dns';
-  }
-
   const updated = await upsertTenantRecord(tenantId, (current) => ({
     ...current,
-    infra: {
-      ...current.infra,
-      vercelProjectId: projectId,
-      vercelTeamId: teamId,
-      updatedAt: new Date().toISOString(),
-    },
     domains: [
       ...current.domains.filter((entry) => entry.domain !== domain),
       {
         domain,
-        projectId,
-        status: providerStatus,
+        status: 'pending_dns' as const,
         isPrimary: current.domains.length === 0,
         updatedAt: new Date().toISOString(),
       },

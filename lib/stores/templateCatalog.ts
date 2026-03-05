@@ -29,6 +29,13 @@ interface TemplateCatalogState {
     sectionTypes: SectionType[];
     baseAssetId?: string;
   }) => TemplateCatalogAsset;
+  createAiSiteTemplate: (input: {
+    name: string;
+    description: string;
+    previewHtml: string;
+    previewCss: string;
+    createdByUserId: string;
+  }) => TemplateCatalogAsset;
   publishAssetGlobal: (assetId: string, actorUserId: string) => void;
   assignAssetToUser: (assetId: string, targetUserId: string, actorUserId: string) => TemplateCatalogAsset | null;
   getAssetsForUser: (userId: string) => TemplateCatalogAsset[];
@@ -149,6 +156,22 @@ export const useTemplateCatalogStore = create<TemplateCatalogState>()(
           createdByUserId: input.createdByUserId,
         });
         return created;
+      },
+      createAiSiteTemplate: (input) => {
+        const now = new Date();
+        const asset: TemplateCatalogAsset = {
+          id: `catalog_ai_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          name: input.name,
+          description: input.description,
+          kind: 'full_site',
+          scope: 'global',
+          createdByUserId: input.createdByUserId,
+          payload: { type: 'ai-site', previewHtml: input.previewHtml, previewCss: input.previewCss },
+          createdAt: now,
+          updatedAt: now,
+        };
+        set((state) => ({ assets: [asset, ...state.assets] }));
+        return asset;
       },
       publishAssetGlobal: (assetId, actorUserId) => {
         set((state) => ({

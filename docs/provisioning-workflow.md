@@ -1,18 +1,16 @@
 # Tenant Provisioning Workflow (v1)
 
-This repository supports a manual-first provisioning flow that mirrors the production target architecture.
+This repository supports a manual-first provisioning flow for local development.
 
 ## Manual SOP
 
 1. Create tenant in CMS and assign an internal owner.
-2. Create Vercel project from your internal site template.
-3. Set env vars on the client site:
-   - `CMS_BASE_URL` — full URL of this CMS app (e.g. `https://cms.yourdomain.com`)
+2. Set env vars on the client site:
+   - `CMS_BASE_URL` — full URL of this CMS app (e.g. `http://localhost:3005`)
    - `CMS_READ_TOKEN` — public API key with `content:read` scope
    - `TENANT_ID` — the tenant identifier
-4. Save `vercelProjectId` in CMS integrations/settings.
-5. Register content-change webhook and test revalidation.
-6. Connect domain from CMS Domains settings and verify DNS.
+3. Register content-change webhook and test revalidation.
+4. Connect domain from CMS Domains settings and verify DNS.
 
 ## Provisioning API
 
@@ -23,8 +21,7 @@ Request body:
 ```json
 {
   "tenantId": "business-1",
-  "vercelProjectId": "prj_xxx",
-  "revalidationWebhookUrl": "https://agent-site.com/api/revalidate"
+  "revalidationWebhookUrl": "http://localhost:3006/api/revalidate"
 }
 ```
 
@@ -50,12 +47,12 @@ Response includes:
 
 ### Overview
 
-Any external website (different Vercel project, different account) can consume content from this CMS via the public API. The CMS manages content; the external site renders it.
+Any external website can consume content from this CMS via the public API. The CMS manages content; the external site renders it.
 
 ```
 ┌──────────────────────┐         ┌──────────────────────┐
 │  HeadlessCMS          │  API    │  Agent Website       │
-│  (this project)       │ ──────> │  (Vercel project)    │
+│  (this project)       │ ──────> │  (external project)  │
 │                       │         │                      │
 │  Dashboard ─> Store   │         │  Homepage grid       │
 │  Public API           │ <─fetch─│  /listings/[slug]    │
@@ -68,13 +65,12 @@ Any external website (different Vercel project, different account) can consume c
 ### Step 1 — Provision the tenant
 
 ```bash
-curl -X POST https://cms.yourdomain.com/api/tenants/provision \
+curl -X POST http://localhost:3005/api/tenants/provision \
   -H "Content-Type: application/json" \
   -H "x-idempotency-key: setup-$(date +%s)" \
   -d '{
     "tenantId": "reed-jackson-realty",
-    "vercelProjectId": "prj_abc123",
-    "revalidationWebhookUrl": "https://reedjackson.com/api/revalidate"
+    "revalidationWebhookUrl": "http://localhost:3006/api/revalidate"
   }'
 ```
 
@@ -82,7 +78,7 @@ curl -X POST https://cms.yourdomain.com/api/tenants/provision \
 
 | Variable         | Value                                              |
 |------------------|----------------------------------------------------|
-| `CMS_BASE_URL`   | `https://cms.yourdomain.com`                       |
+| `CMS_BASE_URL`   | `http://localhost:3005`                            |
 | `CMS_READ_TOKEN` | `demo_public_key_reed-jackson-realty` (or your key) |
 | `TENANT_ID`      | `reed-jackson-realty`                               |
 
@@ -219,7 +215,6 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const { type, slug } = body;
 
-  // Revalidate relevant paths
   revalidatePath('/');
   if (type === 'listing') {
     revalidatePath('/listings');

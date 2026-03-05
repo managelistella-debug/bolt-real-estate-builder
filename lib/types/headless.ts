@@ -74,7 +74,6 @@ export interface CmsIntegrationConfig {
   tenantId?: string;
   google: GoogleReviewsIntegrationConfig;
   resend: ResendIntegrationConfig;
-  vercelProjectId?: string;
   revalidationWebhookUrl?: string;
   revalidationStatus?: 'idle' | 'ok' | 'error';
   webhookStatus?: 'idle' | 'ok' | 'error';

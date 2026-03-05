@@ -339,8 +339,6 @@ create policy "Service role full access to tenant_globals"
 -- ============================================================
 create table public.tenant_infra (
   tenant_id                text primary key references public.tenants(id) on delete cascade,
-  vercel_project_id        text,
-  vercel_team_id           text,
   revalidation_webhook_url text,
   revalidation_status      text not null default 'idle'
                              check (revalidation_status in ('idle','ok','error')),

@@ -4,7 +4,7 @@ import { Website, Page, WebsiteDomainSettings, Template } from '@/lib/types';
 import { getDefaultHeaderConfig, normalizeHeaderConfig } from '@/lib/header-config';
 import { getDefaultFooterConfig, normalizeFooterConfig } from '@/lib/footer-config';
 import { buildPlatformUrl, generateDefaultSubdomainSlug } from '@/lib/domain/config';
-import { buildVercelDnsRecords, normalizeDomainInput } from '@/lib/domain/dns';
+import { buildDnsRecords, normalizeDomainInput } from '@/lib/domain/dns';
 import { DomainVerificationResult, MockDomainVerificationProvider } from '@/lib/domain/verification';
 import { useTenantContextStore } from './tenantContext';
 
@@ -17,6 +17,8 @@ interface WebsiteState {
   applyTemplateToUserWebsite: (template: Template, userId: string) => Website;
   setCurrentWebsite: (website: Website) => void;
   updateWebsite: (websiteId: string, updates: Partial<Website>) => void;
+  publishWebsite: (websiteId: string) => string | null;
+  unpublishWebsite: (websiteId: string) => void;
   addPage: (page: Page) => void;
   updatePage: (pageId: string, updates: Partial<Page>) => void;
   deletePage: (pageId: string) => void;
@@ -64,7 +66,7 @@ function normalizeDomainSettings(website: Website): WebsiteDomainSettings {
       ...defaults,
       customDomain: normalizedDomain,
       status: 'connected',
-      expectedDnsRecords: buildVercelDnsRecords(normalizedDomain, verificationToken),
+      expectedDnsRecords: buildDnsRecords(normalizedDomain, verificationToken),
       verificationToken,
       lastVerifiedAt: new Date(),
     };
@@ -248,6 +250,38 @@ export const useWebsiteStore = create<WebsiteState>()(
     }));
   },
   
+  publishWebsite: (websiteId) => {
+    const website = get().websites.find((w) => w.id === websiteId);
+    if (!website) return null;
+    const domains = website.domains || getDefaultDomainSettings({ userId: website.userId, websiteId });
+    set((state) => ({
+      websites: state.websites.map((w) =>
+        w.id === websiteId
+          ? normalizeWebsiteData({ ...w, published: true, domains, updatedAt: new Date() })
+          : w
+      ),
+      currentWebsite:
+        state.currentWebsite?.id === websiteId
+          ? normalizeWebsiteData({ ...state.currentWebsite, published: true, domains, updatedAt: new Date() })
+          : state.currentWebsite,
+    }));
+    return domains.platformUrl;
+  },
+
+  unpublishWebsite: (websiteId) => {
+    set((state) => ({
+      websites: state.websites.map((w) =>
+        w.id === websiteId
+          ? normalizeWebsiteData({ ...w, published: false, updatedAt: new Date() })
+          : w
+      ),
+      currentWebsite:
+        state.currentWebsite?.id === websiteId
+          ? normalizeWebsiteData({ ...state.currentWebsite, published: false, updatedAt: new Date() })
+          : state.currentWebsite,
+    }));
+  },
+
   addPage: (page) => {
     set((state) => {
       const website = get().getCurrentUserWebsite();
@@ -360,7 +394,7 @@ export const useWebsiteStore = create<WebsiteState>()(
   setCustomDomain: (websiteId, customDomain) => {
     const normalizedDomain = normalizeDomainInput(customDomain);
     const verificationToken = createVerificationToken();
-    const expectedDnsRecords = buildVercelDnsRecords(normalizedDomain, verificationToken);
+    const expectedDnsRecords = buildDnsRecords(normalizedDomain, verificationToken);
 
     set((state) => ({
       websites: state.websites.map((website) =>

@@ -1,8 +1,5 @@
 import { DomainDnsRecord } from '@/lib/types';
 
-export const VERCEL_APEX_TARGET = '76.76.21.21';
-export const VERCEL_CNAME_TARGET = 'cname.vercel-dns.com';
-
 function getRootAndSubdomain(domain: string): { rootDomain: string; subdomain: string | null } {
   const parts = domain.split('.').filter(Boolean);
   if (parts.length <= 2) {
@@ -30,7 +27,7 @@ export function isValidDomain(input: string): boolean {
   return pattern.test(normalized);
 }
 
-export function buildVercelDnsRecords(domain: string, verificationToken: string): DomainDnsRecord[] {
+export function buildDnsRecords(domain: string, verificationToken: string): DomainDnsRecord[] {
   const normalizedDomain = normalizeDomainInput(domain);
   const { rootDomain, subdomain } = getRootAndSubdomain(normalizedDomain);
 
@@ -41,28 +38,28 @@ export function buildVercelDnsRecords(domain: string, verificationToken: string)
       {
         type: 'A',
         name: '@',
-        value: VERCEL_APEX_TARGET,
+        value: '127.0.0.1',
         ttl: 'Auto',
         required: true,
-        notes: `Points ${rootDomain} to Vercel.`,
+        notes: `Points ${rootDomain} to localhost.`,
       },
       {
         type: 'CNAME',
         name: 'www',
-        value: VERCEL_CNAME_TARGET,
+        value: `${rootDomain}`,
         ttl: 'Auto',
         required: true,
-        notes: `Routes www.${rootDomain} to Vercel.`,
+        notes: `Routes www.${rootDomain} to root domain.`,
       }
     );
   } else {
     records.push({
       type: 'CNAME',
       name: subdomain,
-      value: VERCEL_CNAME_TARGET,
+      value: rootDomain,
       ttl: 'Auto',
       required: true,
-      notes: `Routes ${normalizedDomain} to Vercel.`,
+      notes: `Routes ${normalizedDomain} to root domain.`,
     });
   }
 
@@ -72,7 +69,7 @@ export function buildVercelDnsRecords(domain: string, verificationToken: string)
     value: verificationToken,
     ttl: 'Auto',
     required: true,
-    notes: 'Ownership verification token (prototype record for future API verification).',
+    notes: 'Ownership verification token.',
   });
 
   return records;

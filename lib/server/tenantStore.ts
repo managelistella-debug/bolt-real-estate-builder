@@ -36,8 +36,6 @@ export interface TenantDomainRecord {
 }
 
 export interface TenantIntegrationRecord {
-  vercelProjectId?: string;
-  vercelTeamId?: string;
   revalidationWebhookUrl?: string;
   revalidationStatus: 'idle' | 'ok' | 'error';
   updatedAt: string;
@@ -319,8 +317,6 @@ function rowToGlobals(r: any | null): TenantGlobalSettings {
 function rowToInfra(r: any | null): TenantIntegrationRecord {
   if (!r) return { revalidationStatus: 'idle', updatedAt: new Date().toISOString() };
   return {
-    vercelProjectId: r.vercel_project_id ?? undefined,
-    vercelTeamId: r.vercel_team_id ?? undefined,
     revalidationWebhookUrl: r.revalidation_webhook_url ?? undefined,
     revalidationStatus: r.revalidation_status ?? 'idle',
     updatedAt: r.updated_at ?? new Date().toISOString(),
@@ -479,8 +475,6 @@ export async function upsertTenantRecord(
   if (JSON.stringify(next.infra) !== JSON.stringify(current.infra)) {
     await supabase.from('tenant_infra').upsert({
       tenant_id: tenantId,
-      vercel_project_id: next.infra.vercelProjectId ?? null,
-      vercel_team_id: next.infra.vercelTeamId ?? null,
       revalidation_webhook_url: next.infra.revalidationWebhookUrl ?? null,
       revalidation_status: next.infra.revalidationStatus,
     });

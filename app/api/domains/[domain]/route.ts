@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureTenantRecord, upsertTenantRecord } from '@/lib/server/tenantStore';
-import { removeDomainFromProject } from '@/lib/server/vercelDomains';
 import { addAuditEvent } from '@/lib/server/auditBuffer';
 
 export async function DELETE(
@@ -13,11 +12,8 @@ export async function DELETE(
     return NextResponse.json({ error: 'tenantId is required' }, { status: 400 });
   }
 
-  const tenant = await ensureTenantRecord(tenantId);
+  await ensureTenantRecord(tenantId);
   const decodedDomain = decodeURIComponent(domain);
-  if (tenant.infra.vercelProjectId && process.env.VERCEL_API_TOKEN) {
-    await removeDomainFromProject(tenant.infra.vercelProjectId, decodedDomain, tenant.infra.vercelTeamId).catch(() => undefined);
-  }
 
   const updated = await upsertTenantRecord(tenantId, (current) => ({
     ...current,

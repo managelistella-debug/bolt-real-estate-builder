@@ -40,7 +40,7 @@ This will install:
 npm run dev
 ```
 
-The app will start on **http://localhost:3000**
+The app will start on **http://localhost:3005**
 
 ### 4. Login & Explore
 
@@ -110,7 +110,7 @@ Use one of these demo accounts:
 
 ### Page not loading
 - Check console for errors
-- Make sure you're on http://localhost:3000
+- Make sure you're on http://localhost:3005
 - Try clearing browser cache
 
 ### Builder not saving changes
@@ -162,7 +162,6 @@ Once you've tested the UI and are happy with it, you can:
 1. **Provide Feedback** - Let me know what works and what needs changes
 2. **Request Features** - Ask for additional functionality
 3. **Backend Planning** - Discuss database schema and API design
-4. **Deployment** - Deploy to Vercel for online preview
 
 ## Need Help?
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { authenticateLocalUser, isSupabaseConfigured } from '@/lib/server/localAuthStore';
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -8,6 +9,25 @@ export async function POST(req: NextRequest) {
 
   if (!email || !password) {
     return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+  }
+
+  if (!isSupabaseConfigured()) {
+    const user = await authenticateLocalUser({ email, password });
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+    }
+
+    return NextResponse.json({
+      session: {
+        access_token: 'local-dev-session',
+        refresh_token: 'local-dev-refresh',
+        expires_at: Date.now() + 1000 * 60 * 60 * 24,
+      },
+      user: {
+        id: user.id,
+        email: user.email,
+      },
+    });
   }
 
   const supabase = createClient(

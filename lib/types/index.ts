@@ -86,6 +86,9 @@ export interface Website {
   header: HeaderConfig;
   footer: FooterConfig;
   pages: Page[];
+  aiPreviewHtml?: string;
+  aiPreviewCss?: string;
+  aiBlueprint?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }

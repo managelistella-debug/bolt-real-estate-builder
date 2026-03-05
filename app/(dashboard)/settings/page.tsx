@@ -52,7 +52,6 @@ export default function SettingsPage() {
   const [apiKeyLabel, setApiKeyLabel] = useState('');
   const [apiKeyRawValue, setApiKeyRawValue] = useState('');
   const [domains, setDomains] = useState<DomainApiRecord[]>([]);
-  const [projectIdInput, setProjectIdInput] = useState('');
   const { createKey, getKeysForUser } = useApiKeysStore();
 
   useEffect(() => {
@@ -74,7 +73,6 @@ export default function SettingsPage() {
       .then((response) => response.json())
       .then((data) => {
         setDomains(data.items || []);
-        setProjectIdInput(data.projectId || '');
       })
       .catch(() => undefined);
   }, [user]);
@@ -101,7 +99,7 @@ export default function SettingsPage() {
     fetch('/api/domains', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tenantId: user?.id, domain: normalizedInput, projectId: projectIdInput || undefined }),
+      body: JSON.stringify({ tenantId: user?.id, domain: normalizedInput }),
     })
       .then((response) => response.json())
       .then((data) => setDomains(data.items || []))
@@ -199,18 +197,6 @@ export default function SettingsPage() {
                 Enter the domain you want visitors to use for this website.
               </p>
               <div className="space-y-2">
-                <label htmlFor="project-id" className="text-[13px] text-[#888C99]">
-                  Vercel project ID
-                </label>
-                <input
-                  id="project-id"
-                  placeholder="prj_..."
-                  value={projectIdInput}
-                  onChange={(event) => setProjectIdInput(event.target.value)}
-                  className="flex h-[34px] w-full rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-3 text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none focus:ring-1 focus:ring-[#DAFF07]"
-                />
-              </div>
-              <div className="space-y-2">
                 <label htmlFor="custom-domain" className="text-[13px] text-[#888C99]">
                   Custom domain
                 </label>
@@ -222,7 +208,7 @@ export default function SettingsPage() {
                   className="flex h-[34px] w-full rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-3 text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none focus:ring-1 focus:ring-[#DAFF07]"
                 />
                 <p className="text-[13px] text-[#888C99]">
-                  Domain operations use Vercel APIs when `VERCEL_API_TOKEN` is configured.
+                  Enter a domain like example.com to connect it to your site.
                 </p>
               </div>
               <div className="flex gap-2">

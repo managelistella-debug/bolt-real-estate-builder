@@ -1,281 +1,146 @@
 import { Template } from '@/lib/types';
 
+const RE_NAV = [
+  { id: 'nav-1', label: 'Buying', url: '/buying', order: 1 },
+  { id: 'nav-2', label: 'Selling', url: '/selling', order: 2 },
+  { id: 'nav-3', label: 'Active Listings', url: '/listings/active', order: 3 },
+  { id: 'nav-4', label: 'About', url: '/about', order: 4 },
+  { id: 'nav-5', label: 'Contact', url: '/contact', order: 5 },
+];
+
+const RE_FOOTER_NAV = [
+  { id: 'fn-1', label: 'Privacy Policy', url: '/privacy', order: 1 },
+  { id: 'fn-2', label: 'Terms of Service', url: '/terms', order: 2 },
+];
+
 export const mockTemplates: Template[] = [
   {
-    id: 'template-1',
-    name: 'Clean Professional',
-    description: 'Perfect for plumbers, electricians, and general contractors',
-    industry: ['plumbing', 'electrical', 'contractors'],
-    previewImage: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&h=600&fit=crop',
+    id: 'template-luxury-classic',
+    name: 'Luxury Classic',
+    description: 'Elegant serif typography, navy palette, full-width hero imagery for luxury real estate.',
+    industry: ['real-estate', 'luxury'],
+    previewImage: 'https://placehold.co/800x600/002349/ffffff?text=Luxury+Classic',
     defaultGlobalStyles: {
-      colors: {
-        primary: '#3b82f6',
-        secondary: '#64748b',
-        accent: '#0ea5e9',
-      },
-      fontPair: {
-        id: 'inter-roboto',
-        name: 'Inter & Roboto',
-        heading: 'Inter',
-        body: 'Roboto',
-      },
-      button: {
-        variant: 'solid',
-        rounded: 'md',
-      },
-      headings: {
-        h1: { fontSize: '3rem', fontWeight: '700', lineHeight: '1.2' },
-        h2: { fontSize: '2rem', fontWeight: '600', lineHeight: '1.3' },
-        h3: { fontSize: '1.5rem', fontWeight: '600', lineHeight: '1.4' },
-      },
-      body: { fontSize: '1rem', fontWeight: '400', lineHeight: '1.6' },
-    },
-    defaultHeader: {
-      layout: 'header-a',
-      navigation: [
-        { id: 'nav-1', label: 'Home', url: '/', order: 1 },
-        { id: 'nav-2', label: 'About', url: '/about', order: 2 },
-        { id: 'nav-3', label: 'Services', url: '/services', order: 3 },
-        { id: 'nav-4', label: 'Contact', url: '/contact', order: 4 },
-      ],
-    },
-    defaultFooter: {
-      layout: 'footer-a',
-      menuSource: 'customNavigation',
-      navigation: [
-        { id: 'footer-nav-1', label: 'Privacy Policy', url: '/privacy', order: 1 },
-        { id: 'footer-nav-2', label: 'Terms of Service', url: '/terms', order: 2 },
-      ],
-      socialLinks: [],
-    },
-    defaultPages: [
-      {
-        name: 'Home',
-        slug: '/',
-        isHomepage: true,
-        sections: [
-          {
-            id: 'section-1',
-            type: 'hero',
-            order: 0,
-            widget: {
-              type: 'hero',
-              background: {
-                type: 'image',
-                url: 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=1920&h=1080&fit=crop',
-              },
-              headline: 'Professional Services You Can Trust',
-              subheadline: 'Quality workmanship and reliable service for your home or business',
-              cta: {
-                text: 'Get a Free Quote',
-                url: '/contact',
-              },
-              alignment: 'center',
-            },
-          },
-          {
-            id: 'section-2',
-            type: 'services',
-            order: 1,
-            widget: {
-              type: 'services',
-              title: 'Our Services',
-              services: [
-                {
-                  id: 'service-1',
-                  title: 'Service One',
-                  description: 'High-quality service tailored to your needs',
-                },
-                {
-                  id: 'service-2',
-                  title: 'Service Two',
-                  description: 'Professional solutions for residential and commercial',
-                },
-                {
-                  id: 'service-3',
-                  title: 'Service Three',
-                  description: 'Expert maintenance and emergency repairs',
-                },
-              ],
-            },
-          },
-          {
-            id: 'section-3',
-            type: 'contact',
-            order: 2,
-            widget: {
-              type: 'contact',
-              formFields: [
-                { id: 'field-1', type: 'text', label: 'First Name', required: true, order: 0 },
-                { id: 'field-2', type: 'text', label: 'Last Name', required: true, order: 1 },
-                { id: 'field-3', type: 'email', label: 'Email', required: true, order: 2 },
-                { id: 'field-4', type: 'phone', label: 'Phone', required: false, order: 3 },
-                { id: 'field-5', type: 'textarea', label: 'Message', required: true, order: 4 },
-              ],
-              buttonText: 'Send Message',
-              confirmationMessage: 'Thank you! We\'ll get back to you soon.',
-            },
-          },
-        ],
-        seo: {
-          metaTitle: 'Professional Services | Your Business Name',
-          metaDescription: 'Quality professional services for your home or business. Contact us today for a free quote.',
-        },
-        status: 'published',
-      },
-    ],
-  },
-  {
-    id: 'template-2',
-    name: 'Modern Minimalist',
-    description: 'Sleek design for cleaning companies and landscapers',
-    industry: ['cleaning', 'landscaping'],
-    previewImage: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop',
-    defaultGlobalStyles: {
-      colors: {
-        primary: '#10b981',
-        secondary: '#6b7280',
-        accent: '#059669',
-      },
-      fontPair: {
-        id: 'poppins-lato',
-        name: 'Poppins & Lato',
-        heading: 'Poppins',
-        body: 'Lato',
-      },
-      button: {
-        variant: 'solid',
-        rounded: 'lg',
-      },
+      colors: { primary: '#002349', secondary: '#C9A96E', accent: '#002349' },
+      fontPair: { id: 'playfair-dm', name: 'Playfair Display & DM Sans', heading: 'Playfair Display', body: 'DM Sans' },
+      button: { variant: 'solid', rounded: 'none' },
       headings: {
         h1: { fontSize: '3.5rem', fontWeight: '700', lineHeight: '1.1' },
         h2: { fontSize: '2.25rem', fontWeight: '600', lineHeight: '1.2' },
-        h3: { fontSize: '1.75rem', fontWeight: '600', lineHeight: '1.3' },
+        h3: { fontSize: '1.5rem', fontWeight: '600', lineHeight: '1.3' },
       },
-      body: { fontSize: '1.125rem', fontWeight: '400', lineHeight: '1.7' },
+      body: { fontSize: '1rem', fontWeight: '400', lineHeight: '1.6' },
     },
-    defaultHeader: {
-      layout: 'header-b',
-      navigation: [
-        { id: 'nav-1', label: 'Home', url: '/', order: 1 },
-        { id: 'nav-2', label: 'Services', url: '/services', order: 2 },
-        { id: 'nav-3', label: 'About', url: '/about', order: 3 },
-        { id: 'nav-4', label: 'Contact', url: '/contact', order: 4 },
-      ],
-    },
-    defaultFooter: {
-      layout: 'footer-b',
-      menuSource: 'customNavigation',
-      navigation: [],
-      socialLinks: [],
-    },
+    defaultHeader: { layout: 'header-a', navigation: RE_NAV },
+    defaultFooter: { layout: 'footer-a', menuSource: 'customNavigation', navigation: RE_FOOTER_NAV, socialLinks: [] },
     defaultPages: [
       {
-        name: 'Home',
-        slug: '/',
-        isHomepage: true,
+        name: 'Home', slug: '/', isHomepage: true,
         sections: [
-          {
-            id: 'section-1',
-            type: 'hero',
-            order: 0,
-            widget: {
-              type: 'hero',
-              background: {
-                type: 'image',
-                url: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1920&h=1080&fit=crop',
-              },
-              headline: 'Transform Your Space',
-              subheadline: 'Expert service with attention to detail',
-              cta: {
-                text: 'Book Now',
-                url: '/contact',
-              },
-              alignment: 'left',
-            },
-          },
+          { id: 's-hero', type: 'hero', order: 0, widget: { type: 'hero', background: { type: 'image', url: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1800&q=80' }, headline: 'Luxury Properties, Expert Representation', subheadline: 'Showcasing exceptional homes with concierge-level client service.', cta: { text: 'View Exclusive Listings', url: '/listings/active' }, alignment: 'center' } },
+          { id: 's-listings', type: 'listings', order: 1, widget: { type: 'listings', title: 'Exclusive Listings' } },
+          { id: 's-about', type: 'about', order: 2, widget: { type: 'about', title: 'Why Clients Work With Us', body: 'We combine local market expertise, modern marketing, and high-touch guidance.' } },
+          { id: 's-contact', type: 'contact-form', order: 3, widget: { type: 'contact-form', formFields: [{ id: 'f1', type: 'text', label: 'Name', required: true, order: 0 }, { id: 'f2', type: 'email', label: 'Email', required: true, order: 1 }, { id: 'f3', type: 'phone', label: 'Phone', required: false, order: 2 }, { id: 'f4', type: 'textarea', label: 'Message', required: true, order: 3 }], buttonText: 'Get In Touch', confirmationMessage: 'Thank you! We\'ll be in touch shortly.' } },
         ],
-        seo: {
-          metaTitle: 'Transform Your Space | Your Business',
-          metaDescription: 'Expert professional services with attention to detail.',
-        },
+        seo: { metaTitle: 'Luxury Real Estate | Find Your Dream Home', metaDescription: 'Expert representation for luxury real estate buyers and sellers.' },
         status: 'published',
       },
     ],
   },
   {
-    id: 'template-3',
-    name: 'Bold & Powerful',
-    description: 'Strong presence for HVAC and construction businesses',
-    industry: ['hvac', 'construction'],
-    previewImage: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=600&fit=crop',
+    id: 'template-modern-minimal',
+    name: 'Modern Minimal',
+    description: 'Clean sans-serif, dark tones, rounded corners, generous whitespace for a modern feel.',
+    industry: ['real-estate', 'modern'],
+    previewImage: 'https://placehold.co/800x600/111827/ffffff?text=Modern+Minimal',
     defaultGlobalStyles: {
-      colors: {
-        primary: '#ef4444',
-        secondary: '#737373',
-        accent: '#dc2626',
+      colors: { primary: '#111827', secondary: '#6B7280', accent: '#111827' },
+      fontPair: { id: 'dm-inter', name: 'DM Sans & Inter', heading: 'DM Sans', body: 'Inter' },
+      button: { variant: 'solid', rounded: 'lg' },
+      headings: {
+        h1: { fontSize: '3rem', fontWeight: '700', lineHeight: '1.15' },
+        h2: { fontSize: '2rem', fontWeight: '600', lineHeight: '1.25' },
+        h3: { fontSize: '1.5rem', fontWeight: '600', lineHeight: '1.35' },
       },
-      fontPair: {
-        id: 'montserrat-opensans',
-        name: 'Montserrat & Open Sans',
-        heading: 'Montserrat',
-        body: 'Open Sans',
+      body: { fontSize: '1rem', fontWeight: '400', lineHeight: '1.7' },
+    },
+    defaultHeader: { layout: 'header-b', navigation: RE_NAV },
+    defaultFooter: { layout: 'footer-b', menuSource: 'customNavigation', navigation: RE_FOOTER_NAV, socialLinks: [] },
+    defaultPages: [
+      {
+        name: 'Home', slug: '/', isHomepage: true,
+        sections: [
+          { id: 's-hero', type: 'hero', order: 0, widget: { type: 'hero', background: { type: 'image', url: 'https://images.unsplash.com/photo-1600566752355-35792bedcfea?auto=format&fit=crop&w=1800&q=80' }, headline: 'Modern Real Estate For Today', subheadline: 'A clean, fast way to discover listings and schedule showings.', cta: { text: 'Browse Listings', url: '/listings/active' }, alignment: 'left' } },
+          { id: 's-listings', type: 'listings', order: 1, widget: { type: 'listings', title: 'Featured Properties' } },
+          { id: 's-contact', type: 'contact-form', order: 2, widget: { type: 'contact-form', formFields: [{ id: 'f1', type: 'text', label: 'Name', required: true, order: 0 }, { id: 'f2', type: 'email', label: 'Email', required: true, order: 1 }, { id: 'f3', type: 'textarea', label: 'Message', required: true, order: 2 }], buttonText: 'Send Message', confirmationMessage: 'Thanks! We\'ll respond within 24 hours.' } },
+        ],
+        seo: { metaTitle: 'Modern Realty | Discover Your Next Home', metaDescription: 'Clean, modern real estate experience for buyers and sellers.' },
+        status: 'published',
       },
-      button: {
-        variant: 'solid',
-        rounded: 'sm',
+    ],
+  },
+  {
+    id: 'template-warm-traditional',
+    name: 'Warm Traditional',
+    description: 'Warm copper accents, classic Garamond typography, an inviting and trustworthy aesthetic.',
+    industry: ['real-estate', 'traditional'],
+    previewImage: 'https://placehold.co/800x600/3d2b1f/f5e6d3?text=Warm+Traditional',
+    defaultGlobalStyles: {
+      colors: { primary: '#141414', secondary: '#c28563', accent: '#c28563' },
+      fontPair: { id: 'cormorant-dm', name: 'Cormorant Garamond & DM Sans', heading: 'Cormorant Garamond', body: 'DM Sans' },
+      button: { variant: 'solid', rounded: 'md' },
+      headings: {
+        h1: { fontSize: '3.5rem', fontWeight: '600', lineHeight: '1.1' },
+        h2: { fontSize: '2.25rem', fontWeight: '500', lineHeight: '1.25' },
+        h3: { fontSize: '1.75rem', fontWeight: '500', lineHeight: '1.3' },
       },
+      body: { fontSize: '1rem', fontWeight: '400', lineHeight: '1.7' },
+    },
+    defaultHeader: { layout: 'header-a', navigation: RE_NAV },
+    defaultFooter: { layout: 'footer-a', menuSource: 'customNavigation', navigation: RE_FOOTER_NAV, socialLinks: [] },
+    defaultPages: [
+      {
+        name: 'Home', slug: '/', isHomepage: true,
+        sections: [
+          { id: 's-hero', type: 'hero', order: 0, widget: { type: 'hero', background: { type: 'image', url: 'https://images.unsplash.com/photo-1600585154154-712e664d8f7b?auto=format&fit=crop&w=1800&q=80' }, headline: 'Your Trusted Real Estate Partner', subheadline: 'Helping families find their perfect home for over a decade.', cta: { text: 'Start Your Search', url: '/listings/active' }, alignment: 'center' } },
+          { id: 's-listings', type: 'listings', order: 1, widget: { type: 'listings', title: 'Current Listings' } },
+          { id: 's-testimonials', type: 'testimonials', order: 2, widget: { type: 'testimonials', title: 'What Our Clients Say' } },
+          { id: 's-contact', type: 'contact-form', order: 3, widget: { type: 'contact-form', formFields: [{ id: 'f1', type: 'text', label: 'Full Name', required: true, order: 0 }, { id: 'f2', type: 'email', label: 'Email', required: true, order: 1 }, { id: 'f3', type: 'phone', label: 'Phone', required: false, order: 2 }, { id: 'f4', type: 'textarea', label: 'How can we help?', required: true, order: 3 }], buttonText: 'Contact Us', confirmationMessage: 'Thank you for reaching out!' } },
+        ],
+        seo: { metaTitle: 'Trusted Real Estate | Your Partner in Home Buying', metaDescription: 'Warm, personalized real estate services for buyers and sellers.' },
+        status: 'published',
+      },
+    ],
+  },
+  {
+    id: 'template-bold-contemporary',
+    name: 'Bold Contemporary',
+    description: 'High-contrast dark palette, gold accents, bold headings for maximum visual impact.',
+    industry: ['real-estate', 'bold'],
+    previewImage: 'https://placehold.co/800x600/0B0F19/C9A96E?text=Bold+Contemporary',
+    defaultGlobalStyles: {
+      colors: { primary: '#0B0F19', secondary: '#C9A96E', accent: '#C9A96E' },
+      fontPair: { id: 'montserrat-inter', name: 'Montserrat & Inter', heading: 'Montserrat', body: 'Inter' },
+      button: { variant: 'solid', rounded: 'sm' },
       headings: {
         h1: { fontSize: '4rem', fontWeight: '800', lineHeight: '1' },
-        h2: { fontSize: '2.5rem', fontWeight: '700', lineHeight: '1.2' },
-        h3: { fontSize: '2rem', fontWeight: '700', lineHeight: '1.3' },
+        h2: { fontSize: '2.5rem', fontWeight: '700', lineHeight: '1.15' },
+        h3: { fontSize: '1.75rem', fontWeight: '700', lineHeight: '1.25' },
       },
       body: { fontSize: '1rem', fontWeight: '400', lineHeight: '1.6' },
     },
-    defaultHeader: {
-      layout: 'header-c',
-      navigation: [
-        { id: 'nav-1', label: 'Home', url: '/', order: 1 },
-        { id: 'nav-2', label: 'Services', url: '/services', order: 2 },
-        { id: 'nav-3', label: 'Contact', url: '/contact', order: 3 },
-      ],
-    },
-    defaultFooter: {
-      layout: 'footer-c',
-      menuSource: 'customNavigation',
-      navigation: [],
-      socialLinks: [],
-    },
+    defaultHeader: { layout: 'header-c', navigation: RE_NAV },
+    defaultFooter: { layout: 'footer-c', menuSource: 'customNavigation', navigation: RE_FOOTER_NAV, socialLinks: [] },
     defaultPages: [
       {
-        name: 'Home',
-        slug: '/',
-        isHomepage: true,
+        name: 'Home', slug: '/', isHomepage: true,
         sections: [
-          {
-            id: 'section-1',
-            type: 'hero',
-            order: 0,
-            widget: {
-              type: 'hero',
-              background: {
-                type: 'image',
-                url: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=1920&h=1080&fit=crop',
-              },
-              headline: 'Expert Solutions, Every Time',
-              subheadline: '24/7 emergency service available',
-              cta: {
-                text: 'Call Now',
-                url: 'tel:5555555555',
-              },
-              alignment: 'center',
-            },
-          },
+          { id: 's-hero', type: 'hero', order: 0, widget: { type: 'hero', background: { type: 'image', url: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1800&q=80' }, headline: 'Make a Bold Move', subheadline: 'Premium properties. Exceptional results. Unmatched service.', cta: { text: 'Explore Properties', url: '/listings/active' }, alignment: 'center' } },
+          { id: 's-listings', type: 'listings', order: 1, widget: { type: 'listings', title: 'Premium Listings' } },
+          { id: 's-about', type: 'about', order: 2, widget: { type: 'about', title: 'Driven by Results', body: 'We approach every transaction with strategy, expertise, and relentless dedication to our clients.' } },
+          { id: 's-contact', type: 'contact-form', order: 3, widget: { type: 'contact-form', formFields: [{ id: 'f1', type: 'text', label: 'Name', required: true, order: 0 }, { id: 'f2', type: 'email', label: 'Email', required: true, order: 1 }, { id: 'f3', type: 'textarea', label: 'Message', required: true, order: 2 }], buttonText: 'Get Started', confirmationMessage: 'We\'ll be in touch soon.' } },
         ],
-        seo: {
-          metaTitle: 'Expert Solutions | Your Business',
-          metaDescription: '24/7 emergency service available for all your needs.',
-        },
+        seo: { metaTitle: 'Bold Contemporary Real Estate', metaDescription: 'Premium properties with exceptional results and unmatched service.' },
         status: 'published',
       },
     ],

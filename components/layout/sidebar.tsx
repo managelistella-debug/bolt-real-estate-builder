@@ -4,24 +4,26 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { 
+import {
   LayoutDashboard, 
   Users, 
   FolderKanban,
   Building2,
   FileText,
   Settings,
-  Plus,
   LogOut,
   Shield,
   PlugZap,
   MessageSquareQuote,
   ChevronDown,
+  PanelLeftClose,
+  Sparkles,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'AI Builder', href: '/ai-builder', icon: Sparkles },
   { name: 'Listings', href: '/listings', icon: Building2 },
   { name: 'Blogs', href: '/blogs', icon: FileText },
   { name: 'Testimonials', href: '/testimonials', icon: MessageSquareQuote },
@@ -38,7 +40,12 @@ const adminNavigation = [
   { name: 'Admin Audit', href: '/admin/audit', icon: Shield },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  onCollapse?: () => void;
+  showCollapseButton?: boolean;
+}
+
+export function Sidebar({ onCollapse, showCollapseButton = false }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout, canManageTenants } = useAuthStore();
   const [blogsMenuOpen, setBlogsMenuOpen] = useState(pathname?.startsWith('/blogs'));
@@ -56,8 +63,18 @@ export function Sidebar() {
       style={{ fontFamily: "'Geist', 'Inter', system-ui, sans-serif" }}
     >
       {/* Logo */}
-      <div className="flex h-14 items-center border-b border-[#EBEBEB] px-5">
+      <div className="flex h-14 items-center justify-between border-b border-[#EBEBEB] px-5">
         <h1 className="text-[15px] font-medium text-black tracking-tight">HeadlessCMS</h1>
+        {showCollapseButton && (
+          <button
+            type="button"
+            onClick={onCollapse}
+            aria-label="Collapse sidebar"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#EBEBEB] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black"
+          >
+            <PanelLeftClose className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
 
       {/* Navigation */}

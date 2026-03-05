@@ -21,14 +21,12 @@ export async function POST(request: NextRequest) {
   }
 
   const tenant = await ensureTenantRecord(tenantId);
-  const vercelProjectId = body?.vercelProjectId as string | undefined;
   const revalidationWebhookUrl = body?.revalidationWebhookUrl as string | undefined;
 
   await upsertTenantRecord(tenantId, (current) => ({
     ...current,
     infra: {
       ...current.infra,
-      vercelProjectId: vercelProjectId || current.infra.vercelProjectId,
       revalidationWebhookUrl: revalidationWebhookUrl || current.infra.revalidationWebhookUrl,
       updatedAt: new Date().toISOString(),
     },
@@ -39,7 +37,6 @@ export async function POST(request: NextRequest) {
     createdAt: new Date().toISOString(),
     steps: [
       'tenant_created',
-      'vercel_project_registered',
       'environment_variables_expected',
       'webhook_registration_pending',
       'domain_connection_pending',
