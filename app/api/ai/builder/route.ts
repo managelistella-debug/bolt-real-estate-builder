@@ -492,7 +492,7 @@ async function generateWithClaude(
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      model: process.env.ANTHROPIC_MODEL || 'claude-opus-4-6',
+      model: (process.env.ANTHROPIC_MODEL || 'claude-opus-4-6').trim(),
       max_tokens: 2048,
       temperature: 0.3,
       system: buildSystemPrompt(),
@@ -559,7 +559,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = (process.env.ANTHROPIC_API_KEY || '').trim();
   if (!apiKey) {
     return NextResponse.json(
       {
@@ -569,7 +569,7 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-  const model = process.env.ANTHROPIC_MODEL || '';
+  const model = (process.env.ANTHROPIC_MODEL || '').trim();
   if (!model || !model.toLowerCase().includes('opus')) {
     return NextResponse.json(
       {
