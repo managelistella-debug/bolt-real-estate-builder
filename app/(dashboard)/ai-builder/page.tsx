@@ -352,9 +352,12 @@ export default function AiBuilderPage() {
     }
   }, [user, hasCompletedOnboarding, router]);
 
-  /* ---- auto-load saved site on mount ---- */
+  /* ---- auto-load saved site OR starting point template on mount ---- */
+  const templateLoadAttempted = useRef(false);
+
   useEffect(() => {
     if (hasHydrated.current || !user) return;
+
     const saved = websites.find(
       (w) => w.userId === user.id && w.templateId === 'ai-builder' && w.aiPreviewHtml
     );
@@ -370,9 +373,63 @@ export default function AiBuilderPage() {
       }
       pushHistory(saved.aiPreviewHtml!);
       toast({ title: 'Site loaded', description: `"${saved.name}" has been restored from your last save.` });
+      hasHydrated.current = true;
+      return;
     }
+
+    // No saved site — check if user selected a starting point template
+    if (!templateLoadAttempted.current) {
+      templateLoadAttempted.current = true;
+      const siteProfile = getProfileForUser(user.id);
+      const templateId = siteProfile?.preferredTemplateId;
+
+      if (templateId && templateId.startsWith('starting-point-')) {
+        setLoading(true);
+        const profilePayload = siteProfile ? {
+          agentName: siteProfile.agentName,
+          brokerageName: siteProfile.brokerageName,
+          teamName: siteProfile.teamName,
+          contactName: siteProfile.contactName,
+          email: siteProfile.email,
+          phone: siteProfile.phone,
+          officeAddress: siteProfile.officeAddress,
+          aboutMe: siteProfile.aboutMe,
+          targetAreas: siteProfile.targetAreas,
+          primaryColor: siteProfile.primaryColor,
+          secondaryColor: siteProfile.secondaryColor,
+          fontHeading: siteProfile.fonts?.heading,
+          fontBody: siteProfile.fonts?.body,
+          social: siteProfile.social as Record<string, string>,
+        } : undefined;
+
+        fetch('/api/ai/builder/from-template', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ templateId, siteProfile: profilePayload }),
+        })
+          .then((res) => res.json())
+          .then((payload) => {
+            if (payload.previewHtml) {
+              setPreviewHtml(payload.previewHtml);
+              setPreviewCss(payload.previewCss || '');
+              setLastBlueprint(payload.blueprint || null);
+              pushHistory(payload.previewHtml);
+              setMessages((prev) => [...prev, {
+                id: `a_template_${Date.now()}`,
+                role: 'assistant',
+                content: payload.reply || 'Your template-based site is ready. You can edit text and images directly, or ask me to make changes.',
+              }]);
+            }
+          })
+          .catch(() => {
+            toast({ variant: 'destructive', title: 'Template load failed', description: 'Could not load the starting point template.' });
+          })
+          .finally(() => setLoading(false));
+      }
+    }
+
     hasHydrated.current = true;
-  }, [user, websites, toast, pushHistory]);
+  }, [user, websites, toast, pushHistory, getProfileForUser]);
 
   /* ---- listen for edits from iframe ---- */
   const handlePreviewMessage = useCallback((event: MessageEvent) => {
@@ -820,8 +877,50 @@ export default function AiBuilderPage() {
                     key={asset.id}
                     type="button"
                     onClick={() => {
-                      toast({ title: `Starting from "${asset.name}"`, description: 'Ask the AI to build your site using this as a base.' });
-                      setShowStartingPoints(false);
+                      const sourceId = asset.sourceTemplateId;
+                      if (sourceId && sourceId.startsWith('starting-point-')) {
+                        setShowStartingPoints(false);
+                        setLoading(true);
+                        const siteProfile = user ? getProfileForUser(user.id) : null;
+                        const profilePayload = siteProfile ? {
+                          agentName: siteProfile.agentName,
+                          brokerageName: siteProfile.brokerageName,
+                          teamName: siteProfile.teamName,
+                          contactName: siteProfile.contactName,
+                          email: siteProfile.email,
+                          phone: siteProfile.phone,
+                          officeAddress: siteProfile.officeAddress,
+                          aboutMe: siteProfile.aboutMe,
+                          targetAreas: siteProfile.targetAreas,
+                          primaryColor: siteProfile.primaryColor,
+                          secondaryColor: siteProfile.secondaryColor,
+                          fontHeading: siteProfile.fonts?.heading,
+                          fontBody: siteProfile.fonts?.body,
+                          social: siteProfile.social as Record<string, string>,
+                        } : undefined;
+                        fetch('/api/ai/builder/from-template', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ templateId: sourceId, siteProfile: profilePayload }),
+                        })
+                          .then((res) => res.json())
+                          .then((payload) => {
+                            if (payload.previewHtml) {
+                              if (previewHtml) pushHistory(previewHtml);
+                              setPreviewHtml(payload.previewHtml);
+                              setPreviewCss(payload.previewCss || '');
+                              setLastBlueprint(payload.blueprint || null);
+                              setSavedWebsiteId(null);
+                              setJustSaved(false);
+                              setMessages((prev) => [...prev, { id: `a_sp_${Date.now()}`, role: 'assistant', content: payload.reply }]);
+                            }
+                          })
+                          .catch(() => toast({ variant: 'destructive', title: 'Failed', description: 'Could not load template.' }))
+                          .finally(() => setLoading(false));
+                      } else {
+                        toast({ title: `Starting from "${asset.name}"`, description: 'Ask the AI to build your site using this as a base.' });
+                        setShowStartingPoints(false);
+                      }
                     }}
                     className="group overflow-hidden rounded-xl border border-[#EBEBEB] text-left transition-colors hover:border-[#DAFF07]"
                   >

@@ -22,6 +22,7 @@ import {
   Upload,
   X,
 } from 'lucide-react';
+import { getVisibleStartingPointTemplates } from '@/lib/templates/registry';
 
 const TOTAL_STEPS = 8;
 
@@ -496,51 +497,110 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* Step 8: Choose a Style */}
-          {step === 8 && (
-            <div className="space-y-5">
-              <div>
-                <h2 className="text-[18px] font-semibold text-black">Choose a Style</h2>
-                <p className={subtextClass}>Pick the style that best represents your brand. You can customize everything later.</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {STYLE_OPTIONS.map((style) => (
-                  <button
-                    key={style.id}
-                    type="button"
-                    onClick={() => set('preferredTemplateId', style.id)}
-                    className={`overflow-hidden rounded-xl border-2 text-left transition-colors ${
-                      profile.preferredTemplateId === style.id
-                        ? 'border-[#DAFF07] ring-2 ring-[#DAFF07]/30'
-                        : 'border-[#EBEBEB] hover:border-[#DAFF07]'
-                    }`}
-                  >
-                    <img src={style.image} alt={style.name} className="h-32 w-full object-cover" />
-                    <div className="p-3">
-                      <p className="text-[13px] font-medium text-black">{style.name}</p>
-                      <p className="text-[11px] text-[#888C99]">{style.description}</p>
+          {/* Step 8: Choose a Starting Point */}
+          {step === 8 && (() => {
+            const startingPoints = getVisibleStartingPointTemplates();
+            return (
+              <div className="space-y-5">
+                <div>
+                  <h2 className="text-[18px] font-semibold text-black">Choose Your Starting Point</h2>
+                  <p className={subtextClass}>Pick a fully-built template to start from, or choose an AI style to generate from scratch.</p>
+                </div>
+
+                {startingPoints.length > 0 && (
+                  <div>
+                    <p className="mb-2 text-[13px] font-medium text-black">Built-Out Templates</p>
+                    <p className="mb-3 text-[11px] text-[#888C99]">Start with a complete website. Your info and branding will be applied automatically.</p>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {startingPoints.map((spt) => (
+                        <button
+                          key={spt.id}
+                          type="button"
+                          onClick={() => set('preferredTemplateId', spt.id)}
+                          className={`overflow-hidden rounded-xl border-2 text-left transition-colors ${
+                            profile.preferredTemplateId === spt.id
+                              ? 'border-[#DAFF07] ring-2 ring-[#DAFF07]/30'
+                              : 'border-[#EBEBEB] hover:border-[#DAFF07]'
+                          }`}
+                        >
+                          <img src={spt.previewImage} alt={spt.name} className="h-36 w-full object-cover" />
+                          <div className="p-3">
+                            <div className="flex items-center gap-2">
+                              <p className="text-[13px] font-medium text-black">{spt.name}</p>
+                              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">Ready to use</span>
+                            </div>
+                            <p className="mt-0.5 text-[11px] text-[#888C99]">{spt.description}</p>
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              <span className="rounded-full bg-[#F5F5F3] px-2 py-0.5 text-[10px] text-[#888C99]">{spt.pages.length} pages</span>
+                              <span className="rounded-full bg-[#F5F5F3] px-2 py-0.5 text-[10px] text-[#888C99]">{spt.sampleListingsCount} listings</span>
+                              <span className="rounded-full bg-[#F5F5F3] px-2 py-0.5 text-[10px] text-[#888C99]">{spt.sampleBlogPostsCount} blog posts</span>
+                            </div>
+                            <div className="mt-2 flex items-center gap-1.5">
+                              {Object.values(spt.colors).slice(0, 3).map((color, i) => (
+                                <span key={i} className="inline-block h-3.5 w-3.5 rounded-full border border-[#EBEBEB]" style={{ backgroundColor: color }} />
+                              ))}
+                              <span className="text-[10px] text-[#888C99]">{spt.fonts.heading} / {spt.fonts.body}</span>
+                            </div>
+                          </div>
+                          {profile.preferredTemplateId === spt.id && (
+                            <div className="flex items-center gap-1 border-t border-[#EBEBEB] bg-[#DAFF07]/10 px-3 py-1.5">
+                              <Check className="h-3.5 w-3.5 text-black" />
+                              <span className="text-[12px] font-medium text-black">Selected</span>
+                            </div>
+                          )}
+                        </button>
+                      ))}
                     </div>
-                    {profile.preferredTemplateId === style.id && (
-                      <div className="flex items-center gap-1 border-t border-[#EBEBEB] bg-[#DAFF07]/10 px-3 py-1.5">
-                        <Check className="h-3.5 w-3.5 text-black" />
-                        <span className="text-[12px] font-medium text-black">Selected</span>
-                      </div>
-                    )}
-                  </button>
-                ))}
+                  </div>
+                )}
+
+                <div>
+                  <div className="my-3 flex items-center gap-3">
+                    <div className="h-px flex-1 bg-[#EBEBEB]" />
+                    <span className="text-[11px] text-[#888C99]">or generate with AI</span>
+                    <div className="h-px flex-1 bg-[#EBEBEB]" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {STYLE_OPTIONS.map((style) => (
+                      <button
+                        key={style.id}
+                        type="button"
+                        onClick={() => set('preferredTemplateId', style.id)}
+                        className={`overflow-hidden rounded-xl border-2 text-left transition-colors ${
+                          profile.preferredTemplateId === style.id
+                            ? 'border-[#DAFF07] ring-2 ring-[#DAFF07]/30'
+                            : 'border-[#EBEBEB] hover:border-[#DAFF07]'
+                        }`}
+                      >
+                        <img src={style.image} alt={style.name} className="h-24 w-full object-cover" />
+                        <div className="p-2.5">
+                          <p className="text-[13px] font-medium text-black">{style.name}</p>
+                          <p className="text-[11px] text-[#888C99]">{style.description}</p>
+                        </div>
+                        {profile.preferredTemplateId === style.id && (
+                          <div className="flex items-center gap-1 border-t border-[#EBEBEB] bg-[#DAFF07]/10 px-3 py-1.5">
+                            <Check className="h-3.5 w-3.5 text-black" />
+                            <span className="text-[12px] font-medium text-black">Selected</span>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelClass}>Additional Notes <span className={subtextClass}>(optional)</span></label>
+                  <textarea
+                    className="w-full resize-none rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] p-3 text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none"
+                    rows={3}
+                    placeholder="Any other details about your website preferences..."
+                    value={profile.additionalNotes || ''}
+                    onChange={(e) => set('additionalNotes', e.target.value)}
+                  />
+                </div>
               </div>
-              <div>
-                <label className={labelClass}>Additional Notes <span className={subtextClass}>(optional)</span></label>
-                <textarea
-                  className="w-full resize-none rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] p-3 text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none"
-                  rows={3}
-                  placeholder="Any other details about your website preferences..."
-                  value={profile.additionalNotes || ''}
-                  onChange={(e) => set('additionalNotes', e.target.value)}
-                />
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Navigation */}
           <div className="mt-6 flex items-center justify-between border-t border-[#EBEBEB] pt-4">
