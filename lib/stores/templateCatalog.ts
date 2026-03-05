@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { Template, TemplateAssetKind, TemplateCatalogAsset, Section, SectionType } from '@/lib/types';
 import { mockTemplates } from '@/lib/mock-data/templates';
+import { getAllStartingPointTemplates } from '@/lib/templates/registry';
 import { useAuditLogStore } from './auditLog';
 import { createDefaultWidget } from '@/lib/default-widgets';
 import { getDefaultHeaderConfig } from '@/lib/header-config';
@@ -43,19 +44,36 @@ interface TemplateCatalogState {
   getAssetById: (assetId: string) => TemplateCatalogAsset | undefined;
 }
 
-const seededAssets: TemplateCatalogAsset[] = mockTemplates.map((template) => ({
-  id: `catalog_seed_${template.id}`,
-  name: template.name,
-  description: template.description,
-  kind: 'full_site',
-  scope: 'global',
+const startingPointAssets: TemplateCatalogAsset[] = getAllStartingPointTemplates().map((spt) => ({
+  id: `catalog_sp_${spt.id}`,
+  name: spt.name,
+  description: spt.description,
+  kind: 'full_site' as const,
+  scope: 'global' as const,
   createdByUserId: 'system',
-  sourceTemplateId: template.id,
-  payload: template,
-  createdAt: new Date('2024-01-01'),
-  updatedAt: new Date('2024-01-01'),
-  publishedAt: new Date('2024-01-01'),
+  sourceTemplateId: spt.id,
+  payload: spt.builderTemplate,
+  createdAt: spt.createdAt,
+  updatedAt: spt.updatedAt,
+  publishedAt: spt.createdAt,
 }));
+
+const seededAssets: TemplateCatalogAsset[] = [
+  ...startingPointAssets,
+  ...mockTemplates.map((template) => ({
+    id: `catalog_seed_${template.id}`,
+    name: template.name,
+    description: template.description,
+    kind: 'full_site' as const,
+    scope: 'global' as const,
+    createdByUserId: 'system',
+    sourceTemplateId: template.id,
+    payload: template,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+    publishedAt: new Date('2024-01-01'),
+  })),
+];
 
 const DEFAULT_SITE_TEMPLATE_PREVIEW =
   'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&h=600&fit=crop';
