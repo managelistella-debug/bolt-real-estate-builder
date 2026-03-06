@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
     description: body.description || '',
     preview_image: body.previewImage || body.preview_image || '',
     site_slug: body.siteSlug || body.site_slug,
+    origin_url: body.originUrl || body.origin_url || '',
     pages: body.pages || [],
     cms_config: body.cmsConfig || body.cms_config || {},
     assigned_user_ids: body.assignedUserIds || body.assigned_user_ids || [],
@@ -46,6 +47,7 @@ export async function PATCH(req: NextRequest) {
   if (updates.name !== undefined) row.name = updates.name;
   if (updates.description !== undefined) row.description = updates.description;
   if (updates.previewImage !== undefined) row.preview_image = updates.previewImage;
+  if (updates.originUrl !== undefined) row.origin_url = updates.originUrl;
   if (updates.pages !== undefined) row.pages = updates.pages;
   if (updates.cmsConfig !== undefined) row.cms_config = updates.cmsConfig;
   if (updates.assignedUserIds !== undefined) row.assigned_user_ids = updates.assignedUserIds;

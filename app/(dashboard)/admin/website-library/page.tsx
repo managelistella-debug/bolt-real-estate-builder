@@ -80,6 +80,9 @@ export default function WebsiteLibraryPage() {
                   <h2 className="text-[15px] font-medium text-black truncate">{site.name}</h2>
                 </div>
                 <p className="text-[13px] text-[#888C99] mt-0.5 line-clamp-1">{site.description}</p>
+                {site.originUrl && (
+                  <p className="text-[11px] text-[#CCCCCC] mt-0.5 truncate">Origin: {site.originUrl}</p>
+                )}
               </div>
               <a
                 href={`/hosted/${site.siteSlug}`}

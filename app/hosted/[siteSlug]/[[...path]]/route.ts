@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPage, ASPEN_COUNTRY_PAGES } from '@/lib/hosted-sites/aspen-country';
+import { getCmsBridgeScript } from '@/lib/hosted-sites/cms-bridge';
 
-const SITE_REGISTRY: Record<string, {
-  getPage: (path: string, basePath: string, tenantId?: string) => string;
-  pages: string[];
-}> = {
-  'aspen-country': {
-    getPage,
-    pages: ASPEN_COUNTRY_PAGES,
-  },
+const ORIGIN_REGISTRY: Record<string, string> = {
+  'aspen-country': 'https://website-zeta-three-86.vercel.app',
 };
 
 export async function GET(
@@ -16,18 +10,41 @@ export async function GET(
   { params }: { params: Promise<{ siteSlug: string; path?: string[] }> },
 ) {
   const { siteSlug, path } = await params;
-  const site = SITE_REGISTRY[siteSlug];
 
-  if (!site) {
+  const origin = ORIGIN_REGISTRY[siteSlug];
+  if (!origin) {
     return NextResponse.json({ error: 'Site not found' }, { status: 404 });
   }
 
   const pagePath = '/' + (path?.join('/') || '');
-  const basePath = `/hosted/${siteSlug}`;
-
   const tenantId = request.nextUrl.searchParams.get('tenantId') || undefined;
 
-  const html = site.getPage(pagePath, basePath, tenantId);
+  const upstreamUrl = `${origin}${pagePath}`;
+  let upstreamRes: Response;
+  try {
+    upstreamRes = await fetch(upstreamUrl, {
+      headers: { Accept: 'text/html' },
+      next: { revalidate: 300 },
+    });
+  } catch {
+    return NextResponse.json({ error: 'Failed to reach origin site' }, { status: 502 });
+  }
+
+  if (!upstreamRes.ok) {
+    return new NextResponse('Upstream returned ' + upstreamRes.status, { status: upstreamRes.status });
+  }
+
+  let html = await upstreamRes.text();
+
+  html = html.replace(/(src|href|srcset|content)="\/(?!\/)/g, `$1="${origin}/`);
+  html = html.replace(/url\(\//g, `url(${origin}/`);
+
+  if (tenantId) {
+    html = html.replace(/<html/i, `<html data-tenant-id="${tenantId}"`);
+  }
+
+  const cmsBridge = `<script>${getCmsBridgeScript()}</script>`;
+  html = html.replace(/<\/body>/i, `${cmsBridge}</body>`);
 
   return new NextResponse(html, {
     status: 200,

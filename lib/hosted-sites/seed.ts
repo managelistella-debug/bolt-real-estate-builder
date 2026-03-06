@@ -1,12 +1,17 @@
 import { HostedSite } from '@/lib/types';
-import { ASPEN_COUNTRY_PAGES } from './aspen-country';
+
+const ASPEN_COUNTRY_PAGES = [
+  '/', '/about', '/buying', '/selling', '/estates',
+  '/listings/active', '/listings/sold', '/blog', '/contact', '/privacy',
+];
 
 export const ASPEN_COUNTRY_SITE: HostedSite = {
   id: 'hosted-aspen-country',
   name: 'Aspen Muraski – Country Theme',
   description: 'Full-fidelity real estate site with dark green and gold design. Includes all 10 pages, CMS-linked listings and blogs.',
-  previewImage: '/templates/country/images/hero-bg.webp',
+  previewImage: 'https://website-zeta-three-86.vercel.app/images/hero-bg.webp',
   siteSlug: 'aspen-country',
+  originUrl: 'https://website-zeta-three-86.vercel.app',
   pages: ASPEN_COUNTRY_PAGES.map((p) => ({ path: p, htmlKey: p })),
   cmsConfig: {
     listingsSelector: '[data-cms-listings]',

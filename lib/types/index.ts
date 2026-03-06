@@ -110,6 +110,7 @@ export interface HostedSite {
   description: string;
   previewImage: string;
   siteSlug: string;
+  originUrl: string;
   pages: HostedSitePage[];
   cmsConfig: HostedSiteCmsConfig;
   assignedUserIds: string[];

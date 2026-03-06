@@ -13,6 +13,7 @@ export async function POST() {
     description: site.description,
     preview_image: site.previewImage,
     site_slug: site.siteSlug,
+    origin_url: site.originUrl,
     pages: site.pages,
     cms_config: site.cmsConfig,
     assigned_user_ids: site.assignedUserIds,
