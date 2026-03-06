@@ -8,15 +8,18 @@ import { ExternalLink, Globe, ToggleLeft, ToggleRight, UserPlus, X } from 'lucid
 
 export default function WebsiteLibraryPage() {
   const { user, getAllUsers } = useAuthStore();
-  const { sites, ensureSeeded, assignUser, unassignUser } = useHostedSitesStore();
-  const { settings, assignSiteToUser, unassignSiteFromUser, setAiBuilderDisabled } = useTenantSettingsStore();
+  const { sites, ensureSeeded, syncFromDb: syncSitesFromDb } = useHostedSitesStore();
+  const { assignUser, unassignUser } = useHostedSitesStore();
+  const { settings, assignSiteToUser, unassignSiteFromUser, setAiBuilderDisabled, syncFromDb: syncSettingsFromDb } = useTenantSettingsStore();
   const allUsers = getAllUsers();
   const [assignDialogSiteId, setAssignDialogSiteId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     ensureSeeded();
-  }, [ensureSeeded]);
+    syncSitesFromDb();
+    syncSettingsFromDb();
+  }, [ensureSeeded, syncSitesFromDb, syncSettingsFromDb]);
 
   if (user?.role !== 'super_admin') {
     return (
