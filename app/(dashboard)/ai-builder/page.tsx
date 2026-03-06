@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { useSiteProfileStore } from '@/lib/stores/siteProfile';
+import { useTenantSettingsStore } from '@/lib/stores/tenantSettings';
 import { useTemplateCatalogStore, getTemplateFromAsset } from '@/lib/stores/templateCatalog';
 import { useListingsStore } from '@/lib/stores/listings';
 import { BuilderBlueprint } from '@/lib/ai/builderBlueprint';
@@ -299,6 +300,7 @@ export default function AiBuilderPage() {
   const { hasCompletedOnboarding, getProfileForUser } = useSiteProfileStore();
   const { getAssetsForUser } = useTemplateCatalogStore();
   const { seedCountryTemplateListings: seedCountryListings } = useListingsStore();
+  const { getSettings: getTenantSettings } = useTenantSettingsStore();
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const [prompt, setPrompt] = useState('');
@@ -353,6 +355,18 @@ export default function AiBuilderPage() {
       router.replace('/ai-builder/onboarding');
     }
   }, [user, hasCompletedOnboarding, router]);
+
+  /* ---- redirect away if AI builder is disabled for this tenant ---- */
+  useEffect(() => {
+    if (!user) return;
+    const ts = getTenantSettings(user.id);
+    if (ts.aiBuilderDisabled) {
+      if (ts.assignedHostedSiteSlug) {
+        window.open(`/hosted/${ts.assignedHostedSiteSlug}?tenantId=${user.id}`, '_blank');
+      }
+      router.replace('/dashboard');
+    }
+  }, [user, getTenantSettings, router]);
 
   /* ---- auto-load saved site OR starting point template on mount ---- */
   const templateLoadAttempted = useRef(false);

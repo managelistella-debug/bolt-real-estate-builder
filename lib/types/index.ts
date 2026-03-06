@@ -93,6 +93,35 @@ export interface Website {
   updatedAt: Date;
 }
 
+export interface HostedSitePage {
+  path: string;
+  htmlKey: string;
+}
+
+export interface HostedSiteCmsConfig {
+  tenantId?: string;
+  listingsSelector?: string;
+  blogsSelector?: string;
+}
+
+export interface HostedSite {
+  id: string;
+  name: string;
+  description: string;
+  previewImage: string;
+  siteSlug: string;
+  pages: HostedSitePage[];
+  cmsConfig: HostedSiteCmsConfig;
+  assignedUserIds: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TenantSiteSettings {
+  aiBuilderDisabled: boolean;
+  assignedHostedSiteSlug?: string;
+}
+
 export interface Page {
   id: string;
   websiteId: string;

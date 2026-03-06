@@ -18,8 +18,11 @@ import {
   ChevronDown,
   PanelLeftClose,
   Sparkles,
+  Globe,
+  ExternalLink,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth';
+import { useTenantSettingsStore } from '@/lib/stores/tenantSettings';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -37,6 +40,7 @@ const adminNavigation = [
   { name: 'Admin Staff', href: '/admin/users', icon: Shield },
   { name: 'Client Users', href: '/admin/clients', icon: Users },
   { name: 'Admin Templates', href: '/admin/templates', icon: FolderKanban },
+  { name: 'Website Library', href: '/admin/website-library', icon: Globe },
   { name: 'Admin Audit', href: '/admin/audit', icon: Shield },
 ];
 
@@ -48,10 +52,18 @@ interface SidebarProps {
 export function Sidebar({ onCollapse, showCollapseButton = false }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout, canManageTenants } = useAuthStore();
+  const { getSettings } = useTenantSettingsStore();
   const [blogsMenuOpen, setBlogsMenuOpen] = useState(pathname?.startsWith('/blogs'));
+
+  const tenantSettings = user ? getSettings(user.id) : null;
+  const aiBuilderDisabled = tenantSettings?.aiBuilderDisabled ?? false;
+  const assignedSiteSlug = tenantSettings?.assignedHostedSiteSlug;
 
   const filteredNavigation = navigation.filter(item => {
     if ((item as Record<string, unknown>).adminOnly && user?.role !== 'super_admin') {
+      return false;
+    }
+    if (item.href === '/ai-builder' && aiBuilderDisabled) {
       return false;
     }
     return true;
@@ -154,6 +166,21 @@ export function Sidebar({ onCollapse, showCollapseButton = false }: SidebarProps
             </Link>
           );
         })}
+
+        {aiBuilderDisabled && assignedSiteSlug && (
+          <a
+            href={`/hosted/${assignedSiteSlug}?tenantId=${user?.id || ''}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              'flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-colors',
+              'text-[#888C99] hover:bg-[#F5F5F3] hover:text-black'
+            )}
+          >
+            <ExternalLink className="h-4 w-4" />
+            My Website
+          </a>
+        )}
 
         {canManageTenants() && (
           <div className="pt-3">
