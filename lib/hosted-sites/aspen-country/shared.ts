@@ -53,7 +53,7 @@ export function getHeaderHTML(): string {
   return `
 <header id="site-header" class="fixed top-0 left-0 right-0 z-50 bg-[#09312a] transition-all duration-500">
   <div class="w-full max-w-[1440px] mx-auto flex items-center justify-between px-5 md:px-10 lg:px-[60px] h-[70px] md:h-[99px]">
-    <a href="/" data-nav class="shrink-0 flex items-center"><img src="${IMG}/header-logo.svg" alt="Aspen Muraski Real Estate" class="w-[100px] md:w-[139px] h-auto object-contain" /></a>
+    <a href="/" data-nav class="shrink-0 flex items-center"><img src="${IMG}/header-logo.svg" alt="Aspen Muraski Real Estate" width="139" height="76" class="w-[100px] md:w-[139px] h-[55px] md:h-[76px] object-contain" /></a>
     <div class="hidden xl:flex items-center">
       <nav class="flex items-center gap-[30px]">
         <a href="/" data-nav class="nav-link relative group flex items-center gap-[4px] text-white text-[14px] font-normal leading-[20px] py-[2px] hover:text-[#daaf3a] transition-colors duration-300" style="font-family:'Lato',sans-serif">Home<span class="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#daaf3a] group-hover:w-full transition-all duration-300 ease-out"></span></a>
@@ -101,7 +101,7 @@ export function getFooterHTML(): string {
 <footer class="bg-[#09312a]">
   <div class="max-w-[1440px] mx-auto px-5 md:px-10 lg:px-[60px] py-10 md:py-[60px]">
     <div class="flex flex-col sm:flex-row items-center sm:justify-between gap-6 md:gap-8">
-      <img src="${IMG}/footer-logo.svg" alt="Aspen Muraski Real Estate" class="w-[180px] md:w-[234px] h-auto object-contain" />
+      <img src="${IMG}/footer-logo.svg" alt="Aspen Muraski Real Estate" width="234" height="128" class="w-[180px] md:w-[234px] h-[98px] md:h-[128px] object-contain" />
       <img src="${IMG}/remax-logo.png" alt="RE/MAX House of Real Estate" class="h-[50px] md:h-[65px] w-auto object-contain" />
     </div>
     <div class="mt-8 md:mt-[55px]"></div>
@@ -140,12 +140,29 @@ export function getClientJS(): string {
   /* --- Router --- */
   var pages=document.querySelectorAll('[data-page]');
   var basePath=window.__HOSTED_BASE||'';
+
+  function revealActive(){
+    var active=document.querySelector('[data-page].active');
+    if(!active)return;
+    active.querySelectorAll('.sr').forEach(function(el){
+      el.classList.remove('visible');
+      void el.offsetWidth;
+      obs.observe(el);
+    });
+    active.querySelectorAll('.hero-fade').forEach(function(el){
+      el.style.animation='none';
+      void el.offsetWidth;
+      el.style.animation='';
+    });
+  }
+
   function go(path){
     pages.forEach(function(p){p.classList.toggle('active',p.getAttribute('data-page')===path);});
     window.scrollTo(0,0);
     var ov=document.getElementById('menu-overlay');
     if(ov)ov.classList.remove('open');
     document.body.style.overflow='';
+    setTimeout(revealActive,50);
   }
   document.addEventListener('click',function(e){
     var a=e.target.closest('a[data-nav]');
@@ -165,15 +182,16 @@ export function getClientJS(): string {
   /* --- Scroll Reveal --- */
   var obs=new IntersectionObserver(function(entries){
     entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add('visible');obs.unobserve(entry.target);}});
-  },{threshold:0.15,rootMargin:'-80px'});
-  document.querySelectorAll('.sr').forEach(function(el){obs.observe(el);});
+  },{threshold:0.1,rootMargin:'0px'});
 
   /* --- Sticky Header --- */
   var hdr=document.getElementById('site-header');
+  var stickyStyle=document.createElement('style');
+  stickyStyle.textContent='#site-header.scrolled{background:rgba(9,49,42,0.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 4px 30px rgba(0,0,0,0.3);}';
+  document.head.appendChild(stickyStyle);
   window.addEventListener('scroll',function(){
     if(!hdr)return;
-    if(window.scrollY>50){hdr.classList.add('bg-[#09312a]/95','backdrop-blur-md','shadow-[0_4px_30px_rgba(0,0,0,0.3)]');}
-    else{hdr.classList.remove('bg-[#09312a]/95','backdrop-blur-md','shadow-[0_4px_30px_rgba(0,0,0,0.3)]');}
+    hdr.classList.toggle('scrolled',window.scrollY>50);
   },{passive:true});
 
   /* --- Menu Overlay --- */
@@ -264,6 +282,12 @@ export function getClientJS(): string {
     if(prevB)prevB.addEventListener('click',function(){show(cur<=0?items.length-1:cur-1);});
     if(nextB)nextB.addEventListener('click',function(){show(cur>=items.length-1?0:cur+1);});
     if(dotsC){dotsC.querySelectorAll('button').forEach(function(d,i){d.addEventListener('click',function(){show(i);});});}
+  });
+
+  /* --- Lazy-load below-fold images --- */
+  document.querySelectorAll('img').forEach(function(img,i){
+    if(i>2)img.setAttribute('loading','lazy');
+    img.setAttribute('decoding','async');
   });
 
   /* --- Init: show correct page --- */
