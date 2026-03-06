@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const ORIGIN_REGISTRY: Record<string, string> = {
-  'aspen-country': 'https://website-zeta-three-86.vercel.app',
+  'aspen-country': 'https://aspenmuraski-main.vercel.app',
 };
 
 export async function GET(
