@@ -9,7 +9,7 @@ export const ASPEN_COUNTRY_SITE: HostedSite = {
   id: 'hosted-aspen-country',
   name: 'Aspen Muraski – Country Theme',
   description: 'Full-fidelity real estate site with dark green and gold design. Includes all 10 pages, CMS-linked listings and blogs.',
-  previewImage: '/hosted-sites/aspen-country/images/hero-bg.webp',
+  previewImage: '/hosted/aspen-country/images/hero-bg.webp',
   siteSlug: 'aspen-country',
   originUrl: '/hosted/aspen-country',
   pages: ASPEN_COUNTRY_PAGES.map((p) => ({ path: p, htmlKey: p })),
