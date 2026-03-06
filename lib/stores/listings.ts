@@ -22,6 +22,7 @@ interface ListingsState {
   getListingsForCurrentUser: (userId?: string) => Listing[];
   getListingBySlug: (slug: string) => Listing | undefined;
   filterAndSortListings: (listings: Listing[], config?: ListingsFilterConfig) => Listing[];
+  seedCountryTemplateListings: (userId: string) => void;
 }
 
 const slugify = (value: string) =>
@@ -173,6 +174,30 @@ export const useListingsStore = create<ListingsState>()(
         if (!effectiveUserId) return undefined;
         const listing = get().listings.find((item) => item.slug === slug && item.userId === effectiveUserId);
         return listing ? normalizeListing(listing) : undefined;
+      },
+
+      seedCountryTemplateListings: (userId) => {
+        const existing = get().listings.filter((l) => l.userId === userId);
+        if (existing.length > 0) return;
+        const img = '/templates/country/images';
+        const now = new Date();
+        const active: Omit<Listing, 'id' | 'slug' | 'customOrder' | 'createdAt' | 'updatedAt'>[] = [
+          { userId, tenantId: userId, address: '33289 Lakeview Court', description: 'A stunning estate property with panoramic mountain views, custom finishes, and a spacious open-concept layout.', listPrice: 1200000, neighborhood: 'Lakeview Estates', city: 'Mountain View County', listingStatus: 'for_sale', bedrooms: 4, bathrooms: 3, propertyType: 'Residential', yearBuilt: 2018, livingAreaSqft: 3200, lotAreaValue: 2.5, lotAreaUnit: 'acres', taxesAnnual: 8500, listingBrokerage: 'Sample Brokerage', mlsNumber: 'MLS-001', representation: 'seller_representation', gallery: [{ id: `si_1a`, url: `${img}/featured-1.webp`, caption: 'Front view', order: 0 }, { id: `si_1b`, url: `${img}/buying-hero.webp`, caption: 'Surroundings', order: 1 }] },
+          { userId, tenantId: userId, address: '22034 Lakeview Drive', description: 'Nestled in the foothills, this property features a wraparound deck, updated kitchen, and private pond.', listPrice: 1350000, neighborhood: 'Lakeview Estates', city: 'Mountain View County', listingStatus: 'for_sale', bedrooms: 5, bathrooms: 4, propertyType: 'Residential', yearBuilt: 2020, livingAreaSqft: 3800, lotAreaValue: 5.0, lotAreaUnit: 'acres', taxesAnnual: 9800, listingBrokerage: 'Sample Brokerage', mlsNumber: 'MLS-002', representation: 'seller_representation', gallery: [{ id: `si_2a`, url: `${img}/featured-2.webp`, caption: 'Front view', order: 0 }, { id: `si_2b`, url: `${img}/selling-hero.webp`, caption: 'Property', order: 1 }] },
+          { userId, tenantId: userId, address: '33291 Lakeview Court', description: 'Contemporary ranch-style home on a private lot backing onto crown land with exceptional privacy.', listPrice: 1200000, neighborhood: 'Lakeview Estates', city: 'Mountain View County', listingStatus: 'for_sale', bedrooms: 3, bathrooms: 2, propertyType: 'Residential', yearBuilt: 2019, livingAreaSqft: 2800, lotAreaValue: 3.0, lotAreaUnit: 'acres', taxesAnnual: 7200, listingBrokerage: 'Sample Brokerage', mlsNumber: 'MLS-003', representation: 'seller_representation', gallery: [{ id: `si_3a`, url: `${img}/featured-3.webp`, caption: 'Front view', order: 0 }] },
+        ];
+        const sold: Omit<Listing, 'id' | 'slug' | 'customOrder' | 'createdAt' | 'updatedAt'>[] = [
+          { userId, tenantId: userId, address: '14422 Mountain View Road', description: 'Charming heritage farmhouse fully renovated with modern amenities while preserving original character.', listPrice: 985000, neighborhood: 'Mountain View', city: 'Mountain View County', listingStatus: 'sold', bedrooms: 4, bathrooms: 2, propertyType: 'Residential', yearBuilt: 1965, livingAreaSqft: 2400, lotAreaValue: 10, lotAreaUnit: 'acres', taxesAnnual: 5200, listingBrokerage: 'Sample Brokerage', mlsNumber: 'MLS-004', representation: 'seller_representation', gallery: [{ id: `si_4a`, url: `${img}/featured-1.webp`, caption: 'Front view', order: 0 }] },
+          { userId, tenantId: userId, address: '78901 Range Road 54', description: 'Working ranch with barn, corrals, and year-round creek running through the property.', listPrice: 1475000, neighborhood: 'Foothills', city: 'Mountain View County', listingStatus: 'sold', bedrooms: 5, bathrooms: 3, propertyType: 'Farm/Ranch', yearBuilt: 2005, livingAreaSqft: 3100, lotAreaValue: 80, lotAreaUnit: 'acres', taxesAnnual: 6800, listingBrokerage: 'Sample Brokerage', mlsNumber: 'MLS-005', representation: 'seller_representation', gallery: [{ id: `si_5a`, url: `${img}/featured-2.webp`, caption: 'Front view', order: 0 }] },
+          { userId, tenantId: userId, address: '55123 Foothills Drive', description: 'Luxury estate with panoramic views, heated shop, and guest suite above the detached garage.', listPrice: 2100000, neighborhood: 'Foothills', city: 'Mountain View County', listingStatus: 'sold', bedrooms: 6, bathrooms: 5, propertyType: 'Residential', yearBuilt: 2022, livingAreaSqft: 4500, lotAreaValue: 5, lotAreaUnit: 'acres', taxesAnnual: 12000, listingBrokerage: 'Sample Brokerage', mlsNumber: 'MLS-006', representation: 'seller_representation', gallery: [{ id: `si_6a`, url: `${img}/featured-3.webp`, caption: 'Front view', order: 0 }] },
+        ];
+        const all = [...active, ...sold];
+        all.forEach((l, i) => {
+          const listings = get().listings;
+          const slug = ensureUniqueSlug(slugify(l.address), listings);
+          const listing: Listing = { ...l, id: `country_${Date.now()}_${i}`, slug, customOrder: listings.length, createdAt: now, updatedAt: now, gallery: l.gallery };
+          set((state) => ({ listings: [...state.listings, listing] }));
+        });
       },
 
       filterAndSortListings: (listings, config) => {

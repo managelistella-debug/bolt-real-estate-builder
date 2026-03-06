@@ -18,6 +18,8 @@ interface RequestBody {
     fontHeading?: string;
     fontBody?: string;
     social?: Record<string, string>;
+    personalLogo?: string;
+    brokerageLogo?: string;
   };
 }
 
@@ -38,11 +40,9 @@ export async function POST(request: NextRequest) {
     officeAddress: body.siteProfile?.officeAddress,
     aboutMe: body.siteProfile?.aboutMe,
     targetAreas: body.siteProfile?.targetAreas,
-    primaryColor: body.siteProfile?.primaryColor,
-    secondaryColor: body.siteProfile?.secondaryColor,
-    fontHeading: body.siteProfile?.fontHeading,
-    fontBody: body.siteProfile?.fontBody,
     social: body.siteProfile?.social,
+    personalLogo: body.siteProfile?.personalLogo,
+    brokerageLogo: body.siteProfile?.brokerageLogo,
   };
 
   const result = renderStartingPointTemplate(body.templateId, customization);
@@ -53,7 +53,8 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     provider: 'template',
-    reply: `Your site has been built using the Country template with your information applied. You can edit text and images directly in the preview, or ask me to make changes.`,
+    seedListings: true,
+    reply: `Your site has been built using the Country template with your information applied. All ${customization.agentName ? customization.agentName + "'s" : 'your'} contact details, logos, and social links are in place. 3 active and 3 sold sample listings have been added to your CMS. You can edit text and images directly in the preview, or ask me to make changes.`,
     blueprint: {
       siteName: result.siteName,
       market: customization.targetAreas || 'Real Estate',
@@ -61,12 +62,12 @@ export async function POST(request: NextRequest) {
       heroSubtitle: '',
       ctaText: 'View Estates',
       ctaUrl: '/estates',
-      primaryColor: customization.primaryColor || '#09312a',
-      accentColor: customization.secondaryColor || '#daaf3a',
-      backgroundColor: customization.primaryColor || '#09312a',
+      primaryColor: '#09312a',
+      accentColor: '#daaf3a',
+      backgroundColor: '#09312a',
       bodyTextColor: '#ffffff',
-      fontHeading: customization.fontHeading || 'Reckless Neue',
-      fontBody: customization.fontBody || 'Lato',
+      fontHeading: 'Reckless Neue',
+      fontBody: 'Lato',
       borderRadius: '0px',
       navStyle: 'normal',
       heroStyle: 'fullscreen-overlay',
@@ -74,12 +75,8 @@ export async function POST(request: NextRequest) {
       footerPhone: customization.phone || '',
       footerEmail: customization.email || '',
       footerAddress: customization.officeAddress || '',
-      imageNavigationHeading: 'How Can We Help?',
       aboutHeading: `Meet ${customization.agentName || 'Your Name'}`,
       aboutBody: customization.aboutMe || '',
-      listingsHeading: 'Featured Listings',
-      featuredSalesHeading: 'Recently Sold',
-      blogsHeading: 'Blog',
     },
     previewHtml: result.previewHtml,
     previewCss: result.previewCss,

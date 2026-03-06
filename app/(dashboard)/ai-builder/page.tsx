@@ -8,6 +8,7 @@ import { useAuthStore } from '@/lib/stores/auth';
 import { useWebsiteStore } from '@/lib/stores/website';
 import { useSiteProfileStore } from '@/lib/stores/siteProfile';
 import { useTemplateCatalogStore, getTemplateFromAsset } from '@/lib/stores/templateCatalog';
+import { useListingsStore } from '@/lib/stores/listings';
 import { BuilderBlueprint } from '@/lib/ai/builderBlueprint';
 import { getDefaultHeaderConfig } from '@/lib/header-config';
 import { getDefaultFooterConfig } from '@/lib/footer-config';
@@ -297,6 +298,7 @@ export default function AiBuilderPage() {
   const { websites, addWebsite, updateWebsite, publishWebsite } = useWebsiteStore();
   const { hasCompletedOnboarding, getProfileForUser } = useSiteProfileStore();
   const { getAssetsForUser } = useTemplateCatalogStore();
+  const { seedCountryTemplateListings: seedCountryListings } = useListingsStore();
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const [prompt, setPrompt] = useState('');
@@ -395,11 +397,9 @@ export default function AiBuilderPage() {
           officeAddress: siteProfile.officeAddress,
           aboutMe: siteProfile.aboutMe,
           targetAreas: siteProfile.targetAreas,
-          primaryColor: siteProfile.primaryColor,
-          secondaryColor: siteProfile.secondaryColor,
-          fontHeading: siteProfile.fonts?.heading,
-          fontBody: siteProfile.fonts?.body,
           social: siteProfile.social as Record<string, string>,
+          personalLogo: siteProfile.personalLogo,
+          brokerageLogo: siteProfile.brokerageLogo,
         } : undefined;
 
         fetch('/api/ai/builder/from-template', {
@@ -414,6 +414,9 @@ export default function AiBuilderPage() {
               setPreviewCss(payload.previewCss || '');
               setLastBlueprint(payload.blueprint || null);
               pushHistory(payload.previewHtml);
+              if (payload.seedListings && user) {
+                seedCountryListings(user.id);
+              }
               setMessages((prev) => [...prev, {
                 id: `a_template_${Date.now()}`,
                 role: 'assistant',
@@ -429,7 +432,7 @@ export default function AiBuilderPage() {
     }
 
     hasHydrated.current = true;
-  }, [user, websites, toast, pushHistory, getProfileForUser]);
+  }, [user, websites, toast, pushHistory, getProfileForUser, seedCountryListings]);
 
   /* ---- listen for edits from iframe ---- */
   const handlePreviewMessage = useCallback((event: MessageEvent) => {
@@ -892,11 +895,9 @@ export default function AiBuilderPage() {
                           officeAddress: siteProfile.officeAddress,
                           aboutMe: siteProfile.aboutMe,
                           targetAreas: siteProfile.targetAreas,
-                          primaryColor: siteProfile.primaryColor,
-                          secondaryColor: siteProfile.secondaryColor,
-                          fontHeading: siteProfile.fonts?.heading,
-                          fontBody: siteProfile.fonts?.body,
                           social: siteProfile.social as Record<string, string>,
+                          personalLogo: siteProfile.personalLogo,
+                          brokerageLogo: siteProfile.brokerageLogo,
                         } : undefined;
                         fetch('/api/ai/builder/from-template', {
                           method: 'POST',
@@ -912,6 +913,9 @@ export default function AiBuilderPage() {
                               setLastBlueprint(payload.blueprint || null);
                               setSavedWebsiteId(null);
                               setJustSaved(false);
+                              if (payload.seedListings && user) {
+                                seedCountryListings(user.id);
+                              }
                               setMessages((prev) => [...prev, { id: `a_sp_${Date.now()}`, role: 'assistant', content: payload.reply }]);
                             }
                           })

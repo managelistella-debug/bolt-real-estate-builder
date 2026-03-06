@@ -16,6 +16,8 @@ export interface TemplateCustomization {
   fontHeading?: string;
   fontBody?: string;
   social?: Record<string, string>;
+  personalLogo?: string;
+  brokerageLogo?: string;
 }
 
 export interface RenderedTemplate {

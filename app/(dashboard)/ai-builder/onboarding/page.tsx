@@ -24,7 +24,8 @@ import {
 } from 'lucide-react';
 import { getVisibleStartingPointTemplates } from '@/lib/templates/registry';
 
-const TOTAL_STEPS = 8;
+const BASE_STEPS = 8;
+const isStartingPointTemplate = (id?: string) => !!id && id.startsWith('starting-point-');
 
 const STYLE_OPTIONS = [
   {
@@ -146,13 +147,16 @@ export default function OnboardingPage() {
       <div className="border-b border-[#EBEBEB] bg-white px-6 py-4">
         <div className="mx-auto max-w-2xl">
           <div className="mb-2 flex items-center justify-between text-[12px] text-[#888C99]">
-            <span>Step {step} of {TOTAL_STEPS}</span>
-            <span>{Math.round((step / TOTAL_STEPS) * 100)}% complete</span>
+            {(() => {
+              const total = isStartingPointTemplate(profile.preferredTemplateId) ? 7 : BASE_STEPS;
+              const effective = Math.min(step, total);
+              return (<><span>Step {effective} of {total}</span><span>{Math.round((effective / total) * 100)}% complete</span></>);
+            })()}
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#EBEBEB]">
             <div
               className="h-full rounded-full bg-[#DAFF07] transition-all duration-300"
-              style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
+              style={{ width: `${(Math.min(step, isStartingPointTemplate(profile.preferredTemplateId) ? 7 : BASE_STEPS) / (isStartingPointTemplate(profile.preferredTemplateId) ? 7 : BASE_STEPS)) * 100}%` }}
             />
           </div>
         </div>
@@ -371,134 +375,8 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* Step 6: Brand */}
-          {step === 6 && (
-            <div className="space-y-5">
-              <div>
-                <h2 className="text-[18px] font-semibold text-black">Brand Colors & Fonts</h2>
-                <p className={subtextClass}>Set your brand identity. You can always change these later.</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={labelClass}>Primary Color</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={profile.primaryColor}
-                      onChange={(e) => set('primaryColor', e.target.value)}
-                      className="h-[38px] w-[38px] cursor-pointer rounded-lg border border-[#EBEBEB]"
-                    />
-                    <input
-                      className={inputClass + ' flex-1'}
-                      value={profile.primaryColor}
-                      onChange={(e) => set('primaryColor', e.target.value)}
-                      placeholder="#002349"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className={labelClass}>Secondary Color</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={profile.secondaryColor}
-                      onChange={(e) => set('secondaryColor', e.target.value)}
-                      className="h-[38px] w-[38px] cursor-pointer rounded-lg border border-[#EBEBEB]"
-                    />
-                    <input
-                      className={inputClass + ' flex-1'}
-                      value={profile.secondaryColor}
-                      onChange={(e) => set('secondaryColor', e.target.value)}
-                      placeholder="#DAFF07"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>Custom Fonts <span className={subtextClass}>(optional)</span></label>
-                <p className={subtextClass + ' mb-2'}>Enter Google Font names or upload your own font files.</p>
-                <div className="space-y-2">
-                  <div>
-                    <span className="text-[12px] text-[#888C99]">Heading Font</span>
-                    <input className={inputClass} placeholder="e.g. Playfair Display" value={profile.fonts?.heading || ''} onChange={(e) => set('fonts', { ...profile.fonts, heading: e.target.value })} />
-                  </div>
-                  <div>
-                    <span className="text-[12px] text-[#888C99]">Body Font</span>
-                    <input className={inputClass} placeholder="e.g. DM Sans" value={profile.fonts?.body || ''} onChange={(e) => set('fonts', { ...profile.fonts, body: e.target.value })} />
-                  </div>
-                  <div>
-                    <span className="text-[12px] text-[#888C99]">Subheading Font</span>
-                    <input className={inputClass} placeholder="e.g. Inter" value={profile.fonts?.subheading || ''} onChange={(e) => set('fonts', { ...profile.fonts, subheading: e.target.value })} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 7: Pages & Features */}
-          {step === 7 && (
-            <div className="space-y-5">
-              <div>
-                <h2 className="text-[18px] font-semibold text-black">Pages & Features</h2>
-                <p className={subtextClass}>Select which pages and features you want on your website.</p>
-              </div>
-              <div>
-                <label className={labelClass}>Pages</label>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {AVAILABLE_PAGES.map((page) => {
-                    const checked = profile.selectedPages.includes(page.id);
-                    return (
-                      <button
-                        key={page.id}
-                        type="button"
-                        disabled={'locked' in page && page.locked}
-                        onClick={() => togglePage(page.id)}
-                        className={`flex h-[38px] items-center gap-2 rounded-lg border px-3 text-[13px] transition-colors ${
-                          checked
-                            ? 'border-[#DAFF07] bg-[#DAFF07]/10 text-black'
-                            : 'border-[#EBEBEB] text-[#888C99] hover:border-[#DAFF07]'
-                        } ${'locked' in page && page.locked ? 'opacity-70' : ''}`}
-                      >
-                        <div className={`flex h-4 w-4 items-center justify-center rounded border ${checked ? 'border-[#DAFF07] bg-[#DAFF07]' : 'border-[#CCCCCC]'}`}>
-                          {checked && <Check className="h-3 w-3 text-black" />}
-                        </div>
-                        {page.label}
-                        {'locked' in page && page.locked && <span className="text-[10px] text-[#888C99]">(required)</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>Additional Features</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {AVAILABLE_FEATURES.map((feature) => {
-                    const checked = profile.selectedFeatures.includes(feature.id);
-                    return (
-                      <button
-                        key={feature.id}
-                        type="button"
-                        onClick={() => toggleFeature(feature.id)}
-                        className={`flex h-[38px] items-center gap-2 rounded-lg border px-3 text-[13px] transition-colors ${
-                          checked
-                            ? 'border-[#DAFF07] bg-[#DAFF07]/10 text-black'
-                            : 'border-[#EBEBEB] text-[#888C99] hover:border-[#DAFF07]'
-                        }`}
-                      >
-                        <div className={`flex h-4 w-4 items-center justify-center rounded border ${checked ? 'border-[#DAFF07] bg-[#DAFF07]' : 'border-[#CCCCCC]'}`}>
-                          {checked && <Check className="h-3 w-3 text-black" />}
-                        </div>
-                        {feature.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 8: Choose a Starting Point */}
-          {step === 8 && (() => {
+          {/* Step 6: Choose Starting Point (moved from step 8) */}
+          {step === 6 && (() => {
             const startingPoints = getVisibleStartingPointTemplates();
             return (
               <div className="space-y-5">
@@ -587,53 +465,195 @@ export default function OnboardingPage() {
                     ))}
                   </div>
                 </div>
-
-                <div>
-                  <label className={labelClass}>Additional Notes <span className={subtextClass}>(optional)</span></label>
-                  <textarea
-                    className="w-full resize-none rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] p-3 text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none"
-                    rows={3}
-                    placeholder="Any other details about your website preferences..."
-                    value={profile.additionalNotes || ''}
-                    onChange={(e) => set('additionalNotes', e.target.value)}
-                  />
-                </div>
               </div>
             );
           })()}
 
+          {/* Step 7: Pages & Features */}
+          {step === 7 && (
+            <div className="space-y-5">
+              <div>
+                <h2 className="text-[18px] font-semibold text-black">Pages & Features</h2>
+                <p className={subtextClass}>Select which pages and features you want on your website.</p>
+              </div>
+              <div>
+                <label className={labelClass}>Pages</label>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {AVAILABLE_PAGES.map((page) => {
+                    const checked = profile.selectedPages.includes(page.id);
+                    return (
+                      <button
+                        key={page.id}
+                        type="button"
+                        disabled={'locked' in page && page.locked}
+                        onClick={() => togglePage(page.id)}
+                        className={`flex h-[38px] items-center gap-2 rounded-lg border px-3 text-[13px] transition-colors ${
+                          checked
+                            ? 'border-[#DAFF07] bg-[#DAFF07]/10 text-black'
+                            : 'border-[#EBEBEB] text-[#888C99] hover:border-[#DAFF07]'
+                        } ${'locked' in page && page.locked ? 'opacity-70' : ''}`}
+                      >
+                        <div className={`flex h-4 w-4 items-center justify-center rounded border ${checked ? 'border-[#DAFF07] bg-[#DAFF07]' : 'border-[#CCCCCC]'}`}>
+                          {checked && <Check className="h-3 w-3 text-black" />}
+                        </div>
+                        {page.label}
+                        {'locked' in page && page.locked && <span className="text-[10px] text-[#888C99]">(required)</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <label className={labelClass}>Additional Features</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {AVAILABLE_FEATURES.map((feature) => {
+                    const checked = profile.selectedFeatures.includes(feature.id);
+                    return (
+                      <button
+                        key={feature.id}
+                        type="button"
+                        onClick={() => toggleFeature(feature.id)}
+                        className={`flex h-[38px] items-center gap-2 rounded-lg border px-3 text-[13px] transition-colors ${
+                          checked
+                            ? 'border-[#DAFF07] bg-[#DAFF07]/10 text-black'
+                            : 'border-[#EBEBEB] text-[#888C99] hover:border-[#DAFF07]'
+                        }`}
+                      >
+                        <div className={`flex h-4 w-4 items-center justify-center rounded border ${checked ? 'border-[#DAFF07] bg-[#DAFF07]' : 'border-[#CCCCCC]'}`}>
+                          {checked && <Check className="h-3 w-3 text-black" />}
+                        </div>
+                        {feature.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 8: Brand Colors & Fonts (skipped for starting-point templates) */}
+          {step === 8 && (
+            <div className="space-y-5">
+              <div>
+                <h2 className="text-[18px] font-semibold text-black">Brand Colors & Fonts</h2>
+                <p className={subtextClass}>Set your brand identity. You can always change these later.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Primary Color</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={profile.primaryColor}
+                      onChange={(e) => set('primaryColor', e.target.value)}
+                      className="h-[38px] w-[38px] cursor-pointer rounded-lg border border-[#EBEBEB]"
+                    />
+                    <input
+                      className={inputClass + ' flex-1'}
+                      value={profile.primaryColor}
+                      onChange={(e) => set('primaryColor', e.target.value)}
+                      placeholder="#002349"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className={labelClass}>Secondary Color</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={profile.secondaryColor}
+                      onChange={(e) => set('secondaryColor', e.target.value)}
+                      className="h-[38px] w-[38px] cursor-pointer rounded-lg border border-[#EBEBEB]"
+                    />
+                    <input
+                      className={inputClass + ' flex-1'}
+                      value={profile.secondaryColor}
+                      onChange={(e) => set('secondaryColor', e.target.value)}
+                      placeholder="#DAFF07"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className={labelClass}>Custom Fonts <span className={subtextClass}>(optional)</span></label>
+                <p className={subtextClass + ' mb-2'}>Enter Google Font names or upload your own font files.</p>
+                <div className="space-y-2">
+                  <div>
+                    <span className="text-[12px] text-[#888C99]">Heading Font</span>
+                    <input className={inputClass} placeholder="e.g. Playfair Display" value={profile.fonts?.heading || ''} onChange={(e) => set('fonts', { ...profile.fonts, heading: e.target.value })} />
+                  </div>
+                  <div>
+                    <span className="text-[12px] text-[#888C99]">Body Font</span>
+                    <input className={inputClass} placeholder="e.g. DM Sans" value={profile.fonts?.body || ''} onChange={(e) => set('fonts', { ...profile.fonts, body: e.target.value })} />
+                  </div>
+                  <div>
+                    <span className="text-[12px] text-[#888C99]">Subheading Font</span>
+                    <input className={inputClass} placeholder="e.g. Inter" value={profile.fonts?.subheading || ''} onChange={(e) => set('fonts', { ...profile.fonts, subheading: e.target.value })} />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className={labelClass}>Additional Notes <span className={subtextClass}>(optional)</span></label>
+                <textarea
+                  className="w-full resize-none rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] p-3 text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none"
+                  rows={3}
+                  placeholder="Any other details about your website preferences..."
+                  value={profile.additionalNotes || ''}
+                  onChange={(e) => set('additionalNotes', e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Navigation */}
-          <div className="mt-6 flex items-center justify-between border-t border-[#EBEBEB] pt-4">
-            {step > 1 ? (
-              <button
-                type="button"
-                onClick={() => setStep((s) => s - 1)}
-                className="inline-flex h-[36px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-4 text-[13px] text-black hover:bg-[#F5F5F3]"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" /> Back
-              </button>
-            ) : (
-              <div />
-            )}
-            {step < TOTAL_STEPS ? (
-              <button
-                type="button"
-                disabled={!canContinue()}
-                onClick={() => setStep((s) => s + 1)}
-                className="inline-flex h-[36px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-4 text-[13px] font-medium text-black hover:bg-[#C8ED00] disabled:opacity-40"
-              >
-                Continue <ArrowRight className="h-3.5 w-3.5" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleComplete}
-                className="inline-flex h-[36px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-4 text-[13px] font-medium text-black hover:bg-[#C8ED00]"
-              >
-                <Check className="h-3.5 w-3.5" /> Complete Setup
-              </button>
-            )}
-          </div>
+          {(() => {
+            const usesStartingPoint = isStartingPointTemplate(profile.preferredTemplateId);
+            const totalSteps = usesStartingPoint ? 7 : BASE_STEPS;
+            const isLast = usesStartingPoint ? step === 7 : step === BASE_STEPS;
+            const nextStep = () => {
+              if (step === 7 && usesStartingPoint) return;
+              if (step === 7 && !usesStartingPoint) { setStep(8); return; }
+              setStep((s) => s + 1);
+            };
+            const prevStep = () => {
+              if (step === 8) { setStep(7); return; }
+              setStep((s) => s - 1);
+            };
+            const displayStep = usesStartingPoint && step <= 7 ? step : step;
+            return (
+              <div className="mt-6 flex items-center justify-between border-t border-[#EBEBEB] pt-4">
+                {step > 1 ? (
+                  <button
+                    type="button"
+                    onClick={prevStep}
+                    className="inline-flex h-[36px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-4 text-[13px] text-black hover:bg-[#F5F5F3]"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" /> Back
+                  </button>
+                ) : (
+                  <div />
+                )}
+                {!isLast ? (
+                  <button
+                    type="button"
+                    disabled={!canContinue()}
+                    onClick={nextStep}
+                    className="inline-flex h-[36px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-4 text-[13px] font-medium text-black hover:bg-[#C8ED00] disabled:opacity-40"
+                  >
+                    Continue <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleComplete}
+                    className="inline-flex h-[36px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-4 text-[13px] font-medium text-black hover:bg-[#C8ED00]"
+                  >
+                    <Check className="h-3.5 w-3.5" /> Complete Setup
+                  </button>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>
