@@ -85,7 +85,7 @@ export default function WebsiteLibraryPage() {
                 )}
               </div>
               <a
-                href={`/hosted/${site.siteSlug}`}
+                href={site.originUrl || `/hosted/${site.siteSlug}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="shrink-0 flex items-center gap-1.5 text-[13px] text-[#888C99] hover:text-black transition-colors border border-[#EBEBEB] rounded-lg px-3 py-1.5"

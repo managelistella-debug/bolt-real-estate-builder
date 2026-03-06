@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useTenantSettingsStore } from '@/lib/stores/tenantSettings';
+import { useHostedSitesStore } from '@/lib/stores/hostedSites';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -53,11 +54,14 @@ export function Sidebar({ onCollapse, showCollapseButton = false }: SidebarProps
   const pathname = usePathname();
   const { user, logout, canManageTenants } = useAuthStore();
   const { getSettings } = useTenantSettingsStore();
+  const { getSiteBySlug } = useHostedSitesStore();
   const [blogsMenuOpen, setBlogsMenuOpen] = useState(pathname?.startsWith('/blogs'));
 
   const tenantSettings = user ? getSettings(user.id) : null;
   const aiBuilderDisabled = tenantSettings?.aiBuilderDisabled ?? false;
   const assignedSiteSlug = tenantSettings?.assignedHostedSiteSlug;
+  const assignedSite = assignedSiteSlug ? getSiteBySlug(assignedSiteSlug) : null;
+  const myWebsiteUrl = assignedSite?.originUrl || null;
 
   const filteredNavigation = navigation.filter(item => {
     if ((item as Record<string, unknown>).adminOnly && user?.role !== 'super_admin') {
@@ -167,9 +171,9 @@ export function Sidebar({ onCollapse, showCollapseButton = false }: SidebarProps
           );
         })}
 
-        {aiBuilderDisabled && assignedSiteSlug && (
+        {aiBuilderDisabled && myWebsiteUrl && (
           <a
-            href={`/hosted/${assignedSiteSlug}?tenantId=${user?.id || ''}`}
+            href={myWebsiteUrl}
             target="_blank"
             rel="noopener noreferrer"
             className={cn(

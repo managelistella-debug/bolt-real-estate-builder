@@ -32,6 +32,11 @@ yarn-error.log*
 # deployment artifacts
 .vercel
 
+# hosted site builds
+sites/*/node_modules
+sites/*/.next
+sites/*/out
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
