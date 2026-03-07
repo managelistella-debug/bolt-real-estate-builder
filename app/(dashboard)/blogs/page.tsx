@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { useToast } from '@/components/ui/use-toast';
@@ -21,12 +21,22 @@ const STATUS_FILTERS: Array<{ label: string; value: 'all' | BlogStatus }> = [
 export default function BlogsPage() {
   const { user } = useAuthStore();
   const { toast } = useToast();
-  const { createBlog, createSampleBlog, updateBlog, deleteBlog, duplicateBlog, getBlogsForCurrentUser } = useBlogsStore();
+  const { createBlog, createSampleBlog, updateBlog, deleteBlog, duplicateBlog, getBlogsForCurrentUser, syncAllToDb } = useBlogsStore();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | BlogStatus>('all');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingBlog, setEditingBlog] = useState<BlogPost | null>(null);
+  const hasSynced = useRef(false);
+
+  useEffect(() => {
+    if (hasSynced.current) return;
+    const tenantId = user?.businessId || user?.id;
+    if (tenantId) {
+      hasSynced.current = true;
+      syncAllToDb(tenantId);
+    }
+  }, [user, syncAllToDb]);
 
   const userBlogs = useMemo(
     () => getBlogsForCurrentUser(user?.id),
@@ -50,7 +60,7 @@ export default function BlogsPage() {
 
   const handleCreate = (payload: Omit<BlogPost, 'id' | 'customOrder' | 'createdAt' | 'updatedAt'>) => {
     try {
-      createBlog(payload);
+      createBlog({ ...payload, tenantId: user?.businessId || payload.userId });
       toast({
         title: 'Blog post created',
         description: 'Your blog post has been saved.',
@@ -103,7 +113,7 @@ export default function BlogsPage() {
 
   const handleCreateSample = () => {
     if (!user) return;
-    createSampleBlog(user.id);
+    createSampleBlog(user.businessId || user.id);
     toast({
       title: 'Sample blog created',
       description: 'A sample blog post was added so you can preview feed and detail layouts.',

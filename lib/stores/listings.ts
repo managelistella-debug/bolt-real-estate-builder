@@ -3,6 +3,46 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { Listing, ListingStatus, ListingsSortOption } from '@/lib/types';
 import { useTenantContextStore } from './tenantContext';
 
+function toDbRow(l: Listing) {
+  return {
+    id: l.id,
+    tenant_id: l.tenantId || l.userId,
+    user_id: l.userId,
+    slug: l.slug,
+    address: l.address,
+    description: l.description,
+    list_price: l.listPrice,
+    neighborhood: l.neighborhood,
+    city: l.city,
+    listing_status: l.listingStatus,
+    bedrooms: l.bedrooms,
+    bathrooms: l.bathrooms,
+    property_type: l.propertyType,
+    year_built: l.yearBuilt,
+    living_area_sqft: l.livingAreaSqft,
+    lot_area_value: l.lotAreaValue,
+    lot_area_unit: l.lotAreaUnit,
+    taxes_annual: l.taxesAnnual,
+    listing_brokerage: l.listingBrokerage,
+    mls_number: l.mlsNumber,
+    representation: l.representation || null,
+    gallery: l.gallery,
+    custom_order: l.customOrder,
+  };
+}
+
+function syncListingToDb(listing: Listing) {
+  fetch('/api/data/listings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(toDbRow(listing)),
+  }).catch(() => {});
+}
+
+function deleteListingFromDb(id: string) {
+  fetch(`/api/data/listings?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});
+}
+
 interface ListingsFilterConfig {
   statuses?: ListingStatus[];
   sortBy?: ListingsSortOption;
@@ -23,6 +63,7 @@ interface ListingsState {
   getListingBySlug: (slug: string) => Listing | undefined;
   filterAndSortListings: (listings: Listing[], config?: ListingsFilterConfig) => Listing[];
   seedCountryTemplateListings: (userId: string) => void;
+  syncAllToDb: (overrideTenantId?: string) => void;
 }
 
 const slugify = (value: string) =>
@@ -86,6 +127,7 @@ export const useListingsStore = create<ListingsState>()(
         };
 
         set((state) => ({ listings: [...state.listings, listing] }));
+        syncListingToDb(listing);
         return listing;
       },
 
@@ -126,19 +168,22 @@ export const useListingsStore = create<ListingsState>()(
             if (listing.id !== id) return listing;
             const nextAddress = updates.address ?? listing.address;
             const nextSlug = ensureUniqueSlug(slugify(nextAddress), state.listings, id);
-            return normalizeListing({
+            const updated = normalizeListing({
               ...listing,
               ...updates,
               slug: nextSlug,
               updatedAt: new Date(),
               gallery: updates.gallery ?? listing.gallery,
             });
+            syncListingToDb(updated);
+            return updated;
           }),
         }));
       },
 
       deleteListing: (id) => {
         set((state) => ({ listings: state.listings.filter((l) => l.id !== id) }));
+        deleteListingFromDb(id);
       },
 
       duplicateListing: (id) => {
@@ -199,6 +244,18 @@ export const useListingsStore = create<ListingsState>()(
           const slug = ensureUniqueSlug(slugify(l.address), listings);
           const listing: Listing = { ...l, id: `country_${Date.now()}_${i}`, slug, customOrder: listings.length, createdAt: now, updatedAt: now, gallery: l.gallery };
           set((state) => ({ listings: [...state.listings, listing] }));
+        });
+      },
+
+      syncAllToDb: (overrideTenantId) => {
+        const listings = get().listings;
+        listings.forEach((l) => {
+          const row = toDbRow(overrideTenantId ? { ...l, tenantId: overrideTenantId } : l);
+          fetch('/api/data/listings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(row),
+          }).catch(() => {});
         });
       },
 

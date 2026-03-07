@@ -15,6 +15,7 @@ import {
   Shield,
   PlugZap,
   MessageSquareQuote,
+  Code2,
   ChevronDown,
   PanelLeftClose,
   Sparkles,
@@ -33,6 +34,7 @@ const navigation = [
   { name: 'Testimonials', href: '/testimonials', icon: MessageSquareQuote },
   { name: 'CRM', href: '/leads', icon: Users },
   { name: 'Integrations', href: '/integrations', icon: PlugZap },
+  { name: 'Embeds', href: '/embeds', icon: Code2 },
   { name: 'Domains & Settings', href: '/settings', icon: Settings },
 ];
 

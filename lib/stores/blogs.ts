@@ -3,6 +3,39 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { BlogPost, BlogSortOption, BlogStatus } from '@/lib/types';
 import { useTenantContextStore } from './tenantContext';
 
+function blogToDbRow(b: BlogPost) {
+  return {
+    id: b.id,
+    tenant_id: b.tenantId || b.userId,
+    user_id: b.userId,
+    title: b.title,
+    slug: b.slug,
+    excerpt: b.excerpt || null,
+    meta_description: b.metaDescription || null,
+    content_html: b.contentHtml,
+    featured_image: b.featuredImage || null,
+    author_name: b.authorName || null,
+    tags: b.tags || [],
+    category: b.category || null,
+    status: b.status,
+    template_id: b.templateId || 'classic',
+    custom_order: b.customOrder,
+    published_at: b.publishedAt ? new Date(b.publishedAt).toISOString() : null,
+  };
+}
+
+function syncBlogToDb(blog: BlogPost) {
+  fetch('/api/data/blogs', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(blogToDbRow(blog)),
+  }).catch(() => {});
+}
+
+function deleteBlogFromDb(id: string) {
+  fetch(`/api/data/blogs?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});
+}
+
 interface BlogsFilterConfig {
   statuses?: BlogStatus[];
   sortBy?: BlogSortOption;
@@ -23,6 +56,7 @@ interface BlogsState {
   getBlogsForCurrentUser: (userId?: string) => BlogPost[];
   getBlogBySlug: (slug: string) => BlogPost | undefined;
   filterAndSortBlogs: (blogs: BlogPost[], config?: BlogsFilterConfig) => BlogPost[];
+  syncAllToDb: (overrideTenantId?: string) => void;
 }
 
 const slugify = (value: string) =>
@@ -76,6 +110,7 @@ export const useBlogsStore = create<BlogsState>()(
           updatedAt: now,
         };
         set((state) => ({ blogs: [...state.blogs, normalizeBlog(blog)] }));
+        syncBlogToDb(blog);
         return blog;
       },
 
@@ -104,19 +139,22 @@ export const useBlogsStore = create<BlogsState>()(
             const nextTitle = updates.title ?? post.title;
             const nextBaseSlug = updates.slug || slugify(nextTitle);
             const nextSlug = ensureUniqueSlug(nextBaseSlug, state.blogs, id);
-            return normalizeBlog({
+            const updated = normalizeBlog({
               ...post,
               ...updates,
               slug: nextSlug,
               updatedAt: new Date(),
               tags: updates.tags ?? post.tags,
             });
+            syncBlogToDb(updated);
+            return updated;
           }),
         }));
       },
 
       deleteBlog: (id) => {
         set((state) => ({ blogs: state.blogs.filter((p) => p.id !== id) }));
+        deleteBlogFromDb(id);
       },
 
       duplicateBlog: (id) => {
@@ -144,6 +182,18 @@ export const useBlogsStore = create<BlogsState>()(
         if (!effectiveUserId) return undefined;
         const post = get().blogs.find((item) => item.slug === slug && item.userId === effectiveUserId);
         return post ? normalizeBlog(post) : undefined;
+      },
+
+      syncAllToDb: (overrideTenantId) => {
+        const blogs = get().blogs;
+        blogs.forEach((b) => {
+          const row = blogToDbRow(overrideTenantId ? { ...b, tenantId: overrideTenantId } : b);
+          fetch('/api/data/blogs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(row),
+          }).catch(() => {});
+        });
       },
 
       filterAndSortBlogs: (blogs, config) => {

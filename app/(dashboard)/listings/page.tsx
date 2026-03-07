@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { useToast } from '@/components/ui/use-toast';
@@ -29,12 +29,22 @@ export default function ListingsPage() {
   const { user } = useAuthStore();
   const { effectiveUserId } = useTenantContextStore();
   const { toast } = useToast();
-  const { createListing, createSampleListing, fetchListings, updateListing, deleteListing, duplicateListing, getListingsForCurrentUser } = useListingsStore();
+  const { createListing, createSampleListing, fetchListings, updateListing, deleteListing, duplicateListing, getListingsForCurrentUser, syncAllToDb } = useListingsStore();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | ListingStatus>('all');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingListing, setEditingListing] = useState<Listing | null>(null);
+  const hasSynced = useRef(false);
+
+  useEffect(() => {
+    if (hasSynced.current) return;
+    const tenantId = user?.businessId || user?.id;
+    if (tenantId) {
+      hasSynced.current = true;
+      syncAllToDb(tenantId);
+    }
+  }, [user, syncAllToDb]);
 
   const userListings = useMemo(
     () => getListingsForCurrentUser(user?.id),
@@ -56,7 +66,7 @@ export default function ListingsPage() {
     });
   }, [search, statusFilter, userListings]);
 
-  const activeTenantId = effectiveUserId || user?.id;
+  const activeTenantId = user?.businessId || effectiveUserId || user?.id;
 
   const handleCreate = async (payload: Omit<Listing, 'id' | 'slug' | 'customOrder' | 'createdAt' | 'updatedAt'>) => {
     try {

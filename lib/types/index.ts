@@ -1857,3 +1857,42 @@ export interface ActivityLogEntry {
   userId?: string;
   createdAt: Date;
 }
+
+// ── Embed Configs ─────────────────────────────────────────────────────────────
+
+export interface ListingFeedConfig {
+  columns: 1 | 2 | 3;
+  itemsPerPage: number | 'unlimited';
+  paginationType: 'pagination' | 'load_more' | 'none';
+  filters: {
+    statuses: ListingStatus[];
+    cities: string[];
+    neighborhoods: string[];
+    propertyTypes: string[];
+  };
+  sortBy: 'newest' | 'oldest' | 'price_asc' | 'price_desc' | 'custom_order';
+  detailPageUrlPattern: string;
+}
+
+export interface ListingDetailEmbedConfig {
+  showGallery: boolean;
+  showMortgageCalculator: boolean;
+  showPropertyDetails: boolean;
+  showContactForm: boolean;
+  agentName: string;
+  agentEmail: string;
+  agentPhone: string;
+  ctaLabel: string;
+}
+
+export type EmbedConfigType = 'listing_feed' | 'listing_detail';
+
+export interface EmbedConfig {
+  id: string;
+  tenantId: string;
+  name: string;
+  type: EmbedConfigType;
+  config: ListingFeedConfig | ListingDetailEmbedConfig;
+  createdAt: Date;
+  updatedAt: Date;
+}

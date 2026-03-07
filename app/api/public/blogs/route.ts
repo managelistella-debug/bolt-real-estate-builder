@@ -11,6 +11,24 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
 
+async function resolveTenantIds(tenantId: string): Promise<string[]> {
+  const ids = [tenantId];
+  const sb = getServiceClient();
+
+  const { data: profiles } = await sb
+    .from('profiles')
+    .select('id')
+    .eq('business_id', tenantId);
+
+  if (profiles && profiles.length > 0) {
+    profiles.forEach((p: { id: string }) => {
+      if (!ids.includes(p.id)) ids.push(p.id);
+    });
+  }
+
+  return ids;
+}
+
 export async function GET(req: NextRequest) {
   const tenantId = req.nextUrl.searchParams.get('tenantId');
   if (!tenantId) {
@@ -18,10 +36,12 @@ export async function GET(req: NextRequest) {
   }
 
   const sb = getServiceClient();
+  const tenantIds = await resolveTenantIds(tenantId);
+
   const { data, error } = await sb
     .from('blog_posts')
     .select('*')
-    .eq('tenant_id', tenantId)
+    .in('tenant_id', tenantIds)
     .eq('status', 'published')
     .order('published_at', { ascending: false });
 
