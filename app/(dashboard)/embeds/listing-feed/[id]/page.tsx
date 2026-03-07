@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useEmbedConfigsStore } from '@/lib/stores/embedConfigs';
@@ -13,12 +13,8 @@ import { EmbedCodeDialog } from '@/components/embeds/EmbedCodeDialog';
 import { ArrowLeft, Code2, Save } from 'lucide-react';
 import Link from 'next/link';
 
-interface Props {
-  params: Promise<{ id: string }>;
-}
-
-export default function ListingFeedEditorPage({ params }: Props) {
-  const { id } = use(params);
+export default function ListingFeedEditorPage() {
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuthStore();
