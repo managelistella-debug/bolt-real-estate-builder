@@ -2,21 +2,22 @@ import { notFound } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ListingDetail from "@/components/listings/ListingDetail";
-import { getListingById, listings } from "@/lib/listings";
+import { getListingById, getAllListings } from "@/lib/listings";
 
 interface ListingPageProps {
   params: Promise<{ id: string }>;
 }
 
 export async function generateStaticParams() {
-  return listings.map((listing) => ({
+  const allListings = await getAllListings();
+  return allListings.map((listing) => ({
     id: listing.id,
   }));
 }
 
 export async function generateMetadata({ params }: ListingPageProps) {
   const { id } = await params;
-  const listing = getListingById(id);
+  const listing = await getListingById(id);
   if (!listing) return { title: "Listing Not Found" };
 
   return {
@@ -27,7 +28,7 @@ export async function generateMetadata({ params }: ListingPageProps) {
 
 export default async function ListingPage({ params }: ListingPageProps) {
   const { id } = await params;
-  const listing = getListingById(id);
+  const listing = await getListingById(id);
 
   if (!listing) {
     notFound();

@@ -29,7 +29,7 @@ export default function BlogDetailPage({ post }: BlogDetailPageProps) {
       {/* Content */}
       <section className="bg-[#09312a]">
         <div className="max-w-[1440px] mx-auto px-5 md:px-10 lg:px-[60px] py-10 md:py-[60px]">
-          {/* Breadcrumbs */}
+          {/* Back to Blog */}
           <motion.nav
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -43,27 +43,25 @@ export default function BlogDetailPage({ post }: BlogDetailPageProps) {
             >
               Blog
             </Link>
-            <span className="text-white/30 text-[13px]">/</span>
-            <span className="text-white/70 text-[13px] md:text-[14px] line-clamp-1">
-              {post.title}
-            </span>
           </motion.nav>
 
           <div className="max-w-[800px]">
             {/* Category */}
-            <motion.span
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.6,
-                ease: [0.25, 0.46, 0.45, 0.94],
-                delay: 0.15,
-              }}
-              className="gold-gradient-text text-[12px] md:text-[13px] uppercase tracking-[0.1em]"
-              style={{ fontFamily: "'Lato', sans-serif" }}
-            >
-              {post.category}
-            </motion.span>
+            {post.category && (
+              <motion.span
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  duration: 0.6,
+                  ease: [0.25, 0.46, 0.45, 0.94],
+                  delay: 0.15,
+                }}
+                className="gold-gradient-text text-[12px] md:text-[13px] uppercase tracking-[0.1em]"
+                style={{ fontFamily: "'Lato', sans-serif" }}
+              >
+                {post.category}
+              </motion.span>
+            )}
 
             {/* Title */}
             <motion.h1

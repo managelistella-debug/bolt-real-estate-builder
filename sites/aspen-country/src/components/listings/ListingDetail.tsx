@@ -63,18 +63,18 @@ export default function ListingDetail({ listing }: ListingDetailProps) {
   );
 
   const detailItems = [
-    { label: "Bedrooms", value: listing.bedrooms },
-    { label: "Bathrooms", value: listing.bathrooms },
+    { label: "Bedrooms", value: String(listing.bedrooms) },
+    { label: "Bathrooms", value: String(listing.bathrooms) },
     {
-      label: "Living Area (Sq Ft)",
-      value: listing.livingArea.toLocaleString(),
+      label: "Living Area",
+      value: `${listing.livingArea.toLocaleString()} Sq Ft`,
     },
     {
       label: "Lot Area",
       value: `${listing.lotArea.toLocaleString()} ${listing.lotAreaUnit}`,
     },
     { label: "Property Type", value: listing.propertyType },
-    { label: "Year Built", value: listing.yearBuilt },
+    { label: "Year Built", value: String(listing.yearBuilt) },
     { label: "Taxes (Annual)", value: formatPrice(listing.taxes) },
     { label: "Neighborhood", value: listing.neighborhood },
     { label: "City", value: listing.city },
@@ -183,7 +183,7 @@ export default function ListingDetail({ listing }: ListingDetailProps) {
                 className="font-heading text-[28px] sm:text-[36px] md:text-[44px] lg:text-[52px] leading-[1.15] text-white"
                 style={{ fontWeight: 400 }}
               >
-                {listing.address}
+                {listing.address}, {listing.city}
               </h1>
               <p
                 className="gold-gradient-text text-[24px] md:text-[30px] lg:text-[36px] leading-[1.3] font-heading mt-2 md:mt-3"

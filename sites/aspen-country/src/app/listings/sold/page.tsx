@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SoldListingsPage from "@/components/listings/SoldListingsPage";
+import { getSoldListings } from "@/lib/listings";
 
 export const metadata = {
   title: "Sold Properties | Aspen Muraski Real Estate",
@@ -8,11 +9,13 @@ export const metadata = {
     "View properties successfully sold by Aspen Muraski across Alberta's foothills region.",
 };
 
-export default function SoldListings() {
+export default async function SoldListings() {
+  const listings = await getSoldListings();
+
   return (
     <main className="overflow-x-clip animate-[fadeIn_0.4s_ease-out]">
       <Header />
-      <SoldListingsPage />
+      <SoldListingsPage listings={listings} />
       <Footer />
     </main>
   );

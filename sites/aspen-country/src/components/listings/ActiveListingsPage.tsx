@@ -5,12 +5,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import ScrollReveal from "@/components/ScrollReveal";
 import ListingCard from "./ListingCard";
 import Pagination from "./Pagination";
-import { getActiveListings } from "@/lib/listings";
+import { Listing } from "@/lib/listings";
 
 const ITEMS_PER_PAGE = 12;
 
-export default function ActiveListingsPage() {
-  const allListings = getActiveListings();
+interface ActiveListingsPageProps {
+  listings: Listing[];
+}
+
+export default function ActiveListingsPage({ listings: allListings }: ActiveListingsPageProps) {
   const totalPages = Math.ceil(allListings.length / ITEMS_PER_PAGE);
   const [currentPage, setCurrentPage] = useState(1);
   const [direction, setDirection] = useState(0);

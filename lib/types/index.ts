@@ -171,6 +171,8 @@ export interface Listing {
   mlsNumber: string;
   representation?: ListingRepresentation;
   gallery: ListingGalleryImage[];
+  thumbnail?: string;
+  homepageFeatured?: boolean;
   customOrder: number;
   createdAt: Date;
   updatedAt: Date;

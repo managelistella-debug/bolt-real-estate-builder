@@ -11,6 +11,13 @@ interface ListingCardProps {
   showPrice?: boolean;
 }
 
+function statusLabel(s: string) {
+  if (s === "active") return "For Sale";
+  if (s === "sold") return "Sold";
+  if (s === "pending") return "Pending";
+  return "For Sale";
+}
+
 export default function ListingCard({
   listing,
   showPrice = true,
@@ -32,7 +39,7 @@ export default function ListingCard({
           className="absolute inset-0"
         >
           <Image
-            src={listing.thumbnail}
+            src={listing.thumbnail || "/images/featured-1.webp"}
             alt={listing.address}
             fill
             className="object-cover"
@@ -47,7 +54,7 @@ export default function ListingCard({
               className="text-[#09312a] text-[13px] md:text-[14px] leading-[20px] font-normal"
               style={{ fontFamily: "'Lato', sans-serif" }}
             >
-              {listing.listingStatus === "active" ? "For Sale" : "Sold"}
+              {statusLabel(listing.listingStatus)}
             </span>
           </div>
         </div>
@@ -67,7 +74,7 @@ export default function ListingCard({
           className="text-white text-[14px] md:text-[16px] leading-[22px] md:leading-[24px]"
           style={{ fontFamily: "'Lato', sans-serif" }}
         >
-          {listing.address}
+          {listing.address}, {listing.city}
         </p>
         {/* Bed / Bath / Sq Ft */}
         <div

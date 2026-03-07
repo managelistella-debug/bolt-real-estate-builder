@@ -6,12 +6,15 @@ import Image from "next/image";
 import Link from "next/link";
 import ScrollReveal from "@/components/ScrollReveal";
 import Pagination from "@/components/listings/Pagination";
-import { getAllPosts, formatDate } from "@/lib/blog";
+import { BlogPost, formatDate } from "@/lib/blog";
 
 const ITEMS_PER_PAGE = 12;
 
-export default function BlogCollectionPage() {
-  const allPosts = getAllPosts();
+interface BlogCollectionPageProps {
+  posts: BlogPost[];
+}
+
+export default function BlogCollectionPage({ posts: allPosts }: BlogCollectionPageProps) {
   const totalPages = Math.ceil(allPosts.length / ITEMS_PER_PAGE);
   const [currentPage, setCurrentPage] = useState(1);
   const [direction, setDirection] = useState(0);
@@ -19,7 +22,6 @@ export default function BlogCollectionPage() {
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const currentPosts = allPosts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  // First post is the featured/hero post (only on page 1)
   const featuredPost = currentPage === 1 ? currentPosts[0] : null;
   const gridPosts = currentPage === 1 ? currentPosts.slice(1) : currentPosts;
 
@@ -96,7 +98,7 @@ export default function BlogCollectionPage() {
                       {/* Featured Image */}
                       <div className="relative w-full lg:w-[60%] aspect-[16/9] overflow-clip">
                         <Image
-                          src={featuredPost.featuredImage}
+                          src={featuredPost.featuredImage || "/images/featured-1.webp"}
                           alt={featuredPost.featuredImageAlt}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
@@ -108,12 +110,14 @@ export default function BlogCollectionPage() {
 
                       {/* Content */}
                       <div className="flex-1 flex flex-col justify-center">
-                        <span
-                          className="gold-gradient-text text-[12px] md:text-[13px] uppercase tracking-[0.1em] mb-2 md:mb-3"
-                          style={{ fontFamily: "'Lato', sans-serif" }}
-                        >
-                          {featuredPost.category}
-                        </span>
+                        {featuredPost.category && (
+                          <span
+                            className="gold-gradient-text text-[12px] md:text-[13px] uppercase tracking-[0.1em] mb-2 md:mb-3"
+                            style={{ fontFamily: "'Lato', sans-serif" }}
+                          >
+                            {featuredPost.category}
+                          </span>
+                        )}
                         <h2
                           className="font-heading text-[24px] sm:text-[28px] md:text-[34px] lg:text-[38px] leading-[1.2] text-white group-hover:text-[#daaf3a] transition-colors duration-300"
                           style={{ fontWeight: 400 }}
@@ -127,12 +131,14 @@ export default function BlogCollectionPage() {
                           {formatDate(featuredPost.publishDate)} &middot;{" "}
                           {featuredPost.author}
                         </p>
-                        <p
-                          className="mt-3 md:mt-4 text-white/70 text-[14px] md:text-[15px] leading-[24px] md:leading-[26px] line-clamp-3"
-                          style={{ fontFamily: "'Lato', sans-serif" }}
-                        >
-                          {featuredPost.excerpt}
-                        </p>
+                        {featuredPost.excerpt && (
+                          <p
+                            className="mt-3 md:mt-4 text-white/70 text-[14px] md:text-[15px] leading-[24px] md:leading-[26px] line-clamp-3"
+                            style={{ fontFamily: "'Lato', sans-serif" }}
+                          >
+                            {featuredPost.excerpt}
+                          </p>
+                        )}
                         <div className="mt-5 md:mt-6">
                           <span
                             className="inline-flex items-center justify-center gold-gradient-bg h-[42px] px-6 text-[#09312a] font-semibold text-[13px] md:text-[14px] transition-all duration-300"
@@ -158,7 +164,7 @@ export default function BlogCollectionPage() {
                       {/* Image */}
                       <div className="relative w-full aspect-[16/10] overflow-clip">
                         <Image
-                          src={post.featuredImage}
+                          src={post.featuredImage || "/images/featured-1.webp"}
                           alt={post.featuredImageAlt}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
@@ -169,12 +175,14 @@ export default function BlogCollectionPage() {
 
                       {/* Content */}
                       <div className="pt-4 md:pt-5 pb-5 md:pb-6 border-b border-white/10">
-                        <span
-                          className="gold-gradient-text text-[11px] md:text-[12px] uppercase tracking-[0.1em]"
-                          style={{ fontFamily: "'Lato', sans-serif" }}
-                        >
-                          {post.category}
-                        </span>
+                        {post.category && (
+                          <span
+                            className="gold-gradient-text text-[11px] md:text-[12px] uppercase tracking-[0.1em]"
+                            style={{ fontFamily: "'Lato', sans-serif" }}
+                          >
+                            {post.category}
+                          </span>
+                        )}
                         <h3
                           className="font-heading text-[20px] md:text-[24px] leading-[1.25] text-white mt-2 group-hover:text-[#daaf3a] transition-colors duration-300"
                           style={{ fontWeight: 400 }}
@@ -187,12 +195,14 @@ export default function BlogCollectionPage() {
                         >
                           {formatDate(post.publishDate)}
                         </p>
-                        <p
-                          className="mt-3 text-white/60 text-[14px] md:text-[15px] leading-[22px] md:leading-[24px] line-clamp-2"
-                          style={{ fontFamily: "'Lato', sans-serif" }}
-                        >
-                          {post.excerpt}
-                        </p>
+                        {post.excerpt && (
+                          <p
+                            className="mt-3 text-white/60 text-[14px] md:text-[15px] leading-[22px] md:leading-[24px] line-clamp-2"
+                            style={{ fontFamily: "'Lato', sans-serif" }}
+                          >
+                            {post.excerpt}
+                          </p>
+                        )}
                         <div className="mt-4">
                           <span
                             className="text-[#daaf3a] text-[13px] md:text-[14px] font-semibold group-hover:underline transition-all duration-300"

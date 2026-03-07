@@ -72,6 +72,7 @@ export const useListingsStore = create<ListingsState>()(
         const slug = ensureUniqueSlug(slugify(payload.address), listings);
         const now = new Date();
         const tenantId = payload.tenantId || payload.userId;
+        const sortedGallery = [...payload.gallery].sort((a, b) => a.order - b.order);
         const listing: Listing = {
           ...payload,
           tenantId,
@@ -80,7 +81,8 @@ export const useListingsStore = create<ListingsState>()(
           customOrder: listings.length,
           createdAt: now,
           updatedAt: now,
-          gallery: [...payload.gallery].sort((a, b) => a.order - b.order),
+          gallery: sortedGallery,
+          thumbnail: sortedGallery[0]?.url || undefined,
         };
 
         set((state) => ({ listings: [...state.listings, listing] }));

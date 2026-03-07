@@ -6,15 +6,18 @@ import FeaturedListings from "@/components/FeaturedListings";
 import About from "@/components/About";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
+import { getFeaturedListings } from "@/lib/listings";
 
-export default function Home() {
+export default async function Home() {
+  const featuredListings = await getFeaturedListings();
+
   return (
     <main className="overflow-x-clip">
       <Header />
       <Hero />
       <ServiceCards />
       <Testimonials />
-      <FeaturedListings />
+      <FeaturedListings listings={featuredListings} />
       <About />
       <Contact />
       <Footer />

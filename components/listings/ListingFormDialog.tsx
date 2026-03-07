@@ -35,12 +35,14 @@ type ListingDraft = {
   mlsNumber: string;
   representation?: ListingRepresentation;
   gallery: ListingGalleryImage[];
+  homepageFeatured: boolean;
 };
 
 const createDefaultDraft = (): ListingDraft => ({
   address: '', description: '', listPrice: '', neighborhood: '', city: '', listingStatus: 'for_sale',
   bedrooms: '', bathrooms: '', propertyType: '', yearBuilt: '', livingAreaSqft: '', lotAreaValue: '',
   lotAreaUnit: 'sqft', taxesAnnual: '', listingBrokerage: '', mlsNumber: '', representation: undefined, gallery: [],
+  homepageFeatured: false,
 });
 
 const mapListingToDraft = (listing: Listing): ListingDraft => ({
@@ -51,6 +53,7 @@ const mapListingToDraft = (listing: Listing): ListingDraft => ({
   lotAreaValue: String(listing.lotAreaValue), lotAreaUnit: listing.lotAreaUnit, taxesAnnual: String(listing.taxesAnnual),
   listingBrokerage: listing.listingBrokerage, mlsNumber: listing.mlsNumber, representation: listing.representation,
   gallery: [...listing.gallery].sort((a, b) => a.order - b.order),
+  homepageFeatured: listing.homepageFeatured ?? false,
 });
 
 const inputClass = 'h-[34px] w-full rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-3 text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none focus:ring-1 focus:ring-[#DAFF07]';
@@ -130,7 +133,7 @@ export function ListingFormDialog({ open, onOpenChange, listing, onSubmit, userI
     const parsed = listingSchema.safeParse({ ...draft, gallery: draft.gallery.filter((img) => img.url) });
     if (!parsed.success) { setError(parsed.error.issues[0]?.message || 'Please review the form fields.'); return; }
     try {
-      onSubmit({ ...parsed.data, userId, gallery: parsed.data.gallery.map((img, i) => ({ ...img, order: i })) });
+      onSubmit({ ...parsed.data, userId, homepageFeatured: draft.homepageFeatured, gallery: parsed.data.gallery.map((img, i) => ({ ...img, order: i })) });
       onOpenChange(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unable to save listing. Please try again.');
@@ -174,6 +177,17 @@ export function ListingFormDialog({ open, onOpenChange, listing, onSubmit, userI
                 <SelectItem value="sold">Sold</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className={labelClass}>Homepage Featured</label>
+            <button
+              type="button"
+              onClick={() => setDraft((p) => ({ ...p, homepageFeatured: !p.homepageFeatured }))}
+              className={`h-[34px] w-full rounded-lg border px-3 text-[13px] text-left transition-colors ${draft.homepageFeatured ? 'border-[#DAFF07] bg-[#DAFF07]/10 text-black' : 'border-[#EBEBEB] bg-[#F5F5F3] text-[#888C99]'}`}
+            >
+              {draft.homepageFeatured ? 'Featured on Homepage' : 'Not Featured'}
+            </button>
           </div>
 
           <div className="space-y-1.5">
