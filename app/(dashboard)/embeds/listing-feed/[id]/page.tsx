@@ -25,6 +25,7 @@ export default function ListingFeedEditorPage() {
   const embedConfig = getConfigById(id);
   const feedConfig = embedConfig?.config as ListingFeedConfig | undefined;
 
+  const [breakpoint, setBreakpoint] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [name, setName] = useState(embedConfig?.name || 'Untitled Listing Feed');
   const [config, setConfig] = useState<ListingFeedConfig>({
     ...DEFAULT_LISTING_FEED_CONFIG,
@@ -40,6 +41,10 @@ export default function ListingFeedEditorPage() {
     typography: {
       ...DEFAULT_LISTING_FEED_CONFIG.typography,
       ...(feedConfig?.typography || {}),
+    },
+    carousel: {
+      ...DEFAULT_LISTING_FEED_CONFIG.carousel,
+      ...(feedConfig?.carousel || {}),
     },
     responsive: {
       ...DEFAULT_LISTING_FEED_CONFIG.responsive,
@@ -157,6 +162,8 @@ export default function ListingFeedEditorPage() {
             onNameChange={setName}
             onConfigChange={setConfig}
             distinctValues={distinctValues}
+            breakpoint={breakpoint}
+            onBreakpointChange={setBreakpoint}
           />
         </div>
 
@@ -168,7 +175,7 @@ export default function ListingFeedEditorPage() {
               Live preview using your CMS listings
             </p>
           </div>
-          <ListingFeedPreview config={config} listings={listings} />
+          <ListingFeedPreview config={config} listings={listings} breakpoint={breakpoint} onBreakpointChange={setBreakpoint} />
         </div>
       </div>
 

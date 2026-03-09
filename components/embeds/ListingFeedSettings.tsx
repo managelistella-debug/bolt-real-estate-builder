@@ -10,7 +10,29 @@ import {
   EmbedResponsiveOverrides,
 } from '@/lib/types';
 import { LISTING_STATUS_LABELS } from '@/lib/listings';
-import { Check, ChevronDown, ChevronRight, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, Plus, Trash2, X } from 'lucide-react';
+
+// ── Gradient helpers ────────────────────────────────────────────────────────
+
+interface GradientStop { color: string; position: number; }
+
+function parseGradient(value: string): { angle: number; stops: GradientStop[] } | null {
+  const m = value.match(/^linear-gradient\(\s*(\d+)deg\s*,\s*(.+)\)$/);
+  if (!m) return null;
+  const angle = parseInt(m[1]);
+  const stopsRaw = m[2].split(',').map((s) => s.trim());
+  const stops: GradientStop[] = stopsRaw.map((s) => {
+    const parts = s.split(/\s+/);
+    return { color: parts[0], position: parseInt(parts[1]) || 0 };
+  });
+  return { angle, stops };
+}
+
+function buildGradient(angle: number, stops: GradientStop[]): string {
+  return `linear-gradient(${angle}deg, ${stops.map((s) => `${s.color} ${s.position}%`).join(', ')})`;
+}
+
+function isGradient(v: string) { return v?.startsWith('linear-gradient'); }
 
 // ── Reusable Inputs ──────────────────────────────────────────────────────────
 
@@ -79,14 +101,88 @@ function SliderInput({ label, value, onChange, min = 0, max = 48, unit = 'px' }:
   );
 }
 
-function ColorInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function ColorOrGradientInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const gradient = isGradient(value) ? parseGradient(value) : null;
+  const mode = gradient ? 'gradient' : 'solid';
+  const [localStops, setLocalStops] = useState<GradientStop[]>(gradient?.stops || [{ color: '#000000', position: 0 }, { color: '#ffffff', position: 100 }]);
+  const [localAngle, setLocalAngle] = useState(gradient?.angle || 135);
+
+  const switchToGradient = () => {
+    const stops = [{ color: value || '#000000', position: 0 }, { color: '#ffffff', position: 100 }];
+    setLocalStops(stops);
+    setLocalAngle(135);
+    onChange(buildGradient(135, stops));
+  };
+
+  const switchToSolid = () => {
+    onChange(localStops[0]?.color || '#000000');
+  };
+
+  const updateStop = (idx: number, patch: Partial<GradientStop>) => {
+    const next = localStops.map((s, i) => i === idx ? { ...s, ...patch } : s);
+    setLocalStops(next);
+    onChange(buildGradient(localAngle, next));
+  };
+
+  const addStop = () => {
+    const next = [...localStops, { color: '#888888', position: 50 }].sort((a, b) => a.position - b.position);
+    setLocalStops(next);
+    onChange(buildGradient(localAngle, next));
+  };
+
+  const removeStop = (idx: number) => {
+    if (localStops.length <= 2) return;
+    const next = localStops.filter((_, i) => i !== idx);
+    setLocalStops(next);
+    onChange(buildGradient(localAngle, next));
+  };
+
+  const changeAngle = (a: number) => {
+    setLocalAngle(a);
+    onChange(buildGradient(a, localStops));
+  };
+
   return (
-    <div className="flex items-center gap-2">
-      <label className="flex-1 text-[12px] font-medium text-[#888C99]">{label}</label>
-      <div className="flex items-center gap-1.5">
-        <input type="color" value={value || '#000000'} onChange={(e) => onChange(e.target.value)} className="h-6 w-6 cursor-pointer rounded border border-[#EBEBEB] bg-transparent p-0" />
-        <input value={value} onChange={(e) => onChange(e.target.value)} placeholder="#000000" className="h-[28px] w-[80px] rounded-md border border-[#EBEBEB] bg-[#F5F5F3] px-2 text-[11px] text-black placeholder:text-[#CCC]" />
+    <div>
+      <div className="mb-1.5 flex items-center justify-between">
+        <label className="text-[12px] font-medium text-[#888C99]">{label}</label>
+        <div className="flex rounded-md border border-[#EBEBEB]">
+          <button type="button" onClick={mode === 'gradient' ? switchToSolid : undefined} className={`px-2 py-0.5 text-[10px] ${mode === 'solid' ? 'bg-black text-white' : 'bg-white text-[#888C99] hover:text-black'} rounded-l-md`}>Solid</button>
+          <button type="button" onClick={mode === 'solid' ? switchToGradient : undefined} className={`px-2 py-0.5 text-[10px] ${mode === 'gradient' ? 'bg-black text-white' : 'bg-white text-[#888C99] hover:text-black'} rounded-r-md`}>Gradient</button>
+        </div>
       </div>
+
+      {mode === 'solid' ? (
+        <div className="flex items-center gap-1.5">
+          <input type="color" value={value || '#000000'} onChange={(e) => onChange(e.target.value)} className="h-6 w-6 cursor-pointer rounded border border-[#EBEBEB] bg-transparent p-0" />
+          <input value={value} onChange={(e) => onChange(e.target.value)} placeholder="#000000" className="h-[28px] w-[80px] rounded-md border border-[#EBEBEB] bg-[#F5F5F3] px-2 text-[11px] text-black placeholder:text-[#CCC]" />
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div
+            className="h-6 w-full rounded-md border border-[#EBEBEB]"
+            style={{ background: value }}
+          />
+          {localStops.map((stop, idx) => (
+            <div key={idx} className="flex items-center gap-1.5">
+              <input type="color" value={stop.color} onChange={(e) => updateStop(idx, { color: e.target.value })} className="h-5 w-5 cursor-pointer rounded border border-[#EBEBEB] bg-transparent p-0" />
+              <input type="number" min={0} max={100} value={stop.position} onChange={(e) => updateStop(idx, { position: Number(e.target.value) || 0 })} className="h-[24px] w-12 rounded-md border border-[#EBEBEB] bg-[#F5F5F3] px-1.5 text-[10px] text-black" />
+              <span className="text-[10px] text-[#CCC]">%</span>
+              {localStops.length > 2 && (
+                <button type="button" onClick={() => removeStop(idx)} className="text-[#CCC] hover:text-red-500"><Trash2 className="h-3 w-3" /></button>
+              )}
+            </div>
+          ))}
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={addStop} className="flex items-center gap-1 text-[10px] text-[#888C99] hover:text-black"><Plus className="h-3 w-3" />Add stop</button>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-[10px] text-[#888C99]">Angle</label>
+            <input type="range" min={0} max={360} value={localAngle} onChange={(e) => changeAngle(Number(e.target.value))} className="h-1 flex-1 cursor-pointer appearance-none rounded-full bg-[#EBEBEB] accent-black" />
+            <span className="w-8 text-right text-[10px] text-[#888C99]">{localAngle}°</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -115,14 +211,8 @@ function TypographySection({ label, entry, onChange }: { label: string; entry: E
               <label className="mb-1 block text-[11px] text-[#888C99]">Size</label>
               <input type="number" min={8} max={48} value={entry.fontSize} onChange={(e) => onChange({ ...entry, fontSize: Number(e.target.value) || 12 })} className="h-[28px] w-full rounded-md border border-[#EBEBEB] bg-white px-2 text-[12px] text-black" />
             </div>
-            <div className="flex-1">
-              <label className="mb-1 block text-[11px] text-[#888C99]">Color</label>
-              <div className="flex items-center gap-1">
-                <input type="color" value={entry.color || '#000000'} onChange={(e) => onChange({ ...entry, color: e.target.value })} className="h-[28px] w-[28px] cursor-pointer rounded border border-[#EBEBEB] bg-transparent p-0" />
-                <input value={entry.color} onChange={(e) => onChange({ ...entry, color: e.target.value })} className="h-[28px] w-full rounded-md border border-[#EBEBEB] bg-white px-2 text-[11px] text-black" />
-              </div>
-            </div>
           </div>
+          <ColorOrGradientInput label="Color" value={entry.color} onChange={(color) => onChange({ ...entry, color })} />
         </div>
       )}
     </div>
@@ -137,6 +227,7 @@ const CARD_LAYOUTS: { value: CardLayout; label: string; desc: string }[] = [
   { value: 'overlay', label: 'Overlay', desc: 'Text on image' },
   { value: 'minimal', label: 'Minimal', desc: 'Centered text' },
   { value: 'split_info', label: 'Split Info', desc: 'Left/right details' },
+  { value: 'carousel', label: 'Carousel', desc: 'Horizontal slider' },
 ];
 const BADGE_POSITIONS: { value: StatusBadgePosition; label: string }[] = [
   { value: 'left', label: 'Left' },
@@ -144,15 +235,19 @@ const BADGE_POSITIONS: { value: StatusBadgePosition; label: string }[] = [
   { value: 'hidden', label: 'Hidden' },
 ];
 
+type Breakpoint = 'desktop' | 'tablet' | 'mobile';
+
 interface ListingFeedSettingsProps {
   name: string;
   config: ListingFeedConfig;
   onNameChange: (name: string) => void;
   onConfigChange: (config: ListingFeedConfig) => void;
   distinctValues: { cities: string[]; neighborhoods: string[]; propertyTypes: string[]; statuses: string[] };
+  breakpoint: Breakpoint;
+  onBreakpointChange: (bp: Breakpoint) => void;
 }
 
-export function ListingFeedSettings({ name, config, onNameChange, onConfigChange, distinctValues }: ListingFeedSettingsProps) {
+export function ListingFeedSettings({ name, config, onNameChange, onConfigChange, distinctValues, breakpoint, onBreakpointChange }: ListingFeedSettingsProps) {
   const update = useCallback((partial: Partial<ListingFeedConfig>) => { onConfigChange({ ...config, ...partial }); }, [config, onConfigChange]);
   const updateFilters = useCallback((partial: Partial<ListingFeedConfig['filters']>) => { onConfigChange({ ...config, filters: { ...config.filters, ...partial } }); }, [config, onConfigChange]);
   const toggleStatus = (status: ListingStatus) => {
@@ -161,15 +256,19 @@ export function ListingFeedSettings({ name, config, onNameChange, onConfigChange
   };
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    style: true, badge: false, image: false, spacing: false, appearance: false, typography: false, responsive: true, filters: true, sort: false, detail: false,
+    style: true, badge: false, image: false, spacing: false, appearance: false, typography: false, responsive: true, pagination: true, carousel: true, filters: true, sort: false, detail: false,
   });
   const toggle = (key: string) => setOpenSections((s) => ({ ...s, [key]: !s[key] }));
-
-  const [responsiveTab, setResponsiveTab] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
 
   const updateResponsive = (bp: 'tablet' | 'mobile', partial: Partial<EmbedResponsiveOverrides>) => {
     update({ responsive: { ...config.responsive, [bp]: { ...config.responsive[bp], ...partial } } });
   };
+
+  const updateCarousel = useCallback((partial: Partial<ListingFeedConfig['carousel']>) => {
+    update({ carousel: { ...config.carousel, ...partial } });
+  }, [config.carousel, update]);
+
+  const isCarousel = config.cardLayout === 'carousel';
 
   return (
     <div className="space-y-5">
@@ -194,6 +293,56 @@ export function ListingFeedSettings({ name, config, onNameChange, onConfigChange
         )}
       </div>
 
+      {/* Carousel Settings */}
+      {isCarousel && (
+        <div>
+          <SectionHeader label="Carousel" open={openSections.carousel} onToggle={() => toggle('carousel')} />
+          {openSections.carousel && (
+            <div className="mt-2 space-y-3">
+              <div>
+                <label className="mb-1.5 block text-[12px] font-medium text-[#888C99]">Total Listings</label>
+                <input type="number" min={1} max={100} value={config.carousel.totalListings} onChange={(e) => updateCarousel({ totalListings: Number(e.target.value) || 10 })} className="h-[30px] w-20 rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-2 text-[12px] text-black" />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[12px] font-medium text-[#888C99]">Visible at Once</label>
+                <div className="flex gap-1.5">
+                  {[1, 2, 3, 4].map((n) => (
+                    <button key={n} type="button" onClick={() => updateCarousel({ visibleCount: n })} className={`flex h-[30px] flex-1 items-center justify-center rounded-lg text-[12px] transition-colors ${config.carousel.visibleCount === n ? 'bg-black text-white' : 'border border-[#EBEBEB] bg-white text-[#888C99] hover:bg-[#F5F5F3] hover:text-black'}`}>{n}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[12px] font-medium text-[#888C99]">Arrow Position</label>
+                <div className="flex gap-1.5">
+                  {(['beside', 'below'] as const).map((pos) => (
+                    <button key={pos} type="button" onClick={() => updateCarousel({ arrowPosition: pos })} className={`flex h-[30px] flex-1 items-center justify-center rounded-lg text-[12px] capitalize transition-colors ${config.carousel.arrowPosition === pos ? 'bg-black text-white' : 'border border-[#EBEBEB] bg-white text-[#888C99] hover:bg-[#F5F5F3] hover:text-black'}`}>{pos}</button>
+                  ))}
+                </div>
+              </div>
+              <SliderInput label="Arrow Size" value={config.carousel.arrowSize} onChange={(v) => updateCarousel({ arrowSize: v })} min={20} max={60} />
+              <ColorOrGradientInput label="Arrow Color" value={config.carousel.arrowColor} onChange={(v) => updateCarousel({ arrowColor: v })} />
+              <div>
+                <label className="mb-1 block text-[12px] font-medium text-[#888C99]">Custom Left Arrow SVG</label>
+                <textarea value={config.carousel.customLeftArrowSvg} onChange={(e) => updateCarousel({ customLeftArrowSvg: e.target.value })} placeholder="<svg>...</svg>" rows={2} className="w-full rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-2 py-1.5 text-[11px] text-black placeholder:text-[#CCC]" />
+              </div>
+              <div>
+                <label className="mb-1 block text-[12px] font-medium text-[#888C99]">Custom Right Arrow SVG</label>
+                <textarea value={config.carousel.customRightArrowSvg} onChange={(e) => updateCarousel({ customRightArrowSvg: e.target.value })} placeholder="<svg>...</svg>" rows={2} className="w-full rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-2 py-1.5 text-[11px] text-black placeholder:text-[#CCC]" />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="flex-1 text-[12px] font-medium text-[#888C99]">Autoplay</label>
+                <button type="button" onClick={() => updateCarousel({ autoplay: !config.carousel.autoplay })} className={`flex h-[26px] w-[26px] items-center justify-center rounded-md border ${config.carousel.autoplay ? 'border-black bg-black text-white' : 'border-[#EBEBEB] bg-white text-transparent'}`}>
+                  <Check className="h-3 w-3" />
+                </button>
+              </div>
+              {config.carousel.autoplay && (
+                <SliderInput label="Interval (sec)" value={config.carousel.autoplayInterval} onChange={(v) => updateCarousel({ autoplayInterval: v })} min={1} max={15} unit="s" />
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Status Badge */}
       <div>
         <SectionHeader label="Status Badge" open={openSections.badge} onToggle={() => toggle('badge')} />
@@ -207,9 +356,9 @@ export function ListingFeedSettings({ name, config, onNameChange, onConfigChange
                 ))}
               </div>
             </div>
-            <ColorInput label="Background" value={config.statusBadge.bg} onChange={(bg) => update({ statusBadge: { ...config.statusBadge, bg } })} />
-            <ColorInput label="Text Color" value={config.statusBadge.color} onChange={(color) => update({ statusBadge: { ...config.statusBadge, color } })} />
-            <ColorInput label="Border" value={config.statusBadge.borderColor} onChange={(borderColor) => update({ statusBadge: { ...config.statusBadge, borderColor } })} />
+            <ColorOrGradientInput label="Background" value={config.statusBadge.bg} onChange={(bg) => update({ statusBadge: { ...config.statusBadge, bg } })} />
+            <ColorOrGradientInput label="Text Color" value={config.statusBadge.color} onChange={(color) => update({ statusBadge: { ...config.statusBadge, color } })} />
+            <ColorOrGradientInput label="Border" value={config.statusBadge.borderColor} onChange={(borderColor) => update({ statusBadge: { ...config.statusBadge, borderColor } })} />
             <SliderInput label="Radius" value={config.statusBadge.radius} onChange={(radius) => update({ statusBadge: { ...config.statusBadge, radius } })} min={0} max={999} />
             <div>
               <label className="mb-1 block text-[12px] font-medium text-[#888C99]">Font Size</label>
@@ -241,14 +390,16 @@ export function ListingFeedSettings({ name, config, onNameChange, onConfigChange
       </div>
 
       {/* Spacing */}
-      <div>
-        <SectionHeader label="Spacing" open={openSections.spacing} onToggle={() => toggle('spacing')} />
-        {openSections.spacing && (
-          <div className="mt-2">
-            <SliderInput label="Column Gap" value={config.gap} onChange={(v) => update({ gap: v })} min={0} max={48} />
-          </div>
-        )}
-      </div>
+      {!isCarousel && (
+        <div>
+          <SectionHeader label="Spacing" open={openSections.spacing} onToggle={() => toggle('spacing')} />
+          {openSections.spacing && (
+            <div className="mt-2">
+              <SliderInput label="Column Gap" value={config.gap} onChange={(v) => update({ gap: v })} min={0} max={48} />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Card Appearance */}
       <div>
@@ -256,9 +407,11 @@ export function ListingFeedSettings({ name, config, onNameChange, onConfigChange
         {openSections.appearance && (
           <div className="mt-2 space-y-3">
             <SliderInput label="Card Radius" value={config.cardRadius} onChange={(v) => update({ cardRadius: v })} max={32} />
-            <SliderInput label="Details Box Radius" value={config.detailsBoxRadius} onChange={(v) => update({ detailsBoxRadius: v })} max={32} />
-            <ColorInput label="Details Background" value={config.detailsBoxBg} onChange={(v) => update({ detailsBoxBg: v })} />
-            <ColorInput label="Border Color" value={config.detailsBoxBorder} onChange={(v) => update({ detailsBoxBorder: v })} />
+            {config.cardLayout === 'classic' && (
+              <SliderInput label="Details Box Radius" value={config.detailsBoxRadius} onChange={(v) => update({ detailsBoxRadius: v })} max={32} />
+            )}
+            <ColorOrGradientInput label="Details Background" value={config.detailsBoxBg} onChange={(v) => update({ detailsBoxBg: v })} />
+            <ColorOrGradientInput label="Border Color" value={config.detailsBoxBorder} onChange={(v) => update({ detailsBoxBorder: v })} />
             <div className="flex items-center gap-2">
               <label className="flex-1 text-[12px] font-medium text-[#888C99]">Drop Shadow</label>
               <button type="button" onClick={() => update({ dropShadow: !config.dropShadow })} className={`flex h-[26px] w-[26px] items-center justify-center rounded-md border ${config.dropShadow ? 'border-black bg-black text-white' : 'border-[#EBEBEB] bg-white text-transparent'}`}>
@@ -290,65 +443,17 @@ export function ListingFeedSettings({ name, config, onNameChange, onConfigChange
         )}
       </div>
 
-      {/* Responsive + Columns */}
-      <div>
-        <SectionHeader label="Layout & Responsive" open={openSections.responsive} onToggle={() => toggle('responsive')} />
-        {openSections.responsive && (
-          <div className="mt-2 space-y-3">
-            {/* Breakpoint tabs */}
-            <div className="flex rounded-lg border border-[#EBEBEB]">
-              {(['desktop', 'tablet', 'mobile'] as const).map((bp) => (
-                <button key={bp} type="button" onClick={() => setResponsiveTab(bp)} className={`flex-1 py-1.5 text-[12px] capitalize transition-colors ${responsiveTab === bp ? 'bg-black text-white' : 'bg-white text-[#888C99] hover:text-black'} ${bp === 'desktop' ? 'rounded-l-lg' : bp === 'mobile' ? 'rounded-r-lg' : ''}`}>{bp}</button>
-              ))}
-            </div>
-
-            {/* Columns for current breakpoint */}
-            <div>
-              <label className="mb-1.5 block text-[12px] font-medium text-[#888C99]">
-                Columns {responsiveTab !== 'desktop' && <span className="text-[#CCC]">(inherit: {responsiveTab === 'tablet' ? config.columns : (config.responsive.tablet.columns || config.columns)})</span>}
-              </label>
-              <div className="flex gap-1.5">
-                {([1, 2, 3] as const).map((col) => {
-                  const active = responsiveTab === 'desktop'
-                    ? config.columns === col
-                    : config.responsive[responsiveTab].columns === col;
-                  return (
-                    <button key={col} type="button" onClick={() => {
-                      if (responsiveTab === 'desktop') update({ columns: col });
-                      else updateResponsive(responsiveTab, { columns: col });
-                    }} className={`flex h-[30px] flex-1 items-center justify-center rounded-lg text-[12px] transition-colors ${active ? 'bg-black text-white' : 'border border-[#EBEBEB] bg-white text-[#888C99] hover:bg-[#F5F5F3] hover:text-black'}`}>
-                      {col} Col{col > 1 ? 's' : ''}
-                    </button>
-                  );
-                })}
-                {responsiveTab !== 'desktop' && config.responsive[responsiveTab].columns && (
-                  <button type="button" onClick={() => updateResponsive(responsiveTab, { columns: undefined })} className="flex h-[30px] items-center rounded-lg border border-[#EBEBEB] bg-white px-2 text-[11px] text-[#888C99] hover:text-black">
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Image height override for non-desktop */}
-            {responsiveTab !== 'desktop' && (
+      {/* Pagination / Items Per Page (always visible, outside responsive) */}
+      {!isCarousel && (
+        <div>
+          <SectionHeader label="Pagination & Display" open={openSections.pagination} onToggle={() => toggle('pagination')} />
+          {openSections.pagination && (
+            <div className="mt-2 space-y-3">
               <div>
-                <label className="mb-1.5 block text-[12px] font-medium text-[#888C99]">Image Height Override</label>
-                {config.responsive[responsiveTab].imageHeight ? (
-                  <div className="flex items-center gap-2">
-                    <input type="number" min={50} max={800} value={config.responsive[responsiveTab].imageHeight!.value} onChange={(e) => updateResponsive(responsiveTab, { imageHeight: { ...config.responsive[responsiveTab].imageHeight!, value: Number(e.target.value) || 200 } })} className="h-[30px] w-20 rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-2 text-[12px] text-black" />
-                    <button type="button" onClick={() => updateResponsive(responsiveTab, { imageHeight: undefined })} className="flex h-[30px] items-center rounded-lg border border-[#EBEBEB] bg-white px-2 text-[11px] text-[#888C99] hover:text-black"><X className="h-3 w-3" /></button>
-                  </div>
-                ) : (
-                  <button type="button" onClick={() => updateResponsive(responsiveTab, { imageHeight: { value: config.imageHeight.value, unit: config.imageHeight.unit } })} className="text-[12px] text-[#888C99] underline hover:text-black">Customize</button>
-                )}
-              </div>
-            )}
-
-            {/* Items per page (desktop only) */}
-            {responsiveTab === 'desktop' && (
-              <>
-                <div>
-                  <label className="mb-1.5 block text-[12px] font-medium text-[#888C99]">Items Per Page</label>
+                <label className="mb-1.5 block text-[12px] font-medium text-[#888C99]">
+                  Items Per Page {breakpoint !== 'desktop' && <span className="text-[#CCC]">(override for {breakpoint})</span>}
+                </label>
+                {breakpoint === 'desktop' ? (
                   <div className="flex items-center gap-2">
                     <input type="number" min={1} max={100} value={config.itemsPerPage === 'unlimited' ? '' : config.itemsPerPage} disabled={config.itemsPerPage === 'unlimited'} onChange={(e) => update({ itemsPerPage: parseInt(e.target.value, 10) || 9 })} placeholder="9" className="h-[30px] w-20 rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-2 text-[12px] text-black placeholder:text-[#CCC] disabled:opacity-50" />
                     <button type="button" onClick={() => update({ itemsPerPage: config.itemsPerPage === 'unlimited' ? 9 : 'unlimited' })} className={`flex h-[30px] items-center gap-1.5 rounded-lg px-3 text-[12px] transition-colors ${config.itemsPerPage === 'unlimited' ? 'bg-black text-white' : 'border border-[#EBEBEB] bg-white text-[#888C99] hover:bg-[#F5F5F3] hover:text-black'}`}>
@@ -356,22 +461,125 @@ export function ListingFeedSettings({ name, config, onNameChange, onConfigChange
                       Unlimited
                     </button>
                   </div>
-                </div>
-                {config.itemsPerPage !== 'unlimited' && (
-                  <div>
-                    <label className="mb-1.5 block text-[12px] font-medium text-[#888C99]">Pagination</label>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number" min={1} max={100}
+                      value={config.responsive[breakpoint]?.itemsPerPage === 'unlimited' ? '' : (config.responsive[breakpoint]?.itemsPerPage ?? '')}
+                      placeholder={`Inherit (${config.itemsPerPage})`}
+                      onChange={(e) => {
+                        const val = e.target.value ? parseInt(e.target.value, 10) : undefined;
+                        updateResponsive(breakpoint, { itemsPerPage: val || undefined });
+                      }}
+                      className="h-[30px] w-20 rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-2 text-[12px] text-black placeholder:text-[#CCC]"
+                    />
+                    {config.responsive[breakpoint]?.itemsPerPage !== undefined && (
+                      <button type="button" onClick={() => updateResponsive(breakpoint, { itemsPerPage: undefined })} className="flex h-[30px] items-center rounded-lg border border-[#EBEBEB] bg-white px-2 text-[11px] text-[#888C99] hover:text-black">
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Pagination type */}
+              {((breakpoint === 'desktop' && config.itemsPerPage !== 'unlimited') || (breakpoint !== 'desktop')) && (
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-medium text-[#888C99]">Pagination</label>
+                  {breakpoint === 'desktop' ? (
                     <div className="flex gap-1.5">
                       {([{ value: 'pagination', label: 'Page Numbers' }, { value: 'load_more', label: 'Load More' }, { value: 'none', label: 'None' }] as const).map((opt) => (
                         <button key={opt.value} type="button" onClick={() => update({ paginationType: opt.value })} className={`flex h-[30px] flex-1 items-center justify-center rounded-lg text-[12px] transition-colors ${config.paginationType === opt.value ? 'bg-black text-white' : 'border border-[#EBEBEB] bg-white text-[#888C99] hover:bg-[#F5F5F3] hover:text-black'}`}>{opt.label}</button>
                       ))}
                     </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
-      </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      {([{ value: 'pagination', label: 'Pages' }, { value: 'load_more', label: 'Load More' }, { value: 'none', label: 'None' }] as const).map((opt) => {
+                        const active = config.responsive[breakpoint]?.paginationType === opt.value;
+                        return (
+                          <button key={opt.value} type="button" onClick={() => updateResponsive(breakpoint, { paginationType: active ? undefined : opt.value })} className={`flex h-[30px] flex-1 items-center justify-center rounded-lg text-[11px] transition-colors ${active ? 'bg-black text-white' : 'border border-[#EBEBEB] bg-white text-[#888C99] hover:bg-[#F5F5F3] hover:text-black'}`}>{opt.label}</button>
+                        );
+                      })}
+                      {config.responsive[breakpoint]?.paginationType && (
+                        <button type="button" onClick={() => updateResponsive(breakpoint, { paginationType: undefined })} className="flex h-[30px] items-center rounded-lg border border-[#EBEBEB] bg-white px-2 text-[11px] text-[#888C99] hover:text-black">
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Show listing count */}
+              <div className="flex items-center gap-2">
+                <label className="flex-1 text-[12px] font-medium text-[#888C99]">Show &quot;Showing X of Y&quot;</label>
+                <button type="button" onClick={() => update({ showListingCount: !config.showListingCount })} className={`flex h-[26px] w-[26px] items-center justify-center rounded-md border ${config.showListingCount ? 'border-black bg-black text-white' : 'border-[#EBEBEB] bg-white text-transparent'}`}>
+                  <Check className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Responsive + Columns */}
+      {!isCarousel && (
+        <div>
+          <SectionHeader label="Layout & Responsive" open={openSections.responsive} onToggle={() => toggle('responsive')} />
+          {openSections.responsive && (
+            <div className="mt-2 space-y-3">
+              {/* Breakpoint tabs */}
+              <div className="flex rounded-lg border border-[#EBEBEB]">
+                {(['desktop', 'tablet', 'mobile'] as const).map((bp) => (
+                  <button key={bp} type="button" onClick={() => onBreakpointChange(bp)} className={`flex-1 py-1.5 text-[12px] capitalize transition-colors ${breakpoint === bp ? 'bg-black text-white' : 'bg-white text-[#888C99] hover:text-black'} ${bp === 'desktop' ? 'rounded-l-lg' : bp === 'mobile' ? 'rounded-r-lg' : ''}`}>{bp}</button>
+                ))}
+              </div>
+
+              {/* Columns for current breakpoint */}
+              <div>
+                <label className="mb-1.5 block text-[12px] font-medium text-[#888C99]">
+                  Columns {breakpoint !== 'desktop' && <span className="text-[#CCC]">(inherit: {breakpoint === 'tablet' ? config.columns : (config.responsive.tablet.columns || config.columns)})</span>}
+                </label>
+                <div className="flex gap-1.5">
+                  {([1, 2, 3] as const).map((col) => {
+                    const active = breakpoint === 'desktop'
+                      ? config.columns === col
+                      : config.responsive[breakpoint].columns === col;
+                    return (
+                      <button key={col} type="button" onClick={() => {
+                        if (breakpoint === 'desktop') update({ columns: col });
+                        else updateResponsive(breakpoint, { columns: col });
+                      }} className={`flex h-[30px] flex-1 items-center justify-center rounded-lg text-[12px] transition-colors ${active ? 'bg-black text-white' : 'border border-[#EBEBEB] bg-white text-[#888C99] hover:bg-[#F5F5F3] hover:text-black'}`}>
+                        {col} Col{col > 1 ? 's' : ''}
+                      </button>
+                    );
+                  })}
+                  {breakpoint !== 'desktop' && config.responsive[breakpoint].columns && (
+                    <button type="button" onClick={() => updateResponsive(breakpoint, { columns: undefined })} className="flex h-[30px] items-center rounded-lg border border-[#EBEBEB] bg-white px-2 text-[11px] text-[#888C99] hover:text-black">
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Image height override for non-desktop */}
+              {breakpoint !== 'desktop' && (
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-medium text-[#888C99]">Image Height Override</label>
+                  {config.responsive[breakpoint].imageHeight ? (
+                    <div className="flex items-center gap-2">
+                      <input type="number" min={50} max={800} value={config.responsive[breakpoint].imageHeight!.value} onChange={(e) => updateResponsive(breakpoint, { imageHeight: { ...config.responsive[breakpoint].imageHeight!, value: Number(e.target.value) || 200 } })} className="h-[30px] w-20 rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-2 text-[12px] text-black" />
+                      <button type="button" onClick={() => updateResponsive(breakpoint, { imageHeight: undefined })} className="flex h-[30px] items-center rounded-lg border border-[#EBEBEB] bg-white px-2 text-[11px] text-[#888C99] hover:text-black"><X className="h-3 w-3" /></button>
+                    </div>
+                  ) : (
+                    <button type="button" onClick={() => updateResponsive(breakpoint, { imageHeight: { value: config.imageHeight.value, unit: config.imageHeight.unit } })} className="text-[12px] text-[#888C99] underline hover:text-black">Customize</button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Filters */}
       <div>

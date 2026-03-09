@@ -1,6 +1,6 @@
 'use client';
 
-import { CSSProperties } from 'react';
+import { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import { Listing, ListingFeedConfig } from '@/lib/types';
 import {
   formatListingPrice,
@@ -20,11 +20,29 @@ const REPRESENTATION_LABELS: Record<string, string> = {
   seller_representation: 'Seller Representation',
 };
 
+function isGradient(v: string) { return v?.startsWith('linear-gradient'); }
+
+function bgStyle(value: string): CSSProperties {
+  return { background: value || undefined };
+}
+
+function textColorStyle(value: string): CSSProperties {
+  if (isGradient(value)) {
+    return {
+      background: value,
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      backgroundClip: 'text',
+    } as CSSProperties;
+  }
+  return { color: value };
+}
+
 function font(entry: { fontFamily: string; fontSize: number; color: string }): CSSProperties {
   return {
     fontFamily: entry.fontFamily || undefined,
     fontSize: entry.fontSize,
-    color: entry.color,
+    ...textColorStyle(entry.color),
   };
 }
 
@@ -37,8 +55,8 @@ function badgeStyle(config: ListingFeedConfig): CSSProperties {
     fontSize: b.fontSize,
     fontWeight: 500,
     fontFamily: b.fontFamily || undefined,
-    background: b.bg,
-    color: b.color,
+    ...bgStyle(b.bg),
+    ...textColorStyle(b.color),
     border: b.borderColor ? `1px solid ${b.borderColor}` : undefined,
     ...(config.statusBadgePosition === 'left'
       ? { left: 12, top: 12 }
@@ -64,7 +82,7 @@ function cardWrapperStyle(config: ListingFeedConfig): CSSProperties {
     overflow: 'hidden',
     borderRadius: config.cardRadius,
     border: config.detailsBoxBorder ? `1px solid ${config.detailsBoxBorder}` : undefined,
-    background: config.cardLayout === 'overlay' ? 'transparent' : config.detailsBoxBg,
+    background: 'transparent',
     boxShadow: config.dropShadow ? '0 2px 12px rgba(0,0,0,0.08)' : undefined,
     textAlign: 'left' as const,
     cursor: 'pointer',
@@ -101,6 +119,7 @@ function CardImage({ listing, config }: { listing: Listing; config: ListingFeedC
 // ── Classic ──────────────────────────────────────────────────────────────────
 
 function CardClassic({ listing, config, onClick }: EmbedListingCardProps) {
+  const dRadius = config.detailsBoxRadius || 0;
   return (
     <button type="button" onClick={onClick} style={cardWrapperStyle(config)}>
       <div style={imageContainerStyle(config)}>
@@ -110,8 +129,11 @@ function CardClassic({ listing, config, onClick }: EmbedListingCardProps) {
       <div
         style={{
           padding: 16,
-          background: config.detailsBoxBg,
-          borderRadius: config.detailsBoxRadius || undefined,
+          ...bgStyle(config.detailsBoxBg),
+          borderRadius: dRadius ? `${dRadius}px ${dRadius}px 0 0` : undefined,
+          marginTop: dRadius ? -dRadius : 0,
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         <p style={{ margin: 0, fontWeight: 600, ...font(config.typography.price) }}>
@@ -145,7 +167,6 @@ function CardOverlay({ listing, config, onClick }: EmbedListingCardProps) {
           </div>
         )}
         <StatusBadge listing={listing} config={config} />
-        {/* Gradient overlay */}
         <div
           style={{
             position: 'absolute',
@@ -157,7 +178,6 @@ function CardOverlay({ listing, config, onClick }: EmbedListingCardProps) {
             pointerEvents: 'none',
           }}
         />
-        {/* Bottom text overlay */}
         <div
           style={{
             position: 'absolute',
@@ -196,7 +216,7 @@ function CardMinimal({ listing, config, onClick }: EmbedListingCardProps) {
         <CardImage listing={listing} config={config} />
         <StatusBadge listing={listing} config={config} />
       </div>
-      <div style={{ padding: '14px 16px', textAlign: 'center' }}>
+      <div style={{ padding: '14px 16px', textAlign: 'center', ...bgStyle(config.detailsBoxBg) }}>
         <p style={{ margin: 0, fontWeight: 500, ...font(config.typography.address) }}>
           {listing.address}
         </p>
@@ -227,6 +247,7 @@ function CardSplitInfo({ listing, config, onClick }: EmbedListingCardProps) {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
+          ...bgStyle(config.detailsBoxBg),
         }}
       >
         <div>
@@ -249,6 +270,95 @@ function CardSplitInfo({ listing, config, onClick }: EmbedListingCardProps) {
         </div>
       </div>
     </button>
+  );
+}
+
+// ── Carousel ─────────────────────────────────────────────────────────────────
+
+function DefaultArrow({ direction, size, color }: { direction: 'left' | 'right'; size: number; color: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {direction === 'left' ? <polyline points="15 18 9 12 15 6" /> : <polyline points="9 6 15 12 9 18" />}
+    </svg>
+  );
+}
+
+export function EmbedListingCarousel({ listings, config, onCardClick }: { listings: Listing[]; config: ListingFeedConfig; onCardClick?: (listing: Listing) => void }) {
+  const cc = config.carousel;
+  const displayed = listings.slice(0, cc.totalListings || listings.length);
+  const visible = cc.visibleCount || 3;
+  const [offset, setOffset] = useState(0);
+  const maxOffset = Math.max(0, displayed.length - visible);
+  const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const prev = useCallback(() => setOffset((o) => Math.max(0, o - 1)), []);
+  const next = useCallback(() => setOffset((o) => Math.min(maxOffset, o + 1)), [maxOffset]);
+
+  useEffect(() => {
+    if (cc.autoplay && cc.autoplayInterval > 0) {
+      autoplayRef.current = setInterval(() => {
+        setOffset((o) => (o >= maxOffset ? 0 : o + 1));
+      }, cc.autoplayInterval * 1000);
+      return () => { if (autoplayRef.current) clearInterval(autoplayRef.current); };
+    }
+  }, [cc.autoplay, cc.autoplayInterval, maxOffset]);
+
+  const arrowBtn = (dir: 'left' | 'right') => {
+    const svgStr = dir === 'left' ? cc.customLeftArrowSvg : cc.customRightArrowSvg;
+    return (
+      <button
+        type="button"
+        onClick={dir === 'left' ? prev : next}
+        disabled={dir === 'left' ? offset <= 0 : offset >= maxOffset}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: cc.arrowSize, height: cc.arrowSize,
+          borderRadius: '50%', border: `1px solid ${cc.arrowColor || '#000'}`,
+          background: 'transparent', cursor: 'pointer',
+          opacity: (dir === 'left' ? offset <= 0 : offset >= maxOffset) ? 0.3 : 1,
+          transition: 'opacity 0.2s', flexShrink: 0,
+        }}
+      >
+        {svgStr ? (
+          <span dangerouslySetInnerHTML={{ __html: svgStr }} style={{ display: 'flex', width: cc.arrowSize * 0.5, height: cc.arrowSize * 0.5 }} />
+        ) : (
+          <DefaultArrow direction={dir} size={cc.arrowSize * 0.5} color={cc.arrowColor || '#000'} />
+        )}
+      </button>
+    );
+  };
+
+  const arrowsBeside = cc.arrowPosition === 'beside';
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: config.gap }}>
+        {arrowsBeside && arrowBtn('left')}
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: config.gap,
+              transform: `translateX(-${offset * (100 / visible + (config.gap / visible))}%)`,
+              transition: 'transform 0.4s ease',
+            }}
+          >
+            {displayed.map((listing) => (
+              <div key={listing.id} style={{ flex: `0 0 calc(${100 / visible}% - ${(config.gap * (visible - 1)) / visible}px)`, minWidth: 0 }}>
+                <CardClassic listing={listing} config={config} onClick={() => onCardClick?.(listing)} />
+              </div>
+            ))}
+          </div>
+        </div>
+        {arrowsBeside && arrowBtn('right')}
+      </div>
+      {!arrowsBeside && (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 16 }}>
+          {arrowBtn('left')}
+          {arrowBtn('right')}
+        </div>
+      )}
+    </div>
   );
 }
 

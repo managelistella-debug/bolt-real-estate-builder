@@ -1860,7 +1860,7 @@ export interface ActivityLogEntry {
 
 // ── Embed Configs ─────────────────────────────────────────────────────────────
 
-export type CardLayout = 'classic' | 'overlay' | 'minimal' | 'split_info';
+export type CardLayout = 'classic' | 'overlay' | 'minimal' | 'split_info' | 'carousel';
 export type StatusBadgePosition = 'left' | 'right' | 'hidden';
 
 export interface EmbedImageHeight {
@@ -1893,6 +1893,20 @@ export interface EmbedTypography {
 export interface EmbedResponsiveOverrides {
   columns?: 1 | 2 | 3;
   imageHeight?: EmbedImageHeight;
+  itemsPerPage?: number | 'unlimited';
+  paginationType?: 'pagination' | 'load_more' | 'none';
+}
+
+export interface EmbedCarouselConfig {
+  totalListings: number;
+  visibleCount: number;
+  arrowPosition: 'beside' | 'below';
+  arrowSize: number;
+  arrowColor: string;
+  customLeftArrowSvg: string;
+  customRightArrowSvg: string;
+  autoplay: boolean;
+  autoplayInterval: number;
 }
 
 export interface ListingFeedConfig {
@@ -1911,6 +1925,7 @@ export interface ListingFeedConfig {
   cardLayout: CardLayout;
   statusBadgePosition: StatusBadgePosition;
   showRepresentation: boolean;
+  showListingCount: boolean;
   imageHeight: EmbedImageHeight;
   gap: number;
   cardRadius: number;
@@ -1921,6 +1936,7 @@ export interface ListingFeedConfig {
   dropShadow: boolean;
   statusBadge: EmbedStatusBadgeStyle;
   typography: EmbedTypography;
+  carousel: EmbedCarouselConfig;
   responsive: {
     tablet: EmbedResponsiveOverrides;
     mobile: EmbedResponsiveOverrides;

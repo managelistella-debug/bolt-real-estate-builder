@@ -45,6 +45,7 @@
       layout: cfg.cardLayout || 'classic',
       badgePos: cfg.statusBadgePosition || 'left',
       showRep: cfg.showRepresentation || false,
+      showCount: cfg.showListingCount !== false,
       ih: cfg.imageHeight || { value: 75, unit: 'vh' },
       gap: cfg.gap != null ? cfg.gap : 16,
       cRadius: cfg.cardRadius != null ? cfg.cardRadius : 12,
@@ -55,6 +56,7 @@
       shadow: cfg.dropShadow || false,
       badge: cfg.statusBadge || { bg: '#DAFF07', color: '#000', borderColor: '', fontFamily: '', fontSize: 11, radius: 999 },
       typo: cfg.typography || { address: { fontFamily: '', fontSize: 15, color: '#000' }, city: { fontFamily: '', fontSize: 13, color: '#555' }, price: { fontFamily: '', fontSize: 17, color: '#000' }, specs: { fontFamily: '', fontSize: 12, color: '#888C99' } },
+      carousel: cfg.carousel || { totalListings: 10, visibleCount: 3, arrowPosition: 'beside', arrowSize: 36, arrowColor: '#000', customLeftArrowSvg: '', customRightArrowSvg: '', autoplay: false, autoplayInterval: 5 },
       responsive: cfg.responsive || { tablet: {}, mobile: {} },
     };
   }
@@ -144,7 +146,7 @@
       overflow: 'hidden',
       borderRadius: v.cRadius + 'px',
       border: v.dBorder ? '1px solid ' + v.dBorder : '',
-      background: v.layout === 'overlay' ? 'transparent' : v.dBg,
+      background: 'transparent',
       boxShadow: v.shadow ? '0 2px 12px rgba(0,0,0,0.08)' : '',
       textDecoration: 'none',
       color: 'inherit',
@@ -163,7 +165,14 @@
     card.appendChild(imgWrap);
 
     var body = el('div');
-    css(body, { padding: '16px', background: v.dBg, borderRadius: v.dRadius ? v.dRadius + 'px' : '' });
+    css(body, {
+      padding: '16px',
+      background: v.dBg,
+      borderRadius: v.dRadius ? v.dRadius + 'px ' + v.dRadius + 'px 0 0' : '',
+      marginTop: v.dRadius ? '-' + v.dRadius + 'px' : '',
+      position: 'relative',
+      zIndex: '1',
+    });
 
     var price = el('p', {}, formatPrice(listing.list_price));
     css(price, { margin: '0', fontWeight: '600', fontSize: v.typo.price.fontSize + 'px', color: v.typo.price.color, fontFamily: v.typo.price.fontFamily || '' });
@@ -227,7 +236,7 @@
     card.appendChild(imgWrap);
 
     var body = el('div');
-    css(body, { padding: '14px 16px', textAlign: 'center' });
+    css(body, { padding: '14px 16px', textAlign: 'center', background: v.dBg });
 
     var addrEl = el('p', {}, listing.address || '');
     css(addrEl, { margin: '0', fontWeight: '500', fontSize: v.typo.address.fontSize + 'px', color: v.typo.address.color, fontFamily: v.typo.address.fontFamily || '' });
@@ -256,7 +265,7 @@
     card.appendChild(imgWrap);
 
     var body = el('div');
-    css(body, { padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' });
+    css(body, { padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: v.dBg });
 
     var leftDiv = el('div');
     var addrEl = el('p', {}, listing.address || '');
@@ -291,13 +300,117 @@
     return renderCardClassic(listing, cfg, href);
   }
 
+  // ── Carousel renderer ─────────────────────────────────────────────────────
+
+  function renderCarousel(container, config, listings) {
+    container.innerHTML = '';
+    var v = d(config);
+    var cc = v.carousel;
+    var displayed = listings.slice(0, cc.totalListings || listings.length);
+    var visible = cc.visibleCount || 3;
+    var offset = 0;
+    var maxOffset = Math.max(0, displayed.length - visible);
+    var detailPattern = config.detailPageUrlPattern || '#';
+
+    function makeArrowSvg(dir) {
+      var custom = dir === 'left' ? cc.customLeftArrowSvg : cc.customRightArrowSvg;
+      if (custom) {
+        var span = el('span');
+        span.innerHTML = custom;
+        css(span, { display: 'flex', width: Math.floor(cc.arrowSize * 0.5) + 'px', height: Math.floor(cc.arrowSize * 0.5) + 'px' });
+        return span;
+      }
+      var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('width', Math.floor(cc.arrowSize * 0.5));
+      svg.setAttribute('height', Math.floor(cc.arrowSize * 0.5));
+      svg.setAttribute('viewBox', '0 0 24 24');
+      svg.setAttribute('fill', 'none');
+      svg.setAttribute('stroke', cc.arrowColor || '#000');
+      svg.setAttribute('stroke-width', '2');
+      svg.setAttribute('stroke-linecap', 'round');
+      svg.setAttribute('stroke-linejoin', 'round');
+      var poly = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+      poly.setAttribute('points', dir === 'left' ? '15 18 9 12 15 6' : '9 6 15 12 9 18');
+      svg.appendChild(poly);
+      return svg;
+    }
+
+    function makeArrowBtn(dir) {
+      var btn = el('button', { type: 'button' });
+      css(btn, {
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: cc.arrowSize + 'px', height: cc.arrowSize + 'px',
+        borderRadius: '50%', border: '1px solid ' + (cc.arrowColor || '#000'),
+        background: 'transparent', cursor: 'pointer', flexShrink: '0',
+      });
+      btn.appendChild(makeArrowSvg(dir));
+      return btn;
+    }
+
+    var track = el('div');
+    css(track, { display: 'flex', gap: v.gap + 'px', transition: 'transform 0.4s ease' });
+
+    displayed.forEach(function (listing) {
+      var href = detailPattern.replace('{slug}', listing.slug);
+      var item = el('div');
+      css(item, { flex: '0 0 calc(' + (100 / visible) + '% - ' + ((v.gap * (visible - 1)) / visible) + 'px)', minWidth: '0' });
+      item.appendChild(renderCardClassic(listing, config, href));
+      track.appendChild(item);
+    });
+
+    function updateTransform() {
+      track.style.transform = 'translateX(-' + (offset * (100 / visible + v.gap / visible)) + '%)';
+      if (leftBtn) leftBtn.style.opacity = offset <= 0 ? '0.3' : '1';
+      if (rightBtn) rightBtn.style.opacity = offset >= maxOffset ? '0.3' : '1';
+    }
+
+    var leftBtn = makeArrowBtn('left');
+    var rightBtn = makeArrowBtn('right');
+    leftBtn.onclick = function () { if (offset > 0) { offset--; updateTransform(); } };
+    rightBtn.onclick = function () { if (offset < maxOffset) { offset++; updateTransform(); } };
+
+    var viewport = el('div');
+    css(viewport, { flex: '1', overflow: 'hidden' });
+    viewport.appendChild(track);
+
+    if (cc.arrowPosition === 'beside') {
+      var row = el('div');
+      css(row, { display: 'flex', alignItems: 'center', gap: v.gap + 'px' });
+      row.appendChild(leftBtn);
+      row.appendChild(viewport);
+      row.appendChild(rightBtn);
+      container.appendChild(row);
+    } else {
+      container.appendChild(viewport);
+      var arrows = el('div');
+      css(arrows, { display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '16px' });
+      arrows.appendChild(leftBtn);
+      arrows.appendChild(rightBtn);
+      container.appendChild(arrows);
+    }
+
+    updateTransform();
+
+    if (cc.autoplay && cc.autoplayInterval > 0) {
+      setInterval(function () {
+        offset = offset >= maxOffset ? 0 : offset + 1;
+        updateTransform();
+      }, cc.autoplayInterval * 1000);
+    }
+  }
+
   // ── Feed renderer ──────────────────────────────────────────────────────────
 
   function renderFeed(container, config, listings, total, page, loadedExtra) {
     container.innerHTML = '';
     var v = d(config);
-    var cols = config.columns || 3;
 
+    if (v.layout === 'carousel') {
+      renderCarousel(container, config, listings);
+      return;
+    }
+
+    var cols = config.columns || 3;
     var grid = el('div', { class: PREFIX + '-grid' });
     css(grid, { gridTemplateColumns: 'repeat(' + cols + ', 1fr)', gap: v.gap + 'px' });
     var detailPattern = config.detailPageUrlPattern || '#';
@@ -337,6 +450,12 @@
       lmDiv.appendChild(lmBtn);
       container.appendChild(lmDiv);
     }
+
+    if (v.showCount) {
+      var countEl = el('p', {}, 'Showing ' + listings.length + ' of ' + total + ' listings');
+      css(countEl, { marginTop: '16px', textAlign: 'center', fontSize: '12px', color: '#CCC' });
+      container.appendChild(countEl);
+    }
   }
 
   function loadPage(container, config, page, loadedExtra) {
@@ -352,13 +471,16 @@
     if (f.propertyTypes && f.propertyTypes.length) sp.set('propertyType', f.propertyTypes.join(','));
     sp.set('sort', config.sortBy || 'newest');
 
+    var isCarousel = (config.cardLayout || 'classic') === 'carousel';
     var perPage = config.itemsPerPage === 'unlimited' ? null : config.itemsPerPage;
-    if (config.paginationType === 'pagination' && perPage) {
-      sp.set('page', String(page));
-      sp.set('perPage', String(perPage));
-    } else if (config.paginationType === 'load_more' && perPage) {
-      sp.set('page', '1');
-      sp.set('perPage', String(perPage + loadedExtra));
+    if (!isCarousel) {
+      if (config.paginationType === 'pagination' && perPage) {
+        sp.set('page', String(page));
+        sp.set('perPage', String(perPage));
+      } else if (config.paginationType === 'load_more' && perPage) {
+        sp.set('page', '1');
+        sp.set('perPage', String(perPage + loadedExtra));
+      }
     }
 
     container.innerHTML = '<div class="' + PREFIX + '-loading">Loading listings...</div>';
