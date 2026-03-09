@@ -25,7 +25,9 @@
   var REP_LABELS = { buyer_representation: 'Buyer Representation', seller_representation: 'Seller Representation' };
 
   function getThumb(row) {
-    return row.thumbnail || (row.gallery && row.gallery[0] && row.gallery[0].url) || '';
+    var url = row.thumbnail || (row.gallery && row.gallery[0] && row.gallery[0].url) || '';
+    if (url && url.charAt(0) === '/' && ORIGIN) url = ORIGIN + url;
+    return url;
   }
 
   function el(tag, attrs, children) {
