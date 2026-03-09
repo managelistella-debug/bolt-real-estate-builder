@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthStore } from '@/lib/stores/auth';
-import { useEmbedConfigsStore } from '@/lib/stores/embedConfigs';
+import { useEmbedConfigsStore, DEFAULT_LISTING_FEED_CONFIG } from '@/lib/stores/embedConfigs';
 import { useListingsStore } from '@/lib/stores/listings';
 import { ListingFeedConfig } from '@/lib/types';
 import { ListingFeedSettings } from '@/components/embeds/ListingFeedSettings';
@@ -26,16 +26,26 @@ export default function ListingFeedEditorPage() {
   const feedConfig = embedConfig?.config as ListingFeedConfig | undefined;
 
   const [name, setName] = useState(embedConfig?.name || 'Untitled Listing Feed');
-  const [config, setConfig] = useState<ListingFeedConfig>(
-    feedConfig || {
-      columns: 3,
-      itemsPerPage: 9,
-      paginationType: 'pagination',
-      filters: { statuses: [], cities: [], neighborhoods: [], propertyTypes: [] },
-      sortBy: 'newest',
-      detailPageUrlPattern: '/listings/{slug}',
-    }
-  );
+  const [config, setConfig] = useState<ListingFeedConfig>({
+    ...DEFAULT_LISTING_FEED_CONFIG,
+    ...(feedConfig || {}),
+    filters: {
+      ...DEFAULT_LISTING_FEED_CONFIG.filters,
+      ...(feedConfig?.filters || {}),
+    },
+    statusBadge: {
+      ...DEFAULT_LISTING_FEED_CONFIG.statusBadge,
+      ...(feedConfig?.statusBadge || {}),
+    },
+    typography: {
+      ...DEFAULT_LISTING_FEED_CONFIG.typography,
+      ...(feedConfig?.typography || {}),
+    },
+    responsive: {
+      ...DEFAULT_LISTING_FEED_CONFIG.responsive,
+      ...(feedConfig?.responsive || {}),
+    },
+  });
 
   const [distinctValues, setDistinctValues] = useState<{
     cities: string[];

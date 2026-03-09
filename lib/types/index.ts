@@ -1860,6 +1860,41 @@ export interface ActivityLogEntry {
 
 // ── Embed Configs ─────────────────────────────────────────────────────────────
 
+export type CardLayout = 'classic' | 'overlay' | 'minimal' | 'split_info';
+export type StatusBadgePosition = 'left' | 'right' | 'hidden';
+
+export interface EmbedImageHeight {
+  value: number;
+  unit: 'px' | 'vh';
+}
+
+export interface EmbedTypographyEntry {
+  fontFamily: string;
+  fontSize: number;
+  color: string;
+}
+
+export interface EmbedStatusBadgeStyle {
+  bg: string;
+  color: string;
+  borderColor: string;
+  fontFamily: string;
+  fontSize: number;
+  radius: number;
+}
+
+export interface EmbedTypography {
+  address: EmbedTypographyEntry;
+  city: EmbedTypographyEntry;
+  price: EmbedTypographyEntry;
+  specs: EmbedTypographyEntry;
+}
+
+export interface EmbedResponsiveOverrides {
+  columns?: 1 | 2 | 3;
+  imageHeight?: EmbedImageHeight;
+}
+
 export interface ListingFeedConfig {
   columns: 1 | 2 | 3;
   itemsPerPage: number | 'unlimited';
@@ -1872,6 +1907,24 @@ export interface ListingFeedConfig {
   };
   sortBy: 'newest' | 'oldest' | 'price_asc' | 'price_desc' | 'custom_order';
   detailPageUrlPattern: string;
+
+  cardLayout: CardLayout;
+  statusBadgePosition: StatusBadgePosition;
+  showRepresentation: boolean;
+  imageHeight: EmbedImageHeight;
+  gap: number;
+  cardRadius: number;
+  imageRadius: number;
+  detailsBoxRadius: number;
+  detailsBoxBg: string;
+  detailsBoxBorder: string;
+  dropShadow: boolean;
+  statusBadge: EmbedStatusBadgeStyle;
+  typography: EmbedTypography;
+  responsive: {
+    tablet: EmbedResponsiveOverrides;
+    mobile: EmbedResponsiveOverrides;
+  };
 }
 
 export interface ListingDetailEmbedConfig {

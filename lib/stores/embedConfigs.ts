@@ -47,6 +47,26 @@ export const DEFAULT_LISTING_FEED_CONFIG: ListingFeedConfig = {
   },
   sortBy: 'newest',
   detailPageUrlPattern: '/listings/{slug}',
+
+  cardLayout: 'classic',
+  statusBadgePosition: 'left',
+  showRepresentation: false,
+  imageHeight: { value: 75, unit: 'vh' },
+  gap: 16,
+  cardRadius: 12,
+  imageRadius: 0,
+  detailsBoxRadius: 0,
+  detailsBoxBg: '#ffffff',
+  detailsBoxBorder: '#EBEBEB',
+  dropShadow: false,
+  statusBadge: { bg: '#DAFF07', color: '#000', borderColor: '', fontFamily: '', fontSize: 11, radius: 999 },
+  typography: {
+    address: { fontFamily: '', fontSize: 15, color: '#000000' },
+    city: { fontFamily: '', fontSize: 13, color: '#555555' },
+    price: { fontFamily: '', fontSize: 17, color: '#000000' },
+    specs: { fontFamily: '', fontSize: 12, color: '#888C99' },
+  },
+  responsive: { tablet: {}, mobile: {} },
 };
 
 export const DEFAULT_LISTING_DETAIL_CONFIG: ListingDetailEmbedConfig = {
