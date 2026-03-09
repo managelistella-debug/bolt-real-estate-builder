@@ -37,6 +37,7 @@ const toDate = (value: Date | string | number | undefined) =>
 
 export const DEFAULT_LISTING_FEED_CONFIG: ListingFeedConfig = {
   columns: 3,
+  maxListings: 'unlimited',
   itemsPerPage: 9,
   paginationType: 'pagination',
   filters: {
@@ -77,6 +78,32 @@ export const DEFAULT_LISTING_FEED_CONFIG: ListingFeedConfig = {
     customRightArrowSvg: '',
     autoplay: false,
     autoplayInterval: 5,
+  },
+  paginationButton: {
+    bg: '#ffffff',
+    color: '#888C99',
+    borderColor: '#EBEBEB',
+    borderWidth: 1,
+    radius: 8,
+    fontFamily: '',
+    fontSize: 13,
+    paddingX: 12,
+    paddingY: 8,
+    hoverBg: '#F5F5F3',
+    hoverColor: '#000000',
+  },
+  loadMoreButton: {
+    bg: '#ffffff',
+    color: '#000000',
+    borderColor: '#EBEBEB',
+    borderWidth: 1,
+    radius: 8,
+    fontFamily: '',
+    fontSize: 13,
+    paddingX: 24,
+    paddingY: 10,
+    hoverBg: '#F5F5F3',
+    hoverColor: '#000000',
   },
   responsive: { tablet: {}, mobile: {} },
 };

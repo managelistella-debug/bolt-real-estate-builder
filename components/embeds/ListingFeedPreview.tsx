@@ -59,7 +59,13 @@ export function ListingFeedPreview({ config, listings, breakpoint, onBreakpointC
 
   const effectiveConfig = useMemo(() => getConfigForBreakpoint(config, breakpoint), [config, breakpoint]);
 
-  const filtered = useMemo(() => applyFeedFilters(listings, config), [listings, config]);
+  const allFiltered = useMemo(() => applyFeedFilters(listings, config), [listings, config]);
+
+  const maxL = config.maxListings;
+  const filtered = useMemo(() => {
+    if (!maxL || maxL === 'unlimited') return allFiltered;
+    return allFiltered.slice(0, maxL);
+  }, [allFiltered, maxL]);
 
   const perPage = effectiveConfig.itemsPerPage === 'unlimited' ? filtered.length : effectiveConfig.itemsPerPage;
   const totalPages = Math.ceil(filtered.length / perPage) || 1;
@@ -121,26 +127,46 @@ export function ListingFeedPreview({ config, listings, breakpoint, onBreakpointC
       </div>
 
       {/* Pagination */}
-      {!isCarousel && effectiveConfig.paginationType === 'pagination' && effectiveConfig.itemsPerPage !== 'unlimited' && totalPages > 1 && (
-        <div className="mt-6 flex items-center justify-center gap-2">
-          <button type="button" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="flex h-[34px] w-[34px] items-center justify-center rounded-lg border border-[#EBEBEB] bg-white text-[#888C99] transition-colors hover:bg-[#F5F5F3] hover:text-black disabled:opacity-40">
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <button key={p} type="button" onClick={() => setPage(p)} className={`flex h-[34px] min-w-[34px] items-center justify-center rounded-lg px-2 text-[13px] transition-colors ${page === p ? 'bg-black text-white' : 'border border-[#EBEBEB] bg-white text-[#888C99] hover:bg-[#F5F5F3] hover:text-black'}`}>{p}</button>
-          ))}
-          <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="flex h-[34px] w-[34px] items-center justify-center rounded-lg border border-[#EBEBEB] bg-white text-[#888C99] transition-colors hover:bg-[#F5F5F3] hover:text-black disabled:opacity-40">
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-      )}
+      {!isCarousel && effectiveConfig.paginationType === 'pagination' && effectiveConfig.itemsPerPage !== 'unlimited' && totalPages > 1 && (() => {
+        const pb = effectiveConfig.paginationButton;
+        const btnBase: React.CSSProperties = {
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: pb.bg, color: pb.color,
+          border: `${pb.borderWidth}px solid ${pb.borderColor}`,
+          borderRadius: pb.radius, fontFamily: pb.fontFamily || undefined,
+          fontSize: pb.fontSize, padding: `${pb.paddingY}px ${pb.paddingX}px`,
+          cursor: 'pointer', transition: 'background 0.2s, color 0.2s',
+        };
+        return (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 24 }}>
+            <button type="button" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} style={{ ...btnBase, opacity: page <= 1 ? 0.4 : 1, minWidth: 34 }}>
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button key={p} type="button" onClick={() => setPage(p)} style={{ ...btnBase, ...(page === p ? { background: '#000', color: '#fff', borderColor: '#000' } : {}), minWidth: 34 }}>{p}</button>
+            ))}
+            <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} style={{ ...btnBase, opacity: page >= totalPages ? 0.4 : 1, minWidth: 34 }}>
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        );
+      })()}
 
       {/* Load More */}
-      {!isCarousel && effectiveConfig.paginationType === 'load_more' && hasMore && (
-        <div className="mt-6 flex justify-center">
-          <button type="button" onClick={() => setLoadedCount((c) => c + perPage)} className="flex h-[38px] items-center justify-center rounded-lg border border-[#EBEBEB] bg-white px-6 text-[13px] text-black transition-colors hover:bg-[#F5F5F3]">Load More</button>
-        </div>
-      )}
+      {!isCarousel && effectiveConfig.paginationType === 'load_more' && hasMore && (() => {
+        const lb = effectiveConfig.loadMoreButton;
+        return (
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
+            <button type="button" onClick={() => setLoadedCount((c) => c + perPage)} style={{
+              background: lb.bg, color: lb.color,
+              border: `${lb.borderWidth}px solid ${lb.borderColor}`,
+              borderRadius: lb.radius, fontFamily: lb.fontFamily || undefined,
+              fontSize: lb.fontSize, padding: `${lb.paddingY}px ${lb.paddingX}px`,
+              cursor: 'pointer', transition: 'background 0.2s, color 0.2s',
+            }}>Load More</button>
+          </div>
+        );
+      })()}
 
       {config.showListingCount !== false && !isCarousel && (
         <p className="mt-4 text-center text-[12px] text-[#CCCCCC]">Showing {visibleListings.length} of {filtered.length} listings</p>

@@ -8,8 +8,11 @@ interface ImageHeight { value: number; unit: 'px' | 'vh'; }
 interface ResponsiveOverrides { columns?: number; imageHeight?: ImageHeight; itemsPerPage?: number | 'unlimited'; paginationType?: 'pagination' | 'load_more' | 'none'; }
 interface CarouselConfig { totalListings: number; visibleCount: number; arrowPosition: 'beside' | 'below'; arrowSize: number; arrowColor: string; customLeftArrowSvg: string; customRightArrowSvg: string; autoplay: boolean; autoplayInterval: number; }
 
+interface ButtonStyle { bg: string; color: string; borderColor: string; borderWidth: number; radius: number; fontFamily: string; fontSize: number; paddingX: number; paddingY: number; hoverBg: string; hoverColor: string; }
+
 interface FeedConfig {
   columns: number;
+  maxListings?: number | 'unlimited';
   itemsPerPage: number | 'unlimited';
   paginationType: 'pagination' | 'load_more' | 'none';
   filters: { statuses: string[]; cities: string[]; neighborhoods: string[]; propertyTypes: string[] };
@@ -30,6 +33,8 @@ interface FeedConfig {
   statusBadge?: BadgeStyle;
   typography?: { address: TypoEntry; city: TypoEntry; price: TypoEntry; specs: TypoEntry };
   carousel?: CarouselConfig;
+  paginationButton?: ButtonStyle;
+  loadMoreButton?: ButtonStyle;
   responsive?: { tablet: ResponsiveOverrides; mobile: ResponsiveOverrides };
 }
 
@@ -70,6 +75,9 @@ function defaults(c: FeedConfig) {
     badge: c.statusBadge || { bg: '#DAFF07', color: '#000', borderColor: '', fontFamily: '', fontSize: 11, radius: 999 },
     typo: c.typography || { address: { fontFamily: '', fontSize: 15, color: '#000' }, city: { fontFamily: '', fontSize: 13, color: '#555' }, price: { fontFamily: '', fontSize: 17, color: '#000' }, specs: { fontFamily: '', fontSize: 12, color: '#888C99' } },
     carousel: c.carousel || { totalListings: 10, visibleCount: 3, arrowPosition: 'beside' as const, arrowSize: 36, arrowColor: '#000', customLeftArrowSvg: '', customRightArrowSvg: '', autoplay: false, autoplayInterval: 5 },
+    pagBtn: c.paginationButton || { bg: '#fff', color: '#888C99', borderColor: '#EBEBEB', borderWidth: 1, radius: 8, fontFamily: '', fontSize: 13, paddingX: 12, paddingY: 8, hoverBg: '#F5F5F3', hoverColor: '#000' },
+    lmBtn: c.loadMoreButton || { bg: '#fff', color: '#000', borderColor: '#EBEBEB', borderWidth: 1, radius: 8, fontFamily: '', fontSize: 13, paddingX: 24, paddingY: 10, hoverBg: '#F5F5F3', hoverColor: '#000' },
+    maxListings: c.maxListings,
     responsive: c.responsive || { tablet: {}, mobile: {} },
   };
 }
@@ -254,13 +262,14 @@ export function EmbedFeedClient({ configId, tenantId, feedConfig }: Props) {
       if (feedConfig.paginationType === 'pagination' && perPage) { sp.set('page', String(page)); sp.set('perPage', String(perPage)); }
       else if (feedConfig.paginationType === 'load_more' && perPage) { sp.set('page', '1'); sp.set('perPage', String(perPage + loadedExtra)); }
     }
+    if (d.maxListings && d.maxListings !== 'unlimited') sp.set('limit', String(d.maxListings));
     setLoading(true);
     fetch(`/api/public/listings?${sp.toString()}`)
       .then((r) => r.json())
       .then((res) => { if (Array.isArray(res)) { setListings(res); setTotal(res.length); } else { setListings(res.data || []); setTotal(res.total || 0); } })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [tenantId, feedConfig, page, loadedExtra, perPage, isCarousel]);
+  }, [tenantId, feedConfig, page, loadedExtra, perPage, isCarousel, d.maxListings]);
 
   const detailUrl = (slug: string) => feedConfig.detailPageUrlPattern.replace('{slug}', slug);
   const hasMore = feedConfig.paginationType === 'load_more' && perPage && (perPage + loadedExtra) < total;
@@ -291,21 +300,28 @@ export function EmbedFeedClient({ configId, tenantId, feedConfig }: Props) {
         </div>
       )}
 
-      {!isCarousel && feedConfig.paginationType === 'pagination' && perPage && totalPages > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 24 }}>
-          <button type="button" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} style={{ padding: '8px 12px', border: '1px solid #EBEBEB', borderRadius: 8, background: '#fff', cursor: page <= 1 ? 'default' : 'pointer', opacity: page <= 1 ? 0.4 : 1 }}>&larr;</button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <button key={p} type="button" onClick={() => setPage(p)} style={{ padding: '8px 12px', borderRadius: 8, border: page === p ? 'none' : '1px solid #EBEBEB', background: page === p ? '#000' : '#fff', color: page === p ? '#fff' : '#888C99', cursor: 'pointer', fontSize: 13 }}>{p}</button>
-          ))}
-          <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} style={{ padding: '8px 12px', border: '1px solid #EBEBEB', borderRadius: 8, background: '#fff', cursor: page >= totalPages ? 'default' : 'pointer', opacity: page >= totalPages ? 0.4 : 1 }}>&rarr;</button>
-        </div>
-      )}
+      {!isCarousel && feedConfig.paginationType === 'pagination' && perPage && totalPages > 1 && (() => {
+        const pb = d.pagBtn;
+        const base: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: pb.bg, color: pb.color, border: `${pb.borderWidth}px solid ${pb.borderColor}`, borderRadius: pb.radius, fontFamily: pb.fontFamily || undefined, fontSize: pb.fontSize, padding: `${pb.paddingY}px ${pb.paddingX}px`, cursor: 'pointer', transition: 'background 0.2s, color 0.2s', minWidth: 34 };
+        return (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 24 }}>
+            <button type="button" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} style={{ ...base, opacity: page <= 1 ? 0.4 : 1 }}>&larr;</button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button key={p} type="button" onClick={() => setPage(p)} style={{ ...base, ...(page === p ? { background: '#000', color: '#fff', borderColor: '#000' } : {}) }}>{p}</button>
+            ))}
+            <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} style={{ ...base, opacity: page >= totalPages ? 0.4 : 1 }}>&rarr;</button>
+          </div>
+        );
+      })()}
 
-      {!isCarousel && hasMore && (
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
-          <button type="button" onClick={() => setLoadedExtra((c) => c + (perPage || 9))} style={{ padding: '10px 24px', border: '1px solid #EBEBEB', borderRadius: 8, background: '#fff', cursor: 'pointer', fontSize: 13 }}>Load More</button>
-        </div>
-      )}
+      {!isCarousel && hasMore && (() => {
+        const lb = d.lmBtn;
+        return (
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
+            <button type="button" onClick={() => setLoadedExtra((c) => c + (perPage || 9))} style={{ background: lb.bg, color: lb.color, border: `${lb.borderWidth}px solid ${lb.borderColor}`, borderRadius: lb.radius, fontFamily: lb.fontFamily || undefined, fontSize: lb.fontSize, padding: `${lb.paddingY}px ${lb.paddingX}px`, cursor: 'pointer', transition: 'background 0.2s, color 0.2s' }}>Load More</button>
+          </div>
+        );
+      })()}
 
       {!isCarousel && d.showCount && (
         <p style={{ marginTop: 16, textAlign: 'center', fontSize: 12, color: '#CCC' }}>Showing {listings.length} of {total} listings</p>

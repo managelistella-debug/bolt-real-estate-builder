@@ -1909,8 +1909,23 @@ export interface EmbedCarouselConfig {
   autoplayInterval: number;
 }
 
+export interface EmbedButtonStyle {
+  bg: string;
+  color: string;
+  borderColor: string;
+  borderWidth: number;
+  radius: number;
+  fontFamily: string;
+  fontSize: number;
+  paddingX: number;
+  paddingY: number;
+  hoverBg: string;
+  hoverColor: string;
+}
+
 export interface ListingFeedConfig {
   columns: 1 | 2 | 3;
+  maxListings: number | 'unlimited';
   itemsPerPage: number | 'unlimited';
   paginationType: 'pagination' | 'load_more' | 'none';
   filters: {
@@ -1937,6 +1952,8 @@ export interface ListingFeedConfig {
   statusBadge: EmbedStatusBadgeStyle;
   typography: EmbedTypography;
   carousel: EmbedCarouselConfig;
+  paginationButton: EmbedButtonStyle;
+  loadMoreButton: EmbedButtonStyle;
   responsive: {
     tablet: EmbedResponsiveOverrides;
     mobile: EmbedResponsiveOverrides;

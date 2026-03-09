@@ -8,6 +8,7 @@ import {
   StatusBadgePosition,
   EmbedTypographyEntry,
   EmbedResponsiveOverrides,
+  EmbedButtonStyle,
 } from '@/lib/types';
 import { LISTING_STATUS_LABELS } from '@/lib/listings';
 import { Check, ChevronDown, ChevronRight, Plus, Trash2, X } from 'lucide-react';
@@ -213,6 +214,58 @@ function TypographySection({ label, entry, onChange }: { label: string; entry: E
             </div>
           </div>
           <ColorOrGradientInput label="Color" value={entry.color} onChange={(color) => onChange({ ...entry, color })} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ButtonStyleSection({ label, style, onChange }: { label: string; style: EmbedButtonStyle; onChange: (s: EmbedButtonStyle) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-lg border border-[#EBEBEB] bg-[#FAFAFA] p-2.5">
+      <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center justify-between">
+        <span className="text-[12px] font-medium text-black">{label}</span>
+        {open ? <ChevronDown className="h-3 w-3 text-[#888C99]" /> : <ChevronRight className="h-3 w-3 text-[#888C99]" />}
+      </button>
+      {open && (
+        <div className="mt-2.5 space-y-2.5">
+          <ColorOrGradientInput label="Background" value={style.bg} onChange={(bg) => onChange({ ...style, bg })} />
+          <ColorOrGradientInput label="Text Color" value={style.color} onChange={(color) => onChange({ ...style, color })} />
+          <ColorOrGradientInput label="Border Color" value={style.borderColor} onChange={(borderColor) => onChange({ ...style, borderColor })} />
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="mb-1 block text-[11px] text-[#888C99]">Border Width</label>
+              <input type="number" min={0} max={5} value={style.borderWidth} onChange={(e) => onChange({ ...style, borderWidth: Number(e.target.value) || 0 })} className="h-[28px] w-full rounded-md border border-[#EBEBEB] bg-white px-2 text-[12px] text-black" />
+            </div>
+            <div className="flex-1">
+              <label className="mb-1 block text-[11px] text-[#888C99]">Radius</label>
+              <input type="number" min={0} max={999} value={style.radius} onChange={(e) => onChange({ ...style, radius: Number(e.target.value) || 0 })} className="h-[28px] w-full rounded-md border border-[#EBEBEB] bg-white px-2 text-[12px] text-black" />
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] text-[#888C99]">Font</label>
+            <select value={style.fontFamily} onChange={(e) => onChange({ ...style, fontFamily: e.target.value })} className="h-[28px] w-full rounded-md border border-[#EBEBEB] bg-white px-2 text-[12px] text-black">
+              <option value="">Default</option>
+              {SYSTEM_FONTS.filter(Boolean).map((f) => <option key={f} value={f}>{f}</option>)}
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="mb-1 block text-[11px] text-[#888C99]">Font Size</label>
+              <input type="number" min={8} max={24} value={style.fontSize} onChange={(e) => onChange({ ...style, fontSize: Number(e.target.value) || 13 })} className="h-[28px] w-full rounded-md border border-[#EBEBEB] bg-white px-2 text-[12px] text-black" />
+            </div>
+            <div className="flex-1">
+              <label className="mb-1 block text-[11px] text-[#888C99]">Padding X</label>
+              <input type="number" min={0} max={60} value={style.paddingX} onChange={(e) => onChange({ ...style, paddingX: Number(e.target.value) || 12 })} className="h-[28px] w-full rounded-md border border-[#EBEBEB] bg-white px-2 text-[12px] text-black" />
+            </div>
+            <div className="flex-1">
+              <label className="mb-1 block text-[11px] text-[#888C99]">Padding Y</label>
+              <input type="number" min={0} max={30} value={style.paddingY} onChange={(e) => onChange({ ...style, paddingY: Number(e.target.value) || 8 })} className="h-[28px] w-full rounded-md border border-[#EBEBEB] bg-white px-2 text-[12px] text-black" />
+            </div>
+          </div>
+          <ColorOrGradientInput label="Hover Background" value={style.hoverBg} onChange={(hoverBg) => onChange({ ...style, hoverBg })} />
+          <ColorOrGradientInput label="Hover Text" value={style.hoverColor} onChange={(hoverColor) => onChange({ ...style, hoverColor })} />
         </div>
       )}
     </div>
@@ -449,6 +502,20 @@ export function ListingFeedSettings({ name, config, onNameChange, onConfigChange
           <SectionHeader label="Pagination & Display" open={openSections.pagination} onToggle={() => toggle('pagination')} />
           {openSections.pagination && (
             <div className="mt-2 space-y-3">
+              {/* Total items displayed */}
+              <div>
+                <label className="mb-1.5 block text-[12px] font-medium text-[#888C99]">Total Items Displayed</label>
+                <p className="mb-1.5 text-[11px] text-[#CCC]">Max listings shown in this feed (e.g. 10 of 20 listings)</p>
+                <div className="flex items-center gap-2">
+                  <input type="number" min={1} max={500} value={config.maxListings === 'unlimited' ? '' : (config.maxListings ?? '')} disabled={config.maxListings === 'unlimited'} onChange={(e) => update({ maxListings: parseInt(e.target.value, 10) || 10 })} placeholder="All" className="h-[30px] w-20 rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-2 text-[12px] text-black placeholder:text-[#CCC] disabled:opacity-50" />
+                  <button type="button" onClick={() => update({ maxListings: config.maxListings === 'unlimited' ? 10 : 'unlimited' })} className={`flex h-[30px] items-center gap-1.5 rounded-lg px-3 text-[12px] transition-colors ${config.maxListings === 'unlimited' ? 'bg-black text-white' : 'border border-[#EBEBEB] bg-white text-[#888C99] hover:bg-[#F5F5F3] hover:text-black'}`}>
+                    {config.maxListings === 'unlimited' && <Check className="h-3 w-3" />}
+                    All
+                  </button>
+                </div>
+              </div>
+
+              {/* Items per page */}
               <div>
                 <label className="mb-1.5 block text-[12px] font-medium text-[#888C99]">
                   Items Per Page {breakpoint !== 'desktop' && <span className="text-[#CCC]">(override for {breakpoint})</span>}
@@ -508,6 +575,14 @@ export function ListingFeedSettings({ name, config, onNameChange, onConfigChange
                     </div>
                   )}
                 </div>
+              )}
+
+              {/* Button styling */}
+              {config.paginationType === 'pagination' && (
+                <ButtonStyleSection label="Pagination Button Style" style={config.paginationButton} onChange={(paginationButton) => update({ paginationButton })} />
+              )}
+              {config.paginationType === 'load_more' && (
+                <ButtonStyleSection label="Load More Button Style" style={config.loadMoreButton} onChange={(loadMoreButton) => update({ loadMoreButton })} />
               )}
 
               {/* Show listing count */}

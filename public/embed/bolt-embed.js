@@ -59,6 +59,9 @@
       badge: cfg.statusBadge || { bg: '#DAFF07', color: '#000', borderColor: '', fontFamily: '', fontSize: 11, radius: 999 },
       typo: cfg.typography || { address: { fontFamily: '', fontSize: 15, color: '#000' }, city: { fontFamily: '', fontSize: 13, color: '#555' }, price: { fontFamily: '', fontSize: 17, color: '#000' }, specs: { fontFamily: '', fontSize: 12, color: '#888C99' } },
       carousel: cfg.carousel || { totalListings: 10, visibleCount: 3, arrowPosition: 'beside', arrowSize: 36, arrowColor: '#000', customLeftArrowSvg: '', customRightArrowSvg: '', autoplay: false, autoplayInterval: 5 },
+      pagBtn: cfg.paginationButton || { bg: '#fff', color: '#888C99', borderColor: '#EBEBEB', borderWidth: 1, radius: 8, fontFamily: '', fontSize: 13, paddingX: 12, paddingY: 8, hoverBg: '#F5F5F3', hoverColor: '#000' },
+      lmBtn: cfg.loadMoreButton || { bg: '#fff', color: '#000', borderColor: '#EBEBEB', borderWidth: 1, radius: 8, fontFamily: '', fontSize: 13, paddingX: 24, paddingY: 10, hoverBg: '#F5F5F3', hoverColor: '#000' },
+      maxListings: cfg.maxListings,
       responsive: cfg.responsive || { tablet: {}, mobile: {} },
     };
   }
@@ -426,28 +429,54 @@
     var totalPages = perPage ? Math.ceil(total / perPage) : 1;
 
     if (config.paginationType === 'pagination' && perPage && totalPages > 1) {
+      var pb = v.pagBtn;
       var pagDiv = el('div', { class: PREFIX + '-pagination' });
-      var prevBtn = el('button', { class: PREFIX + '-page-btn', type: 'button' }, '&larr;');
-      if (page <= 1) prevBtn.disabled = true;
+      css(pagDiv, { display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '24px' });
+      function makePagBtn(html, isActive, disabled) {
+        var btn = el('button', { type: 'button' }, html);
+        css(btn, {
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          background: isActive ? '#000' : pb.bg, color: isActive ? '#fff' : pb.color,
+          border: pb.borderWidth + 'px solid ' + (isActive ? '#000' : pb.borderColor),
+          borderRadius: pb.radius + 'px', fontFamily: pb.fontFamily || 'inherit',
+          fontSize: pb.fontSize + 'px', padding: pb.paddingY + 'px ' + pb.paddingX + 'px',
+          cursor: disabled ? 'default' : 'pointer', opacity: disabled ? '0.4' : '1',
+          minWidth: '34px', transition: 'background .2s, color .2s',
+        });
+        btn.onmouseenter = function () { if (!disabled && !isActive) { btn.style.background = pb.hoverBg; btn.style.color = pb.hoverColor; } };
+        btn.onmouseleave = function () { if (!disabled && !isActive) { btn.style.background = pb.bg; btn.style.color = pb.color; } };
+        return btn;
+      }
+      var prevBtn = makePagBtn('&larr;', false, page <= 1);
       prevBtn.onclick = function () { if (page > 1) loadPage(container, config, page - 1, 0); };
       pagDiv.appendChild(prevBtn);
       for (var i = 1; i <= totalPages; i++) {
         (function (p) {
-          var btn = el('button', { class: PREFIX + '-page-btn' + (p === page ? ' active' : ''), type: 'button' }, String(p));
+          var btn = makePagBtn(String(p), p === page, false);
           btn.onclick = function () { loadPage(container, config, p, 0); };
           pagDiv.appendChild(btn);
         })(i);
       }
-      var nextBtn = el('button', { class: PREFIX + '-page-btn', type: 'button' }, '&rarr;');
-      if (page >= totalPages) nextBtn.disabled = true;
+      var nextBtn = makePagBtn('&rarr;', false, page >= totalPages);
       nextBtn.onclick = function () { if (page < totalPages) loadPage(container, config, page + 1, 0); };
       pagDiv.appendChild(nextBtn);
       container.appendChild(pagDiv);
     }
 
     if (config.paginationType === 'load_more' && perPage && (perPage + loadedExtra) < total) {
+      var lb = v.lmBtn;
       var lmDiv = el('div', { class: PREFIX + '-load-more' });
-      var lmBtn = el('button', { class: PREFIX + '-load-btn', type: 'button' }, 'Load More');
+      css(lmDiv, { display: 'flex', justifyContent: 'center', marginTop: '24px' });
+      var lmBtn = el('button', { type: 'button' }, 'Load More');
+      css(lmBtn, {
+        background: lb.bg, color: lb.color,
+        border: lb.borderWidth + 'px solid ' + lb.borderColor,
+        borderRadius: lb.radius + 'px', fontFamily: lb.fontFamily || 'inherit',
+        fontSize: lb.fontSize + 'px', padding: lb.paddingY + 'px ' + lb.paddingX + 'px',
+        cursor: 'pointer', transition: 'background .2s, color .2s',
+      });
+      lmBtn.onmouseenter = function () { lmBtn.style.background = lb.hoverBg; lmBtn.style.color = lb.hoverColor; };
+      lmBtn.onmouseleave = function () { lmBtn.style.background = lb.bg; lmBtn.style.color = lb.color; };
       lmBtn.onclick = function () { loadPage(container, config, 1, loadedExtra + perPage); };
       lmDiv.appendChild(lmBtn);
       container.appendChild(lmDiv);
@@ -475,6 +504,7 @@
 
     var isCarousel = (config.cardLayout || 'classic') === 'carousel';
     var perPage = config.itemsPerPage === 'unlimited' ? null : config.itemsPerPage;
+    var maxL = config.maxListings;
     if (!isCarousel) {
       if (config.paginationType === 'pagination' && perPage) {
         sp.set('page', String(page));
@@ -484,6 +514,7 @@
         sp.set('perPage', String(perPage + loadedExtra));
       }
     }
+    if (maxL && maxL !== 'unlimited') sp.set('limit', String(maxL));
 
     container.innerHTML = '<div class="' + PREFIX + '-loading">Loading listings...</div>';
 

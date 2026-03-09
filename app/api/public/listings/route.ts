@@ -5,6 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
+  'Cache-Control': 'no-cache, no-store, must-revalidate',
 };
 
 export async function OPTIONS() {
@@ -45,6 +46,8 @@ export async function GET(req: NextRequest) {
   const page = Math.max(1, parseInt(sp.get('page') || '1', 10));
   const perPageParam = sp.get('perPage');
   const perPage = perPageParam ? Math.max(1, parseInt(perPageParam, 10)) : null;
+  const limitParam = sp.get('limit');
+  const hardLimit = limitParam ? Math.max(1, parseInt(limitParam, 10)) : null;
 
   const sb = getServiceClient();
   const tenantIds = await resolveListingsTenantIds(tenantId);
@@ -104,6 +107,10 @@ export async function GET(req: NextRequest) {
     default:
       query = query.order('created_at', { ascending: false });
       break;
+  }
+
+  if (hardLimit && !perPage) {
+    query = query.limit(hardLimit);
   }
 
   if (perPage) {

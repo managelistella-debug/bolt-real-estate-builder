@@ -46,6 +46,14 @@ export default function ListingFeedEditorPage() {
       ...DEFAULT_LISTING_FEED_CONFIG.carousel,
       ...(feedConfig?.carousel || {}),
     },
+    paginationButton: {
+      ...DEFAULT_LISTING_FEED_CONFIG.paginationButton,
+      ...((feedConfig as any)?.paginationButton || {}),
+    },
+    loadMoreButton: {
+      ...DEFAULT_LISTING_FEED_CONFIG.loadMoreButton,
+      ...((feedConfig as any)?.loadMoreButton || {}),
+    },
     responsive: {
       ...DEFAULT_LISTING_FEED_CONFIG.responsive,
       ...(feedConfig?.responsive || {}),

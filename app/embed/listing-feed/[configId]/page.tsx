@@ -2,6 +2,9 @@ import { Metadata } from 'next';
 import { getServiceClient } from '@/lib/supabase/server';
 import { EmbedFeedClient } from './client';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface Props {
   params: Promise<{ configId: string }>;
 }
