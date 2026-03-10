@@ -5,6 +5,7 @@ import {
   EmbedConfigType,
   ListingFeedConfig,
   ListingDetailEmbedConfig,
+  TestimonialFeedConfig,
 } from '@/lib/types';
 import { useTenantContextStore } from './tenantContext';
 
@@ -116,6 +117,67 @@ export const DEFAULT_LISTING_FEED_CONFIG: ListingFeedConfig = {
   responsive: { tablet: {}, mobile: {} },
 };
 
+export const DEFAULT_TESTIMONIAL_FEED_CONFIG: TestimonialFeedConfig = {
+  selectionMode: 'all',
+  selectedTestimonialIds: [],
+  sortBy: 'newest',
+
+  showRating: true,
+  showQuote: true,
+  showDate: false,
+  showAuthorName: true,
+  showAuthorTitle: true,
+
+  columns: 1,
+  gap: 24,
+  cardRadius: 12,
+  cardPadding: 32,
+  backgroundColor: 'transparent',
+  cardBackgroundColor: '#ffffff',
+  cardBorderColor: '#EBEBEB',
+
+  starColor: '#D4AF37',
+  starColorMode: 'solid',
+  starGradientColors: ['#D4AF37', '#F5E6A3'],
+  starSize: 20,
+
+  quoteFont: '',
+  quoteFontSize: 15,
+  quoteColor: '#333333',
+  quoteLineHeight: 1.6,
+
+  authorNameFont: '',
+  authorNameFontSize: 15,
+  authorNameColor: '#000000',
+
+  authorTitleFont: '',
+  authorTitleFontSize: 13,
+  authorTitleColor: '#888C99',
+
+  dateFont: '',
+  dateFontSize: 12,
+  dateColor: '#888C99',
+  dateFormat: 'MMM D, YYYY',
+
+  showDots: true,
+  activeDotColor: '#000000',
+  inactiveDotColor: '#CCCCCC',
+  dotSize: 8,
+
+  showArrows: true,
+  arrowColor: '#000000',
+  arrowColorMode: 'solid',
+  arrowGradientColors: ['#000000', '#555555'],
+  arrowSize: 36,
+  customLeftArrowSvg: '',
+  customRightArrowSvg: '',
+
+  autoplay: false,
+  autoplayInterval: 5,
+
+  responsive: { tablet: {}, mobile: {} },
+};
+
 export const DEFAULT_LISTING_DETAIL_CONFIG: ListingDetailEmbedConfig = {
   showGallery: true,
   showMortgageCalculator: true,
@@ -135,7 +197,7 @@ interface EmbedConfigsState {
     tenantId: string,
     name: string,
     type: EmbedConfigType,
-    config: ListingFeedConfig | ListingDetailEmbedConfig
+    config: ListingFeedConfig | ListingDetailEmbedConfig | TestimonialFeedConfig
   ) => EmbedConfig;
   updateConfig: (id: string, updates: Partial<Pick<EmbedConfig, 'name' | 'config'>>) => Promise<void>;
   deleteConfig: (id: string) => Promise<void>;

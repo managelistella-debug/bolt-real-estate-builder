@@ -22,6 +22,7 @@ export interface CmsTestimonial {
   authorName: string;
   authorTitle?: string;
   rating?: number;
+  date?: string;
   source?: 'manual' | 'google';
   sortOrder: number;
   createdAt: Date;

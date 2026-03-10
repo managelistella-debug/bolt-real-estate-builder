@@ -6,18 +6,20 @@ import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthStore } from '@/lib/stores/auth';
-import { useEmbedConfigsStore, DEFAULT_LISTING_FEED_CONFIG } from '@/lib/stores/embedConfigs';
+import { useEmbedConfigsStore, DEFAULT_LISTING_FEED_CONFIG, DEFAULT_TESTIMONIAL_FEED_CONFIG } from '@/lib/stores/embedConfigs';
 import { EmbedConfig } from '@/lib/types';
-import { Code2, Edit, LayoutGrid, Plus, Trash2 } from 'lucide-react';
+import { Code2, Edit, LayoutGrid, MessageSquareQuote, Plus, Trash2 } from 'lucide-react';
 
 const TYPE_LABELS: Record<string, string> = {
   listing_feed: 'Listing Feed',
   listing_detail: 'Listing Detail',
+  testimonial_feed: 'Testimonial Feed',
 };
 
 const TYPE_ICONS: Record<string, typeof LayoutGrid> = {
   listing_feed: LayoutGrid,
   listing_detail: Code2,
+  testimonial_feed: MessageSquareQuote,
 };
 
 export default function EmbedsPage() {
@@ -42,6 +44,17 @@ export default function EmbedsPage() {
       { ...DEFAULT_LISTING_FEED_CONFIG }
     );
     router.push(`/embeds/listing-feed/${config.id}`);
+  };
+
+  const handleCreateTestimonialFeed = () => {
+    if (!tenantId) return;
+    const config = createConfig(
+      tenantId,
+      'Untitled Testimonial Feed',
+      'testimonial_feed',
+      { ...DEFAULT_TESTIMONIAL_FEED_CONFIG }
+    );
+    router.push(`/embeds/testimonial-feed/${config.id}`);
   };
 
   const handleDelete = async (id: string) => {
@@ -72,7 +85,7 @@ export default function EmbedsPage() {
       <div className="border-b border-[#EBEBEB] bg-white">
         <Header
           title="Embeds"
-          description="Create embeddable listing feeds and detail pages for external websites"
+          description="Create embeddable listing feeds, testimonial feeds, and detail pages for external websites"
           action={
             <div className="flex items-center gap-2">
               <button
@@ -82,6 +95,14 @@ export default function EmbedsPage() {
               >
                 <Plus className="h-3.5 w-3.5" />
                 New Listing Feed
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateTestimonialFeed}
+                className="flex h-[30px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-3 text-[13px] font-normal text-black transition-colors hover:bg-[#C8ED00]"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                New Testimonial Feed
               </button>
               <Link
                 href="/embeds/listing-detail"
@@ -146,6 +167,8 @@ export default function EmbedsPage() {
                         href={
                           config.type === 'listing_feed'
                             ? `/embeds/listing-feed/${config.id}`
+                            : config.type === 'testimonial_feed'
+                            ? `/embeds/testimonial-feed/${config.id}`
                             : '/embeds/listing-detail'
                         }
                       >

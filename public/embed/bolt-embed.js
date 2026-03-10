@@ -601,6 +601,245 @@
     container.innerHTML = html;
   }
 
+  // ── Testimonial Feed ─────────────────────────────────────────────────────────
+
+  function tfStarPath(sz) {
+    var cx = sz / 2, cy = sz / 2, oR = sz / 2, iR = oR * 0.38;
+    var pts = [];
+    for (var i = 0; i < 5; i++) {
+      var oa = -Math.PI / 2 + (2 * Math.PI * i) / 5;
+      var ia = oa + Math.PI / 5;
+      pts.push((cx + oR * Math.cos(oa)) + ',' + (cy + oR * Math.sin(oa)));
+      pts.push((cx + iR * Math.cos(ia)) + ',' + (cy + iR * Math.sin(ia)));
+    }
+    return 'M' + pts.join('L') + 'Z';
+  }
+
+  function tfIsGrad(v) { return v && v.indexOf('linear-gradient') === 0; }
+
+  function tfParseStops(v) {
+    var m = v.match(/^linear-gradient\(\s*\d+deg\s*,\s*(.+)\)$/);
+    if (!m) return [{ c: '#D4AF37', p: 0 }, { c: '#F5E6A3', p: 100 }];
+    return m[1].split(',').map(function (s) {
+      var pp = s.trim().split(/\s+/);
+      return { c: pp[0], p: parseInt(pp[1]) || 0 };
+    });
+  }
+
+  function tfStarsSvg(rating, sz, color, uid) {
+    var w = sz * 5 + 8;
+    var isG = tfIsGrad(color);
+    var gid = 'tfsg-' + uid;
+    var svg = '<svg width="' + w + '" height="' + sz + '" viewBox="0 0 ' + w + ' ' + sz + '" xmlns="http://www.w3.org/2000/svg">';
+    if (isG) {
+      svg += '<defs><linearGradient id="' + gid + '" x1="0%" y1="0%" x2="100%" y2="0%">';
+      tfParseStops(color).forEach(function (s) { svg += '<stop offset="' + s.p + '%" stop-color="' + s.c + '"/>'; });
+      svg += '</linearGradient></defs>';
+    }
+    for (var i = 0; i < 5; i++) {
+      var fill = i < rating ? (isG ? 'url(#' + gid + ')' : color) : '#E0E0E0';
+      svg += '<g transform="translate(' + (i * (sz + 2)) + ', 0)"><path d="' + tfStarPath(sz) + '" fill="' + fill + '"/></g>';
+    }
+    svg += '</svg>';
+    return svg;
+  }
+
+  function tfFmtDate(d) {
+    try { return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); } catch (e) { return d; }
+  }
+
+  function tfDefaultArrow(dir, sz, color) {
+    var c = tfIsGrad(color) ? '#000' : color;
+    var pts = dir === 'left' ? '15 18 9 12 15 6' : '9 6 15 12 9 18';
+    return '<svg width="' + sz + '" height="' + sz + '" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><polyline points="' + pts + '" stroke="' + c + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+
+  function renderTestimonialFeed(container, cfg, testimonials) {
+    container.innerHTML = '';
+
+    var items = testimonials.slice();
+    if (cfg.selectionMode === 'manual' && cfg.selectedTestimonialIds && cfg.selectedTestimonialIds.length) {
+      var sIds = {};
+      cfg.selectedTestimonialIds.forEach(function (id) { sIds[id] = true; });
+      items = items.filter(function (t) { return sIds[t.id]; });
+      if (cfg.sortBy === 'custom_order') {
+        var idxMap = {};
+        cfg.selectedTestimonialIds.forEach(function (id, i) { idxMap[id] = i; });
+        items.sort(function (a, b) { return (idxMap[a.id] || 0) - (idxMap[b.id] || 0); });
+      }
+    }
+    if (cfg.sortBy === 'newest') items.sort(function (a, b) { return new Date(b.created_at).getTime() - new Date(a.created_at).getTime(); });
+    else if (cfg.sortBy === 'oldest') items.sort(function (a, b) { return new Date(a.created_at).getTime() - new Date(b.created_at).getTime(); });
+    else if (cfg.sortBy !== 'custom_order') items.sort(function (a, b) { return (a.sort_order || 0) - (b.sort_order || 0); });
+
+    if (items.length === 0) {
+      container.innerHTML = '<div style="padding:40px;text-align:center;color:#888;font-family:system-ui">No testimonials to display.</div>';
+      return;
+    }
+
+    var winW = window.innerWidth;
+    var cols = cfg.columns || 1;
+    if (winW <= 640 && cfg.responsive && cfg.responsive.mobile && cfg.responsive.mobile.columns) cols = cfg.responsive.mobile.columns;
+    else if (winW <= 1024 && cfg.responsive && cfg.responsive.tablet && cfg.responsive.tablet.columns) cols = cfg.responsive.tablet.columns;
+
+    var totalPages = Math.max(1, Math.ceil(items.length / cols));
+    var page = 0;
+
+    var wrap = el('div');
+    css(wrap, { background: cfg.backgroundColor === 'transparent' ? '' : (cfg.backgroundColor || ''), padding: '24px', fontFamily: 'system-ui, sans-serif' });
+
+    var grid = el('div');
+    var navWrap = el('div');
+
+    function renderPage() {
+      grid.innerHTML = '';
+      css(grid, { display: 'grid', gridTemplateColumns: 'repeat(' + cols + ', 1fr)', gap: (cfg.gap || 24) + 'px' });
+
+      var pageItems = items.slice(page * cols, page * cols + cols);
+      pageItems.forEach(function (t) {
+        var card = el('div');
+        css(card, {
+          background: cfg.cardBackgroundColor || '#fff',
+          borderRadius: (cfg.cardRadius || 12) + 'px',
+          border: '1px solid ' + (cfg.cardBorderColor || '#EBEBEB'),
+          padding: (cfg.cardPadding || 32) + 'px',
+          display: 'flex',
+          flexDirection: 'column',
+        });
+
+        if (cfg.showRating !== false && t.rating && t.rating > 0) {
+          var starsDiv = el('div', {}, tfStarsSvg(t.rating, cfg.starSize || 20, cfg.starColor || '#D4AF37', t.id));
+          css(starsDiv, { marginBottom: '12px' });
+          card.appendChild(starsDiv);
+        }
+
+        if (cfg.showQuote !== false) {
+          var quote = el('p', {}, '&ldquo;' + t.quote + '&rdquo;');
+          css(quote, {
+            fontFamily: cfg.quoteFont || '',
+            fontSize: (cfg.quoteFontSize || 15) + 'px',
+            color: cfg.quoteColor || '#333',
+            lineHeight: String(cfg.quoteLineHeight || 1.6),
+            marginBottom: '12px',
+          });
+          card.appendChild(quote);
+        }
+
+        var authorDiv = el('div');
+        css(authorDiv, { marginTop: 'auto' });
+
+        if (cfg.showAuthorName !== false) {
+          var nameEl = el('p', {}, t.author_name || '');
+          css(nameEl, {
+            fontFamily: cfg.authorNameFont || '',
+            fontSize: (cfg.authorNameFontSize || 15) + 'px',
+            color: cfg.authorNameColor || '#000',
+            fontWeight: '500',
+            margin: '0',
+          });
+          authorDiv.appendChild(nameEl);
+        }
+
+        if (cfg.showAuthorTitle !== false && t.author_title) {
+          var titleEl = el('p', {}, t.author_title);
+          css(titleEl, {
+            fontFamily: cfg.authorTitleFont || '',
+            fontSize: (cfg.authorTitleFontSize || 13) + 'px',
+            color: cfg.authorTitleColor || '#888C99',
+            margin: '0',
+          });
+          authorDiv.appendChild(titleEl);
+        }
+
+        if (cfg.showDate && t.date) {
+          var dateEl = el('p', {}, tfFmtDate(t.date));
+          css(dateEl, {
+            fontFamily: cfg.dateFont || '',
+            fontSize: (cfg.dateFontSize || 12) + 'px',
+            color: cfg.dateColor || '#888C99',
+            marginTop: '4px',
+          });
+          authorDiv.appendChild(dateEl);
+        }
+
+        card.appendChild(authorDiv);
+        grid.appendChild(card);
+      });
+
+      renderNav();
+    }
+
+    function renderNav() {
+      navWrap.innerHTML = '';
+      if (totalPages <= 1) return;
+      css(navWrap, { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginTop: '20px' });
+
+      if (cfg.showArrows !== false) {
+        var leftBtn = el('button', { type: 'button' });
+        css(leftBtn, { cursor: 'pointer', background: 'none', border: 'none', opacity: page === 0 ? '0.3' : '1', width: (cfg.arrowSize || 36) + 'px', height: (cfg.arrowSize || 36) + 'px', display: 'flex', alignItems: 'center', justifyContent: 'center' });
+        leftBtn.innerHTML = cfg.customLeftArrowSvg || tfDefaultArrow('left', Math.floor((cfg.arrowSize || 36) * 0.6), cfg.arrowColor || '#000');
+        leftBtn.onclick = function () { if (page > 0) { page--; renderPage(); } };
+        navWrap.appendChild(leftBtn);
+      }
+
+      if (cfg.showDots !== false) {
+        var dotsDiv = el('div');
+        css(dotsDiv, { display: 'flex', alignItems: 'center', gap: '8px' });
+        for (var i = 0; i < totalPages; i++) {
+          (function (idx) {
+            var dot = el('button', { type: 'button' });
+            css(dot, {
+              cursor: 'pointer', width: (cfg.dotSize || 8) + 'px', height: (cfg.dotSize || 8) + 'px',
+              borderRadius: '50%', background: idx === page ? (cfg.activeDotColor || '#000') : (cfg.inactiveDotColor || '#CCC'),
+              border: 'none', padding: '0', transition: 'background 0.2s',
+            });
+            dot.onclick = function () { page = idx; renderPage(); };
+            dotsDiv.appendChild(dot);
+          })(i);
+        }
+        navWrap.appendChild(dotsDiv);
+      }
+
+      if (cfg.showArrows !== false) {
+        var rightBtn = el('button', { type: 'button' });
+        css(rightBtn, { cursor: 'pointer', background: 'none', border: 'none', opacity: page === totalPages - 1 ? '0.3' : '1', width: (cfg.arrowSize || 36) + 'px', height: (cfg.arrowSize || 36) + 'px', display: 'flex', alignItems: 'center', justifyContent: 'center' });
+        rightBtn.innerHTML = cfg.customRightArrowSvg || tfDefaultArrow('right', Math.floor((cfg.arrowSize || 36) * 0.6), cfg.arrowColor || '#000');
+        rightBtn.onclick = function () { if (page < totalPages - 1) { page++; renderPage(); } };
+        navWrap.appendChild(rightBtn);
+      }
+    }
+
+    wrap.appendChild(grid);
+    wrap.appendChild(navWrap);
+    container.appendChild(wrap);
+    renderPage();
+
+    if (cfg.autoplay && cfg.autoplayInterval > 0 && totalPages > 1) {
+      setInterval(function () {
+        page = (page + 1) % totalPages;
+        renderPage();
+      }, (cfg.autoplayInterval || 5) * 1000);
+    }
+  }
+
+  function loadTestimonialFeed(container, cfg) {
+    var tenantId = container.getAttribute('data-tenant-id');
+    if (!tenantId) {
+      container.innerHTML = '<div style="padding:40px;text-align:center;color:#888">Missing tenant ID.</div>';
+      return;
+    }
+    container.innerHTML = '<div style="padding:40px;text-align:center;color:#888;font-size:13px">Loading testimonials...</div>';
+
+    fetch(ORIGIN + '/api/data/testimonials?tenantId=' + encodeURIComponent(tenantId))
+      .then(function (r) { return r.json(); })
+      .then(function (rows) {
+        renderTestimonialFeed(container, cfg, rows || []);
+      })
+      .catch(function () {
+        container.innerHTML = '<div style="padding:40px;text-align:center;color:#888">Failed to load testimonials.</div>';
+      });
+  }
+
   // ── Init ─────────────────────────────────────────────────────────────────────
 
   function init() {
@@ -625,6 +864,18 @@
       } else if (type === 'listing-detail') {
         injectStyles({});
         loadDetail(container);
+      } else if (type === 'testimonial-feed') {
+        var tfEmbedId = container.getAttribute('data-embed-id');
+        if (tfEmbedId) {
+          fetch(API_BASE + '/embed-config/' + encodeURIComponent(tfEmbedId))
+            .then(function (r) { return r.json(); })
+            .then(function (cfg) {
+              loadTestimonialFeed(container, cfg.config || {});
+            })
+            .catch(function () {
+              container.innerHTML = '<div style="padding:40px;text-align:center;color:#888">Failed to load embed configuration.</div>';
+            });
+        }
       }
     });
   }

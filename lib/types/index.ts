@@ -1971,14 +1971,98 @@ export interface ListingDetailEmbedConfig {
   ctaLabel: string;
 }
 
-export type EmbedConfigType = 'listing_feed' | 'listing_detail';
+// ── Testimonial Feed Embed ───────────────────────────────────────────────────
+
+export interface TestimonialResponsiveOverrides {
+  columns?: 1 | 2 | 3;
+}
+
+export interface TestimonialFeedConfig {
+  // Selection
+  selectionMode: 'all' | 'manual';
+  selectedTestimonialIds: string[];
+
+  // Sorting
+  sortBy: 'newest' | 'oldest' | 'custom_order';
+
+  // Visibility
+  showRating: boolean;
+  showQuote: boolean;
+  showDate: boolean;
+  showAuthorName: boolean;
+  showAuthorTitle: boolean;
+
+  // Layout
+  columns: 1 | 2 | 3;
+  gap: number;
+  cardRadius: number;
+  cardPadding: number;
+  backgroundColor: string;
+  cardBackgroundColor: string;
+  cardBorderColor: string;
+
+  // Stars
+  starColor: string;
+  starColorMode: 'solid' | 'gradient';
+  starGradientColors: string[];
+  starSize: number;
+
+  // Typography – Quote
+  quoteFont: string;
+  quoteFontSize: number;
+  quoteColor: string;
+  quoteLineHeight: number;
+
+  // Typography – Author Name
+  authorNameFont: string;
+  authorNameFontSize: number;
+  authorNameColor: string;
+
+  // Typography – Author Title
+  authorTitleFont: string;
+  authorTitleFontSize: number;
+  authorTitleColor: string;
+
+  // Typography – Date
+  dateFont: string;
+  dateFontSize: number;
+  dateColor: string;
+  dateFormat: string;
+
+  // Navigation – Dots
+  showDots: boolean;
+  activeDotColor: string;
+  inactiveDotColor: string;
+  dotSize: number;
+
+  // Navigation – Arrows
+  showArrows: boolean;
+  arrowColor: string;
+  arrowColorMode: 'solid' | 'gradient';
+  arrowGradientColors: string[];
+  arrowSize: number;
+  customLeftArrowSvg: string;
+  customRightArrowSvg: string;
+
+  // Autoplay
+  autoplay: boolean;
+  autoplayInterval: number;
+
+  // Responsive
+  responsive: {
+    tablet: TestimonialResponsiveOverrides;
+    mobile: TestimonialResponsiveOverrides;
+  };
+}
+
+export type EmbedConfigType = 'listing_feed' | 'listing_detail' | 'testimonial_feed';
 
 export interface EmbedConfig {
   id: string;
   tenantId: string;
   name: string;
   type: EmbedConfigType;
-  config: ListingFeedConfig | ListingDetailEmbedConfig;
+  config: ListingFeedConfig | ListingDetailEmbedConfig | TestimonialFeedConfig;
   createdAt: Date;
   updatedAt: Date;
 }
