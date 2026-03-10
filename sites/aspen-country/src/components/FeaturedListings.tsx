@@ -7,7 +7,7 @@ export default function FeaturedListings() {
         <div
           data-bolt-embed="listing-feed"
           data-tenant-id="business-1772752217587"
-          data-embed-id="embed_1773034270410_gyopck"
+          data-embed-id="embed_1772905877344_rsz75r"
         />
         <Script
           src="https://bolt-real-estate-builder-dereks-projects-6a01aa79.vercel.app/embed/bolt-embed.js"
