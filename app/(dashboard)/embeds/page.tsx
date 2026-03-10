@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/header';
@@ -24,13 +24,13 @@ export default function EmbedsPage() {
   const { user } = useAuthStore();
   const { toast } = useToast();
   const router = useRouter();
-  const { createConfig, deleteConfig, getConfigsForTenant } = useEmbedConfigsStore();
+  const { createConfig, deleteConfig } = useEmbedConfigsStore();
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const tenantId = user?.businessId || user?.id;
 
-  const configs = useMemo(
-    () => getConfigsForTenant(tenantId),
-    [getConfigsForTenant, tenantId]
+  const configs = useEmbedConfigsStore((state) =>
+    state.configs.filter((c) => c.tenantId === tenantId)
   );
 
   const handleCreateFeed = () => {
@@ -44,10 +44,17 @@ export default function EmbedsPage() {
     router.push(`/embeds/listing-feed/${config.id}`);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Delete this embed configuration? This cannot be undone.')) return;
-    deleteConfig(id);
-    toast({ title: 'Embed deleted', description: 'The embed configuration has been removed.' });
+    setDeleting(id);
+    try {
+      await deleteConfig(id);
+      toast({ title: 'Embed deleted', description: 'The embed configuration has been removed.' });
+    } catch (err) {
+      toast({ title: 'Error', description: err instanceof Error ? err.message : 'Failed to delete embed', variant: 'destructive' });
+    } finally {
+      setDeleting(null);
+    }
   };
 
   const formatDate = (date: Date) =>

@@ -94,11 +94,19 @@ export default function ListingFeedEditorPage() {
     });
   }, [tenantId, listings]);
 
-  const handleSave = useCallback(() => {
-    if (!embedConfig) return;
-    updateConfig(embedConfig.id, { name, config });
-    toast({ title: 'Saved', description: 'Embed configuration has been saved.' });
-  }, [embedConfig, name, config, updateConfig, toast]);
+  const [saving, setSaving] = useState(false);
+  const handleSave = useCallback(async () => {
+    if (!embedConfig || saving) return;
+    setSaving(true);
+    try {
+      await updateConfig(embedConfig.id, { name, config });
+      toast({ title: 'Saved', description: 'Embed configuration has been saved and synced.' });
+    } catch (err) {
+      toast({ title: 'Save failed', description: err instanceof Error ? err.message : 'Could not sync to database', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  }, [embedConfig, name, config, updateConfig, toast, saving]);
 
   if (!embedConfig) {
     return (
@@ -152,10 +160,11 @@ export default function ListingFeedEditorPage() {
           <button
             type="button"
             onClick={handleSave}
-            className="flex h-[30px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-3 text-[13px] font-normal text-black transition-colors hover:bg-[#C8ED00]"
+            disabled={saving}
+            className="flex h-[30px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-3 text-[13px] font-normal text-black transition-colors hover:bg-[#C8ED00] disabled:opacity-60"
           >
             <Save className="h-3.5 w-3.5" />
-            Save
+            {saving ? 'Saving...' : 'Save'}
           </button>
         </div>
       </div>

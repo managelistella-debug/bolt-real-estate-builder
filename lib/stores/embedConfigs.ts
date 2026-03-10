@@ -18,18 +18,26 @@ function toDbRow(c: EmbedConfig) {
   };
 }
 
-function syncConfigToDb(config: EmbedConfig) {
-  fetch('/api/data/embed-configs', {
+async function syncConfigToDb(config: EmbedConfig): Promise<void> {
+  const res = await fetch('/api/data/embed-configs', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(toDbRow(config)),
-  }).catch(() => {});
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `Save failed (${res.status})`);
+  }
 }
 
-function deleteConfigFromDb(id: string) {
-  fetch(`/api/data/embed-configs?id=${encodeURIComponent(id)}`, {
+async function deleteConfigFromDb(id: string): Promise<void> {
+  const res = await fetch(`/api/data/embed-configs?id=${encodeURIComponent(id)}`, {
     method: 'DELETE',
-  }).catch(() => {});
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `Delete failed (${res.status})`);
+  }
 }
 
 const toDate = (value: Date | string | number | undefined) =>
@@ -129,8 +137,8 @@ interface EmbedConfigsState {
     type: EmbedConfigType,
     config: ListingFeedConfig | ListingDetailEmbedConfig
   ) => EmbedConfig;
-  updateConfig: (id: string, updates: Partial<Pick<EmbedConfig, 'name' | 'config'>>) => void;
-  deleteConfig: (id: string) => void;
+  updateConfig: (id: string, updates: Partial<Pick<EmbedConfig, 'name' | 'config'>>) => Promise<void>;
+  deleteConfig: (id: string) => Promise<void>;
   getConfigsForTenant: (tenantId?: string) => EmbedConfig[];
   getConfigById: (id: string) => EmbedConfig | undefined;
   syncAllToDb: (tenantId: string) => void;
@@ -158,7 +166,8 @@ export const useEmbedConfigsStore = create<EmbedConfigsState>()(
         return embedConfig;
       },
 
-      updateConfig: (id, updates) => {
+      updateConfig: async (id, updates) => {
+        let toSync: EmbedConfig | undefined;
         set((state) => ({
           configs: state.configs.map((c) => {
             if (c.id !== id) return c;
@@ -168,15 +177,16 @@ export const useEmbedConfigsStore = create<EmbedConfigsState>()(
               ...(updates.config !== undefined ? { config: updates.config } : {}),
               updatedAt: new Date(),
             };
-            syncConfigToDb(updated);
+            toSync = updated;
             return updated;
           }),
         }));
+        if (toSync) await syncConfigToDb(toSync);
       },
 
-      deleteConfig: (id) => {
+      deleteConfig: async (id) => {
         set((state) => ({ configs: state.configs.filter((c) => c.id !== id) }));
-        deleteConfigFromDb(id);
+        await deleteConfigFromDb(id);
       },
 
       getConfigsForTenant: (tenantId) => {
