@@ -149,7 +149,7 @@ export function EmbedTestimonialClient({ configId, tenantId, feedConfig: cfg }: 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/data/testimonials?tenantId=${encodeURIComponent(tenantId)}`)
+    fetch(`/api/public/testimonials?tenantId=${encodeURIComponent(tenantId)}`)
       .then((r) => r.json())
       .then((rows) => { setTestimonials(rows || []); setLoading(false); })
       .catch(() => setLoading(false));

@@ -830,7 +830,7 @@
     }
     container.innerHTML = '<div style="padding:40px;text-align:center;color:#888;font-size:13px">Loading testimonials...</div>';
 
-    fetch(ORIGIN + '/api/data/testimonials?tenantId=' + encodeURIComponent(tenantId))
+    fetch(API_BASE + '/testimonials?tenantId=' + encodeURIComponent(tenantId))
       .then(function (r) { return r.json(); })
       .then(function (rows) {
         renderTestimonialFeed(container, cfg, rows || []);

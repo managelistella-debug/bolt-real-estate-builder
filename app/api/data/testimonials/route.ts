@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await sb()
     .from('testimonials')
     .select('*')
-    .eq('tenant_id', tenantId)
+    .or(`tenant_id.eq.${tenantId},user_id.eq.${tenantId}`)
     .order('sort_order');
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

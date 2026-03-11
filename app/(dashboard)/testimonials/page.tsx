@@ -78,6 +78,7 @@ export default function TestimonialsPage() {
     } else {
       addTestimonial({
         userId: user.id,
+        tenantId: user.businessId || user.id,
         quote,
         authorName,
         authorTitle: authorTitle || undefined,
