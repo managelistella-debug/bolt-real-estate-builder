@@ -209,7 +209,11 @@ export function BlogPostTemplate({ slug }: BlogPostTemplateProps) {
                   />
                   <div className="absolute inset-0 flex items-end p-6 sm:p-8">
                     <div>
-                      <p style={typographyToStyle(activeTemplate.style.typography.date, breakpoint)}>{formatBlogDate(boundDate)}</p>
+                      <p style={typographyToStyle(activeTemplate.style.typography.date, breakpoint)}>
+                        {post.category ? `${post.category} · ` : ''}
+                        {formatBlogDate(boundDate)}
+                        {post.authorName ? ` · ${post.authorName}` : ''}
+                      </p>
                       <h1 className="mt-2 leading-tight" style={typographyToStyle(activeTemplate.style.typography.title, breakpoint)}>
                         {boundTitle}
                       </h1>
@@ -236,7 +240,13 @@ export function BlogPostTemplate({ slug }: BlogPostTemplateProps) {
                 <div className="mt-3 flex flex-wrap items-center gap-3">
                   <span style={typographyToStyle(activeTemplate.style.typography.date, breakpoint)}>
                     {formatBlogDate(boundDate)}
+                    {post.authorName ? ` · ${post.authorName}` : ''}
                   </span>
+                  {post.category && (
+                    <span style={typographyToStyle(activeTemplate.style.typography.date, breakpoint)}>
+                      {post.category}
+                    </span>
+                  )}
                   {activeTemplate.showTags && post.tags.map((tag) => (
                     <span
                       key={tag}

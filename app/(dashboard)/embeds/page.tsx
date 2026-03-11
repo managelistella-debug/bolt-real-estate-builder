@@ -6,20 +6,22 @@ import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthStore } from '@/lib/stores/auth';
-import { useEmbedConfigsStore, DEFAULT_LISTING_FEED_CONFIG, DEFAULT_TESTIMONIAL_FEED_CONFIG } from '@/lib/stores/embedConfigs';
+import { useEmbedConfigsStore, DEFAULT_BLOG_FEED_CONFIG, DEFAULT_LISTING_FEED_CONFIG, DEFAULT_TESTIMONIAL_FEED_CONFIG } from '@/lib/stores/embedConfigs';
 import { EmbedConfig } from '@/lib/types';
-import { Code2, Edit, LayoutGrid, MessageSquareQuote, Plus, Trash2 } from 'lucide-react';
+import { Code2, Edit, LayoutGrid, MessageSquareQuote, Newspaper, Plus, Trash2 } from 'lucide-react';
 
 const TYPE_LABELS: Record<string, string> = {
   listing_feed: 'Listing Feed',
   listing_detail: 'Listing Detail',
   testimonial_feed: 'Testimonial Feed',
+  blog_feed: 'Blog Feed',
 };
 
 const TYPE_ICONS: Record<string, typeof LayoutGrid> = {
   listing_feed: LayoutGrid,
   listing_detail: Code2,
   testimonial_feed: MessageSquareQuote,
+  blog_feed: Newspaper,
 };
 
 export default function EmbedsPage() {
@@ -55,6 +57,17 @@ export default function EmbedsPage() {
       { ...DEFAULT_TESTIMONIAL_FEED_CONFIG }
     );
     router.push(`/embeds/testimonial-feed/${config.id}`);
+  };
+
+  const handleCreateBlogFeed = () => {
+    if (!tenantId) return;
+    const config = createConfig(
+      tenantId,
+      'Untitled Blog Feed',
+      'blog_feed',
+      { ...DEFAULT_BLOG_FEED_CONFIG }
+    );
+    router.push(`/embeds/blog-feed/${config.id}`);
   };
 
   const handleDelete = async (id: string) => {
@@ -103,6 +116,14 @@ export default function EmbedsPage() {
               >
                 <Plus className="h-3.5 w-3.5" />
                 New Testimonial Feed
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateBlogFeed}
+                className="flex h-[30px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-3 text-[13px] font-normal text-black transition-colors hover:bg-[#C8ED00]"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                New Blog Feed
               </button>
               <Link
                 href="/embeds/listing-detail"
@@ -169,6 +190,8 @@ export default function EmbedsPage() {
                             ? `/embeds/listing-feed/${config.id}`
                             : config.type === 'testimonial_feed'
                             ? `/embeds/testimonial-feed/${config.id}`
+                            : config.type === 'blog_feed'
+                            ? `/embeds/blog-feed/${config.id}`
                             : '/embeds/listing-detail'
                         }
                       >

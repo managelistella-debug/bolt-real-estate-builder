@@ -2212,6 +2212,34 @@ function BlogFeedSection({ widget }: { widget: BlogFeedWidget }) {
     (normalizedWidget.pagination.mode === 'load_more' || normalizedWidget.pagination.mode === 'infinite') &&
     visibleCount < sortedBlogs.length;
   const gridColumns = Math.max(1, Math.min(4, columns));
+  const thumbnailHeight = resolveResponsiveValue<number>(
+    normalizedWidget.thumbnailHeight as any,
+    deviceView,
+    normalizedWidget.thumbnailHeight.desktop
+  );
+  const isMobile = deviceView === 'mobile';
+  const showFeatured =
+    !isMobile &&
+    normalizedWidget.featuredPost.enabled &&
+    (deviceView !== 'tablet' || normalizedWidget.featuredPost.showOnTablet) &&
+    blogItems.length > 0;
+  const featuredBlog = showFeatured ? blogItems[0] : null;
+  const gridBlogs = showFeatured ? blogItems.slice(1) : blogItems;
+  const repeatColumns = showFeatured ? 2 : gridColumns;
+  const actionMeta = (blog: any) => {
+    const pieces: string[] = [];
+    if (normalizedWidget.showDate) {
+      pieces.push(formatBlogDate(getBlogDisplayDate(blog)));
+    }
+    if (normalizedWidget.showAuthor && blog.authorName) {
+      pieces.push(blog.authorName);
+    }
+    return pieces.join(' · ');
+  };
+  const cardLinkProps = (slug: string) =>
+    normalizedWidget.cardClickable
+      ? ({ href: `/blog/${slug}` } as const)
+      : ({ onClick: (event: React.MouseEvent) => event.preventDefault() } as const);
 
   return (
     <section
@@ -2229,128 +2257,148 @@ function BlogFeedSection({ widget }: { widget: BlogFeedWidget }) {
             No blog posts available for this block yet.
           </div>
         ) : (
-          <div
-            className="grid"
-            style={{
-              gap: `${normalizedWidget.spacing}px`,
-              gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))`,
-            }}
-          >
-            {blogItems.map((blog) => (
-              <a key={blog.id} href={`/blog/${blog.slug}`} className="group block">
-                {normalizedWidget.layoutVariant === 'text-over-image' ? (
-                  <article
-                    className="relative overflow-hidden"
+          <div className="space-y-6">
+            {featuredBlog && (
+              <a {...cardLinkProps(featuredBlog.slug)} key={featuredBlog.id} className="group block">
+                <article
+                  className="grid overflow-hidden"
+                  style={{
+                    gridTemplateColumns: 'minmax(0, 1.45fr) minmax(0, 1fr)',
+                    backgroundColor: colorWithOpacity(
+                      normalizedWidget.style.featuredCardBackgroundColor,
+                      normalizedWidget.style.featuredCardBackgroundOpacity
+                    ),
+                    borderColor: colorWithOpacity(
+                      normalizedWidget.style.featuredCardBorderColor,
+                      normalizedWidget.style.featuredCardBorderOpacity
+                    ),
+                    borderWidth: `${normalizedWidget.style.featuredCardBorderWidth}px`,
+                    borderStyle: 'solid',
+                    borderRadius: `${normalizedWidget.style.featuredCardBorderRadius}px`,
+                    boxShadow: normalizedWidget.style.featuredCardShadow ? '0 10px 28px rgba(0,0,0,0.16)' : 'none',
+                  }}
+                >
+                  <div
+                    className="overflow-hidden bg-muted"
                     style={{
-                      backgroundColor: colorWithOpacity(
-                        normalizedWidget.style.cardBackgroundColor,
-                        normalizedWidget.style.cardBackgroundOpacity
-                      ),
-                      borderColor: colorWithOpacity(
-                        normalizedWidget.style.cardBorderColor,
-                        normalizedWidget.style.cardBorderOpacity
-                      ),
-                      borderWidth: `${normalizedWidget.style.cardBorderWidth}px`,
-                      borderStyle: 'solid',
-                      borderRadius: `${normalizedWidget.style.cardBorderRadius}px`,
-                      boxShadow: normalizedWidget.style.cardShadow ? '0 8px 22px rgba(0,0,0,0.08)' : 'none',
+                      height: `${thumbnailHeight}px`,
+                      borderRadius: `${normalizedWidget.style.imageBorderRadius}px`,
+                      border: `${normalizedWidget.style.imageBorderWidth}px solid ${colorWithOpacity(
+                        normalizedWidget.style.imageBorderColor,
+                        normalizedWidget.style.imageBorderOpacity
+                      )}`,
+                      boxShadow: normalizedWidget.style.imageShadow ? '0 6px 18px rgba(0,0,0,0.12)' : 'none',
                     }}
                   >
-                    <div
-                      className="relative aspect-[16/10] overflow-hidden bg-muted"
+                    {featuredBlog.featuredImage ? (
+                      <img
+                        src={featuredBlog.featuredImage}
+                        alt={featuredBlog.title}
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                      />
+                    ) : (
+                      <div className="grid h-full place-items-center text-xs text-muted-foreground">No image</div>
+                    )}
+                  </div>
+                  <div className="flex h-full flex-col justify-center gap-3 p-6">
+                    {normalizedWidget.showCategory && featuredBlog.category && (
+                      <p style={getTypographyStyles(normalizedWidget.style.typography.category)}>
+                        {featuredBlog.category}
+                      </p>
+                    )}
+                    <h3 style={getTypographyStyles(normalizedWidget.style.typography.title)}>{featuredBlog.title}</h3>
+                    {actionMeta(featuredBlog) && (
+                      <p style={getTypographyStyles(normalizedWidget.style.typography.meta)}>{actionMeta(featuredBlog)}</p>
+                    )}
+                    {normalizedWidget.showExcerpt && (
+                      <p style={getTypographyStyles(normalizedWidget.style.typography.excerpt)}>
+                        {getBlogPreviewText(featuredBlog)}
+                      </p>
+                    )}
+                    {normalizedWidget.showFeaturedReadMore && (
+                      <span style={{ ...getBlogButtonStyle(normalizedWidget.style.featuredButton), ...getTypographyStyles(normalizedWidget.style.typography.featuredAction) }}>
+                        {normalizedWidget.featuredReadMoreLabel}
+                      </span>
+                    )}
+                  </div>
+                </article>
+              </a>
+            )}
+
+            {gridBlogs.length > 0 && (
+              <div
+                className="grid"
+                style={{
+                  gap: `${normalizedWidget.spacing}px`,
+                  gridTemplateColumns: `repeat(${isMobile ? 1 : repeatColumns}, minmax(0, 1fr))`,
+                  alignItems: normalizedWidget.equalHeightCards ? 'stretch' : 'start',
+                }}
+              >
+                {gridBlogs.map((blog) => (
+                  <a {...cardLinkProps(blog.slug)} key={blog.id} className="group block h-full">
+                    <article
+                      className="flex h-full flex-col overflow-hidden"
                       style={{
-                        borderRadius: `${normalizedWidget.style.imageBorderRadius}px`,
-                        border: `${normalizedWidget.style.imageBorderWidth}px solid ${colorWithOpacity(normalizedWidget.style.imageBorderColor, normalizedWidget.style.imageBorderOpacity)}`,
-                        boxShadow: normalizedWidget.style.imageShadow ? '0 6px 18px rgba(0,0,0,0.12)' : 'none',
+                        backgroundColor: colorWithOpacity(
+                          normalizedWidget.style.cardBackgroundColor,
+                          normalizedWidget.style.cardBackgroundOpacity
+                        ),
+                        borderColor: colorWithOpacity(
+                          normalizedWidget.style.cardBorderColor,
+                          normalizedWidget.style.cardBorderOpacity
+                        ),
+                        borderWidth: `${normalizedWidget.style.cardBorderWidth}px`,
+                        borderStyle: 'solid',
+                        borderRadius: `${normalizedWidget.style.cardBorderRadius}px`,
+                        boxShadow: normalizedWidget.style.cardShadow ? '0 8px 22px rgba(0,0,0,0.08)' : 'none',
                       }}
                     >
-                      {blog.featuredImage ? (
-                        <img
-                          src={blog.featuredImage}
-                          alt={blog.title}
-                          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-                        />
-                      ) : (
-                        <div className="grid h-full place-items-center text-xs text-muted-foreground">No image</div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
-                      <div className="absolute inset-x-0 bottom-0 p-4">
-                        {normalizedWidget.showDate && (
-                          <p className="truncate" style={{ ...getTypographyStyles(normalizedWidget.style.typography.date), color: '#f3f4f6' }}>
-                            {formatBlogDate(getBlogDisplayDate(blog))}
+                      <div
+                        className="overflow-hidden bg-muted"
+                        style={{
+                          height: `${thumbnailHeight}px`,
+                          borderRadius: `${normalizedWidget.style.imageBorderRadius}px`,
+                          border: `${normalizedWidget.style.imageBorderWidth}px solid ${colorWithOpacity(
+                            normalizedWidget.style.imageBorderColor,
+                            normalizedWidget.style.imageBorderOpacity
+                          )}`,
+                          boxShadow: normalizedWidget.style.imageShadow ? '0 6px 18px rgba(0,0,0,0.12)' : 'none',
+                        }}
+                      >
+                        {blog.featuredImage ? (
+                          <img
+                            src={blog.featuredImage}
+                            alt={blog.title}
+                            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                          />
+                        ) : (
+                          <div className="grid h-full place-items-center text-xs text-muted-foreground">No image</div>
+                        )}
+                      </div>
+                      <div className="flex h-full flex-col gap-2 p-4">
+                        {normalizedWidget.showCategory && blog.category && (
+                          <p style={getTypographyStyles(normalizedWidget.style.typography.category)}>{blog.category}</p>
+                        )}
+                        <h3 style={getTypographyStyles(normalizedWidget.style.typography.title)}>{blog.title}</h3>
+                        {actionMeta(blog) && (
+                          <p style={getTypographyStyles(normalizedWidget.style.typography.meta)}>{actionMeta(blog)}</p>
+                        )}
+                        {normalizedWidget.showExcerpt && (
+                          <p style={{ ...getTypographyStyles(normalizedWidget.style.typography.excerpt), marginBottom: 'auto' }}>
+                            {getBlogPreviewText(blog)}
                           </p>
                         )}
-                        <h3 className="truncate" style={{ ...getTypographyStyles(normalizedWidget.style.typography.title), color: '#ffffff' }}>
-                          {blog.title}
-                        </h3>
+                        {normalizedWidget.showReadMore && (
+                          <span style={{ ...getBlogButtonStyle(normalizedWidget.style.gridButton), ...getTypographyStyles(normalizedWidget.style.typography.action) }}>
+                            {normalizedWidget.readMoreLabel}
+                          </span>
+                        )}
                       </div>
-                    </div>
-                    {normalizedWidget.showReadMore && (
-                      <div className="px-1 pt-2">
-                        <span style={getTypographyStyles(normalizedWidget.style.typography.action)}>
-                          {normalizedWidget.readMoreLabel}
-                        </span>
-                      </div>
-                    )}
-                  </article>
-                ) : (
-                  <article
-                    className="overflow-hidden"
-                    style={{
-                      backgroundColor: colorWithOpacity(
-                        normalizedWidget.style.cardBackgroundColor,
-                        normalizedWidget.style.cardBackgroundOpacity
-                      ),
-                      borderColor: colorWithOpacity(
-                        normalizedWidget.style.cardBorderColor,
-                        normalizedWidget.style.cardBorderOpacity
-                      ),
-                      borderWidth: `${normalizedWidget.style.cardBorderWidth}px`,
-                      borderStyle: 'solid',
-                      borderRadius: `${normalizedWidget.style.cardBorderRadius}px`,
-                      boxShadow: normalizedWidget.style.cardShadow ? '0 8px 22px rgba(0,0,0,0.08)' : 'none',
-                    }}
-                  >
-                    <div
-                      className="aspect-[4/3] overflow-hidden bg-muted"
-                      style={{
-                        borderRadius: `${normalizedWidget.style.imageBorderRadius}px`,
-                        border: `${normalizedWidget.style.imageBorderWidth}px solid ${colorWithOpacity(normalizedWidget.style.imageBorderColor, normalizedWidget.style.imageBorderOpacity)}`,
-                        boxShadow: normalizedWidget.style.imageShadow ? '0 6px 18px rgba(0,0,0,0.12)' : 'none',
-                      }}
-                    >
-                      {blog.featuredImage ? (
-                        <img
-                          src={blog.featuredImage}
-                          alt={blog.title}
-                          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-                        />
-                      ) : (
-                        <div className="grid h-full place-items-center text-xs text-muted-foreground">No image</div>
-                      )}
-                    </div>
-                    <div className="space-y-2 p-4">
-                      {normalizedWidget.showDate && (
-                        <p style={getTypographyStyles(normalizedWidget.style.typography.date)}>
-                          {formatBlogDate(getBlogDisplayDate(blog))}
-                        </p>
-                      )}
-                      <h3 style={getTypographyStyles(normalizedWidget.style.typography.title)}>{blog.title}</h3>
-                      {normalizedWidget.showExcerpt && (
-                        <p style={getTypographyStyles(normalizedWidget.style.typography.excerpt)}>
-                          {getBlogPreviewText(blog)}
-                        </p>
-                      )}
-                      {normalizedWidget.showReadMore && (
-                        <span style={getTypographyStyles(normalizedWidget.style.typography.action)}>
-                          {normalizedWidget.readMoreLabel}
-                        </span>
-                      )}
-                    </div>
-                  </article>
-                )}
-              </a>
-            ))}
+                    </article>
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -2471,6 +2519,36 @@ function getBlogPaginationButtonStyle(widget: BlogFeedWidget): React.CSSProperti
     borderRadius: `${widget.style.paginationButton.borderRadius}px`,
     padding: '8px 14px',
     fontSize: '13px',
+    lineHeight: '1',
+  };
+}
+
+function getBlogButtonStyle(buttonStyle: BlogFeedWidget['style']['gridButton']): React.CSSProperties {
+  const textOpacity =
+    typeof buttonStyle.textColorOpacity === 'number'
+      ? buttonStyle.textColorOpacity
+      : 100;
+  const backgroundOpacity =
+    typeof buttonStyle.backgroundColorOpacity === 'number'
+      ? buttonStyle.backgroundColorOpacity
+      : 100;
+  const borderOpacity =
+    typeof buttonStyle.borderColorOpacity === 'number'
+      ? buttonStyle.borderColorOpacity
+      : 100;
+
+  return {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 'fit-content',
+    color: colorWithOpacity(buttonStyle.textColor, textOpacity),
+    backgroundColor: colorWithOpacity(buttonStyle.backgroundColor, backgroundOpacity),
+    borderColor: colorWithOpacity(buttonStyle.borderColor, borderOpacity),
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderRadius: `${buttonStyle.borderRadius}px`,
+    padding: '10px 16px',
     lineHeight: '1',
   };
 }
@@ -2614,11 +2692,39 @@ function normalizeBlogFeedWidgetConfig(widget: BlogFeedWidget): BlogFeedWidget {
     imageBorderOpacity: 100,
     imageBorderWidth: 0,
     imageShadow: false,
+    featuredCardBackgroundColor: '#0f172a',
+    featuredCardBackgroundOpacity: 100,
+    featuredCardBorderColor: '#0f172a',
+    featuredCardBorderOpacity: 100,
+    featuredCardBorderWidth: 0,
+    featuredCardBorderRadius: 14,
+    featuredCardShadow: true,
     typography: {
+      category: { fontFamily: 'Inter', fontSize: 12, fontWeight: '600', color: '#f59e0b', colorOpacity: 100 },
       title: { fontFamily: 'Inter', fontSize: 22, fontWeight: '700', color: '#111827', colorOpacity: 100 },
       date: { fontFamily: 'Inter', fontSize: 13, fontWeight: '500', color: '#6b7280', colorOpacity: 100 },
+      meta: { fontFamily: 'Inter', fontSize: 13, fontWeight: '500', color: '#6b7280', colorOpacity: 100 },
       excerpt: { fontFamily: 'Inter', fontSize: 15, fontWeight: '400', color: '#374151', colorOpacity: 100 },
       action: { fontFamily: 'Inter', fontSize: 13, fontWeight: '600', color: '#111827', colorOpacity: 100 },
+      featuredAction: { fontFamily: 'Inter', fontSize: 14, fontWeight: '600', color: '#111827', colorOpacity: 100 },
+    },
+    gridButton: {
+      textColor: '#111827',
+      textColorOpacity: 100,
+      backgroundColor: '#ffffff',
+      backgroundColorOpacity: 100,
+      borderColor: '#d1d5db',
+      borderColorOpacity: 100,
+      borderRadius: 8,
+    },
+    featuredButton: {
+      textColor: '#111827',
+      textColorOpacity: 100,
+      backgroundColor: '#fbbf24',
+      backgroundColorOpacity: 100,
+      borderColor: '#fbbf24',
+      borderColorOpacity: 100,
+      borderRadius: 8,
     },
     paginationButton: {
       textColor: '#111827',
@@ -2655,6 +2761,11 @@ function normalizeBlogFeedWidgetConfig(widget: BlogFeedWidget): BlogFeedWidget {
       tablet: 6,
       mobile: 3,
     },
+    thumbnailHeight: oldWidget.thumbnailHeight || {
+      desktop: 300,
+      tablet: 280,
+      mobile: 220,
+    },
     spacing: typeof oldWidget.spacing === 'number' ? oldWidget.spacing : 20,
     pagination: oldWidget.pagination || {
       mode: 'paged',
@@ -2665,9 +2776,21 @@ function normalizeBlogFeedWidgetConfig(widget: BlogFeedWidget): BlogFeedWidget {
       showPageIndicator: true,
     },
     showDate: typeof oldWidget.showDate === 'boolean' ? oldWidget.showDate : true,
+    showAuthor: typeof oldWidget.showAuthor === 'boolean' ? oldWidget.showAuthor : true,
+    showCategory: typeof oldWidget.showCategory === 'boolean' ? oldWidget.showCategory : true,
     showExcerpt: typeof oldWidget.showExcerpt === 'boolean' ? oldWidget.showExcerpt : true,
     showReadMore: typeof oldWidget.showReadMore === 'boolean' ? oldWidget.showReadMore : true,
+    showFeaturedReadMore:
+      typeof oldWidget.showFeaturedReadMore === 'boolean' ? oldWidget.showFeaturedReadMore : true,
     readMoreLabel: oldWidget.readMoreLabel || 'Read More',
+    featuredReadMoreLabel: oldWidget.featuredReadMoreLabel || 'Read Article',
+    equalHeightCards: typeof oldWidget.equalHeightCards === 'boolean' ? oldWidget.equalHeightCards : true,
+    cardClickable: typeof oldWidget.cardClickable === 'boolean' ? oldWidget.cardClickable : true,
+    featuredPost: {
+      enabled: typeof oldWidget.featuredPost?.enabled === 'boolean' ? oldWidget.featuredPost.enabled : true,
+      showOnTablet:
+        typeof oldWidget.featuredPost?.showOnTablet === 'boolean' ? oldWidget.featuredPost.showOnTablet : true,
+    },
     style: {
       ...styleDefaults,
       ...(oldWidget.style || {}),
@@ -2682,6 +2805,14 @@ function normalizeBlogFeedWidgetConfig(widget: BlogFeedWidget): BlogFeedWidget {
           ...styleDefaults.typography.date,
           ...(oldWidget.style?.typography?.date || {}),
         },
+        category: {
+          ...styleDefaults.typography.category,
+          ...(oldWidget.style?.typography?.category || {}),
+        },
+        meta: {
+          ...styleDefaults.typography.meta,
+          ...(oldWidget.style?.typography?.meta || {}),
+        },
         excerpt: {
           ...styleDefaults.typography.excerpt,
           ...(oldWidget.style?.typography?.excerpt || {}),
@@ -2690,6 +2821,18 @@ function normalizeBlogFeedWidgetConfig(widget: BlogFeedWidget): BlogFeedWidget {
           ...styleDefaults.typography.action,
           ...(oldWidget.style?.typography?.action || {}),
         },
+        featuredAction: {
+          ...styleDefaults.typography.featuredAction,
+          ...(oldWidget.style?.typography?.featuredAction || {}),
+        },
+      },
+      gridButton: {
+        ...styleDefaults.gridButton,
+        ...(oldWidget.style?.gridButton || {}),
+      },
+      featuredButton: {
+        ...styleDefaults.featuredButton,
+        ...(oldWidget.style?.featuredButton || {}),
       },
       paginationButton: {
         ...styleDefaults.paginationButton,

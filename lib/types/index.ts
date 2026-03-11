@@ -404,12 +404,24 @@ export interface BlogFeedStyleConfig {
   imageBorderOpacity: number;
   imageBorderWidth: number;
   imageShadow: boolean;
+  featuredCardBackgroundColor: string;
+  featuredCardBackgroundOpacity: number;
+  featuredCardBorderColor: string;
+  featuredCardBorderOpacity: number;
+  featuredCardBorderWidth: number;
+  featuredCardBorderRadius: number;
+  featuredCardShadow: boolean;
   typography: {
+    category: ListingsTypographyConfig;
     title: ListingsTypographyConfig;
     date: ListingsTypographyConfig;
+    meta: ListingsTypographyConfig;
     excerpt: ListingsTypographyConfig;
     action: ListingsTypographyConfig;
+    featuredAction: ListingsTypographyConfig;
   };
+  gridButton: ListingsButtonStyleConfig;
+  featuredButton: ListingsButtonStyleConfig;
   paginationButton: ListingsButtonStyleConfig;
 }
 
@@ -857,9 +869,20 @@ export interface BlogFeedWidget {
     showPageIndicator: boolean;
   };
   showDate: boolean;
+  showAuthor: boolean;
+  showCategory: boolean;
   showExcerpt: boolean;
   showReadMore: boolean;
+  showFeaturedReadMore: boolean;
   readMoreLabel: string;
+  featuredReadMoreLabel: string;
+  thumbnailHeight: ListingsResponsiveNumberConfig;
+  equalHeightCards: boolean;
+  cardClickable: boolean;
+  featuredPost: {
+    enabled: boolean;
+    showOnTablet: boolean;
+  };
   style: BlogFeedStyleConfig;
   background?: BackgroundConfig;
   layout?: LayoutConfig;
@@ -2055,14 +2078,14 @@ export interface TestimonialFeedConfig {
   };
 }
 
-export type EmbedConfigType = 'listing_feed' | 'listing_detail' | 'testimonial_feed';
+export type EmbedConfigType = 'listing_feed' | 'listing_detail' | 'testimonial_feed' | 'blog_feed';
 
 export interface EmbedConfig {
   id: string;
   tenantId: string;
   name: string;
   type: EmbedConfigType;
-  config: ListingFeedConfig | ListingDetailEmbedConfig | TestimonialFeedConfig;
+  config: ListingFeedConfig | ListingDetailEmbedConfig | TestimonialFeedConfig | BlogFeedWidget;
   createdAt: Date;
   updatedAt: Date;
 }

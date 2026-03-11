@@ -73,12 +73,16 @@ export function PublicBlogFeedPage() {
                       className="h-48 w-full rounded-md object-cover"
                     />
                   )}
-                  <p className="mt-3 text-xs uppercase tracking-wide text-muted-foreground">
-                    {formatBlogDate(getBlogDisplayDate(blog))}
-                  </p>
+                  {blog.category && (
+                    <p className="mt-3 text-xs uppercase tracking-wide text-muted-foreground">{blog.category}</p>
+                  )}
                   <h2 className="mt-2 text-xl font-semibold leading-tight">{blog.title}</h2>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {formatBlogDate(getBlogDisplayDate(blog))}
+                    {blog.authorName ? ` · ${blog.authorName}` : ''}
+                  </p>
                   <p className="mt-2 text-sm text-muted-foreground line-clamp-3">{getBlogPreviewText(blog)}</p>
-                  <span className="mt-3 inline-block text-sm font-medium">Read More</span>
+                  <span className="mt-3 inline-block text-sm font-medium">Read Article</span>
                 </Link>
               ))}
             </div>

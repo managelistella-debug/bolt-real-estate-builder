@@ -14,7 +14,7 @@ interface EmbedCodeDialogProps {
   onOpenChange: (open: boolean) => void;
   embedId: string;
   tenantId: string;
-  type: 'listing_feed' | 'listing_detail' | 'testimonial_feed';
+  type: 'listing_feed' | 'listing_detail' | 'testimonial_feed' | 'blog_feed';
   slug?: string;
 }
 
@@ -68,8 +68,32 @@ export function EmbedCodeDialog({
   title="Testimonial Feed"
 ></iframe>`;
 
-  const scriptSnippet = type === 'testimonial_feed' ? scriptTestimonialSnippet : type === 'listing_feed' ? scriptFeedSnippet : scriptDetailSnippet;
-  const iframeSnippet = type === 'testimonial_feed' ? iframeTestimonialSnippet : type === 'listing_feed' ? iframeFeedSnippet : iframeDetailSnippet;
+  const scriptBlogSnippet = `<div data-bolt-embed="blog-feed"
+     data-tenant-id="${tenantId}"
+     data-embed-id="${embedId}"></div>
+<script src="${origin}/embed/bolt-embed.js" async></script>`;
+
+  const iframeBlogSnippet = `<iframe
+  src="${origin}/embed/blog-feed/${embedId}"
+  style="width:100%;min-height:700px;border:none;"
+  loading="lazy"
+  title="Blog Feed"
+></iframe>`;
+
+  const scriptSnippet = type === 'testimonial_feed'
+    ? scriptTestimonialSnippet
+    : type === 'blog_feed'
+      ? scriptBlogSnippet
+      : type === 'listing_feed'
+        ? scriptFeedSnippet
+        : scriptDetailSnippet;
+  const iframeSnippet = type === 'testimonial_feed'
+    ? iframeTestimonialSnippet
+    : type === 'blog_feed'
+      ? iframeBlogSnippet
+      : type === 'listing_feed'
+        ? iframeFeedSnippet
+        : iframeDetailSnippet;
   const activeCode = tab === 'script' ? scriptSnippet : iframeSnippet;
 
   const handleCopy = async () => {
@@ -121,12 +145,12 @@ export function EmbedCodeDialog({
                 <strong className="text-black">Recommended for SEO.</strong>{' '}
                 This snippet injects listing content directly into your page&apos;s DOM,
                 making it crawlable by search engines. Place the code where you want
-                the {type === 'listing_feed' ? 'listing feed' : type === 'testimonial_feed' ? 'testimonial feed' : 'listing detail'} to appear.
+                the {type === 'listing_feed' ? 'listing feed' : type === 'testimonial_feed' ? 'testimonial feed' : type === 'blog_feed' ? 'blog feed' : 'listing detail'} to appear.
               </p>
             ) : (
               <p className="text-[12px] text-[#888C99]">
                 <strong className="text-black">Style-isolated.</strong>{' '}
-                This iframe loads the {type === 'listing_feed' ? 'listing feed' : type === 'testimonial_feed' ? 'testimonial feed' : 'listing detail'}{' '}
+                This iframe loads the {type === 'listing_feed' ? 'listing feed' : type === 'testimonial_feed' ? 'testimonial feed' : type === 'blog_feed' ? 'blog feed' : 'listing detail'}{' '}
                 in a sandboxed frame. Styles won&apos;t conflict with your site,
                 but content is less accessible to search engines.
               </p>

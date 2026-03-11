@@ -876,6 +876,19 @@
               container.innerHTML = '<div style="padding:40px;text-align:center;color:#888">Failed to load embed configuration.</div>';
             });
         }
+      } else if (type === 'blog-feed') {
+        var blogEmbedId = container.getAttribute('data-embed-id');
+        if (blogEmbedId) {
+          var iframe = document.createElement('iframe');
+          iframe.src = ORIGIN + '/embed/blog-feed/' + encodeURIComponent(blogEmbedId);
+          iframe.style.width = '100%';
+          iframe.style.minHeight = '700px';
+          iframe.style.border = 'none';
+          iframe.loading = 'lazy';
+          iframe.title = 'Blog Feed';
+          container.innerHTML = '';
+          container.appendChild(iframe);
+        }
       }
     });
   }
