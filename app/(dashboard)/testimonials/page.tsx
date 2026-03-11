@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/header';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useTestimonialsStore } from '@/lib/stores/testimonials';
@@ -33,7 +33,7 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
 
 export default function TestimonialsPage() {
   const { user } = useAuthStore();
-  const { addTestimonial, updateTestimonial, getTestimonialsForCurrentUser, deleteTestimonial } =
+  const { addTestimonial, updateTestimonial, getTestimonialsForCurrentUser, deleteTestimonial, syncAllToDb } =
     useTestimonialsStore();
 
   const [quote, setQuote] = useState('');
@@ -43,7 +43,15 @@ export default function TestimonialsPage() {
   const [date, setDate] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  const tenantId = user?.businessId || user?.id;
   const testimonials = user ? getTestimonialsForCurrentUser(user.id) : [];
+
+  useEffect(() => {
+    if (tenantId && testimonials.length > 0) {
+      syncAllToDb(tenantId);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantId]);
 
   const resetForm = () => {
     setQuote('');

@@ -41,6 +41,7 @@ interface TestimonialsState {
   updateTestimonial: (id: string, patch: Partial<Omit<CmsTestimonial, 'id' | 'userId'>>) => void;
   deleteTestimonial: (id: string) => void;
   getTestimonialsForCurrentUser: (userId?: string) => CmsTestimonial[];
+  syncAllToDb: (tenantId: string) => void;
 }
 
 export const useTestimonialsStore = create<TestimonialsState>()(
@@ -116,6 +117,21 @@ export const useTestimonialsStore = create<TestimonialsState>()(
         return get()
           .testimonials.filter((e) => e.userId === effectiveUserId)
           .sort((a, b) => a.sortOrder - b.sortOrder);
+      },
+
+      syncAllToDb: (tenantId) => {
+        const all = get().testimonials;
+        all.forEach((t) => {
+          const patched = t.tenantId ? t : { ...t, tenantId };
+          if (!t.tenantId) {
+            set((state) => ({
+              testimonials: state.testimonials.map((e) =>
+                e.id === t.id ? { ...e, tenantId } : e
+              ),
+            }));
+          }
+          syncToDb(patched);
+        });
       },
     }),
     {
