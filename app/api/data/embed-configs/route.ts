@@ -53,10 +53,21 @@ export async function POST(req: NextRequest) {
   let { data, error } = await sb().from('embed_configs').upsert(body).select().single();
 
   if (error && typeof body?.type === 'string' && body.type === 'blog_feed' && error.message.includes('embed_configs_type_check')) {
-    await ensureEmbedTypeConstraintAllowsBlogFeed();
-    const retry = await sb().from('embed_configs').upsert(body).select().single();
-    data = retry.data;
-    error = retry.error;
+    try {
+      await ensureEmbedTypeConstraintAllowsBlogFeed();
+      const retry = await sb().from('embed_configs').upsert(body).select().single();
+      data = retry.data;
+      error = retry.error;
+    } catch (migrationError: any) {
+      return NextResponse.json(
+        {
+          error:
+            migrationError?.message ||
+            'Database currently blocks blog_feed type. Use legacy storage fallback or update embed_configs_type_check.',
+        },
+        { status: 500 }
+      );
+    }
   }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
