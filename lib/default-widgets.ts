@@ -645,7 +645,7 @@ export function createDefaultWidget(type: SectionType): any {
         },
         sortBy: 'date_added_desc',
         columns: {
-          desktop: 3,
+          desktop: 2,
           tablet: 2,
           mobile: 1,
         },
@@ -659,6 +659,7 @@ export function createDefaultWidget(type: SectionType): any {
           tablet: 280,
           mobile: 220,
         },
+        thumbnailHeightUnit: 'px',
         spacing: 20,
         pagination: {
           mode: 'paged',

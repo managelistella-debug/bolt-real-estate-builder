@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { getServiceClient } from '@/lib/supabase/server';
 import { EmbedBlogFeedClient } from './client';
+import { BlogFeedWidget } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -40,7 +41,7 @@ export default async function EmbedBlogFeedPage({ params }: Props) {
     <EmbedBlogFeedClient
       configId={configId}
       tenantId={config.tenant_id}
-      feedConfig={config.config}
+      feedConfig={config.config as BlogFeedWidget}
     />
   );
 }

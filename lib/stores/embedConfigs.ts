@@ -200,9 +200,10 @@ export const DEFAULT_BLOG_FEED_CONFIG: BlogFeedWidget = {
     filters: { statuses: ['published'], category: '', tags: [], search: '' },
   },
   sortBy: 'date_desc',
-  columns: { desktop: 3, tablet: 2, mobile: 1 },
+  columns: { desktop: 2, tablet: 2, mobile: 1 },
   perPage: { desktop: 9, tablet: 6, mobile: 3 },
   thumbnailHeight: { desktop: 300, tablet: 280, mobile: 220 },
+  thumbnailHeightUnit: 'px',
   spacing: 20,
   pagination: {
     mode: 'paged',

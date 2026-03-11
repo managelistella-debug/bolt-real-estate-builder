@@ -2281,7 +2281,7 @@ function BlogFeedSection({ widget }: { widget: BlogFeedWidget }) {
                   <div
                     className="overflow-hidden bg-muted"
                     style={{
-                      height: `${thumbnailHeight}px`,
+                      height: normalizedWidget.thumbnailHeightUnit === 'vh' ? `${thumbnailHeight}vh` : `${thumbnailHeight}px`,
                       borderRadius: `${normalizedWidget.style.imageBorderRadius}px`,
                       border: `${normalizedWidget.style.imageBorderWidth}px solid ${colorWithOpacity(
                         normalizedWidget.style.imageBorderColor,
@@ -2356,7 +2356,7 @@ function BlogFeedSection({ widget }: { widget: BlogFeedWidget }) {
                       <div
                         className="overflow-hidden bg-muted"
                         style={{
-                          height: `${thumbnailHeight}px`,
+                          height: normalizedWidget.thumbnailHeightUnit === 'vh' ? `${thumbnailHeight}vh` : `${thumbnailHeight}px`,
                           borderRadius: `${normalizedWidget.style.imageBorderRadius}px`,
                           border: `${normalizedWidget.style.imageBorderWidth}px solid ${colorWithOpacity(
                             normalizedWidget.style.imageBorderColor,
@@ -2739,7 +2739,7 @@ function normalizeBlogFeedWidgetConfig(widget: BlogFeedWidget): BlogFeedWidget {
 
   return {
     ...widget,
-    layoutVariant: oldWidget.layoutVariant || 'modern-grid',
+    layoutVariant: 'modern-grid',
     query: oldWidget.query || {
       mode: 'filters',
       manualBlogIds: [],
@@ -2752,7 +2752,7 @@ function normalizeBlogFeedWidgetConfig(widget: BlogFeedWidget): BlogFeedWidget {
     },
     sortBy: oldWidget.sortBy || 'date_desc',
     columns: oldWidget.columns || {
-      desktop: 3,
+      desktop: 2,
       tablet: 2,
       mobile: 1,
     },
@@ -2766,6 +2766,7 @@ function normalizeBlogFeedWidgetConfig(widget: BlogFeedWidget): BlogFeedWidget {
       tablet: 280,
       mobile: 220,
     },
+    thumbnailHeightUnit: oldWidget.thumbnailHeightUnit === 'vh' ? 'vh' : 'px',
     spacing: typeof oldWidget.spacing === 'number' ? oldWidget.spacing : 20,
     pagination: oldWidget.pagination || {
       mode: 'paged',

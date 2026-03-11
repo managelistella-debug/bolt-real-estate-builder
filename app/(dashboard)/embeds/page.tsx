@@ -132,6 +132,13 @@ export default function EmbedsPage() {
                 <Code2 className="h-3.5 w-3.5 text-[#888C99]" />
                 Listing Detail Embed
               </Link>
+              <Link
+                href="/embeds/blog-details"
+                className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-black transition-colors hover:bg-[#F5F5F3]"
+              >
+                <Code2 className="h-3.5 w-3.5 text-[#888C99]" />
+                Blog Details Editor
+              </Link>
             </div>
           }
         />

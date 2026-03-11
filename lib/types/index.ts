@@ -877,6 +877,7 @@ export interface BlogFeedWidget {
   readMoreLabel: string;
   featuredReadMoreLabel: string;
   thumbnailHeight: ListingsResponsiveNumberConfig;
+  thumbnailHeightUnit: 'px' | 'vh';
   equalHeightCards: boolean;
   cardClickable: boolean;
   featuredPost: {

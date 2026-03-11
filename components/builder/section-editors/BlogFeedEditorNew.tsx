@@ -92,12 +92,18 @@ export function BlogFeedEditorNew({ widget, onChange }: BlogFeedEditorNewProps) 
   const manualSelection = query.manualBlogIds
     .map((id) => userBlogs.find((post) => post.id === id))
     .filter(Boolean) as BlogPost[];
-
-  const activeColumns = resolveResponsiveValue<number>(
-    normalizedWidget.columns as any,
-    deviceView,
-    normalizedWidget.columns.desktop
+  const categoryOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          userBlogs
+            .map((post) => (post.category || '').trim())
+            .filter((category) => category.length > 0)
+        )
+      ).sort((a, b) => a.localeCompare(b)),
+    [userBlogs]
   );
+
   const activePerPage = resolveResponsiveValue<number>(
     normalizedWidget.perPage as any,
     deviceView,
@@ -282,11 +288,22 @@ export function BlogFeedEditorNew({ widget, onChange }: BlogFeedEditorNewProps) 
               </div>
               <div className="space-y-2">
                 <Label>Category (optional)</Label>
-                <Input
-                  value={query.filters.category || ''}
-                  onChange={(event) => updateFilters({ category: event.target.value })}
-                  placeholder="Real Estate Tips"
-                />
+                <Select
+                  value={query.filters.category || '__all__'}
+                  onValueChange={(value) => updateFilters({ category: value === '__all__' ? '' : value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">All categories</SelectItem>
+                    {categoryOptions.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Search Text (optional)</Label>
@@ -320,7 +337,7 @@ export function BlogFeedEditorNew({ widget, onChange }: BlogFeedEditorNewProps) 
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Blog Details Visibility" open={visibilityOpen} onToggle={() => setVisibilityOpen(!visibilityOpen)}>
+      <CollapsibleSection title="Card Content Visibility" open={visibilityOpen} onToggle={() => setVisibilityOpen(!visibilityOpen)}>
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Checkbox
@@ -409,45 +426,9 @@ export function BlogFeedEditorNew({ widget, onChange }: BlogFeedEditorNewProps) 
     <div className="space-y-2">
       <CollapsibleSection showBreakpointIcon title="Blog Feed Layout" open={layoutOpen} onToggle={() => setLayoutOpen(!layoutOpen)}>
         <div className="space-y-3">
-          <div className="space-y-2">
-            <Label>Layout Variant</Label>
-            <Select
-              value={normalizedWidget.layoutVariant}
-              onValueChange={(value: BlogFeedWidget['layoutVariant']) => onChange({ layoutVariant: value })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="modern-grid">Modern Grid</SelectItem>
-                <SelectItem value="text-over-image">Text Over Image</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <ResponsiveControlShell
-            label="Columns"
-            hasOverride={
-              normalizedWidget.columns.tablet !== normalizedWidget.columns.desktop ||
-              normalizedWidget.columns.mobile !== normalizedWidget.columns.desktop
-            }
-          >
-            <Input
-              type="number"
-              min={1}
-              max={4}
-              value={activeColumns}
-              onChange={(event) =>
-                onChange({
-                  columns: updateResponsiveValue(
-                    normalizedWidget.columns,
-                    deviceView,
-                    parseInt(event.target.value, 10) || 1
-                  ) as any,
-                })
-              }
-            />
-          </ResponsiveControlShell>
+          <p className="text-xs text-muted-foreground">
+            Layout is fixed to featured latest card + two-column grid (mobile: single column).
+          </p>
 
           <ResponsiveControlShell
             label="Posts per Page"
@@ -474,27 +455,41 @@ export function BlogFeedEditorNew({ widget, onChange }: BlogFeedEditorNewProps) 
           </ResponsiveControlShell>
 
           <ResponsiveControlShell
-            label="Thumbnail Height (px)"
+            label={`Thumbnail Height (${normalizedWidget.thumbnailHeightUnit})`}
             hasOverride={
               normalizedWidget.thumbnailHeight.tablet !== normalizedWidget.thumbnailHeight.desktop ||
               normalizedWidget.thumbnailHeight.mobile !== normalizedWidget.thumbnailHeight.desktop
             }
           >
-            <Input
-              type="number"
-              min={120}
-              max={900}
-              value={activeThumbnailHeight}
-              onChange={(event) =>
-                onChange({
-                  thumbnailHeight: updateResponsiveValue(
-                    normalizedWidget.thumbnailHeight,
-                    deviceView,
-                    parseInt(event.target.value, 10) || 120
-                  ) as any,
-                })
-              }
-            />
+            <div className="space-y-2">
+              <Input
+                type="number"
+                min={normalizedWidget.thumbnailHeightUnit === 'vh' ? 10 : 120}
+                max={normalizedWidget.thumbnailHeightUnit === 'vh' ? 100 : 900}
+                value={activeThumbnailHeight}
+                onChange={(event) =>
+                  onChange({
+                    thumbnailHeight: updateResponsiveValue(
+                      normalizedWidget.thumbnailHeight,
+                      deviceView,
+                      parseInt(event.target.value, 10) || (normalizedWidget.thumbnailHeightUnit === 'vh' ? 30 : 120)
+                    ) as any,
+                  })
+                }
+              />
+              <Select
+                value={normalizedWidget.thumbnailHeightUnit}
+                onValueChange={(value: 'px' | 'vh') => onChange({ thumbnailHeightUnit: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="px">Pixels (px)</SelectItem>
+                  <SelectItem value="vh">Viewport Height (vh)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </ResponsiveControlShell>
 
           <div className="space-y-2">
@@ -1314,7 +1309,7 @@ function normalizeBlogFeedWidget(widget: BlogFeedWidget): BlogFeedWidget {
 
   return {
     ...widget,
-    layoutVariant: oldWidget.layoutVariant || 'modern-grid',
+    layoutVariant: 'modern-grid',
     query: oldWidget.query || {
       mode: 'filters',
       manualBlogIds: [],
@@ -1326,9 +1321,10 @@ function normalizeBlogFeedWidget(widget: BlogFeedWidget): BlogFeedWidget {
       },
     },
     sortBy: oldWidget.sortBy || 'date_desc',
-    columns: oldWidget.columns || { desktop: 3, tablet: 2, mobile: 1 },
+    columns: oldWidget.columns || { desktop: 2, tablet: 2, mobile: 1 },
     perPage: oldWidget.perPage || { desktop: 9, tablet: 6, mobile: 3 },
     thumbnailHeight: oldWidget.thumbnailHeight || { desktop: 300, tablet: 280, mobile: 220 },
+    thumbnailHeightUnit: oldWidget.thumbnailHeightUnit === 'vh' ? 'vh' : 'px',
     spacing: typeof oldWidget.spacing === 'number' ? oldWidget.spacing : 20,
     pagination: oldWidget.pagination || {
       mode: 'paged',
