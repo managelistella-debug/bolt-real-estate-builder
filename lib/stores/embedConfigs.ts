@@ -11,7 +11,7 @@ import {
 import { useTenantContextStore } from './tenantContext';
 
 function toDbRow(c: EmbedConfig) {
-  const dbType = c.type === 'blog_feed' ? 'testimonial_feed' : c.type;
+  const dbType = c.type === 'listing_detail' ? 'listing_detail' : 'listing_feed';
   return {
     id: c.id,
     tenant_id: c.tenantId,
