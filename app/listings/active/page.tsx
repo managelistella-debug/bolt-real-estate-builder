@@ -14,7 +14,7 @@ export default function ActiveListingsPage() {
           {listings.map((listing) => (
             <Link
               key={listing.slug}
-              href={`/listings/active/${listing.slug}`}
+              href={`/listings/${listing.slug}`}
               className="border border-[#e4dfd8] bg-white"
             >
               <Image src={listing.image} alt={listing.title} width={900} height={600} className="h-52 w-full object-cover" />
