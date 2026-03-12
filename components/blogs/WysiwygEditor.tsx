@@ -48,27 +48,28 @@ export function WysiwygEditor({ value, onChange }: WysiwygEditorProps) {
 
   return (
     <div className="space-y-2">
-      <Label>Content Editor</Label>
-      <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 p-2">
-        <Button type="button" variant="outline" size="sm" onClick={() => exec('bold')}>
+      <Label className="text-white/70">Content Editor</Label>
+      <div className="flex flex-wrap items-center gap-2 rounded-md border border-white/15 bg-[#181818] p-2">
+        <Button type="button" variant="outline" size="sm" className="border-white/20 bg-white text-black hover:bg-white/90" onClick={() => exec('bold')}>
           <Bold className="h-4 w-4" />
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => exec('italic')}>
+        <Button type="button" variant="outline" size="sm" className="border-white/20 bg-white text-black hover:bg-white/90" onClick={() => exec('italic')}>
           <Italic className="h-4 w-4" />
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => exec('underline')}>
+        <Button type="button" variant="outline" size="sm" className="border-white/20 bg-white text-black hover:bg-white/90" onClick={() => exec('underline')}>
           <Underline className="h-4 w-4" />
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => exec('insertUnorderedList')}>
+        <Button type="button" variant="outline" size="sm" className="border-white/20 bg-white text-black hover:bg-white/90" onClick={() => exec('insertUnorderedList')}>
           <List className="h-4 w-4" />
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => exec('insertOrderedList')}>
+        <Button type="button" variant="outline" size="sm" className="border-white/20 bg-white text-black hover:bg-white/90" onClick={() => exec('insertOrderedList')}>
           <ListOrdered className="h-4 w-4" />
         </Button>
         <Button
           type="button"
           variant="outline"
           size="sm"
+          className="border-white/20 bg-white text-black hover:bg-white/90"
           onClick={() => {
             const href = prompt('Enter link URL');
             if (!href) return;
@@ -77,7 +78,7 @@ export function WysiwygEditor({ value, onChange }: WysiwygEditorProps) {
         >
           <Link2 className="h-4 w-4" />
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => imageInputRef.current?.click()}>
+        <Button type="button" variant="outline" size="sm" className="border-white/20 bg-white text-black hover:bg-white/90" onClick={() => imageInputRef.current?.click()}>
           <ImageIcon className="h-4 w-4" />
         </Button>
         <input
@@ -92,7 +93,7 @@ export function WysiwygEditor({ value, onChange }: WysiwygEditorProps) {
         ref={editorRef}
         contentEditable
         suppressContentEditableWarning
-        className="min-h-[260px] rounded-md border bg-background p-3 text-sm leading-7 focus:outline-none focus:ring-2 focus:ring-primary"
+        className="min-h-[260px] rounded-md border border-white/20 bg-white p-3 text-sm leading-7 text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary [&_a]:text-blue-700 [&_h1]:mb-2 [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:text-lg [&_h3]:font-semibold [&_img]:my-3 [&_img]:max-w-full [&_li]:ml-5 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-4"
         onInput={(event) => onChange((event.currentTarget as HTMLDivElement).innerHTML)}
       />
       <p className="text-xs text-muted-foreground">

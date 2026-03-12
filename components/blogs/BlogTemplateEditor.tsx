@@ -353,9 +353,49 @@ export function BlogTemplateEditor({ templateId }: BlogTemplateEditorProps) {
                       }
                     />
                   </CollapsibleBlock>
+                  <CollapsibleBlock title="Meta Visibility" defaultOpen>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={draft.showCategory}
+                        onCheckedChange={(checked) => setDraft({ ...draft, showCategory: !!checked })}
+                      />
+                      <Label className="text-sm font-normal">Show category line</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={draft.showDateAuthor}
+                        onCheckedChange={(checked) => setDraft({ ...draft, showDateAuthor: !!checked })}
+                      />
+                      <Label className="text-sm font-normal">Show date + author line</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={draft.showTagsInHero}
+                        onCheckedChange={(checked) => setDraft({ ...draft, showTagsInHero: !!checked })}
+                      />
+                      <Label className="text-sm font-normal">Show tags line</Label>
+                    </div>
+                  </CollapsibleBlock>
                 </TabsContent>
                 <TabsContent value="layout" className="space-y-3">
                   <CollapsibleBlock title="Container" defaultOpen>
+                    <div className="space-y-2">
+                      <Label>Hero layout</Label>
+                      <Select
+                        value={draft.heroLayoutMode}
+                        onValueChange={(value: 'image_overlay' | 'title_with_thumbnail') =>
+                          setDraft({ ...draft, heroLayoutMode: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="image_overlay">Image with title overlay</SelectItem>
+                          <SelectItem value="title_with_thumbnail">Title + thumbnail below</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="space-y-2">
                       <Label>Container Width</Label>
                       <Select
@@ -378,6 +418,55 @@ export function BlogTemplateEditor({ templateId }: BlogTemplateEditorProps) {
                       />
                       <Label className="text-sm font-normal">Hero image full width</Label>
                     </div>
+                    <div className="space-y-2">
+                      <Label>Hero text alignment</Label>
+                      <Select
+                        value={draft.heroTextAlign}
+                        onValueChange={(value: 'left' | 'center') => setDraft({ ...draft, heroTextAlign: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="left">Left</SelectItem>
+                          <SelectItem value="center">Center</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-2">
+                        <Label>Image position X</Label>
+                        <Select
+                          value={draft.heroImageObjectPositionX}
+                          onValueChange={(value) => setDraft({ ...draft, heroImageObjectPositionX: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="left">Left</SelectItem>
+                            <SelectItem value="center">Center</SelectItem>
+                            <SelectItem value="right">Right</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Image position Y</Label>
+                        <Select
+                          value={draft.heroImageObjectPositionY}
+                          onValueChange={(value) => setDraft({ ...draft, heroImageObjectPositionY: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="top">Top</SelectItem>
+                            <SelectItem value="center">Center</SelectItem>
+                            <SelectItem value="bottom">Bottom</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </CollapsibleBlock>
                 </TabsContent>
                 <TabsContent value="style" className="space-y-3">
@@ -398,6 +487,43 @@ export function BlogTemplateEditor({ templateId }: BlogTemplateEditorProps) {
                       onOpacityChange={(value) => updateStyle({ headerOverlayOpacity: value })}
                       globalStyles={currentWebsite?.globalStyles}
                     />
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={draft.heroGradientEnabled}
+                        onCheckedChange={(checked) => setDraft({ ...draft, heroGradientEnabled: !!checked })}
+                      />
+                      <Label className="text-sm font-normal">Enable hero gradient</Label>
+                    </div>
+                    {draft.heroGradientEnabled && (
+                      <>
+                        <ColorRow
+                          label="Gradient start"
+                          color={draft.heroGradientStartColor}
+                          opacity={draft.heroGradientStartOpacity}
+                          onColorChange={(value) => setDraft({ ...draft, heroGradientStartColor: value })}
+                          onOpacityChange={(value) => setDraft({ ...draft, heroGradientStartOpacity: value })}
+                          globalStyles={currentWebsite?.globalStyles}
+                        />
+                        <ColorRow
+                          label="Gradient end"
+                          color={draft.heroGradientEndColor}
+                          opacity={draft.heroGradientEndOpacity}
+                          onColorChange={(value) => setDraft({ ...draft, heroGradientEndColor: value })}
+                          onOpacityChange={(value) => setDraft({ ...draft, heroGradientEndOpacity: value })}
+                          globalStyles={currentWebsite?.globalStyles}
+                        />
+                        <div className="space-y-2">
+                          <Label>Gradient angle ({draft.heroGradientAngle}deg)</Label>
+                          <Input
+                            type="range"
+                            min={0}
+                            max={360}
+                            value={draft.heroGradientAngle}
+                            onChange={(event) => setDraft({ ...draft, heroGradientAngle: Number(event.target.value) || 0 })}
+                          />
+                        </div>
+                      </>
+                    )}
                     <div className="space-y-2">
                       <Label>Hero image border radius ({draft.style.heroImageBorderRadius}px)</Label>
                       <Input
@@ -1205,6 +1331,12 @@ function TemplatePreview({
   breakpoint: 'desktop' | 'tablet' | 'mobile';
   website?: any;
 }) {
+  const heroLayoutMode =
+    template.heroLayoutMode || (template.layoutVariant === 'newsletter' ? 'image_overlay' : 'title_with_thumbnail');
+  const heroTextAlign = template.heroTextAlign || 'left';
+  const showCategory = template.showCategory ?? true;
+  const showDateAuthor = template.showDateAuthor ?? true;
+  const showTagsInHero = template.showTagsInHero ?? template.showTags;
   const containerClass =
     template.layoutVariant === 'newsletter'
       ? 'max-w-6xl'
@@ -1245,30 +1377,85 @@ function TemplatePreview({
         }}
       >
         <div className={`mx-auto ${template.heroImageFullWidth ? 'max-w-none' : containerClass} px-6 py-8`}>
-          {template.layoutVariant === 'newsletter' ? (
+          {heroLayoutMode === 'image_overlay' ? (
             <div className="relative overflow-hidden" style={{ borderRadius: `${template.style.heroImageBorderRadius}px` }}>
               <img
                 src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=1600&auto=format&fit=crop"
                 alt="Preview"
                 className="h-[300px] w-full object-cover"
+                style={{ objectPosition: `${template.heroImageObjectPositionX} ${template.heroImageObjectPositionY}` }}
               />
               <div
                 className="absolute inset-0"
                 style={{ backgroundColor: colorWithOpacity(template.style.headerOverlayColor, template.style.headerOverlayOpacity) }}
               />
-              <div className="absolute inset-0 flex items-end p-6">
-                <div>
-                  <p style={typographyStyle(template.style.typography.date, breakpoint)}>Market Update</p>
+              {template.heroGradientEnabled && (
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: `linear-gradient(${template.heroGradientAngle}deg, ${colorWithOpacity(
+                      template.heroGradientStartColor,
+                      template.heroGradientStartOpacity
+                    )} 0%, ${colorWithOpacity(
+                      template.heroGradientEndColor,
+                      template.heroGradientEndOpacity
+                    )} 100%)`,
+                  }}
+                />
+              )}
+              <div className={`absolute inset-0 flex items-end p-6 ${heroTextAlign === 'center' ? 'justify-center' : ''}`}>
+                <div className={heroTextAlign === 'center' ? 'text-center' : ''}>
+                  {showCategory && <p style={typographyStyle(template.style.typography.date, breakpoint)}>Market Update</p>}
                   <h2 style={typographyStyle(template.style.typography.title, breakpoint)}>Santa Monica Monthly - February 2026</h2>
+                  {showDateAuthor && (
+                    <p className="mt-2" style={typographyStyle(template.style.typography.date, breakpoint)}>
+                      February 12, 2026 · Aspen Team
+                    </p>
+                  )}
+                  {showTagsInHero && (
+                    <div className={`mt-3 flex flex-wrap gap-2 ${heroTextAlign === 'center' ? 'justify-center' : ''}`}>
+                      <span
+                        className="border px-2 py-0.5"
+                        style={{
+                          ...typographyStyle(template.style.typography.tags, breakpoint),
+                          borderRadius: `${template.style.tagBorderRadius}px`,
+                          borderWidth: `${template.style.tagBorderWidth}px`,
+                          borderStyle: 'solid',
+                          borderColor: colorWithOpacity(template.style.tagBorderColor, template.style.tagBorderOpacity),
+                          backgroundColor: colorWithOpacity(template.style.tagBackgroundColor, template.style.tagBackgroundOpacity),
+                        }}
+                      >
+                        Market
+                      </span>
+                      <span
+                        className="border px-2 py-0.5"
+                        style={{
+                          ...typographyStyle(template.style.typography.tags, breakpoint),
+                          borderRadius: `${template.style.tagBorderRadius}px`,
+                          borderWidth: `${template.style.tagBorderWidth}px`,
+                          borderStyle: 'solid',
+                          borderColor: colorWithOpacity(template.style.tagBorderColor, template.style.tagBorderOpacity),
+                          backgroundColor: colorWithOpacity(template.style.tagBackgroundColor, template.style.tagBackgroundOpacity),
+                        }}
+                      >
+                        Buying
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           ) : (
             <>
+              {showCategory && <p style={typographyStyle(template.style.typography.date, breakpoint)}>Market Update</p>}
               <h2 style={typographyStyle(template.style.typography.title, breakpoint)}>Kyle Scott at Better Retreat 2025</h2>
-              <div className="mt-3 flex flex-wrap gap-3">
-                <span style={typographyStyle(template.style.typography.date, breakpoint)}>October 21, 2025</span>
-                {template.showTags && (
+              {showDateAuthor && (
+                <div className="mt-3">
+                  <span style={typographyStyle(template.style.typography.date, breakpoint)}>October 21, 2025 · Aspen Team</span>
+                </div>
+              )}
+              {showTagsInHero && (
+                <div className="mt-3 flex flex-wrap gap-3">
                   <span
                     className="border px-2 py-0.5"
                     style={{
@@ -1282,8 +1469,6 @@ function TemplatePreview({
                   >
                   Branding
                   </span>
-                )}
-                {template.showTags && (
                   <span
                     className="border px-2 py-0.5"
                     style={{
@@ -1297,13 +1482,16 @@ function TemplatePreview({
                   >
                   Conference
                   </span>
-                )}
-              </div>
+                </div>
+              )}
               <img
                 src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1600&auto=format&fit=crop"
                 alt="Preview"
                 className="mt-6 w-full object-cover"
-                style={{ borderRadius: `${template.style.heroImageBorderRadius}px` }}
+                style={{
+                  borderRadius: `${template.style.heroImageBorderRadius}px`,
+                  objectPosition: `${template.heroImageObjectPositionX} ${template.heroImageObjectPositionY}`,
+                }}
               />
             </>
           )}

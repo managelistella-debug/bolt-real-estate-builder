@@ -17,6 +17,10 @@ import { Button } from '@/components/ui/button';
 
 interface BlogPostTemplateProps {
   slug: string;
+  // Allow hosted sites to render this inside their own header/footer shell.
+  withSiteChrome?: boolean;
+  // Disable when route-level metadata already provides head tags.
+  withHeadTags?: boolean;
 }
 
 const colorWithOpacity = (color: string | undefined, opacityPercent: number): string => {
@@ -32,7 +36,11 @@ const colorWithOpacity = (color: string | undefined, opacityPercent: number): st
   return `color-mix(in srgb, ${color} ${opacityPercent}%, transparent)`;
 };
 
-export function BlogPostTemplate({ slug }: BlogPostTemplateProps) {
+export function BlogPostTemplate({
+  slug,
+  withSiteChrome = true,
+  withHeadTags = true,
+}: BlogPostTemplateProps) {
   const post = useBlogsStore((state) => state.blogs.find((item) => item.slug === slug));
   const blogs = useBlogsStore((state) => state.blogs);
   const { getActiveTemplate } = useBlogTemplatesStore();
@@ -94,7 +102,7 @@ export function BlogPostTemplate({ slug }: BlogPostTemplateProps) {
   if (!post) {
     return (
       <div className="bg-background min-h-screen">
-        {website && (
+        {withSiteChrome && website && (
           <SiteHeader
             websiteName={website.name}
             header={website.header}
@@ -106,7 +114,7 @@ export function BlogPostTemplate({ slug }: BlogPostTemplateProps) {
           <h1 className="text-3xl font-semibold">Blog post not found</h1>
           <p className="mt-2 text-muted-foreground">This post may have been removed or the URL is incorrect.</p>
         </main>
-        {website && (
+        {withSiteChrome && website && (
           <SiteFooter
             websiteName={website.name}
             footer={website.footer}
@@ -142,11 +150,21 @@ export function BlogPostTemplate({ slug }: BlogPostTemplateProps) {
   const boundTitle = getBoundString(post, bindings.titleField) || post.title;
   const boundContent = getBoundContent(post, bindings.contentField);
   const boundDate = getBoundDate(post, bindings.dateField);
+  const heroLayoutMode =
+    activeTemplate.heroLayoutMode ||
+    (activeTemplate.layoutVariant === 'newsletter' ? 'image_overlay' : 'title_with_thumbnail');
+  const heroTextAlign = activeTemplate.heroTextAlign || 'left';
+  const showCategory = activeTemplate.showCategory ?? true;
+  const showDateAuthor = activeTemplate.showDateAuthor ?? true;
+  const showTagsInHero = activeTemplate.showTagsInHero ?? activeTemplate.showTags;
+  const heroImagePositionX = activeTemplate.heroImageObjectPositionX || 'center';
+  const heroImagePositionY = activeTemplate.heroImageObjectPositionY || 'center';
+  const gradientEnabled = activeTemplate.heroGradientEnabled ?? false;
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Article',
-    headline: post.title,
+    headline: boundTitle,
     description: metaDescription,
     datePublished: post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined,
     dateModified: new Date(post.updatedAt).toISOString(),
@@ -155,17 +173,19 @@ export function BlogPostTemplate({ slug }: BlogPostTemplateProps) {
 
   return (
     <>
-      <Head>
-        <title>{pageTitle}</title>
-        <meta name="description" content={metaDescription} />
-        <meta property="og:title" content={pageTitle} />
-        <meta property="og:description" content={metaDescription} />
-        {boundFeaturedImage && <meta property="og:image" content={boundFeaturedImage} />}
-        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
-      </Head>
+      {withHeadTags && (
+        <Head>
+          <title>{pageTitle}</title>
+          <meta name="description" content={metaDescription} />
+          <meta property="og:title" content={pageTitle} />
+          <meta property="og:description" content={metaDescription} />
+          {boundFeaturedImage && <meta property="og:image" content={boundFeaturedImage} />}
+          <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+        </Head>
+      )}
 
       <div className="min-h-screen bg-background">
-        {website && (
+        {withSiteChrome && website && (
           <SiteHeader
             websiteName={website.name}
             header={website.header}
@@ -175,7 +195,7 @@ export function BlogPostTemplate({ slug }: BlogPostTemplateProps) {
         )}
 
         <article>
-          {activeTemplate.layoutVariant === 'newsletter' ? (
+          {heroLayoutMode === 'image_overlay' ? (
             <header
               className=""
               style={{
@@ -192,7 +212,12 @@ export function BlogPostTemplate({ slug }: BlogPostTemplateProps) {
                   style={{ borderRadius: `${activeTemplate.style.heroImageBorderRadius}px` }}
                 >
                   {boundFeaturedImage ? (
-                    <img src={boundFeaturedImage} alt={boundTitle} className="h-[300px] w-full object-cover sm:h-[380px]" />
+                    <img
+                      src={boundFeaturedImage}
+                      alt={boundTitle}
+                      className="h-[300px] w-full object-cover sm:h-[380px]"
+                      style={{ objectPosition: `${heroImagePositionX} ${heroImagePositionY}` }}
+                    />
                   ) : (
                     <div className="grid h-[300px] place-items-center bg-muted text-sm text-muted-foreground sm:h-[380px]">
                       No featured image
@@ -207,16 +232,56 @@ export function BlogPostTemplate({ slug }: BlogPostTemplateProps) {
                       ),
                     }}
                   />
-                  <div className="absolute inset-0 flex items-end p-6 sm:p-8">
-                    <div>
-                      <p style={typographyToStyle(activeTemplate.style.typography.date, breakpoint)}>
-                        {post.category ? `${post.category} · ` : ''}
-                        {formatBlogDate(boundDate)}
-                        {post.authorName ? ` · ${post.authorName}` : ''}
-                      </p>
+                  {gradientEnabled && (
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background: `linear-gradient(${activeTemplate.heroGradientAngle || 180}deg, ${colorWithOpacity(
+                          activeTemplate.heroGradientStartColor,
+                          activeTemplate.heroGradientStartOpacity
+                        )} 0%, ${colorWithOpacity(
+                          activeTemplate.heroGradientEndColor,
+                          activeTemplate.heroGradientEndOpacity
+                        )} 100%)`,
+                      }}
+                    />
+                  )}
+                  <div className={`absolute inset-0 flex items-end p-6 sm:p-8 ${heroTextAlign === 'center' ? 'justify-center' : ''}`}>
+                    <div className={heroTextAlign === 'center' ? 'text-center' : ''}>
+                      {showCategory && post.category && (
+                        <p style={typographyToStyle(activeTemplate.style.typography.date, breakpoint)}>
+                          {post.category}
+                        </p>
+                      )}
                       <h1 className="mt-2 leading-tight" style={typographyToStyle(activeTemplate.style.typography.title, breakpoint)}>
                         {boundTitle}
                       </h1>
+                      {showDateAuthor && (
+                        <p className="mt-2" style={typographyToStyle(activeTemplate.style.typography.date, breakpoint)}>
+                          {formatBlogDate(boundDate)}
+                          {post.authorName ? ` · ${post.authorName}` : ''}
+                        </p>
+                      )}
+                      {showTagsInHero && post.tags.length > 0 && (
+                        <div className={`mt-3 flex flex-wrap gap-2 ${heroTextAlign === 'center' ? 'justify-center' : ''}`}>
+                          {post.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="px-2 py-0.5"
+                              style={{
+                                ...typographyToStyle(activeTemplate.style.typography.tags, breakpoint),
+                                borderRadius: `${activeTemplate.style.tagBorderRadius}px`,
+                                borderWidth: `${activeTemplate.style.tagBorderWidth}px`,
+                                borderStyle: 'solid',
+                                borderColor: colorWithOpacity(activeTemplate.style.tagBorderColor, activeTemplate.style.tagBorderOpacity),
+                                backgroundColor: colorWithOpacity(activeTemplate.style.tagBackgroundColor, activeTemplate.style.tagBackgroundOpacity),
+                              }}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -234,20 +299,25 @@ export function BlogPostTemplate({ slug }: BlogPostTemplateProps) {
               }}
             >
               <div className={`mx-auto ${containerClass} px-4 py-12`}>
+                {showCategory && post.category && (
+                  <p style={typographyToStyle(activeTemplate.style.typography.date, breakpoint)}>
+                    {post.category}
+                  </p>
+                )}
                 <h1 className="leading-tight" style={typographyToStyle(activeTemplate.style.typography.title, breakpoint)}>
                   {boundTitle}
                 </h1>
-                <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <span style={typographyToStyle(activeTemplate.style.typography.date, breakpoint)}>
-                    {formatBlogDate(boundDate)}
-                    {post.authorName ? ` · ${post.authorName}` : ''}
-                  </span>
-                  {post.category && (
+                {showDateAuthor && (
+                  <div className="mt-3">
                     <span style={typographyToStyle(activeTemplate.style.typography.date, breakpoint)}>
-                      {post.category}
+                      {formatBlogDate(boundDate)}
+                      {post.authorName ? ` · ${post.authorName}` : ''}
                     </span>
-                  )}
-                  {activeTemplate.showTags && post.tags.map((tag) => (
+                  </div>
+                )}
+                {showTagsInHero && post.tags.length > 0 && (
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    {post.tags.map((tag) => (
                     <span
                       key={tag}
                       className="px-2 py-0.5"
@@ -262,14 +332,18 @@ export function BlogPostTemplate({ slug }: BlogPostTemplateProps) {
                     >
                       {tag}
                     </span>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
                 {boundFeaturedImage && (
                   <img
                     src={boundFeaturedImage}
                     alt={boundTitle}
                     className="mt-6 w-full object-cover"
-                    style={{ borderRadius: `${activeTemplate.style.heroImageBorderRadius}px` }}
+                    style={{
+                      borderRadius: `${activeTemplate.style.heroImageBorderRadius}px`,
+                      objectPosition: `${heroImagePositionX} ${heroImagePositionY}`,
+                    }}
                   />
                 )}
               </div>
@@ -398,7 +472,7 @@ export function BlogPostTemplate({ slug }: BlogPostTemplateProps) {
           )}
         </article>
 
-        {website && (
+        {withSiteChrome && website && (
           <SiteFooter
             websiteName={website.name}
             footer={website.footer}
