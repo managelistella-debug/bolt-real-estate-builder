@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Code2, Save } from 'lucide-react';
+import { ArrowLeft, Code2, Eye, Save } from 'lucide-react';
 import { BlogFeedEditorNew } from '@/components/builder/section-editors/BlogFeedEditorNew';
 import { BlogFeedRenderer } from '@/components/embeds/BlogFeedRenderer';
 import { useToast } from '@/components/ui/use-toast';
@@ -23,6 +23,7 @@ export default function BlogFeedEditorPage() {
   const { getBlogsForCurrentUser } = useBlogsStore();
   const [showEmbedCode, setShowEmbedCode] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
 
   const embedConfig = getConfigById(id);
   const feedConfig = embedConfig?.config as BlogFeedWidget | undefined;
@@ -57,6 +58,23 @@ export default function BlogFeedEditorPage() {
     }
   }, [embedConfig, name, config, updateConfig, toast, saving]);
 
+  const handlePreview = useCallback(async () => {
+    if (!embedConfig || saving || previewing) return;
+    setPreviewing(true);
+    try {
+      await updateConfig(embedConfig.id, { name, config });
+      window.open(`/embed/blog-feed/${embedConfig.id}`, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      toast({
+        title: 'Preview failed',
+        description: err instanceof Error ? err.message : 'Could not open preview',
+        variant: 'destructive',
+      });
+    } finally {
+      setPreviewing(false);
+    }
+  }, [embedConfig, saving, previewing, updateConfig, name, config, toast]);
+
   if (!embedConfig) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F5F5F3]" style={{ fontFamily: "'Geist', 'Inter', system-ui, sans-serif" }}>
@@ -83,6 +101,15 @@ export default function BlogFeedEditorPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handlePreview}
+            disabled={saving || previewing}
+            className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-black transition-colors hover:bg-[#F5F5F3] disabled:opacity-60"
+          >
+            <Eye className="h-3.5 w-3.5 text-[#888C99]" />
+            {previewing ? 'Opening...' : 'Preview'}
+          </button>
           <button type="button" onClick={() => setShowEmbedCode(true)} className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-black transition-colors hover:bg-[#F5F5F3]">
             <Code2 className="h-3.5 w-3.5 text-[#888C99]" />
             Get Embed Code

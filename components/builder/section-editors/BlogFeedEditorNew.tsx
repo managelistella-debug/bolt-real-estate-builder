@@ -54,6 +54,7 @@ export function BlogFeedEditorNew({ widget, onChange }: BlogFeedEditorNewProps) 
   const [gridButtonStyleOpen, setGridButtonStyleOpen] = useState(false);
   const [featuredButtonStyleOpen, setFeaturedButtonStyleOpen] = useState(false);
   const [paginationStyleOpen, setPaginationStyleOpen] = useState(false);
+  const [typographyOpen, setTypographyOpen] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(false);
 
   const normalizedWidget = normalizeBlogFeedWidget(widget);
@@ -188,6 +189,16 @@ export function BlogFeedEditorNew({ widget, onChange }: BlogFeedEditorNewProps) 
           ...normalizedWidget.style[key],
           ...updates,
         },
+      },
+    });
+  };
+
+  const updateThumbnailHeightAllBreakpoints = (nextHeight: number) => {
+    onChange({
+      thumbnailHeight: {
+        desktop: nextHeight,
+        tablet: nextHeight,
+        mobile: nextHeight,
       },
     });
   };
@@ -456,10 +467,7 @@ export function BlogFeedEditorNew({ widget, onChange }: BlogFeedEditorNewProps) 
 
           <ResponsiveControlShell
             label={`Thumbnail Height (${normalizedWidget.thumbnailHeightUnit})`}
-            hasOverride={
-              normalizedWidget.thumbnailHeight.tablet !== normalizedWidget.thumbnailHeight.desktop ||
-              normalizedWidget.thumbnailHeight.mobile !== normalizedWidget.thumbnailHeight.desktop
-            }
+            hasOverride={false}
           >
             <div className="space-y-2">
               <Input
@@ -468,13 +476,9 @@ export function BlogFeedEditorNew({ widget, onChange }: BlogFeedEditorNewProps) 
                 max={normalizedWidget.thumbnailHeightUnit === 'vh' ? 100 : 900}
                 value={activeThumbnailHeight}
                 onChange={(event) =>
-                  onChange({
-                    thumbnailHeight: updateResponsiveValue(
-                      normalizedWidget.thumbnailHeight,
-                      deviceView,
-                      parseInt(event.target.value, 10) || (normalizedWidget.thumbnailHeightUnit === 'vh' ? 30 : 120)
-                    ) as any,
-                  })
+                  updateThumbnailHeightAllBreakpoints(
+                    parseInt(event.target.value, 10) || (normalizedWidget.thumbnailHeightUnit === 'vh' ? 30 : 120)
+                  )
                 }
               />
               <Select
@@ -491,6 +495,17 @@ export function BlogFeedEditorNew({ widget, onChange }: BlogFeedEditorNewProps) 
               </Select>
             </div>
           </ResponsiveControlShell>
+          <div className="space-y-2">
+            <Label>Thumbnail Border Radius</Label>
+            <Input
+              type="number"
+              min={0}
+              value={normalizedWidget.style.imageBorderRadius}
+              onChange={(event) =>
+                onChange({ style: { ...normalizedWidget.style, imageBorderRadius: parseInt(event.target.value, 10) || 0 } })
+              }
+            />
+          </div>
 
           <div className="space-y-2">
             <Label>Gap Between Items</Label>
@@ -784,6 +799,20 @@ export function BlogFeedEditorNew({ widget, onChange }: BlogFeedEditorNewProps) 
             onChange={(next) => onChange({ style: { ...normalizedWidget.style, featuredCardBackgroundOpacity: next } })}
           />
           <div className="space-y-2">
+            <Label>Featured Image Overlay Color</Label>
+            <GlobalColorInput
+              value={normalizedWidget.style.featuredImageOverlayColor}
+              onChange={(nextColor) => onChange({ style: { ...normalizedWidget.style, featuredImageOverlayColor: nextColor } })}
+              globalStyles={currentWebsite?.globalStyles}
+              defaultColor="#0f172a"
+            />
+          </div>
+          <OpacitySlider
+            label="Featured Image Overlay Opacity"
+            value={normalizedWidget.style.featuredImageOverlayOpacity}
+            onChange={(next) => onChange({ style: { ...normalizedWidget.style, featuredImageOverlayOpacity: next } })}
+          />
+          <div className="space-y-2">
             <Label>Featured Border Color</Label>
             <GlobalColorInput
               value={normalizedWidget.style.featuredCardBorderColor}
@@ -875,89 +904,96 @@ export function BlogFeedEditorNew({ widget, onChange }: BlogFeedEditorNewProps) 
         </div>
       </CollapsibleSection>
 
-      <TypographyControl
-        label="Category Typography"
-        defaultOpen={false}
-        value={{
-          fontFamily: normalizedWidget.style.typography.category.fontFamily,
-          fontSize: { value: normalizedWidget.style.typography.category.fontSize, unit: 'px' as const },
-          fontWeight: normalizedWidget.style.typography.category.fontWeight,
-          color: normalizedWidget.style.typography.category.color,
-        }}
-        onChange={(updates) => updateTypography('category', updates)}
-        colorOpacity={normalizedWidget.style.typography.category.colorOpacity}
-        onColorOpacityChange={(next) => updateTypography('category', {}, next)}
-      />
+      <CollapsibleSection
+        showBreakpointIcon
+        title="Typography"
+        open={typographyOpen}
+        onToggle={() => setTypographyOpen(!typographyOpen)}
+      >
+        <TypographyControl
+          label="Category Typography"
+          defaultOpen={false}
+          value={{
+            fontFamily: normalizedWidget.style.typography.category.fontFamily,
+            fontSize: { value: normalizedWidget.style.typography.category.fontSize, unit: 'px' as const },
+            fontWeight: normalizedWidget.style.typography.category.fontWeight,
+            color: normalizedWidget.style.typography.category.color,
+          }}
+          onChange={(updates) => updateTypography('category', updates)}
+          colorOpacity={normalizedWidget.style.typography.category.colorOpacity}
+          onColorOpacityChange={(next) => updateTypography('category', {}, next)}
+        />
 
-      <TypographyControl
-        label="Title Typography"
-        defaultOpen={false}
-        value={{
-          fontFamily: normalizedWidget.style.typography.title.fontFamily,
-          fontSize: { value: normalizedWidget.style.typography.title.fontSize, unit: 'px' as const },
-          fontWeight: normalizedWidget.style.typography.title.fontWeight,
-          color: normalizedWidget.style.typography.title.color,
-        }}
-        onChange={(updates) => updateTypography('title', updates)}
-        colorOpacity={normalizedWidget.style.typography.title.colorOpacity}
-        onColorOpacityChange={(next) => updateTypography('title', {}, next)}
-      />
+        <TypographyControl
+          label="Title Typography"
+          defaultOpen={false}
+          value={{
+            fontFamily: normalizedWidget.style.typography.title.fontFamily,
+            fontSize: { value: normalizedWidget.style.typography.title.fontSize, unit: 'px' as const },
+            fontWeight: normalizedWidget.style.typography.title.fontWeight,
+            color: normalizedWidget.style.typography.title.color,
+          }}
+          onChange={(updates) => updateTypography('title', updates)}
+          colorOpacity={normalizedWidget.style.typography.title.colorOpacity}
+          onColorOpacityChange={(next) => updateTypography('title', {}, next)}
+        />
 
-      <TypographyControl
-        label="Date / Author Meta Typography"
-        defaultOpen={false}
-        value={{
-          fontFamily: normalizedWidget.style.typography.meta.fontFamily,
-          fontSize: { value: normalizedWidget.style.typography.meta.fontSize, unit: 'px' as const },
-          fontWeight: normalizedWidget.style.typography.meta.fontWeight,
-          color: normalizedWidget.style.typography.meta.color,
-        }}
-        onChange={(updates) => updateTypography('meta', updates)}
-        colorOpacity={normalizedWidget.style.typography.meta.colorOpacity}
-        onColorOpacityChange={(next) => updateTypography('meta', {}, next)}
-      />
+        <TypographyControl
+          label="Date / Author Meta Typography"
+          defaultOpen={false}
+          value={{
+            fontFamily: normalizedWidget.style.typography.meta.fontFamily,
+            fontSize: { value: normalizedWidget.style.typography.meta.fontSize, unit: 'px' as const },
+            fontWeight: normalizedWidget.style.typography.meta.fontWeight,
+            color: normalizedWidget.style.typography.meta.color,
+          }}
+          onChange={(updates) => updateTypography('meta', updates)}
+          colorOpacity={normalizedWidget.style.typography.meta.colorOpacity}
+          onColorOpacityChange={(next) => updateTypography('meta', {}, next)}
+        />
 
-      <TypographyControl
-        label="Excerpt Typography"
-        defaultOpen={false}
-        value={{
-          fontFamily: normalizedWidget.style.typography.excerpt.fontFamily,
-          fontSize: { value: normalizedWidget.style.typography.excerpt.fontSize, unit: 'px' as const },
-          fontWeight: normalizedWidget.style.typography.excerpt.fontWeight,
-          color: normalizedWidget.style.typography.excerpt.color,
-        }}
-        onChange={(updates) => updateTypography('excerpt', updates)}
-        colorOpacity={normalizedWidget.style.typography.excerpt.colorOpacity}
-        onColorOpacityChange={(next) => updateTypography('excerpt', {}, next)}
-      />
+        <TypographyControl
+          label="Excerpt Typography"
+          defaultOpen={false}
+          value={{
+            fontFamily: normalizedWidget.style.typography.excerpt.fontFamily,
+            fontSize: { value: normalizedWidget.style.typography.excerpt.fontSize, unit: 'px' as const },
+            fontWeight: normalizedWidget.style.typography.excerpt.fontWeight,
+            color: normalizedWidget.style.typography.excerpt.color,
+          }}
+          onChange={(updates) => updateTypography('excerpt', updates)}
+          colorOpacity={normalizedWidget.style.typography.excerpt.colorOpacity}
+          onColorOpacityChange={(next) => updateTypography('excerpt', {}, next)}
+        />
 
-      <TypographyControl
-        label="Grid CTA Typography"
-        defaultOpen={false}
-        value={{
-          fontFamily: normalizedWidget.style.typography.action.fontFamily,
-          fontSize: { value: normalizedWidget.style.typography.action.fontSize, unit: 'px' as const },
-          fontWeight: normalizedWidget.style.typography.action.fontWeight,
-          color: normalizedWidget.style.typography.action.color,
-        }}
-        onChange={(updates) => updateTypography('action', updates)}
-        colorOpacity={normalizedWidget.style.typography.action.colorOpacity}
-        onColorOpacityChange={(next) => updateTypography('action', {}, next)}
-      />
+        <TypographyControl
+          label="Grid CTA Typography"
+          defaultOpen={false}
+          value={{
+            fontFamily: normalizedWidget.style.typography.action.fontFamily,
+            fontSize: { value: normalizedWidget.style.typography.action.fontSize, unit: 'px' as const },
+            fontWeight: normalizedWidget.style.typography.action.fontWeight,
+            color: normalizedWidget.style.typography.action.color,
+          }}
+          onChange={(updates) => updateTypography('action', updates)}
+          colorOpacity={normalizedWidget.style.typography.action.colorOpacity}
+          onColorOpacityChange={(next) => updateTypography('action', {}, next)}
+        />
 
-      <TypographyControl
-        label="Featured CTA Typography"
-        defaultOpen={false}
-        value={{
-          fontFamily: normalizedWidget.style.typography.featuredAction.fontFamily,
-          fontSize: { value: normalizedWidget.style.typography.featuredAction.fontSize, unit: 'px' as const },
-          fontWeight: normalizedWidget.style.typography.featuredAction.fontWeight,
-          color: normalizedWidget.style.typography.featuredAction.color,
-        }}
-        onChange={(updates) => updateTypography('featuredAction', updates)}
-        colorOpacity={normalizedWidget.style.typography.featuredAction.colorOpacity}
-        onColorOpacityChange={(next) => updateTypography('featuredAction', {}, next)}
-      />
+        <TypographyControl
+          label="Featured CTA Typography"
+          defaultOpen={false}
+          value={{
+            fontFamily: normalizedWidget.style.typography.featuredAction.fontFamily,
+            fontSize: { value: normalizedWidget.style.typography.featuredAction.fontSize, unit: 'px' as const },
+            fontWeight: normalizedWidget.style.typography.featuredAction.fontWeight,
+            color: normalizedWidget.style.typography.featuredAction.color,
+          }}
+          onChange={(updates) => updateTypography('featuredAction', updates)}
+          colorOpacity={normalizedWidget.style.typography.featuredAction.colorOpacity}
+          onColorOpacityChange={(next) => updateTypography('featuredAction', {}, next)}
+        />
+      </CollapsibleSection>
 
       <ButtonStyleSection
         title="Grid CTA Button Style"
@@ -977,118 +1013,14 @@ export function BlogFeedEditorNew({ widget, onChange }: BlogFeedEditorNewProps) 
         onChange={(updates) => updateButtonStyle('featuredButton', updates)}
       />
 
-      <CollapsibleSection
-        showBreakpointIcon
+      <ButtonStyleSection
         title="Pagination Button Style"
         open={paginationStyleOpen}
         onToggle={() => setPaginationStyleOpen(!paginationStyleOpen)}
-      >
-        <div className="space-y-3">
-          <div className="space-y-2">
-            <Label>Text Color</Label>
-            <GlobalColorInput
-              value={normalizedWidget.style.paginationButton.textColor}
-              onChange={(nextColor) =>
-                onChange({
-                  style: {
-                    ...normalizedWidget.style,
-                    paginationButton: { ...normalizedWidget.style.paginationButton, textColor: nextColor },
-                  },
-                })
-              }
-              globalStyles={currentWebsite?.globalStyles}
-              defaultColor="#111827"
-            />
-          </div>
-          <OpacitySlider
-            label="Text Color Opacity"
-            value={normalizedWidget.style.paginationButton.textColorOpacity}
-            onChange={(next) =>
-              onChange({
-                style: {
-                  ...normalizedWidget.style,
-                  paginationButton: { ...normalizedWidget.style.paginationButton, textColorOpacity: next },
-                },
-              })
-            }
-          />
-          <div className="space-y-2">
-            <Label>Background Color</Label>
-            <GlobalColorInput
-              value={normalizedWidget.style.paginationButton.backgroundColor}
-              onChange={(nextColor) =>
-                onChange({
-                  style: {
-                    ...normalizedWidget.style,
-                    paginationButton: { ...normalizedWidget.style.paginationButton, backgroundColor: nextColor },
-                  },
-                })
-              }
-              globalStyles={currentWebsite?.globalStyles}
-              defaultColor="#ffffff"
-            />
-          </div>
-          <OpacitySlider
-            label="Background Color Opacity"
-            value={normalizedWidget.style.paginationButton.backgroundColorOpacity}
-            onChange={(next) =>
-              onChange({
-                style: {
-                  ...normalizedWidget.style,
-                  paginationButton: { ...normalizedWidget.style.paginationButton, backgroundColorOpacity: next },
-                },
-              })
-            }
-          />
-          <div className="space-y-2">
-            <Label>Border Color</Label>
-            <GlobalColorInput
-              value={normalizedWidget.style.paginationButton.borderColor}
-              onChange={(nextColor) =>
-                onChange({
-                  style: {
-                    ...normalizedWidget.style,
-                    paginationButton: { ...normalizedWidget.style.paginationButton, borderColor: nextColor },
-                  },
-                })
-              }
-              globalStyles={currentWebsite?.globalStyles}
-              defaultColor="#d1d5db"
-            />
-          </div>
-          <OpacitySlider
-            label="Border Color Opacity"
-            value={normalizedWidget.style.paginationButton.borderColorOpacity}
-            onChange={(next) =>
-              onChange({
-                style: {
-                  ...normalizedWidget.style,
-                  paginationButton: { ...normalizedWidget.style.paginationButton, borderColorOpacity: next },
-                },
-              })
-            }
-          />
-          <div className="space-y-2">
-            <Label>Border Radius</Label>
-            <Input
-              type="number"
-              min={0}
-              value={normalizedWidget.style.paginationButton.borderRadius}
-              onChange={(event) =>
-                onChange({
-                  style: {
-                    ...normalizedWidget.style,
-                    paginationButton: {
-                      ...normalizedWidget.style.paginationButton,
-                      borderRadius: parseInt(event.target.value, 10) || 0,
-                    },
-                  },
-                })
-              }
-            />
-          </div>
-        </div>
-      </CollapsibleSection>
+        value={normalizedWidget.style.paginationButton}
+        globalStyles={currentWebsite?.globalStyles}
+        onChange={(updates) => updateButtonStyle('paginationButton', updates)}
+      />
 
       <CollapsibleSection showBreakpointIcon title="Background" open={backgroundOpen} onToggle={() => setBackgroundOpen(!backgroundOpen)}>
         <div className="space-y-3">
@@ -1188,6 +1120,8 @@ function ButtonStyleSection({
   globalStyles: any;
   onChange: (updates: Partial<BlogFeedWidget['style']['gridButton']>) => void;
 }) {
+  const gradientToggleId = `${title.toLowerCase().replace(/\s+/g, '-')}-gradient-enabled`;
+
   return (
     <CollapsibleSection showBreakpointIcon title={title} open={open} onToggle={onToggle}>
       <div className="space-y-3">
@@ -1219,6 +1153,58 @@ function ButtonStyleSection({
           value={value.backgroundColorOpacity}
           onChange={(next) => onChange({ backgroundColorOpacity: next })}
         />
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id={gradientToggleId}
+            checked={!!value.gradientEnabled}
+            onCheckedChange={(checked) => onChange({ gradientEnabled: !!checked })}
+          />
+          <Label htmlFor={gradientToggleId} className="text-sm font-normal">
+            Use gradient background
+          </Label>
+        </div>
+        {value.gradientEnabled && (
+          <>
+            <div className="space-y-2">
+              <Label>Gradient Start Color</Label>
+              <GlobalColorInput
+                value={value.gradientStartColor || value.backgroundColor}
+                onChange={(nextColor) => onChange({ gradientStartColor: nextColor })}
+                globalStyles={globalStyles}
+                defaultColor={value.backgroundColor || '#ffffff'}
+              />
+            </div>
+            <OpacitySlider
+              label="Gradient Start Opacity"
+              value={value.gradientStartColorOpacity ?? value.backgroundColorOpacity}
+              onChange={(next) => onChange({ gradientStartColorOpacity: next })}
+            />
+            <div className="space-y-2">
+              <Label>Gradient End Color</Label>
+              <GlobalColorInput
+                value={value.gradientEndColor || value.backgroundColor}
+                onChange={(nextColor) => onChange({ gradientEndColor: nextColor })}
+                globalStyles={globalStyles}
+                defaultColor={value.backgroundColor || '#ffffff'}
+              />
+            </div>
+            <OpacitySlider
+              label="Gradient End Opacity"
+              value={value.gradientEndColorOpacity ?? value.backgroundColorOpacity}
+              onChange={(next) => onChange({ gradientEndColorOpacity: next })}
+            />
+            <div className="space-y-2">
+              <Label>Gradient Angle</Label>
+              <Input
+                type="number"
+                min={0}
+                max={360}
+                value={value.gradientAngle ?? 135}
+                onChange={(event) => onChange({ gradientAngle: parseInt(event.target.value, 10) || 0 })}
+              />
+            </div>
+          </>
+        )}
         <div className="space-y-2">
           <Label>Border Color</Label>
           <GlobalColorInput
@@ -1269,6 +1255,8 @@ function normalizeBlogFeedWidget(widget: BlogFeedWidget): BlogFeedWidget {
     featuredCardBorderWidth: 0,
     featuredCardBorderRadius: 14,
     featuredCardShadow: true,
+    featuredImageOverlayColor: '#0f172a',
+    featuredImageOverlayOpacity: 0,
     typography: {
       category: { fontFamily: 'Inter', fontSize: 12, fontWeight: '600', color: '#f59e0b', colorOpacity: 100 },
       title: { fontFamily: 'Inter', fontSize: 22, fontWeight: '700', color: '#111827', colorOpacity: 100 },
@@ -1283,6 +1271,12 @@ function normalizeBlogFeedWidget(widget: BlogFeedWidget): BlogFeedWidget {
       textColorOpacity: 100,
       backgroundColor: '#ffffff',
       backgroundColorOpacity: 100,
+      gradientEnabled: false,
+      gradientStartColor: '#ffffff',
+      gradientStartColorOpacity: 100,
+      gradientEndColor: '#f3f4f6',
+      gradientEndColorOpacity: 100,
+      gradientAngle: 135,
       borderColor: '#d1d5db',
       borderColorOpacity: 100,
       borderRadius: 8,
@@ -1292,6 +1286,12 @@ function normalizeBlogFeedWidget(widget: BlogFeedWidget): BlogFeedWidget {
       textColorOpacity: 100,
       backgroundColor: '#fbbf24',
       backgroundColorOpacity: 100,
+      gradientEnabled: false,
+      gradientStartColor: '#fbbf24',
+      gradientStartColorOpacity: 100,
+      gradientEndColor: '#f59e0b',
+      gradientEndColorOpacity: 100,
+      gradientAngle: 135,
       borderColor: '#fbbf24',
       borderColorOpacity: 100,
       borderRadius: 8,
@@ -1301,6 +1301,12 @@ function normalizeBlogFeedWidget(widget: BlogFeedWidget): BlogFeedWidget {
       textColorOpacity: 100,
       backgroundColor: '#ffffff',
       backgroundColorOpacity: 100,
+      gradientEnabled: false,
+      gradientStartColor: '#ffffff',
+      gradientStartColorOpacity: 100,
+      gradientEndColor: '#f3f4f6',
+      gradientEndColorOpacity: 100,
+      gradientAngle: 135,
       borderColor: '#d1d5db',
       borderColorOpacity: 100,
       borderRadius: 8,

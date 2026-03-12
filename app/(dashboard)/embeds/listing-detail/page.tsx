@@ -5,13 +5,14 @@ import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthStore } from '@/lib/stores/auth';
+import { useListingsStore } from '@/lib/stores/listings';
 import {
   useEmbedConfigsStore,
   DEFAULT_LISTING_DETAIL_CONFIG,
 } from '@/lib/stores/embedConfigs';
 import { ListingDetailEmbedConfig } from '@/lib/types';
 import { EmbedCodeDialog } from '@/components/embeds/EmbedCodeDialog';
-import { ArrowLeft, Code2, Save } from 'lucide-react';
+import { ArrowLeft, Code2, Eye, Save } from 'lucide-react';
 
 function Toggle({
   label,
@@ -47,9 +48,11 @@ function Toggle({
 export default function ListingDetailEmbedPage() {
   const { user } = useAuthStore();
   const { toast } = useToast();
+  const { getListingsForCurrentUser } = useListingsStore();
   const { configs, createConfig, updateConfig, getConfigsForTenant } =
     useEmbedConfigsStore();
   const [showEmbedCode, setShowEmbedCode] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
 
   const tenantId = user?.businessId || user?.id;
 
@@ -63,6 +66,10 @@ export default function ListingDetailEmbedPage() {
   const [config, setConfig] = useState<ListingDetailEmbedConfig>(
     (existingDetailConfig?.config as ListingDetailEmbedConfig) ||
       DEFAULT_LISTING_DETAIL_CONFIG
+  );
+  const listings = useMemo(
+    () => getListingsForCurrentUser(user?.id),
+    [getListingsForCurrentUser, user?.id]
   );
 
   const update = useCallback(
@@ -85,7 +92,36 @@ export default function ListingDetailEmbedPage() {
     });
   };
 
-  const embedId = existingDetailConfig?.id || 'pending';
+  const handlePreview = useCallback(async () => {
+    if (!tenantId || previewing) return;
+    const firstListing = listings[0];
+    if (!firstListing?.slug) {
+      toast({
+        title: 'Preview unavailable',
+        description: 'Add at least one listing to open listing-detail preview.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setPreviewing(true);
+    try {
+      if (existingDetailConfig) {
+        await updateConfig(existingDetailConfig.id, { config });
+      } else {
+        createConfig(tenantId, 'Listing Detail', 'listing_detail', config);
+      }
+      window.open(`/embed/listing-detail/${tenantId}/${firstListing.slug}`, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      toast({
+        title: 'Preview failed',
+        description: err instanceof Error ? err.message : 'Could not open preview',
+        variant: 'destructive',
+      });
+    } finally {
+      setPreviewing(false);
+    }
+  }, [tenantId, previewing, listings, toast, existingDetailConfig, updateConfig, config, createConfig]);
 
   return (
     <div
@@ -98,6 +134,15 @@ export default function ListingDetailEmbedPage() {
           description="Configure the embeddable listing detail page"
           action={
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handlePreview}
+                disabled={previewing}
+                className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-black transition-colors hover:bg-[#F5F5F3] disabled:opacity-60"
+              >
+                <Eye className="h-3.5 w-3.5 text-[#888C99]" />
+                {previewing ? 'Opening...' : 'Preview'}
+              </button>
               <button
                 type="button"
                 onClick={() => {

@@ -13,7 +13,7 @@ import { TestimonialFeedConfig } from '@/lib/types';
 import { TestimonialFeedSettings } from '@/components/embeds/TestimonialFeedSettings';
 import { TestimonialFeedPreview } from '@/components/embeds/TestimonialFeedPreview';
 import { EmbedCodeDialog } from '@/components/embeds/EmbedCodeDialog';
-import { ArrowLeft, Code2, Save } from 'lucide-react';
+import { ArrowLeft, Code2, Eye, Save } from 'lucide-react';
 import Link from 'next/link';
 
 export default function TestimonialFeedEditorPage() {
@@ -23,6 +23,8 @@ export default function TestimonialFeedEditorPage() {
   const { getConfigById, updateConfig } = useEmbedConfigsStore();
   const { getTestimonialsForCurrentUser } = useTestimonialsStore();
   const [showEmbedCode, setShowEmbedCode] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const embedConfig = getConfigById(id);
   const feedConfig = embedConfig?.config as TestimonialFeedConfig | undefined;
@@ -46,10 +48,30 @@ export default function TestimonialFeedEditorPage() {
   );
 
   const handleSave = useCallback(async () => {
-    if (!embedConfig) return;
-    await updateConfig(embedConfig.id, { name, config });
-    toast({ title: 'Saved', description: 'Testimonial feed configuration has been saved.' });
-  }, [embedConfig, name, config, updateConfig, toast]);
+    if (!embedConfig || saving) return;
+    setSaving(true);
+    try {
+      await updateConfig(embedConfig.id, { name, config });
+      toast({ title: 'Saved', description: 'Testimonial feed configuration has been saved.' });
+    } catch (err) {
+      toast({ title: 'Save failed', description: err instanceof Error ? err.message : 'Could not sync to database', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  }, [embedConfig, name, config, updateConfig, toast, saving]);
+
+  const handlePreview = useCallback(async () => {
+    if (!embedConfig || saving || previewing) return;
+    setPreviewing(true);
+    try {
+      await updateConfig(embedConfig.id, { name, config });
+      window.open(`/embed/testimonial-feed/${embedConfig.id}`, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      toast({ title: 'Preview failed', description: err instanceof Error ? err.message : 'Could not open preview', variant: 'destructive' });
+    } finally {
+      setPreviewing(false);
+    }
+  }, [embedConfig, saving, previewing, updateConfig, name, config, toast]);
 
   if (!embedConfig) {
     return (
@@ -92,6 +114,15 @@ export default function TestimonialFeedEditorPage() {
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={handlePreview}
+            disabled={saving || previewing}
+            className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-black transition-colors hover:bg-[#F5F5F3] disabled:opacity-60"
+          >
+            <Eye className="h-3.5 w-3.5 text-[#888C99]" />
+            {previewing ? 'Opening...' : 'Preview'}
+          </button>
+          <button
+            type="button"
             onClick={() => setShowEmbedCode(true)}
             className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-black transition-colors hover:bg-[#F5F5F3]"
           >
@@ -101,10 +132,11 @@ export default function TestimonialFeedEditorPage() {
           <button
             type="button"
             onClick={handleSave}
-            className="flex h-[30px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-3 text-[13px] font-normal text-black transition-colors hover:bg-[#C8ED00]"
+            disabled={saving}
+            className="flex h-[30px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-3 text-[13px] font-normal text-black transition-colors hover:bg-[#C8ED00] disabled:opacity-60"
           >
             <Save className="h-3.5 w-3.5" />
-            Save
+            {saving ? 'Saving...' : 'Save'}
           </button>
         </div>
       </div>

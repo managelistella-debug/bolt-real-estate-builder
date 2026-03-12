@@ -10,7 +10,7 @@ import { ListingFeedConfig } from '@/lib/types';
 import { ListingFeedSettings } from '@/components/embeds/ListingFeedSettings';
 import { ListingFeedPreview } from '@/components/embeds/ListingFeedPreview';
 import { EmbedCodeDialog } from '@/components/embeds/EmbedCodeDialog';
-import { ArrowLeft, Code2, Save } from 'lucide-react';
+import { ArrowLeft, Code2, Eye, Save } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ListingFeedEditorPage() {
@@ -21,6 +21,7 @@ export default function ListingFeedEditorPage() {
   const { getConfigById, updateConfig } = useEmbedConfigsStore();
   const { getListingsForCurrentUser } = useListingsStore();
   const [showEmbedCode, setShowEmbedCode] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
 
   const embedConfig = getConfigById(id);
   const feedConfig = embedConfig?.config as ListingFeedConfig | undefined;
@@ -108,6 +109,19 @@ export default function ListingFeedEditorPage() {
     }
   }, [embedConfig, name, config, updateConfig, toast, saving]);
 
+  const handlePreview = useCallback(async () => {
+    if (!embedConfig || saving || previewing) return;
+    setPreviewing(true);
+    try {
+      await updateConfig(embedConfig.id, { name, config });
+      window.open(`/embed/listing-feed/${embedConfig.id}`, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      toast({ title: 'Preview failed', description: err instanceof Error ? err.message : 'Could not open preview', variant: 'destructive' });
+    } finally {
+      setPreviewing(false);
+    }
+  }, [embedConfig, saving, previewing, updateConfig, name, config, toast]);
+
   if (!embedConfig) {
     return (
       <div
@@ -149,6 +163,15 @@ export default function ListingFeedEditorPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handlePreview}
+            disabled={saving || previewing}
+            className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-black transition-colors hover:bg-[#F5F5F3] disabled:opacity-60"
+          >
+            <Eye className="h-3.5 w-3.5 text-[#888C99]" />
+            {previewing ? 'Opening...' : 'Preview'}
+          </button>
           <button
             type="button"
             onClick={() => setShowEmbedCode(true)}

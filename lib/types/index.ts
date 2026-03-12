@@ -232,6 +232,12 @@ export interface ListingsButtonStyleConfig {
   textColorOpacity: number;
   backgroundColor: string;
   backgroundColorOpacity: number;
+  gradientEnabled?: boolean;
+  gradientStartColor?: string;
+  gradientStartColorOpacity?: number;
+  gradientEndColor?: string;
+  gradientEndColorOpacity?: number;
+  gradientAngle?: number;
   borderColor: string;
   borderColorOpacity: number;
   borderRadius: number;
@@ -411,6 +417,8 @@ export interface BlogFeedStyleConfig {
   featuredCardBorderWidth: number;
   featuredCardBorderRadius: number;
   featuredCardShadow: boolean;
+  featuredImageOverlayColor: string;
+  featuredImageOverlayOpacity: number;
   typography: {
     category: ListingsTypographyConfig;
     title: ListingsTypographyConfig;

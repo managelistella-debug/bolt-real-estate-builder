@@ -62,6 +62,8 @@ function normalizeWidget(widget: BlogFeedWidget): BlogFeedWidget {
     featuredCardBorderWidth: 0,
     featuredCardBorderRadius: 14,
     featuredCardShadow: true,
+    featuredImageOverlayColor: '#0f172a',
+    featuredImageOverlayOpacity: 0,
     typography: {
       category: { fontFamily: 'Inter', fontSize: 12, fontWeight: '600', color: '#f59e0b', colorOpacity: 100 },
       title: { fontFamily: 'Inter', fontSize: 22, fontWeight: '700', color: '#111827', colorOpacity: 100 },
@@ -76,6 +78,12 @@ function normalizeWidget(widget: BlogFeedWidget): BlogFeedWidget {
       textColorOpacity: 100,
       backgroundColor: '#ffffff',
       backgroundColorOpacity: 100,
+      gradientEnabled: false,
+      gradientStartColor: '#ffffff',
+      gradientStartColorOpacity: 100,
+      gradientEndColor: '#f3f4f6',
+      gradientEndColorOpacity: 100,
+      gradientAngle: 135,
       borderColor: '#d1d5db',
       borderColorOpacity: 100,
       borderRadius: 8,
@@ -85,6 +93,12 @@ function normalizeWidget(widget: BlogFeedWidget): BlogFeedWidget {
       textColorOpacity: 100,
       backgroundColor: '#fbbf24',
       backgroundColorOpacity: 100,
+      gradientEnabled: false,
+      gradientStartColor: '#fbbf24',
+      gradientStartColorOpacity: 100,
+      gradientEndColor: '#f59e0b',
+      gradientEndColorOpacity: 100,
+      gradientAngle: 135,
       borderColor: '#fbbf24',
       borderColorOpacity: 100,
       borderRadius: 8,
@@ -94,6 +108,12 @@ function normalizeWidget(widget: BlogFeedWidget): BlogFeedWidget {
       textColorOpacity: 100,
       backgroundColor: '#ffffff',
       backgroundColorOpacity: 100,
+      gradientEnabled: false,
+      gradientStartColor: '#ffffff',
+      gradientStartColorOpacity: 100,
+      gradientEndColor: '#f3f4f6',
+      gradientEndColorOpacity: 100,
+      gradientAngle: 135,
       borderColor: '#d1d5db',
       borderColorOpacity: 100,
       borderRadius: 8,
@@ -208,13 +228,23 @@ function typographyStyle(config: BlogFeedWidget['style']['typography']['title'])
 }
 
 function buttonStyle(config: BlogFeedWidget['style']['gridButton']): React.CSSProperties {
+  const useGradient = !!config.gradientEnabled;
+  const gradientStart = colorWithOpacity(
+    config.gradientStartColor || config.backgroundColor,
+    config.gradientStartColorOpacity ?? config.backgroundColorOpacity ?? 100
+  );
+  const gradientEnd = colorWithOpacity(
+    config.gradientEndColor || config.backgroundColor,
+    config.gradientEndColorOpacity ?? config.backgroundColorOpacity ?? 100
+  );
   return {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     width: 'fit-content',
     color: colorWithOpacity(config.textColor, config.textColorOpacity ?? 100),
-    backgroundColor: colorWithOpacity(config.backgroundColor, config.backgroundColorOpacity ?? 100),
+    backgroundColor: useGradient ? 'transparent' : colorWithOpacity(config.backgroundColor, config.backgroundColorOpacity ?? 100),
+    backgroundImage: useGradient ? `linear-gradient(${config.gradientAngle ?? 135}deg, ${gradientStart}, ${gradientEnd})` : 'none',
     border: `1px solid ${colorWithOpacity(config.borderColor, config.borderColorOpacity ?? 100)}`,
     borderRadius: `${config.borderRadius}px`,
     padding: '10px 16px',
@@ -336,6 +366,7 @@ export function BlogFeedRenderer({ posts, widget, deviceView, linkBasePath = '/b
                   style={{
                     display: 'grid',
                     gridTemplateColumns: 'minmax(0, 1.45fr) minmax(0, 1fr)',
+                    alignItems: 'start',
                     backgroundColor: colorWithOpacity(
                       normalizedWidget.style.featuredCardBackgroundColor,
                       normalizedWidget.style.featuredCardBackgroundOpacity
@@ -352,6 +383,7 @@ export function BlogFeedRenderer({ posts, widget, deviceView, linkBasePath = '/b
                 >
                   <div
                     style={{
+                      position: 'relative',
                       height: imageHeight,
                       overflow: 'hidden',
                       borderRadius: `${normalizedWidget.style.imageBorderRadius}px`,
@@ -365,6 +397,19 @@ export function BlogFeedRenderer({ posts, widget, deviceView, linkBasePath = '/b
                   >
                     {featured.featuredImage ? (
                       <img src={featured.featuredImage} alt={featured.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : null}
+                    {(normalizedWidget.style.featuredImageOverlayOpacity ?? 0) > 0 ? (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          backgroundColor: colorWithOpacity(
+                            normalizedWidget.style.featuredImageOverlayColor,
+                            normalizedWidget.style.featuredImageOverlayOpacity
+                          ),
+                          pointerEvents: 'none',
+                        }}
+                      />
                     ) : null}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 12, padding: 24 }}>
