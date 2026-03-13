@@ -143,7 +143,12 @@ export default function BlogManager() {
           Published
         </label>
         <div className="mt-4 flex gap-3">
-          <button type="button" onClick={save} disabled={saving} className="gold-gradient-bg rounded-md px-4 py-2 text-sm font-semibold text-[#09312a]">
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            className="rounded-md bg-[#DAFF07] px-4 py-2 text-sm font-semibold text-black hover:bg-[#C8ED00] disabled:cursor-not-allowed disabled:opacity-60"
+          >
             {saving ? "Saving..." : form.id ? "Update Post" : "Create Post"}
           </button>
           <button type="button" onClick={() => setForm(EMPTY_FORM)} className="rounded-md border border-[#EBEBEB] bg-white px-4 py-2 text-sm text-[#666]">

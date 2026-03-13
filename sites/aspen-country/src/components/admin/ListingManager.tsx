@@ -191,6 +191,57 @@ export default function ListingManager() {
       reader.readAsDataURL(file);
     });
 
+  const compressImage = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const src = event.target?.result as string;
+        if (!src) {
+          reject(new Error(`Failed to read ${file.name}`));
+          return;
+        }
+
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            reject(new Error("Failed to initialize image canvas."));
+            return;
+          }
+
+          let width = img.width;
+          let height = img.height;
+          const maxDimension = 1600;
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = (height / width) * maxDimension;
+              width = maxDimension;
+            } else {
+              width = (width / height) * maxDimension;
+              height = maxDimension;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          let quality = 0.82;
+          let output = canvas.toDataURL("image/jpeg", quality);
+          while (output.length > 1_200_000 && quality > 0.35) {
+            quality -= 0.08;
+            output = canvas.toDataURL("image/jpeg", quality);
+          }
+          resolve(output);
+        };
+        img.onerror = () => reject(new Error(`Failed to process ${file.name}.`));
+        img.src = src;
+      };
+      reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
+      reader.readAsDataURL(file);
+    });
+
   const addFiles = async (files: FileList | File[]) => {
     const imageFiles = Array.from(files).filter((file) =>
       file.type.startsWith("image/")
@@ -200,7 +251,14 @@ export default function ListingManager() {
       return;
     }
     try {
-      const urls = await Promise.all(imageFiles.map((file) => readAsDataUrl(file)));
+      const urls = await Promise.all(
+        imageFiles.map(async (file) => {
+          if (file.type === "image/svg+xml" || file.name.toLowerCase().endsWith(".svg")) {
+            return readAsDataUrl(file);
+          }
+          return compressImage(file);
+        })
+      );
       setForm((prev) => {
         const nextGallery = [...prev.gallery, ...urls];
         const nextThumbnail = prev.thumbnail || nextGallery[0] || "";
@@ -373,7 +431,12 @@ export default function ListingManager() {
         </div>
 
         <div className="mt-4 flex gap-3">
-          <button type="button" onClick={save} disabled={saving} className="gold-gradient-bg rounded-md px-4 py-2 text-sm font-semibold text-[#09312a]">
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            className="rounded-md bg-[#DAFF07] px-4 py-2 text-sm font-semibold text-black hover:bg-[#C8ED00] disabled:cursor-not-allowed disabled:opacity-60"
+          >
             {saving ? "Saving..." : form.id ? "Update Listing" : "Create Listing"}
           </button>
           <button type="button" onClick={reset} className="rounded-md border border-[#EBEBEB] bg-white px-4 py-2 text-sm text-[#666]">
