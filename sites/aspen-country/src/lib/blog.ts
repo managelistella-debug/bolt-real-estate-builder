@@ -1,5 +1,6 @@
 import { BlogPostRow } from "@/lib/supabase/database.types";
 import { getSupabasePublicClient } from "@/lib/supabase/public";
+import { getTenantId } from "@/lib/tenant";
 
 export interface BlogPost {
   id: string;
@@ -20,12 +21,12 @@ function mapBlogRow(row: BlogPostRow): BlogPost {
     id: row.id,
     title: row.title,
     slug: row.slug,
-    author: row.author,
-    publishDate: row.publish_date,
+    author: row.author_name || "Aspen Muraski",
+    publishDate: (row.published_at || row.created_at || "").slice(0, 10),
     featuredImage: row.featured_image || "/images/featured-1.webp",
-    featuredImageAlt: row.featured_image_alt || row.title,
-    excerpt: row.excerpt || "",
-    content: row.content || "",
+    featuredImageAlt: row.title,
+    excerpt: row.excerpt || row.meta_description || "",
+    content: row.content_html || "",
     category: row.category || "",
     tags: Array.isArray(row.tags) ? row.tags : [],
   };
@@ -33,14 +34,17 @@ function mapBlogRow(row: BlogPostRow): BlogPost {
 
 async function fetchPostsFromSupabase(): Promise<BlogPost[] | null> {
   const supabase = getSupabasePublicClient();
+  const tenantId = getTenantId();
   if (!supabase) return null;
+  if (!tenantId) return null;
 
   try {
     const { data, error } = await supabase
       .from("blog_posts")
       .select("*")
-      .eq("is_published", true)
-      .order("publish_date", { ascending: false });
+      .eq("tenant_id", tenantId)
+      .eq("status", "published")
+      .order("published_at", { ascending: false });
     if (error) return null;
     if (!data || data.length === 0) return [];
     return data.map((row) => mapBlogRow(row as BlogPostRow));

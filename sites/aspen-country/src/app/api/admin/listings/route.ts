@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRouteUser } from "@/lib/api-auth";
+import { getTenantId } from "@/lib/tenant";
 
 function toSlug(value: string) {
   return value
@@ -13,10 +14,15 @@ function toSlug(value: string) {
 export async function GET() {
   const auth = await requireRouteUser();
   if (!auth.ok) return auth.response;
+  const tenantId = getTenantId();
+  if (!tenantId) {
+    return NextResponse.json({ error: "NEXT_PUBLIC_TENANT_ID is required." }, { status: 500 });
+  }
 
-  const { data, error } = await auth.supabase
+  const { data, error } = await auth.db
     .from("listings")
     .select("*")
+    .eq("tenant_id", tenantId)
     .order("created_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -26,6 +32,10 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const auth = await requireRouteUser();
   if (!auth.ok) return auth.response;
+  const tenantId = getTenantId();
+  if (!tenantId) {
+    return NextResponse.json({ error: "NEXT_PUBLIC_TENANT_ID is required." }, { status: 500 });
+  }
 
   const payload = await request.json();
   const address = String(payload.address || "").trim();
@@ -39,12 +49,30 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const listingId =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? `listing_${crypto.randomUUID()}`
+      : `listing_${Date.now()}`;
+  const listingStatus =
+    payload.listingStatus === "sold"
+      ? "sold"
+      : payload.listingStatus === "pending"
+        ? "pending"
+        : "for_sale";
+
+  const gallery = Array.isArray(payload.gallery)
+    ? payload.gallery.map((url: string, index: number) => ({ url, order: index }))
+    : [];
+
   const insertPayload = {
+    id: listingId,
+    tenant_id: tenantId,
+    user_id: auth.user.id,
     slug,
     address,
     description: String(payload.description || ""),
     list_price: Number(payload.listPrice || 0),
-    listing_status: payload.listingStatus || "active",
+    listing_status: listingStatus,
     representation: payload.representation || null,
     neighborhood: String(payload.neighborhood || ""),
     city,
@@ -52,19 +80,19 @@ export async function POST(request: NextRequest) {
     bathrooms: Number(payload.bathrooms || 0),
     property_type: String(payload.propertyType || ""),
     year_built: Number(payload.yearBuilt || 0),
-    living_area: Number(payload.livingArea || 0),
-    lot_area: Number(payload.lotArea || 0),
-    lot_area_unit: String(payload.lotAreaUnit || "acres"),
-    taxes: Number(payload.taxes || 0),
+    living_area_sqft: Number(payload.livingArea || 0),
+    lot_area_value: Number(payload.lotArea || 0),
+    lot_area_unit: String(payload.lotAreaUnit || "acres").toLowerCase() === "acres" ? "acres" : "sqft",
+    taxes_annual: Number(payload.taxes || 0),
     listing_brokerage: String(payload.listingBrokerage || ""),
     mls_number: String(payload.mlsNumber || ""),
     thumbnail: String(payload.thumbnail || ""),
-    gallery: Array.isArray(payload.gallery) ? payload.gallery : [],
+    gallery,
     homepage_featured: !!payload.homepageFeatured,
     ranch_estate_featured: !!payload.ranchEstateFeatured,
   };
 
-  const { data, error } = await auth.supabase
+  const { data, error } = await auth.db
     .from("listings")
     .insert(insertPayload as never)
     .select("*")

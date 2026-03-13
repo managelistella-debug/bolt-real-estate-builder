@@ -35,11 +35,11 @@ export default function TestimonialManager() {
     const mapped = (Array.isArray(data) ? data : []).map((item) => ({
       id: item.id,
       quote: item.quote || "",
-      author: item.author || "",
+      author: item.author_name || item.author || "",
       rating: Number(item.rating || 5),
       displayContext: (item.display_context || "both") as "home" | "about" | "both",
       sortOrder: Number(item.sort_order || 0),
-      isPublished: !!item.is_published,
+      isPublished: item.is_published !== false,
     }));
     setRows(mapped);
     setLoading(false);

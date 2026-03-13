@@ -1,7 +1,9 @@
-export type ListingStatus = "active" | "sold" | "pending";
+export type ListingStatus = "for_sale" | "sold" | "pending";
 
 export interface ListingRow {
   id: string;
+  tenant_id: string;
+  user_id: string;
   slug: string;
   address: string;
   description: string;
@@ -14,45 +16,54 @@ export interface ListingRow {
   bathrooms: number;
   property_type: string;
   year_built: number;
-  living_area: number;
-  lot_area: number;
+  living_area_sqft: number;
+  lot_area_value: number;
   lot_area_unit: string;
-  taxes: number;
+  taxes_annual: number;
   listing_brokerage: string;
   mls_number: string;
-  gallery: string[];
-  thumbnail: string;
-  homepage_featured: boolean;
-  ranch_estate_featured: boolean;
+  gallery: Array<{ url: string; order?: number }>;
+  custom_order: number;
+  thumbnail?: string | null;
+  homepage_featured?: boolean | null;
+  ranch_estate_featured?: boolean | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface BlogPostRow {
   id: string;
+  tenant_id: string;
+  user_id: string;
   title: string;
   slug: string;
-  author: string;
-  publish_date: string;
-  featured_image: string;
-  featured_image_alt: string;
-  excerpt: string;
-  content: string;
-  category: string;
+  excerpt: string | null;
+  meta_description: string | null;
+  content_html: string;
+  featured_image: string | null;
+  author_name: string | null;
   tags: string[];
-  is_published: boolean;
+  category: string | null;
+  status: "draft" | "published" | "archived";
+  template_id: string;
+  custom_order: number;
+  published_at: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface TestimonialRow {
   id: string;
+  tenant_id: string;
+  user_id: string;
   quote: string;
-  author: string;
-  rating: number;
-  display_context: "home" | "about" | "both";
-  is_published: boolean;
+  author_name: string;
+  author_title: string | null;
+  rating: number | null;
+  source: "manual" | "google";
   sort_order: number;
+  display_context?: "home" | "about" | "both" | null;
+  is_published?: boolean | null;
   created_at: string;
   updated_at: string;
 }

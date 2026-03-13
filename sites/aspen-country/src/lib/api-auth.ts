@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseServerClient, getSupabaseServiceClient } from "@/lib/supabase/server";
 
 export async function requireRouteUser() {
   const supabase = await getSupabaseServerClient();
+  const db = getSupabaseServiceClient();
   if (!supabase) {
     return {
       ok: false as const,
@@ -11,6 +12,18 @@ export async function requireRouteUser() {
         { status: 500 }
       ),
       supabase: null,
+      db: null,
+    };
+  }
+  if (!db) {
+    return {
+      ok: false as const,
+      response: NextResponse.json(
+        { error: "Supabase service role is not configured." },
+        { status: 500 }
+      ),
+      supabase,
+      db: null,
     };
   }
 
@@ -20,8 +33,9 @@ export async function requireRouteUser() {
       ok: false as const,
       response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
       supabase,
+      db,
     };
   }
 
-  return { ok: true as const, response: null, supabase, user: data.user };
+  return { ok: true as const, response: null, supabase, db, user: data.user };
 }

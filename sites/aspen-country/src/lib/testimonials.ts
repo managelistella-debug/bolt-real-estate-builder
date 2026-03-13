@@ -1,5 +1,6 @@
 import { TestimonialRow } from "@/lib/supabase/database.types";
 import { getSupabasePublicClient } from "@/lib/supabase/public";
+import { getTenantId } from "@/lib/tenant";
 
 export interface Testimonial {
   id: string;
@@ -14,27 +15,34 @@ function mapTestimonialRow(row: TestimonialRow): Testimonial {
   return {
     id: row.id,
     quote: row.quote,
-    author: row.author,
+    author: row.author_name,
     rating: Number(row.rating || 5),
-    displayContext: row.display_context,
+    displayContext: row.display_context || "both",
     sortOrder: Number(row.sort_order || 0),
   };
 }
 
 async function fetchTestimonialsFromSupabase(): Promise<Testimonial[] | null> {
   const supabase = getSupabasePublicClient();
+  const tenantId = getTenantId();
   if (!supabase) return null;
+  if (!tenantId) return null;
 
   try {
     const { data, error } = await supabase
       .from("testimonials")
       .select("*")
-      .eq("is_published", true)
+      .eq("tenant_id", tenantId)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true });
     if (error) return null;
     if (!data || data.length === 0) return [];
-    return data.map((row) => mapTestimonialRow(row as TestimonialRow));
+    return data
+      .map((row) => mapTestimonialRow(row as TestimonialRow))
+      .filter((row, index) => {
+        const source = data[index] as TestimonialRow;
+        return source.is_published !== false;
+      });
   } catch {
     return null;
   }

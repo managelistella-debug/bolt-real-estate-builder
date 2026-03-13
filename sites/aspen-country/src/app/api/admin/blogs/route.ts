@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRouteUser } from "@/lib/api-auth";
+import { getTenantId } from "@/lib/tenant";
 
 function toSlug(value: string) {
   return value
@@ -13,11 +14,16 @@ function toSlug(value: string) {
 export async function GET() {
   const auth = await requireRouteUser();
   if (!auth.ok) return auth.response;
+  const tenantId = getTenantId();
+  if (!tenantId) {
+    return NextResponse.json({ error: "NEXT_PUBLIC_TENANT_ID is required." }, { status: 500 });
+  }
 
-  const { data, error } = await auth.supabase
+  const { data, error } = await auth.db
     .from("blog_posts")
     .select("*")
-    .order("publish_date", { ascending: false });
+    .eq("tenant_id", tenantId)
+    .order("published_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data || []);
@@ -26,6 +32,10 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const auth = await requireRouteUser();
   if (!auth.ok) return auth.response;
+  const tenantId = getTenantId();
+  if (!tenantId) {
+    return NextResponse.json({ error: "NEXT_PUBLIC_TENANT_ID is required." }, { status: 500 });
+  }
   const payload = await request.json();
 
   const title = String(payload.title || "").trim();
@@ -34,21 +44,32 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Title and slug are required." }, { status: 400 });
   }
 
+  const blogId =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? `blog_${crypto.randomUUID()}`
+      : `blog_${Date.now()}`;
+
+  const status = payload.isPublished === false ? "draft" : "published";
+  const publishDate = String(payload.publishDate || new Date().toISOString().slice(0, 10));
+
   const insertPayload = {
+    id: blogId,
+    tenant_id: tenantId,
+    user_id: auth.user.id,
     title,
     slug,
-    author: String(payload.author || "Aspen Muraski"),
-    publish_date: String(payload.publishDate || new Date().toISOString().slice(0, 10)),
+    author_name: String(payload.author || "Aspen Muraski"),
+    published_at: `${publishDate}T12:00:00.000Z`,
     featured_image: String(payload.featuredImage || ""),
-    featured_image_alt: String(payload.featuredImageAlt || title),
+    meta_description: String(payload.featuredImageAlt || title),
     excerpt: String(payload.excerpt || ""),
-    content: String(payload.content || ""),
+    content_html: String(payload.content || ""),
     category: String(payload.category || ""),
     tags: Array.isArray(payload.tags) ? payload.tags : [],
-    is_published: payload.isPublished !== false,
+    status,
   };
 
-  const { data, error } = await auth.supabase
+  const { data, error } = await auth.db
     .from("blog_posts")
     .insert(insertPayload as never)
     .select("*")

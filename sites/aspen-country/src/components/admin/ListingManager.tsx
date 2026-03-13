@@ -80,12 +80,17 @@ export default function ListingManager() {
       const res = await fetch("/api/admin/listings");
       const data = await res.json();
       const mapped = (Array.isArray(data) ? data : []).map((item) => ({
+        // Normalize shared-table status values to Aspen UI statuses.
         id: item.id,
         slug: item.slug || "",
         address: item.address || "",
         description: item.description || "",
         listPrice: Number(item.list_price || 0),
-        listingStatus: (item.listing_status || "active") as "active" | "sold" | "pending",
+        listingStatus: (item.listing_status === "sold"
+          ? "sold"
+          : item.listing_status === "pending"
+            ? "pending"
+            : "active") as ListingForm["listingStatus"],
         representation: item.representation || "",
         neighborhood: item.neighborhood || "",
         city: item.city || "",
@@ -93,14 +98,21 @@ export default function ListingManager() {
         bathrooms: Number(item.bathrooms || 0),
         propertyType: item.property_type || "",
         yearBuilt: Number(item.year_built || 0),
-        livingArea: Number(item.living_area || 0),
-        lotArea: Number(item.lot_area || 0),
-        lotAreaUnit: item.lot_area_unit || "acres",
-        taxes: Number(item.taxes || 0),
+        livingArea: Number(item.living_area_sqft || item.living_area || 0),
+        lotArea: Number(item.lot_area_value || item.lot_area || 0),
+        lotAreaUnit: item.lot_area_unit === "sqft" ? "sq ft" : item.lot_area_unit || "acres",
+        taxes: Number(item.taxes_annual || item.taxes || 0),
         listingBrokerage: item.listing_brokerage || "",
         mlsNumber: item.mls_number || "",
         thumbnail: item.thumbnail || "",
-        galleryText: Array.isArray(item.gallery) ? item.gallery.join("\n") : "",
+        galleryText: Array.isArray(item.gallery)
+          ? item.gallery
+              .map((entry: { url?: string }) =>
+                typeof entry === "string" ? entry : entry?.url || ""
+              )
+              .filter(Boolean)
+              .join("\n")
+          : "",
         homepageFeatured: !!item.homepage_featured,
         ranchEstateFeatured: !!item.ranch_estate_featured,
       }));

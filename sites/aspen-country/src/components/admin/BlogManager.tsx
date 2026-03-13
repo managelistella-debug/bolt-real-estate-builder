@@ -55,15 +55,15 @@ export default function BlogManager() {
       id: item.id,
       title: item.title || "",
       slug: item.slug || "",
-      author: item.author || "Aspen Muraski",
-      publishDate: item.publish_date || new Date().toISOString().slice(0, 10),
+      author: item.author_name || item.author || "Aspen Muraski",
+      publishDate: (item.published_at || item.publish_date || new Date().toISOString()).slice(0, 10),
       featuredImage: item.featured_image || "",
-      featuredImageAlt: item.featured_image_alt || "",
+      featuredImageAlt: item.meta_description || item.featured_image_alt || "",
       excerpt: item.excerpt || "",
-      content: item.content || "",
+      content: item.content_html || item.content || "",
       category: item.category || "",
       tagsText: Array.isArray(item.tags) ? item.tags.join(", ") : "",
-      isPublished: !!item.is_published,
+      isPublished: item.status ? item.status === "published" : !!item.is_published,
     }));
     setRows(mapped);
     setLoading(false);

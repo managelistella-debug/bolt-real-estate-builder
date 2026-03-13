@@ -1,13 +1,14 @@
 # Aspen Mini-CMS Setup
 
-## 1) Create Aspen Supabase project
-- Create a dedicated Supabase project for Aspen Country.
-- In SQL editor, run:
-  - `sites/aspen-country/supabase/migrations/001_initial_schema.sql`
+## 1) Use shared Bolt Supabase project
+- Aspen mini-CMS is tenant-scoped inside the existing Bolt Supabase project.
+- Run the shared migration:
+  - `supabase/migrations/003_aspen_shared_cms_columns.sql`
+- Ensure Aspen uses its own tenant ID value.
 
 ## 2) Create Aspen admin user
-- In Supabase Auth, create one user for Aspen.
-- Optionally insert/update `public.profiles` for display name/role.
+- In shared Supabase Auth, create one Aspen user (or reuse an existing user).
+- Aspen access is scoped by tenant ID in Aspen routes.
 
 ## 3) Configure Aspen environment
 - Copy `sites/aspen-country/.env.example` to `.env.local`.
@@ -15,6 +16,7 @@
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
   - `SUPABASE_SERVICE_ROLE_KEY`
+  - `NEXT_PUBLIC_TENANT_ID`
 
 ## 4) Start Aspen site
 - `cd sites/aspen-country`

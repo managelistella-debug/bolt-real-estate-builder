@@ -1,5 +1,6 @@
 import { ListingRow } from "@/lib/supabase/database.types";
 import { getSupabasePublicClient } from "@/lib/supabase/public";
+import { getTenantId } from "@/lib/tenant";
 
 export interface Listing {
   id: string;
@@ -29,13 +30,24 @@ export interface Listing {
 }
 
 function mapListingRow(row: ListingRow): Listing {
+  const gallery =
+    Array.isArray(row.gallery)
+      ? [...row.gallery]
+          .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
+          .map((item) => item?.url)
+          .filter((url): url is string => !!url)
+      : [];
+  const thumbnail = row.thumbnail || gallery[0] || "";
+  const status =
+    row.listing_status === "for_sale" ? "active" : row.listing_status;
+
   return {
     id: row.id,
     slug: row.slug,
     address: row.address,
     description: row.description,
     listPrice: Number(row.list_price || 0),
-    listingStatus: row.listing_status,
+    listingStatus: status,
     representation: row.representation || undefined,
     neighborhood: row.neighborhood,
     city: row.city,
@@ -43,14 +55,14 @@ function mapListingRow(row: ListingRow): Listing {
     bathrooms: Number(row.bathrooms || 0),
     propertyType: row.property_type,
     yearBuilt: Number(row.year_built || 0),
-    livingArea: Number(row.living_area || 0),
-    lotArea: Number(row.lot_area || 0),
+    livingArea: Number(row.living_area_sqft || 0),
+    lotArea: Number(row.lot_area_value || 0),
     lotAreaUnit: row.lot_area_unit || "acres",
-    taxes: Number(row.taxes || 0),
+    taxes: Number(row.taxes_annual || 0),
     listingBrokerage: row.listing_brokerage,
     mlsNumber: row.mls_number,
-    gallery: Array.isArray(row.gallery) ? row.gallery : [],
-    thumbnail: row.thumbnail || "",
+    gallery,
+    thumbnail,
     homepageFeatured: !!row.homepage_featured,
     ranchEstateFeatured: !!row.ranch_estate_featured,
     createdAt: row.created_at,
@@ -59,12 +71,15 @@ function mapListingRow(row: ListingRow): Listing {
 
 async function fetchListingsFromSupabase(): Promise<Listing[] | null> {
   const supabase = getSupabasePublicClient();
+  const tenantId = getTenantId();
   if (!supabase) return null;
+  if (!tenantId) return null;
 
   try {
     const { data, error } = await supabase
       .from("listings")
       .select("*")
+      .eq("tenant_id", tenantId)
       .order("created_at", { ascending: false });
     if (error) return null;
     if (!data || data.length === 0) return [];

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRouteUser } from "@/lib/api-auth";
+import { getTenantId } from "@/lib/tenant";
 
 export async function GET(
   _request: NextRequest,
@@ -7,12 +8,17 @@ export async function GET(
 ) {
   const auth = await requireRouteUser();
   if (!auth.ok) return auth.response;
+  const tenantId = getTenantId();
+  if (!tenantId) {
+    return NextResponse.json({ error: "NEXT_PUBLIC_TENANT_ID is required." }, { status: 500 });
+  }
   const { id } = await context.params;
 
-  const { data, error } = await auth.supabase
+  const { data, error } = await auth.db
     .from("listings")
     .select("*")
     .eq("id", id)
+    .eq("tenant_id", tenantId)
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 404 });
@@ -25,15 +31,30 @@ export async function PUT(
 ) {
   const auth = await requireRouteUser();
   if (!auth.ok) return auth.response;
+  const tenantId = getTenantId();
+  if (!tenantId) {
+    return NextResponse.json({ error: "NEXT_PUBLIC_TENANT_ID is required." }, { status: 500 });
+  }
   const { id } = await context.params;
   const payload = await request.json();
+
+  const listingStatus =
+    payload.listingStatus === "sold"
+      ? "sold"
+      : payload.listingStatus === "pending"
+        ? "pending"
+        : "for_sale";
+
+  const gallery = Array.isArray(payload.gallery)
+    ? payload.gallery.map((url: string, index: number) => ({ url, order: index }))
+    : [];
 
   const updatePayload = {
     slug: payload.slug,
     address: payload.address,
     description: payload.description,
     list_price: payload.listPrice,
-    listing_status: payload.listingStatus,
+    listing_status: listingStatus,
     representation: payload.representation || null,
     neighborhood: payload.neighborhood,
     city: payload.city,
@@ -41,22 +62,23 @@ export async function PUT(
     bathrooms: payload.bathrooms,
     property_type: payload.propertyType,
     year_built: payload.yearBuilt,
-    living_area: payload.livingArea,
-    lot_area: payload.lotArea,
-    lot_area_unit: payload.lotAreaUnit,
-    taxes: payload.taxes,
+    living_area_sqft: payload.livingArea,
+    lot_area_value: payload.lotArea,
+    lot_area_unit: String(payload.lotAreaUnit || "acres").toLowerCase() === "acres" ? "acres" : "sqft",
+    taxes_annual: payload.taxes,
     listing_brokerage: payload.listingBrokerage,
     mls_number: payload.mlsNumber,
     thumbnail: payload.thumbnail,
-    gallery: Array.isArray(payload.gallery) ? payload.gallery : [],
+    gallery,
     homepage_featured: !!payload.homepageFeatured,
     ranch_estate_featured: !!payload.ranchEstateFeatured,
   };
 
-  const { data, error } = await auth.supabase
+  const { data, error } = await auth.db
     .from("listings")
     .update(updatePayload as never)
     .eq("id", id)
+    .eq("tenant_id", tenantId)
     .select("*")
     .single();
 
@@ -70,9 +92,17 @@ export async function DELETE(
 ) {
   const auth = await requireRouteUser();
   if (!auth.ok) return auth.response;
+  const tenantId = getTenantId();
+  if (!tenantId) {
+    return NextResponse.json({ error: "NEXT_PUBLIC_TENANT_ID is required." }, { status: 500 });
+  }
   const { id } = await context.params;
 
-  const { error } = await auth.supabase.from("listings").delete().eq("id", id);
+  const { error } = await auth.db
+    .from("listings")
+    .delete()
+    .eq("id", id)
+    .eq("tenant_id", tenantId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
