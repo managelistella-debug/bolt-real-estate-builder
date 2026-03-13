@@ -26,7 +26,7 @@ export default function ListingCard({
 
   return (
     <Link
-      href={`/listings/${listing.id}`}
+      href={`/listings/${listing.slug}`}
       className="block cursor-pointer group"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}

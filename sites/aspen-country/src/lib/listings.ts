@@ -1,5 +1,6 @@
 export interface Listing {
   id: string;
+  slug: string;
   address: string;
   description: string;
   listPrice: number;
@@ -23,105 +24,32 @@ export interface Listing {
   createdAt?: string;
 }
 
-const BOLT_API_URL = process.env.NEXT_PUBLIC_BOLT_API_URL || "";
-const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID || "";
-
-function statusFromBolt(s: string): "active" | "sold" | "pending" {
-  if (s === "for_sale") return "active";
-  if (s === "sold") return "sold";
-  if (s === "pending") return "pending";
-  return "active";
-}
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-function mapBoltListing(row: any): Listing {
-  const gallery: string[] = [];
-  let thumbnail = "";
-
-  if (Array.isArray(row.gallery)) {
-    const sorted = [...row.gallery].sort(
-      (a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)
-    );
-    sorted.forEach((img: any) => {
-      if (img.url) gallery.push(img.url);
-    });
-  }
-  thumbnail = row.thumbnail || gallery[0] || "";
-
-  return {
-    id: row.id,
-    address: row.address ?? "",
-    description: row.description ?? "",
-    listPrice: Number(row.list_price ?? row.listPrice ?? 0),
-    listingStatus: statusFromBolt(
-      row.listing_status ?? row.listingStatus ?? "for_sale"
-    ),
-    representation: row.representation ?? undefined,
-    neighborhood: row.neighborhood ?? "",
-    city: row.city ?? "",
-    bedrooms: Number(row.bedrooms ?? 0),
-    bathrooms: Number(row.bathrooms ?? 0),
-    propertyType: row.property_type ?? row.propertyType ?? "",
-    yearBuilt: Number(row.year_built ?? row.yearBuilt ?? 0),
-    livingArea: Number(row.living_area_sqft ?? row.livingAreaSqft ?? 0),
-    lotArea: Number(row.lot_area_value ?? row.lotAreaValue ?? 0),
-    lotAreaUnit: row.lot_area_unit ?? row.lotAreaUnit ?? "acres",
-    taxes: Number(row.taxes_annual ?? row.taxesAnnual ?? 0),
-    listingBrokerage: row.listing_brokerage ?? row.listingBrokerage ?? "",
-    mlsNumber: row.mls_number ?? row.mlsNumber ?? "",
-    gallery,
-    thumbnail,
-    homepageFeatured: row.homepage_featured ?? row.homepageFeatured ?? false,
-    createdAt: row.created_at ?? row.createdAt ?? undefined,
-  };
-}
-/* eslint-enable @typescript-eslint/no-explicit-any */
-
-async function fetchListings(params?: Record<string, string>): Promise<Listing[]> {
-  if (!BOLT_API_URL || !TENANT_ID) return fallbackListings;
-
-  try {
-    const url = new URL(`${BOLT_API_URL}/api/public/listings`);
-    url.searchParams.set("tenantId", TENANT_ID);
-    if (params) {
-      Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-    }
-    const res = await fetch(url.toString(), { next: { revalidate: 60 } });
-    if (!res.ok) return fallbackListings;
-    const rows = await res.json();
-    if (!Array.isArray(rows) || rows.length === 0) return fallbackListings;
-    return rows.map(mapBoltListing);
-  } catch {
-    return fallbackListings;
-  }
-}
-
 export async function getActiveListings(): Promise<Listing[]> {
-  const all = await fetchListings({ status: "for_sale" });
-  return all.filter((l) => l.listingStatus === "active");
+  return fallbackListings.filter((listing) => listing.listingStatus === "active");
 }
 
 export async function getSoldListings(): Promise<Listing[]> {
-  const all = await fetchListings({ status: "sold" });
-  return all.filter((l) => l.listingStatus === "sold");
+  return fallbackListings.filter((listing) => listing.listingStatus === "sold");
 }
 
 export async function getFeaturedListings(): Promise<Listing[]> {
-  const all = await fetchListings({ featured: "true" });
-  if (all.length === 0) {
-    const recent = await fetchListings();
-    return recent.slice(0, 6);
-  }
-  return all.sort((a, b) => b.listPrice - a.listPrice);
+  const featured = fallbackListings
+    .filter((listing) => listing.homepageFeatured)
+    .sort((a, b) => b.listPrice - a.listPrice);
+  if (featured.length > 0) return featured;
+  return fallbackListings.slice(0, 6);
 }
 
 export async function getAllListings(): Promise<Listing[]> {
-  return fetchListings();
+  return [...fallbackListings];
 }
 
 export async function getListingById(id: string): Promise<Listing | undefined> {
-  const all = await fetchListings();
-  return all.find((l) => l.id === id);
+  return fallbackListings.find((listing) => listing.id === id);
+}
+
+export async function getListingBySlug(slug: string): Promise<Listing | undefined> {
+  return fallbackListings.find((listing) => listing.slug === slug);
 }
 
 export function formatPrice(price: number): string {
@@ -136,6 +64,7 @@ export function formatPrice(price: number): string {
 const fallbackListings: Listing[] = [
   {
     id: "1",
+    slug: "33289-lakeview-court",
     address: "33289 Lakeview Court",
     description:
       "<p>Stunning lakefront property with panoramic views of the Rocky Mountains.</p>",
@@ -164,6 +93,7 @@ const fallbackListings: Listing[] = [
   },
   {
     id: "2",
+    slug: "22034-lakeview-drive",
     address: "22034 Lakeview Drive",
     description:
       "<p>A beautifully crafted home nestled along Lakeview Drive.</p>",
@@ -191,6 +121,7 @@ const fallbackListings: Listing[] = [
   },
   {
     id: "3",
+    slug: "33291-lakeview-court",
     address: "33291 Lakeview Court",
     description:
       "<p>Contemporary ranch-style home on a generous lot.</p>",
@@ -219,6 +150,7 @@ const fallbackListings: Listing[] = [
   },
   {
     id: "13",
+    slug: "78901-range-road-54",
     address: "78901 Range Road 54",
     description:
       "<p>Beautiful ranch property sold representing the buyer.</p>",
@@ -246,6 +178,7 @@ const fallbackListings: Listing[] = [
   },
   {
     id: "14",
+    slug: "12500-mountain-avenue",
     address: "12500 Mountain Avenue",
     description:
       "<p>Charming family home on a generous lot in Sundre.</p>",
@@ -273,6 +206,7 @@ const fallbackListings: Listing[] = [
   },
   {
     id: "15",
+    slug: "6780-ridgeview-place",
     address: "6780 Ridgeview Place",
     description:
       "<p>Executive bungalow in Olds premier Ridgeview neighbourhood.</p>",

@@ -12,54 +12,8 @@ export interface BlogPost {
   tags: string[];
 }
 
-const BOLT_API_URL = process.env.NEXT_PUBLIC_BOLT_API_URL || "";
-const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID || "";
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-function mapBoltBlog(row: any): BlogPost {
-  const tags: string[] = Array.isArray(row.tags) ? row.tags : [];
-  const publishDate =
-    row.published_at || row.publishedAt || row.created_at || row.createdAt || "";
-  const dateStr =
-    typeof publishDate === "string"
-      ? publishDate.slice(0, 10)
-      : new Date(publishDate).toISOString().slice(0, 10);
-
-  return {
-    id: row.id,
-    title: row.title ?? "",
-    slug: row.slug ?? "",
-    author: row.author_name ?? row.authorName ?? "Team",
-    publishDate: dateStr,
-    featuredImage: row.featured_image ?? row.featuredImage ?? "/images/featured-1.webp",
-    featuredImageAlt: row.title ?? "",
-    excerpt: row.excerpt ?? row.meta_description ?? row.metaDescription ?? "",
-    content: row.content_html ?? row.contentHtml ?? "",
-    category: row.category ?? "",
-    tags,
-  };
-}
-/* eslint-enable @typescript-eslint/no-explicit-any */
-
-async function fetchBlogs(): Promise<BlogPost[]> {
-  if (!BOLT_API_URL || !TENANT_ID) return fallbackPosts;
-
-  try {
-    const url = new URL(`${BOLT_API_URL}/api/public/blogs`);
-    url.searchParams.set("tenantId", TENANT_ID);
-    const res = await fetch(url.toString(), { next: { revalidate: 60 } });
-    if (!res.ok) return fallbackPosts;
-    const rows = await res.json();
-    if (!Array.isArray(rows) || rows.length === 0) return fallbackPosts;
-    return rows.map(mapBoltBlog);
-  } catch {
-    return fallbackPosts;
-  }
-}
-
 export async function getAllPosts(): Promise<BlogPost[]> {
-  const posts = await fetchBlogs();
-  return posts.sort(
+  return [...fallbackPosts].sort(
     (a, b) =>
       new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime()
   );
@@ -68,15 +22,13 @@ export async function getAllPosts(): Promise<BlogPost[]> {
 export async function getPostBySlug(
   slug: string
 ): Promise<BlogPost | undefined> {
-  const posts = await fetchBlogs();
-  return posts.find((p) => p.slug === slug);
+  return fallbackPosts.find((post) => post.slug === slug);
 }
 
 export async function getPostById(
   id: string
 ): Promise<BlogPost | undefined> {
-  const posts = await fetchBlogs();
-  return posts.find((p) => p.id === id);
+  return fallbackPosts.find((post) => post.id === id);
 }
 
 export function formatDate(dateString: string): string {

@@ -1,455 +1,413 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
-import Link from "next/link";
-import ScrollReveal from "@/components/ScrollReveal";
-import Lightbox from "./Lightbox";
+import { useMemo, useState } from "react";
 import { Listing, formatPrice } from "@/lib/listings";
 
 interface ListingDetailProps {
   listing: Listing;
+  styleConfig?: Partial<ListingDetailStyleConfig>;
 }
 
-export default function ListingDetail({ listing }: ListingDetailProps) {
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [heroHovered, setHeroHovered] = useState(false);
-  const [galleryPage, setGalleryPage] = useState(0);
-  const [galleryDirection, setGalleryDirection] = useState(0);
+interface ListingDetailTypographyToken {
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: string;
+  color: string;
+}
 
-  const openLightbox = (index: number) => {
-    setLightboxIndex(index);
-    setLightboxOpen(true);
+interface ListingDetailStyleConfig {
+  fontFamily: string;
+  accentColor: string;
+  accentTextColor: string;
+  lineColor: string;
+  lineWidth: number;
+  borderColor: string;
+  borderWidth: number;
+  borderRadius: number;
+  imageBorderRadius: number;
+  detailsBoxRadius: number;
+  surfaceColor: string;
+  mutedSurfaceColor: string;
+  mutedTextColor: string;
+  statusBadgeRadius: number;
+  statusBadgeBorderWidth: number;
+  statusBadgeBorderColor: string;
+  statusColors: { active: string; pending: string; sold: string };
+  typography: {
+    price: ListingDetailTypographyToken;
+    heading: ListingDetailTypographyToken;
+    body: ListingDetailTypographyToken;
+    meta: ListingDetailTypographyToken;
+    label: ListingDetailTypographyToken;
+    value: ListingDetailTypographyToken;
+    button: ListingDetailTypographyToken;
   };
+}
 
-  // Desktop: 3 per page, used for the grid slider
-  const imagesPerPage = 3;
-  const totalGalleryPages = Math.ceil(listing.gallery.length / imagesPerPage);
-  // Mobile: single image index for swipe carousel
-  const [mobileIndex, setMobileIndex] = useState(0);
-  const [mobileDirection, setMobileDirection] = useState(0);
+const DEFAULT_STYLE: ListingDetailStyleConfig = {
+  fontFamily: 'Inter',
+  accentColor: '#DAFF07',
+  accentTextColor: '#000000',
+  lineColor: '#EBEBEB',
+  lineWidth: 1,
+  borderColor: '#EBEBEB',
+  borderWidth: 1,
+  borderRadius: 12,
+  imageBorderRadius: 12,
+  detailsBoxRadius: 12,
+  surfaceColor: '#ffffff',
+  mutedSurfaceColor: '#F5F5F3',
+  mutedTextColor: '#888C99',
+  statusBadgeRadius: 999,
+  statusBadgeBorderWidth: 1,
+  statusBadgeBorderColor: '#EBEBEB',
+  statusColors: { active: '#DAFF07', pending: '#F5F5F3', sold: '#111111' },
+  typography: {
+    price: { fontFamily: 'Inter', fontSize: 32, fontWeight: '500', color: '#000000' },
+    heading: { fontFamily: 'Inter', fontSize: 24, fontWeight: '500', color: '#000000' },
+    body: { fontFamily: 'Inter', fontSize: 13, fontWeight: '400', color: '#888C99' },
+    meta: { fontFamily: 'Inter', fontSize: 13, fontWeight: '400', color: '#888C99' },
+    label: { fontFamily: 'Inter', fontSize: 13, fontWeight: '400', color: '#888C99' },
+    value: { fontFamily: 'Inter', fontSize: 13, fontWeight: '500', color: '#000000' },
+    button: { fontFamily: 'Inter', fontSize: 13, fontWeight: '500', color: '#000000' },
+  },
+};
 
-  const navigateGallery = useCallback(
-    (dir: number) => {
-      setGalleryDirection(dir);
-      setGalleryPage((prev) => {
-        const next = prev + dir;
-        if (next < 0) return totalGalleryPages - 1;
-        if (next >= totalGalleryPages) return 0;
-        return next;
-      });
+function mergeStyle(style?: Partial<ListingDetailStyleConfig>): ListingDetailStyleConfig {
+  return {
+    ...DEFAULT_STYLE,
+    ...(style || {}),
+    statusColors: { ...DEFAULT_STYLE.statusColors, ...(style?.statusColors || {}) },
+    typography: {
+      ...DEFAULT_STYLE.typography,
+      ...(style?.typography || {}),
     },
-    [totalGalleryPages]
-  );
-
-  const navigateMobileGallery = useCallback(
-    (dir: number) => {
-      setMobileDirection(dir);
-      setMobileIndex((prev) => {
-        const next = prev + dir;
-        if (next < 0) return listing.gallery.length - 1;
-        if (next >= listing.gallery.length) return 0;
-        return next;
-      });
-    },
-    [listing.gallery.length]
-  );
-
-  const currentGalleryImages = listing.gallery.slice(
-    galleryPage * imagesPerPage,
-    galleryPage * imagesPerPage + imagesPerPage
-  );
-
-  const detailItems = [
-    { label: "Bedrooms", value: String(listing.bedrooms) },
-    { label: "Bathrooms", value: String(listing.bathrooms) },
-    {
-      label: "Living Area",
-      value: `${listing.livingArea.toLocaleString()} Sq Ft`,
-    },
-    {
-      label: "Lot Area",
-      value: `${listing.lotArea.toLocaleString()} ${listing.lotAreaUnit}`,
-    },
-    { label: "Property Type", value: listing.propertyType },
-    { label: "Year Built", value: String(listing.yearBuilt) },
-    { label: "Taxes (Annual)", value: formatPrice(listing.taxes) },
-    { label: "Neighborhood", value: listing.neighborhood },
-    { label: "City", value: listing.city },
-    ...(listing.representation
-      ? [{ label: "Representation", value: listing.representation }]
-      : []),
-    { label: "Listing Brokerage", value: listing.listingBrokerage },
-    { label: "MLS #", value: listing.mlsNumber },
-  ];
-
-  const gallerySlideVariants = {
-    enter: (dir: number) => ({
-      x: dir > 0 ? 600 : -600,
-      opacity: 0,
-    }),
-    center: { x: 0, opacity: 1 },
-    exit: (dir: number) => ({
-      x: dir < 0 ? 600 : -600,
-      opacity: 0,
-    }),
   };
+}
+
+const STATUS_LABELS: Record<Listing["listingStatus"], string> = {
+  active: "For Sale",
+  pending: "Pending",
+  sold: "Sold",
+};
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("en-US").format(value || 0);
+}
+
+function formatLotArea(value: number, unit: string) {
+  return unit === "acres"
+    ? `${value.toLocaleString("en-US")} acres`
+    : `${formatNumber(value)} sqft`;
+}
+
+function statusStyle(status: Listing["listingStatus"], style: ListingDetailStyleConfig) {
+  if (status === "active") return { backgroundColor: style.statusColors.active, color: style.accentTextColor };
+  if (status === "pending") {
+    return {
+      backgroundColor: style.statusColors.pending,
+      color: style.mutedTextColor,
+      border: `${style.statusBadgeBorderWidth}px solid ${style.statusBadgeBorderColor}`,
+    };
+  }
+  return { backgroundColor: style.statusColors.sold, color: "#ffffff" };
+}
+
+export default function ListingDetail({ listing, styleConfig }: ListingDetailProps) {
+  const style = useMemo(() => mergeStyle(styleConfig), [styleConfig]);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [showAssumptions, setShowAssumptions] = useState(false);
+  const [downPaymentPercent, setDownPaymentPercent] = useState(20);
+  const [interestRate, setInterestRate] = useState(6.5);
+
+  const gallery = useMemo(() => listing.gallery || [], [listing.gallery]);
+  const activeImage = gallery[0];
+
+  const homeInsuranceAnnual = Math.round(listing.listPrice * 0.005);
+  const downPaymentAmount = (listing.listPrice * downPaymentPercent) / 100;
+  const loanAmount = Math.max(0, listing.listPrice - downPaymentAmount);
+  const monthlyRate = interestRate / 100 / 12;
+  const termMonths = 360;
+  const principalAndInterestMonthly =
+    monthlyRate === 0
+      ? loanAmount / termMonths
+      : (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, termMonths)) /
+        (Math.pow(1 + monthlyRate, termMonths) - 1);
+  const propertyTaxMonthly = listing.taxes / 12;
+  const homeInsuranceMonthly = homeInsuranceAnnual / 12;
+  const estimatedMonthlyPayment =
+    principalAndInterestMonthly + propertyTaxMonthly + homeInsuranceMonthly;
 
   return (
     <>
-      {/* Hero Image */}
-      <section className="relative w-full h-[50vh] md:h-[65vh] lg:h-[75vh] overflow-hidden">
-        <div
-          className="absolute inset-0 cursor-pointer"
-          onClick={() => openLightbox(0)}
-          onMouseEnter={() => setHeroHovered(true)}
-          onMouseLeave={() => setHeroHovered(false)}
-        >
-          <motion.div
-            animate={{ scale: heroHovered ? 1.03 : 1 }}
-            transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="absolute inset-0"
+      <div className="mx-auto max-w-[1300px] px-4 py-6 sm:px-6 sm:py-8" style={{ fontFamily: style.fontFamily }}>
+        <div className="mb-4 flex items-center justify-between text-[13px]">
+          <a
+            href={listing.listingStatus === "sold" ? "/listings/sold" : "/listings/active"}
+            className="hover:text-black"
+            style={{ color: style.typography.meta.color }}
           >
-            <Image
-              src={listing.thumbnail}
-              alt={listing.address}
-              fill
-              className="object-cover"
-              sizes="100vw"
-              priority
-            />
-          </motion.div>
-
-          {/* Gradient overlay at bottom */}
-          <div className="absolute inset-x-0 bottom-0 h-[40%] bg-gradient-to-t from-[#09312a] to-transparent" />
+            ← Back
+          </a>
+          <span style={{ color: style.typography.meta.color }}>MLS# {listing.mlsNumber}</span>
         </div>
 
-        {/* Badge */}
-        <div className="absolute top-[90px] md:top-[120px] left-5 md:left-10 lg:left-[60px] z-10">
-          <div className="gold-gradient-bg px-[16px] py-[6px]">
-            <span
-              className="text-[#09312a] text-[14px] md:text-[16px] leading-[24px] font-normal"
-              style={{ fontFamily: "'Lato', sans-serif" }}
-            >
-              {listing.listingStatus === "active" ? "For Sale" : "Sold"}
-            </span>
-          </div>
-        </div>
-
-        {/* Back button */}
-        <div className="absolute top-[90px] md:top-[120px] right-5 md:right-10 lg:right-[60px] z-10">
-          <Link
-            href={
-              listing.listingStatus === "active"
-                ? "/listings/active"
-                : "/listings/sold"
-            }
-            className="flex items-center gap-2 text-white/70 hover:text-white text-[14px] transition-colors duration-300"
-            style={{ fontFamily: "'Lato', sans-serif" }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/arrow-left.svg" alt="" width={16} height={16} />
-            Back to{" "}
-            {listing.listingStatus === "active" ? "Active" : "Sold"}{" "}
-            Listings
-          </Link>
-        </div>
-
-        {/* View gallery prompt */}
-        <div
-          className="absolute bottom-6 right-5 md:right-10 lg:right-[60px] z-10 flex items-center gap-2 text-white/60 text-[13px] cursor-pointer hover:text-white transition-colors duration-300"
-          style={{ fontFamily: "'Lato', sans-serif" }}
-          onClick={() => openLightbox(0)}
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <rect x="1" y="1" width="6" height="6" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
-            <rect x="9" y="1" width="6" height="6" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
-            <rect x="1" y="9" width="6" height="6" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
-            <rect x="9" y="9" width="6" height="6" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
-          </svg>
-          View Gallery ({listing.gallery.length} photos)
-        </div>
-      </section>
-
-      {/* Details Section */}
-      <section className="bg-[#09312a]">
-        <div className="max-w-[1440px] mx-auto px-5 md:px-10 lg:px-[60px] py-10 md:py-[60px]">
-          {/* Address + Price */}
-          <ScrollReveal>
-            <div className="mb-8 md:mb-[48px]">
-              <h1
-                className="font-heading text-[28px] sm:text-[36px] md:text-[44px] lg:text-[52px] leading-[1.15] text-white"
-                style={{ fontWeight: 400 }}
+        <section className="mb-8">
+          {gallery.length >= 5 ? (
+            <div className="grid gap-2 lg:grid-cols-[1.2fr_1fr]">
+              <button
+                type="button"
+                className="overflow-hidden"
+                style={{ borderRadius: `${style.imageBorderRadius}px` }}
+                onClick={() => setLightboxIndex(0)}
               >
-                {listing.address}, {listing.city}
-              </h1>
-              <p
-                className="gold-gradient-text text-[24px] md:text-[30px] lg:text-[36px] leading-[1.3] font-heading mt-2 md:mt-3"
-                style={{ fontWeight: 400 }}
-              >
-                {formatPrice(listing.listPrice)}
-              </p>
-            </div>
-          </ScrollReveal>
-
-          {/* Two column: Content (left) + Sticky CTA (right) */}
-          <div className="flex flex-col lg:flex-row items-start gap-10 lg:gap-[60px]">
-            {/* Left column - Description + Property Details */}
-            <div className="flex-1 min-w-0">
-              {/* Description */}
-              <ScrollReveal delay={0.1}>
-                <h2
-                  className="font-heading text-[22px] md:text-[26px] leading-[1.3] gold-gradient-text mb-4 md:mb-6"
-                  style={{ fontWeight: 400 }}
-                >
-                  About This Property
-                </h2>
-                <div
-                  className="text-white/80 text-[15px] md:text-[16px] leading-[26px] md:leading-[28px] space-y-4"
-                  style={{ fontFamily: "'Lato', sans-serif" }}
-                  dangerouslySetInnerHTML={{ __html: listing.description }}
-                />
-              </ScrollReveal>
-
-              {/* Property Details */}
-              <ScrollReveal delay={0.2}>
-                <div className="mt-10 md:mt-[48px]">
-                  <h2
-                    className="font-heading text-[22px] md:text-[26px] leading-[1.3] gold-gradient-text mb-4 md:mb-6"
-                    style={{ fontWeight: 400 }}
-                  >
-                    Property Details
-                  </h2>
-                  <div className="border-t border-white/10">
-                    {detailItems.map((item) => (
-                      <div
-                        key={item.label}
-                        className="flex items-center justify-between py-3 md:py-4 border-b border-white/10"
-                      >
-                        <span
-                          className="text-white/50 text-[14px] md:text-[15px]"
-                          style={{ fontFamily: "'Lato', sans-serif" }}
-                        >
-                          {item.label}
-                        </span>
-                        <span
-                          className="text-white text-[14px] md:text-[15px] font-normal text-right"
-                          style={{ fontFamily: "'Lato', sans-serif" }}
-                        >
-                          {item.value}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </ScrollReveal>
-            </div>
-
-            {/* Right column - Sticky CTA */}
-            <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 lg:sticky lg:top-[115px]">
-                <div className="border border-[#daaf3a] bg-[#113d35] p-6 md:p-8">
-                  <h3
-                    className="font-heading text-[20px] md:text-[24px] leading-[1.3] text-white mb-2"
-                    style={{ fontWeight: 400 }}
-                  >
-                    Interested in This Property?
-                  </h3>
-                  <p
-                    className="text-white/60 text-[14px] md:text-[15px] leading-[22px] mb-6"
-                    style={{ fontFamily: "'Lato', sans-serif" }}
-                  >
-                    Contact Aspen for more details.
-                  </p>
-
-                  <form
-                    onSubmit={(e) => e.preventDefault()}
-                    className="flex flex-col gap-4"
-                  >
-                    <input
-                      type="text"
-                      placeholder="Your Name"
-                      className="w-full bg-transparent border-b border-white/20 text-white text-[14px] md:text-[15px] py-3 focus:border-[#daaf3a] transition-colors duration-300"
-                      style={{ fontFamily: "'Lato', sans-serif" }}
-                    />
-                    <input
-                      type="email"
-                      placeholder="Email Address"
-                      className="w-full bg-transparent border-b border-white/20 text-white text-[14px] md:text-[15px] py-3 focus:border-[#daaf3a] transition-colors duration-300"
-                      style={{ fontFamily: "'Lato', sans-serif" }}
-                    />
-                    <input
-                      type="tel"
-                      placeholder="Phone Number"
-                      className="w-full bg-transparent border-b border-white/20 text-white text-[14px] md:text-[15px] py-3 focus:border-[#daaf3a] transition-colors duration-300"
-                      style={{ fontFamily: "'Lato', sans-serif" }}
-                    />
-                    <button
-                      type="submit"
-                      className="gold-gradient-bg flex items-center justify-center h-[47px] w-full text-[#09312a] font-semibold text-[14px] mt-2 transition-all duration-300"
-                      style={{ fontFamily: "'Lato', sans-serif" }}
-                    >
-                      Request Details
-                    </button>
-                  </form>
-
-                  <div className="mt-6 pt-6 border-t border-white/10 text-center">
-                    <p
-                      className="text-white/40 text-[13px] mb-2"
-                      style={{ fontFamily: "'Lato', sans-serif" }}
-                    >
-                      Or call directly
-                    </p>
-                    <a
-                      href="tel:4037033909"
-                      className="gold-gradient-text font-heading text-[18px] md:text-[20px] hover:opacity-80 transition-opacity duration-300"
-                      style={{ fontWeight: 400 }}
-                    >
-                      403-703-3909
-                    </a>
-                  </div>
-                </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Gallery Section */}
-      <section className="bg-[#09312a]">
-        <div className="max-w-[1440px] mx-auto px-5 md:px-10 lg:px-[60px] pb-10 md:pb-[60px]">
-          <ScrollReveal>
-            <h2
-              className="font-heading text-[22px] md:text-[26px] leading-[1.3] gold-gradient-text mb-6 md:mb-8"
-              style={{ fontWeight: 400 }}
-            >
-              Photo Gallery
-            </h2>
-          </ScrollReveal>
-
-          {/* Mobile gallery: single image carousel */}
-          <div className="md:hidden">
-            <div className="overflow-hidden">
-              <AnimatePresence mode="wait" custom={mobileDirection}>
-                <motion.div
-                  key={mobileIndex}
-                  custom={mobileDirection}
-                  variants={gallerySlideVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{
-                    x: { type: "spring", stiffness: 200, damping: 30 },
-                    opacity: { duration: 0.25 },
-                  }}
-                >
+                <img src={gallery[0]} alt={listing.address} className="h-[420px] w-full object-cover lg:h-[540px]" />
+              </button>
+              <div className="grid grid-cols-2 gap-2">
+                {gallery.slice(1, 5).map((image, idx) => (
                   <button
-                    onClick={() => openLightbox(mobileIndex)}
-                    className="relative w-full aspect-[4/3] overflow-clip"
+                    key={`${image}-${idx}`}
+                    type="button"
+                    className="relative overflow-hidden"
+                    style={{ borderRadius: `${style.imageBorderRadius}px` }}
+                    onClick={() => setLightboxIndex(idx + 1)}
                   >
-                    <Image
-                      src={listing.gallery[mobileIndex]}
-                      alt={`${listing.address} - Photo ${mobileIndex + 1}`}
-                      fill
-                      className="object-cover"
-                      sizes="100vw"
-                    />
+                    <img src={image} alt={`Listing image ${idx + 2}`} className="h-[206px] w-full object-cover lg:h-[266px]" />
+                    {idx === 3 && gallery.length > 5 && (
+                      <span className="absolute bottom-3 right-3 rounded-lg bg-black px-3 py-1.5 text-[12px] font-medium text-white">
+                        All photos
+                      </span>
+                    )}
                   </button>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            <div className="flex items-center justify-center gap-[28px] mt-6">
-              <button
-                onClick={() => navigateMobileGallery(-1)}
-                className="w-[24px] h-[24px] flex items-center justify-center hover:opacity-70 transition-opacity duration-300"
-                aria-label="Previous photo"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/arrow-left.svg" alt="Previous" width={24} height={24} />
-              </button>
-              <button
-                onClick={() => navigateMobileGallery(1)}
-                className="w-[24px] h-[24px] flex items-center justify-center hover:opacity-70 transition-opacity duration-300"
-                aria-label="Next photo"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/arrow-left.svg" alt="Next" width={24} height={24} className="scale-x-[-1]" />
-              </button>
-            </div>
-          </div>
-
-          {/* Desktop/tablet gallery: multi-image grid slider */}
-          <div className="hidden md:block">
-            <div className="overflow-hidden">
-              <AnimatePresence mode="wait" custom={galleryDirection}>
-                <motion.div
-                  key={galleryPage}
-                  custom={galleryDirection}
-                  variants={gallerySlideVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{
-                    x: { type: "spring", stiffness: 200, damping: 30 },
-                    opacity: { duration: 0.25 },
-                  }}
-                  className="grid grid-cols-2 lg:grid-cols-3 gap-4"
-                >
-                  {currentGalleryImages.map((image, index) => {
-                    const absoluteIndex = galleryPage * imagesPerPage + index;
-                    return (
-                      <button
-                        key={absoluteIndex}
-                        onClick={() => openLightbox(absoluteIndex)}
-                        className="relative w-full aspect-[4/3] overflow-clip group"
-                      >
-                        <Image
-                          src={image}
-                          alt={`${listing.address} - Photo ${absoluteIndex + 1}`}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
-                          sizes="(max-width: 1024px) 50vw, 33vw"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
-                      </button>
-                    );
-                  })}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            {totalGalleryPages > 1 && (
-              <div className="flex items-center justify-center gap-[28px] mt-8">
-                <button
-                  onClick={() => navigateGallery(-1)}
-                  className="w-[24px] h-[24px] flex items-center justify-center hover:opacity-70 transition-opacity duration-300"
-                  aria-label="Previous photos"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/images/arrow-left.svg" alt="Previous" width={24} height={24} />
-                </button>
-                <button
-                  onClick={() => navigateGallery(1)}
-                  className="w-[24px] h-[24px] flex items-center justify-center hover:opacity-70 transition-opacity duration-300"
-                  aria-label="Next photos"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/images/arrow-left.svg" alt="Next" width={24} height={24} className="scale-x-[-1]" />
-                </button>
+                ))}
               </div>
-            )}
-          </div>
-        </div>
-      </section>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="w-full overflow-hidden"
+              style={{ borderRadius: `${style.imageBorderRadius}px`, backgroundColor: style.mutedSurfaceColor }}
+              onClick={() => (gallery.length ? setLightboxIndex(0) : null)}
+            >
+              {activeImage ? (
+                <img src={activeImage} alt={listing.address} className="h-[320px] w-full object-cover lg:h-[560px]" />
+              ) : (
+                <div className="grid h-[320px] place-items-center text-[13px] text-[#CCCCCC] lg:h-[560px]">
+                  No gallery images uploaded.
+                </div>
+              )}
+            </button>
+          )}
+        </section>
 
-      {/* Lightbox */}
-      <Lightbox
-        images={listing.gallery}
-        initialIndex={lightboxIndex}
-        isOpen={lightboxOpen}
-        onClose={() => setLightboxOpen(false)}
-      />
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <section className="space-y-6">
+            <div className="space-y-3 pb-5" style={{ borderBottom: `${style.lineWidth}px solid ${style.lineColor}` }}>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-[32px]" style={{ color: style.typography.price.color, fontFamily: style.typography.price.fontFamily, fontSize: `${style.typography.price.fontSize}px`, fontWeight: style.typography.price.fontWeight }}>{formatPrice(listing.listPrice)}</h1>
+                <span className="px-2.5 py-1 text-[11px] font-medium" style={{ borderRadius: `${style.statusBadgeRadius}px`, ...statusStyle(listing.listingStatus, style) }}>
+                  {STATUS_LABELS[listing.listingStatus]}
+                </span>
+              </div>
+              <h2 className="text-[24px]" style={{ color: style.typography.heading.color, fontFamily: style.typography.heading.fontFamily, fontSize: `${style.typography.heading.fontSize}px`, fontWeight: style.typography.heading.fontWeight }}>{listing.address}</h2>
+              <p className="text-[13px]" style={{ color: style.typography.meta.color }}>{listing.neighborhood}, {listing.city}</p>
+              <div className="grid grid-cols-2 gap-4 pt-4 text-[13px] sm:grid-cols-5" style={{ borderTop: `${style.lineWidth}px solid ${style.lineColor}` }}>
+                <p><span style={{ color: style.typography.label.color }}>Beds</span><br /><span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{listing.bedrooms}</span></p>
+                <p><span style={{ color: style.typography.label.color }}>Baths</span><br /><span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{listing.bathrooms}</span></p>
+                <p><span style={{ color: style.typography.label.color }}>Sq Ft</span><br /><span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{formatNumber(listing.livingArea)}</span></p>
+                <p><span style={{ color: style.typography.label.color }}>Year Built</span><br /><span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{listing.yearBuilt}</span></p>
+                <p><span style={{ color: style.typography.label.color }}>Type</span><br /><span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{listing.propertyType}</span></p>
+              </div>
+            </div>
+
+            <section>
+              <h3 className="text-[15px]" style={{ color: style.typography.heading.color, fontWeight: style.typography.heading.fontWeight }}>About This Property</h3>
+              <p
+                className="mt-3 whitespace-pre-wrap leading-6"
+                style={{ color: style.typography.body.color, fontFamily: style.typography.body.fontFamily, fontSize: `${style.typography.body.fontSize}px`, fontWeight: style.typography.body.fontWeight }}
+                dangerouslySetInnerHTML={{ __html: listing.description }}
+              />
+            </section>
+
+            <section>
+              <h3 className="mb-3 text-[15px]" style={{ color: style.typography.heading.color, fontWeight: style.typography.heading.fontWeight }}>Property Details</h3>
+              <div className="grid gap-2.5 text-[13px] sm:grid-cols-3">
+                {[
+                  { label: "Property Type", value: listing.propertyType },
+                  { label: "Lot Area", value: formatLotArea(listing.lotArea, listing.lotAreaUnit) },
+                  { label: "Year Built", value: String(listing.yearBuilt) },
+                  { label: "Taxes", value: formatPrice(listing.taxes) },
+                  { label: "MLS", value: listing.mlsNumber },
+                  { label: "Brokerage", value: listing.listingBrokerage },
+                  ...(listing.representation ? [{ label: "Representation", value: listing.representation }] : []),
+                ].map((item) => (
+                  <div key={item.label} className="bg-white p-4" style={{ borderRadius: `${style.detailsBoxRadius}px`, border: `${style.borderWidth}px solid ${style.borderColor}` }}>
+                    <p className="mb-1" style={{ color: style.typography.label.color }}>{item.label}</p>
+                    <p style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </section>
+
+          <aside className="space-y-4 lg:sticky lg:top-5 lg:self-start">
+            <div className="bg-white p-5" style={{ borderRadius: `${style.borderRadius}px`, border: `${style.borderWidth}px solid ${style.borderColor}` }}>
+              <h3 className="text-[15px]" style={{ color: style.typography.heading.color, fontWeight: style.typography.heading.fontWeight }}>Contact Agent</h3>
+              <p className="mt-2 text-[13px]" style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>Aspen Muraski</p>
+              <div className="mt-3 space-y-2 text-[13px]" style={{ color: style.typography.meta.color }}>
+                <p>Aspen@SundreRealEstate.com</p>
+                <p>403-703-3909</p>
+              </div>
+              <button className="mt-4 w-full px-4 py-2.5" style={{ borderRadius: `${style.borderRadius}px`, backgroundColor: style.accentColor, color: style.typography.button.color, fontFamily: style.typography.button.fontFamily, fontWeight: style.typography.button.fontWeight, fontSize: `${style.typography.button.fontSize}px` }}>
+                Schedule a Tour
+              </button>
+              <button className="mt-2 w-full bg-white px-4 py-2.5" style={{ borderRadius: `${style.borderRadius}px`, border: `${style.borderWidth}px solid ${style.borderColor}`, color: style.typography.button.color, fontFamily: style.typography.button.fontFamily, fontWeight: style.typography.button.fontWeight, fontSize: `${style.typography.button.fontSize}px` }}>
+                Request Info
+              </button>
+            </div>
+
+            <div className="bg-white p-5" style={{ borderRadius: `${style.borderRadius}px`, border: `${style.borderWidth}px solid ${style.borderColor}` }}>
+              <h3 className="text-[15px]" style={{ color: style.typography.heading.color, fontWeight: style.typography.heading.fontWeight }}>Estimated Payment</h3>
+              <div className="mt-4 p-4 text-center" style={{ borderRadius: `${style.detailsBoxRadius}px`, backgroundColor: style.mutedSurfaceColor }}>
+                <p className="text-[28px] leading-tight" style={{ color: style.typography.heading.color, fontWeight: style.typography.heading.fontWeight }}>{formatPrice(Math.round(estimatedMonthlyPayment))}</p>
+                <p className="mt-1 text-[13px]" style={{ color: style.typography.meta.color }}>per month</p>
+              </div>
+
+              <div className="mt-4 space-y-2 text-[13px]">
+                <div className="flex items-center justify-between">
+                  <span style={{ color: style.typography.label.color }}>Principal &amp; Interest</span>
+                  <span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{formatPrice(Math.round(principalAndInterestMonthly))}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span style={{ color: style.typography.label.color }}>Property Tax</span>
+                  <span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{formatPrice(Math.round(propertyTaxMonthly))}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span style={{ color: style.typography.label.color }}>Home Insurance</span>
+                  <span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{formatPrice(Math.round(homeInsuranceMonthly))}</span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="mt-4 flex w-full items-center justify-center gap-1 text-[13px] hover:text-black"
+                style={{ color: style.typography.meta.color }}
+                onClick={() => setShowAssumptions((prev) => !prev)}
+              >
+                Adjust Assumptions {showAssumptions ? "▲" : "▼"}
+              </button>
+
+              {showAssumptions && (
+                <div className="mt-4 space-y-4 pt-4" style={{ borderTop: `${style.lineWidth}px solid ${style.lineColor}` }}>
+                  <div>
+                    <div className="mb-2 flex items-center justify-between text-[13px]">
+                      <span style={{ color: style.typography.label.color }}>Down Payment</span>
+                      <span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>
+                        {downPaymentPercent}% ({formatPrice(Math.round(downPaymentAmount))})
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={60}
+                      step={1}
+                      value={downPaymentPercent}
+                      onChange={(event) => setDownPaymentPercent(Number(event.target.value))}
+                      className="w-full"
+                      style={{ accentColor: style.accentColor }}
+                    />
+                  </div>
+
+                  <div>
+                    <div className="mb-2 flex items-center justify-between text-[13px]">
+                      <span style={{ color: style.typography.label.color }}>Interest Rate</span>
+                      <span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{interestRate.toFixed(1)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={2}
+                      max={12}
+                      step={0.1}
+                      value={interestRate}
+                      onChange={(event) => setInterestRate(Number(event.target.value))}
+                      className="w-full"
+                      style={{ accentColor: style.accentColor }}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 text-[13px]" style={{ borderTop: `${style.lineWidth}px solid ${style.lineColor}` }}>
+                    <span style={{ color: style.typography.label.color }}>Loan Amount</span>
+                    <span className="text-[20px]" style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{formatPrice(Math.round(loanAmount))}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      {lightboxIndex !== null && (
+        <Lightbox
+          images={gallery}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
     </>
+  );
+}
+
+function Lightbox({
+  images,
+  initialIndex,
+  onClose,
+}: {
+  images: string[];
+  initialIndex: number;
+  onClose: () => void;
+}) {
+  const [idx, setIdx] = useState(initialIndex);
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90" onClick={onClose}>
+      <div className="relative max-h-[90vh] max-w-[90vw]" onClick={(event) => event.stopPropagation()}>
+        <img
+          src={images[idx]}
+          alt={`Listing image ${idx + 1}`}
+          className="max-h-[85vh] max-w-full rounded-lg object-contain"
+        />
+
+        {idx > 0 && (
+          <button
+            type="button"
+            onClick={() => setIdx((value) => value - 1)}
+            className="absolute left-[-48px] top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+          >
+            &#8592;
+          </button>
+        )}
+        {idx < images.length - 1 && (
+          <button
+            type="button"
+            onClick={() => setIdx((value) => value + 1)}
+            className="absolute right-[-48px] top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+          >
+            &#8594;
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute -top-10 right-0 text-sm text-white/60 hover:text-white"
+        >
+          Close &times;
+        </button>
+
+        <p className="mt-1 text-center text-xs text-white/40">
+          {idx + 1} / {images.length}
+        </p>
+      </div>
+    </div>
   );
 }
