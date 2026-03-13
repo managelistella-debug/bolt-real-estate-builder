@@ -8,6 +8,21 @@ const corsHeaders = {
   'Cache-Control': 'no-cache, no-store, must-revalidate',
 };
 
+function firstValidGalleryUrl(gallery: unknown): string | null {
+  if (!Array.isArray(gallery)) return null;
+  for (const item of gallery) {
+    const url =
+      typeof item === 'string'
+        ? item
+        : item && typeof item === 'object' && 'url' in item
+          ? String((item as { url?: unknown }).url ?? '')
+          : '';
+    const trimmed = url.trim();
+    if (trimmed) return trimmed;
+  }
+  return null;
+}
+
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
@@ -43,6 +58,7 @@ export async function GET(req: NextRequest) {
   const neighborhood = sp.get('neighborhood');
   const propertyType = sp.get('propertyType');
   const sort = sp.get('sort') || 'newest';
+  const slug = sp.get('slug');
   const page = Math.max(1, parseInt(sp.get('page') || '1', 10));
   const perPageParam = sp.get('perPage');
   const perPage = perPageParam ? Math.max(1, parseInt(perPageParam, 10)) : null;
@@ -53,6 +69,10 @@ export async function GET(req: NextRequest) {
   const tenantIds = await resolveListingsTenantIds(tenantId);
 
   let query = sb.from('listings').select('*', { count: 'exact' }).in('tenant_id', tenantIds);
+
+  if (slug) {
+    query = query.eq('slug', slug);
+  }
 
   if (status) {
     const statuses = status.split(',').map((s) => s.trim()).filter(Boolean);
@@ -128,7 +148,7 @@ export async function GET(req: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let enriched = (data ?? []).map((row: any) => ({
     ...row,
-    thumbnail: row.thumbnail || (Array.isArray(row.gallery) && row.gallery[0]?.url) || null,
+    thumbnail: row.thumbnail || firstValidGalleryUrl(row.gallery),
     homepage_featured: row.homepage_featured ?? false,
   }));
 

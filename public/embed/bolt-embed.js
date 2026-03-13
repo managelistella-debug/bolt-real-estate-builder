@@ -12,6 +12,97 @@
 
   var API_BASE = ORIGIN + '/api/public';
   var PREFIX = 'bolt-e';
+  var CACHE_TTL_MS = 15000;
+  var __cache = {};
+  var __instanceCounter = 0;
+
+  function fetchJsonCached(url, key, ttlMs) {
+    var now = Date.now();
+    var cacheKey = key || url;
+    var hit = __cache[cacheKey];
+    if (hit && hit.exp > now) {
+      return Promise.resolve(hit.value);
+    }
+    return fetch(url)
+      .then(function (r) { return r.json(); })
+      .then(function (value) {
+        __cache[cacheKey] = { value: value, exp: now + (ttlMs || CACHE_TTL_MS) };
+        return value;
+      });
+  }
+
+  function ensureInstanceId(container) {
+    var existing = container.getAttribute('data-bolt-instance-id');
+    if (existing) return existing;
+    __instanceCounter += 1;
+    var next = String(__instanceCounter);
+    container.setAttribute('data-bolt-instance-id', next);
+    return next;
+  }
+
+  function minHeightForType(type) {
+    if (type === 'listing-detail') return '760px';
+    if (type === 'blog-feed') return '700px';
+    if (type === 'listing-feed') return '560px';
+    if (type === 'testimonial-feed') return '320px';
+    return '260px';
+  }
+
+  function ensureSurface(container, type) {
+    if (container._embedSurface) return container._embedSurface;
+    var shell = el('div');
+    css(shell, {
+      minHeight: minHeightForType(type),
+      position: 'relative',
+      transition: 'opacity .28s ease',
+      opacity: '1'
+    });
+    var status = el('div');
+    css(status, {
+      position: 'absolute',
+      inset: '0',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: '#888C99',
+      fontSize: '13px',
+      background: 'linear-gradient(90deg,#f3f4f6 0%,#fafafa 50%,#f3f4f6 100%)',
+      backgroundSize: '240% 100%',
+      animation: PREFIX + '-pulse 1.2s ease-in-out infinite'
+    });
+    var content = el('div');
+    css(content, { opacity: '0', transition: 'opacity .28s ease' });
+    shell.appendChild(status);
+    shell.appendChild(content);
+    container.innerHTML = '';
+    container.appendChild(shell);
+    container._embedSurface = { shell: shell, status: status, content: content };
+    return container._embedSurface;
+  }
+
+  function setSurfaceStatus(container, message) {
+    var surface = ensureSurface(container, container.getAttribute('data-bolt-embed') || '');
+    surface.status.textContent = message || '';
+    surface.status.style.display = message ? 'flex' : 'none';
+  }
+
+  function swapContentWithFade(container, node) {
+    var surface = ensureSurface(container, container.getAttribute('data-bolt-embed') || '');
+    surface.content.style.opacity = '0';
+    surface.content.innerHTML = '';
+    if (node) surface.content.appendChild(node);
+    requestAnimationFrame(function () {
+      surface.content.style.opacity = '1';
+    });
+    setSurfaceStatus(container, '');
+  }
+
+  function renderError(container, message) {
+    var box = el('div');
+    css(box, { padding: '40px', textAlign: 'center', color: '#888', fontSize: '13px' });
+    box.textContent = message;
+    swapContentWithFade(container, box);
+  }
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -24,10 +115,35 @@
   var STATUS_LABELS = { for_sale: 'For Sale', pending: 'Pending', sold: 'Sold' };
   var REP_LABELS = { buyer_representation: 'Buyer Representation', seller_representation: 'Seller Representation' };
 
+  function normalizeUrl(raw) {
+    var value = (raw || '').toString().trim();
+    if (!value) return '';
+    if (/^https?:\/\//i.test(value) || value.indexOf('data:') === 0) return value;
+    if (value.charAt(0) === '/' && ORIGIN) return ORIGIN + value;
+    if (ORIGIN) return ORIGIN + '/' + value.replace(/^\/+/, '');
+    return value;
+  }
+
+  function galleryImages(row) {
+    var gallery = Array.isArray(row && row.gallery) ? row.gallery.slice() : [];
+    gallery.sort(function (a, b) {
+      var aOrder = a && typeof a.order === 'number' ? a.order : Number.MAX_SAFE_INTEGER;
+      var bOrder = b && typeof b.order === 'number' ? b.order : Number.MAX_SAFE_INTEGER;
+      return aOrder - bOrder;
+    });
+    var urls = [];
+    gallery.forEach(function (item) {
+      var url = item && typeof item === 'object' ? normalizeUrl(item.url) : normalizeUrl(item);
+      if (url) urls.push(url);
+    });
+    return urls;
+  }
+
   function getThumb(row) {
-    var url = row.thumbnail || (row.gallery && row.gallery[0] && row.gallery[0].url) || '';
-    if (url && url.charAt(0) === '/' && ORIGIN) url = ORIGIN + url;
-    return url;
+    var direct = normalizeUrl(row && row.thumbnail);
+    if (direct) return direct;
+    var imgs = galleryImages(row);
+    return imgs[0] || '';
   }
 
   function el(tag, attrs, children) {
@@ -68,35 +184,39 @@
 
   // ── Scoped CSS ───────────────────────────────────────────────────────────────
 
-  function injectStyles(cfg) {
-    var existing = document.getElementById(PREFIX + '-styles');
+  function injectStyles(cfg, container) {
+    var instanceId = ensureInstanceId(container || document.body);
+    var styleId = PREFIX + '-styles-' + instanceId;
+    var existing = document.getElementById(styleId);
     if (existing) existing.remove();
     var v = d(cfg);
     var tabCols = (v.responsive.tablet && v.responsive.tablet.columns) || cfg.columns || 3;
     var mobCols = (v.responsive.mobile && v.responsive.mobile.columns) || tabCols;
+    var scope = '[data-bolt-instance-id="' + instanceId + '"] ';
 
     var baseCss = [
-      '.' + PREFIX + '-wrap{font-family:"Geist","Inter",system-ui,sans-serif}',
-      '.' + PREFIX + '-grid{display:grid}',
-      '.' + PREFIX + '-card{display:block;overflow:hidden;text-decoration:none;color:inherit;transition:border-color .2s,box-shadow .2s}',
-      '.' + PREFIX + '-card:hover{opacity:0.92}',
-      '.' + PREFIX + '-card-img img{width:100%;height:100%;object-fit:cover;transition:transform .3s}',
-      '.' + PREFIX + '-card:hover .' + PREFIX + '-card-img img{transform:scale(1.02)}',
-      '.' + PREFIX + '-no-img{display:flex;align-items:center;justify-content:center;height:100%;color:#CCC;font-size:13px}',
-      '.' + PREFIX + '-pagination{display:flex;justify-content:center;gap:8px;margin-top:24px}',
-      '.' + PREFIX + '-page-btn{padding:8px 12px;border:1px solid #EBEBEB;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;color:#888C99}',
-      '.' + PREFIX + '-page-btn.active{background:#000;color:#fff;border-color:#000}',
-      '.' + PREFIX + '-page-btn:disabled{opacity:.4;cursor:default}',
-      '.' + PREFIX + '-load-more{display:flex;justify-content:center;margin-top:24px}',
-      '.' + PREFIX + '-load-btn{padding:10px 24px;border:1px solid #EBEBEB;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;color:#000}',
-      '.' + PREFIX + '-load-btn:hover{background:#F5F5F3}',
-      '.' + PREFIX + '-loading{padding:40px;text-align:center;color:#888C99;font-size:13px}',
-      '@media(max-width:768px){.' + PREFIX + '-grid{grid-template-columns:repeat(' + tabCols + ',1fr)!important}}',
-      '@media(max-width:480px){.' + PREFIX + '-grid{grid-template-columns:repeat(' + mobCols + ',1fr)!important}}',
+      '@keyframes ' + PREFIX + '-pulse{0%{background-position:0% 50%}100%{background-position:100% 50%}}',
+      scope + '.' + PREFIX + '-wrap{font-family:"Geist","Inter",system-ui,sans-serif}',
+      scope + '.' + PREFIX + '-grid{display:grid}',
+      scope + '.' + PREFIX + '-card{display:block;overflow:hidden;text-decoration:none;color:inherit;transition:border-color .2s,box-shadow .2s}',
+      scope + '.' + PREFIX + '-card:hover{opacity:0.92}',
+      scope + '.' + PREFIX + '-card-img img{width:100%;height:100%;object-fit:cover;transition:transform .3s}',
+      scope + '.' + PREFIX + '-card:hover .' + PREFIX + '-card-img img{transform:scale(1.02)}',
+      scope + '.' + PREFIX + '-no-img{display:flex;align-items:center;justify-content:center;height:100%;color:#CCC;font-size:13px}',
+      scope + '.' + PREFIX + '-pagination{display:flex;justify-content:center;gap:8px;margin-top:24px}',
+      scope + '.' + PREFIX + '-page-btn{padding:8px 12px;border:1px solid #EBEBEB;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;color:#888C99}',
+      scope + '.' + PREFIX + '-page-btn.active{background:#000;color:#fff;border-color:#000}',
+      scope + '.' + PREFIX + '-page-btn:disabled{opacity:.4;cursor:default}',
+      scope + '.' + PREFIX + '-load-more{display:flex;justify-content:center;margin-top:24px}',
+      scope + '.' + PREFIX + '-load-btn{padding:10px 24px;border:1px solid #EBEBEB;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;color:#000}',
+      scope + '.' + PREFIX + '-load-btn:hover{background:#F5F5F3}',
+      scope + '.' + PREFIX + '-loading{padding:40px;text-align:center;color:#888C99;font-size:13px}',
+      '@media(max-width:768px){' + scope + '.' + PREFIX + '-grid{grid-template-columns:repeat(' + tabCols + ',1fr)!important}}',
+      '@media(max-width:480px){' + scope + '.' + PREFIX + '-grid{grid-template-columns:repeat(' + mobCols + ',1fr)!important}}',
     ].join('\n');
 
     var style = document.createElement('style');
-    style.id = PREFIX + '-styles';
+    style.id = styleId;
     style.textContent = baseCss;
     document.head.appendChild(style);
   }
@@ -308,7 +428,7 @@
   // ── Carousel renderer ─────────────────────────────────────────────────────
 
   function renderCarousel(container, config, listings) {
-    container.innerHTML = '';
+    var mount = el('div');
     var v = d(config);
     var cc = v.carousel;
     var displayed = listings.slice(0, cc.totalListings || listings.length);
@@ -385,14 +505,14 @@
       row.appendChild(leftBtn);
       row.appendChild(viewport);
       row.appendChild(rightBtn);
-      container.appendChild(row);
+      mount.appendChild(row);
     } else {
-      container.appendChild(viewport);
+      mount.appendChild(viewport);
       var arrows = el('div');
       css(arrows, { display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '16px' });
       arrows.appendChild(leftBtn);
       arrows.appendChild(rightBtn);
-      container.appendChild(arrows);
+      mount.appendChild(arrows);
     }
 
     updateTransform();
@@ -403,12 +523,13 @@
         updateTransform();
       }, cc.autoplayInterval * 1000);
     }
+    swapContentWithFade(container, mount);
   }
 
   // ── Feed renderer ──────────────────────────────────────────────────────────
 
   function renderFeed(container, config, listings, total, page, loadedExtra) {
-    container.innerHTML = '';
+    var mount = el('div');
     var v = d(config);
 
     if (v.layout === 'carousel') {
@@ -425,7 +546,7 @@
       var href = detailPattern.replace('{slug}', listing.slug);
       grid.appendChild(renderCard(listing, config, href));
     });
-    container.appendChild(grid);
+    mount.appendChild(grid);
 
     var perPage = config.itemsPerPage === 'unlimited' ? null : config.itemsPerPage;
     var totalPages = perPage ? Math.ceil(total / perPage) : 1;
@@ -462,7 +583,7 @@
       var nextBtn = makePagBtn('&rarr;', false, page >= totalPages);
       nextBtn.onclick = function () { if (page < totalPages) loadPage(container, config, page + 1, 0); };
       pagDiv.appendChild(nextBtn);
-      container.appendChild(pagDiv);
+      mount.appendChild(pagDiv);
     }
 
     if (config.paginationType === 'load_more' && perPage && (perPage + loadedExtra) < total) {
@@ -481,14 +602,15 @@
       lmBtn.onmouseleave = function () { lmBtn.style.background = lb.bg; lmBtn.style.color = lb.color; };
       lmBtn.onclick = function () { loadPage(container, config, 1, loadedExtra + perPage); };
       lmDiv.appendChild(lmBtn);
-      container.appendChild(lmDiv);
+      mount.appendChild(lmDiv);
     }
 
     if (v.showCount) {
       var countEl = el('p', {}, 'Showing ' + listings.length + ' of ' + total + ' listings');
       css(countEl, { marginTop: '16px', textAlign: 'center', fontSize: '12px', color: '#CCC' });
-      container.appendChild(countEl);
+      mount.appendChild(countEl);
     }
+    swapContentWithFade(container, mount);
   }
 
   function loadPage(container, config, page, loadedExtra) {
@@ -518,17 +640,18 @@
     }
     if (maxL && maxL !== 'unlimited') sp.set('limit', String(maxL));
 
-    container.innerHTML = '<div class="' + PREFIX + '-loading">Loading listings...</div>';
-
-    fetch(API_BASE + '/listings?' + sp.toString())
-      .then(function (r) { return r.json(); })
+    var isInitial = !container._listingRendered;
+    setSurfaceStatus(container, isInitial ? 'Loading listings...' : 'Updating listings...');
+    var listUrl = API_BASE + '/listings?' + sp.toString();
+    fetchJsonCached(listUrl, 'listings:' + sp.toString(), 10000)
       .then(function (res) {
         var data = Array.isArray(res) ? res : (res.data || []);
         var total = Array.isArray(res) ? res.length : (res.total || 0);
         renderFeed(container, config, data, total, page, loadedExtra);
+        container._listingRendered = true;
       })
       .catch(function () {
-        container.innerHTML = '<div class="' + PREFIX + '-loading">Failed to load listings.</div>';
+        renderError(container, 'Failed to load listings.');
       });
   }
 
@@ -549,35 +672,41 @@
     }
 
     if (!tenantId || !slug) {
-      container.innerHTML = '<div class="' + PREFIX + '-loading">Missing tenant ID or listing slug.</div>';
+      renderError(container, 'Missing tenant ID or listing slug.');
       return;
     }
 
-    container.innerHTML = '<div class="' + PREFIX + '-loading">Loading listing...</div>';
-
-    fetch(API_BASE + '/listings?tenantId=' + encodeURIComponent(tenantId))
-      .then(function (r) { return r.json(); })
+    setSurfaceStatus(container, 'Loading listing...');
+    var detailUrl = API_BASE + '/listings?tenantId=' + encodeURIComponent(tenantId) + '&slug=' + encodeURIComponent(slug) + '&perPage=1';
+    fetchJsonCached(detailUrl, 'listing-detail:' + tenantId + ':' + slug, 10000)
       .then(function (listings) {
         var arr = Array.isArray(listings) ? listings : (listings.data || []);
-        var listing = null;
-        for (var j = 0; j < arr.length; j++) { if (arr[j].slug === slug) { listing = arr[j]; break; } }
-        if (!listing) { container.innerHTML = '<div class="' + PREFIX + '-loading">Listing not found.</div>'; return; }
+        var listing = arr && arr.length ? arr[0] : null;
+        if (!listing) { renderError(container, 'Listing not found.'); return; }
         renderDetailPage(container, listing);
       })
       .catch(function () {
-        container.innerHTML = '<div class="' + PREFIX + '-loading">Failed to load listing.</div>';
+        renderError(container, 'Failed to load listing.');
       });
   }
 
   function renderDetailPage(container, listing) {
     var thumb = getThumb(listing);
     var status = listing.listing_status || '';
-    var gallery = listing.gallery || [];
-    gallery.sort(function (a, b) { return a.order - b.order; });
+    var gallery = galleryImages(listing);
 
     var html = '<div class="' + PREFIX + '-wrap" style="max-width:1300px;margin:0 auto;padding:16px">';
     html += '<div style="margin-bottom:16px;display:flex;justify-content:space-between;font-size:13px"><span style="color:#888C99">MLS# ' + (listing.mls_number || '') + '</span></div>';
-    if (thumb) { html += '<div style="margin-bottom:32px;border-radius:12px;overflow:hidden"><img src="' + thumb + '" alt="' + (listing.address || '') + '" style="width:100%;max-height:560px;object-fit:cover"></div>'; }
+    if (thumb) { html += '<div style="margin-bottom:12px;border-radius:12px;overflow:hidden"><img src="' + thumb + '" alt="' + (listing.address || '') + '" style="width:100%;max-height:560px;object-fit:cover"></div>'; }
+    if (gallery.length > 1) {
+      html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:24px">';
+      for (var gi = 1; gi < gallery.length; gi++) {
+        html += '<img src="' + gallery[gi] + '" alt="' + (listing.address || '') + '" loading="lazy" style="width:100%;height:96px;object-fit:cover;border-radius:8px;border:1px solid #EBEBEB"/>';
+      }
+      html += '</div>';
+    } else {
+      html += '<div style="margin-bottom:16px"></div>';
+    }
     html += '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px">';
     html += '<span style="font-size:32px;font-weight:500;color:#000">' + formatPrice(listing.list_price) + '</span>';
     var badgeBg = status === 'for_sale' ? '#DAFF07' : status === 'pending' ? '#F5F5F3' : '#000';
@@ -600,7 +729,9 @@
     var details = [['Property Type', listing.property_type], ['Lot Area', listing.lot_area_value + ' ' + (listing.lot_area_unit || 'sqft')], ['Year Built', listing.year_built], ['Taxes', formatPrice(listing.taxes_annual)], ['MLS', listing.mls_number], ['Brokerage', listing.listing_brokerage]];
     details.forEach(function (dd) { html += '<div style="border:1px solid #EBEBEB;border-radius:12px;padding:16px"><p style="color:#888C99;margin:0 0 4px">' + dd[0] + '</p><p style="font-weight:500;color:#000;margin:0">' + (dd[1] || '') + '</p></div>'; });
     html += '</div></div></div>';
-    container.innerHTML = html;
+    var node = el('div');
+    node.innerHTML = html;
+    swapContentWithFade(container, node);
   }
 
   // ── Testimonial Feed ─────────────────────────────────────────────────────────
@@ -657,8 +788,7 @@
   }
 
   function renderTestimonialFeed(container, cfg, testimonials) {
-    container.innerHTML = '';
-
+    var mount = el('div');
     var items = testimonials.slice();
     if (cfg.selectionMode === 'manual' && cfg.selectedTestimonialIds && cfg.selectedTestimonialIds.length) {
       var sIds = {};
@@ -675,7 +805,7 @@
     else if (cfg.sortBy !== 'custom_order') items.sort(function (a, b) { return (a.sort_order || 0) - (b.sort_order || 0); });
 
     if (items.length === 0) {
-      container.innerHTML = '<div style="padding:40px;text-align:center;color:#888;font-family:system-ui">No testimonials to display.</div>';
+      renderError(container, 'No testimonials to display.');
       return;
     }
 
@@ -813,7 +943,7 @@
 
     wrap.appendChild(grid);
     wrap.appendChild(navWrap);
-    container.appendChild(wrap);
+    mount.appendChild(wrap);
     renderPage();
 
     if (cfg.autoplay && cfg.autoplayInterval > 0 && totalPages > 1) {
@@ -822,23 +952,26 @@
         renderPage();
       }, (cfg.autoplayInterval || 5) * 1000);
     }
+    swapContentWithFade(container, mount);
   }
 
-  function loadTestimonialFeed(container, cfg) {
+  function loadTestimonialFeed(container, cfg, prefetchedRows) {
     var tenantId = container.getAttribute('data-tenant-id');
     if (!tenantId) {
-      container.innerHTML = '<div style="padding:40px;text-align:center;color:#888">Missing tenant ID.</div>';
+      renderError(container, 'Missing tenant ID.');
       return;
     }
-    container.innerHTML = '<div style="padding:40px;text-align:center;color:#888;font-size:13px">Loading testimonials...</div>';
+    setSurfaceStatus(container, 'Loading testimonials...');
 
-    fetch(API_BASE + '/testimonials?tenantId=' + encodeURIComponent(tenantId))
-      .then(function (r) { return r.json(); })
+    var rowsPromise = prefetchedRows
+      ? Promise.resolve(prefetchedRows)
+      : fetchJsonCached(API_BASE + '/testimonials?tenantId=' + encodeURIComponent(tenantId), 'testimonials:' + tenantId, 10000);
+    rowsPromise
       .then(function (rows) {
         renderTestimonialFeed(container, cfg, rows || []);
       })
       .catch(function () {
-        container.innerHTML = '<div style="padding:40px;text-align:center;color:#888">Failed to load testimonials.</div>';
+        renderError(container, 'Failed to load testimonials.');
       });
   }
 
@@ -1090,7 +1223,6 @@
     var gridItems = showFeatured ? items.slice(1) : items;
     var columns = Math.max(1, blogResponsiveValue(cfg.columns, device, isMobile ? 1 : 2));
 
-    container.innerHTML = '';
     var root = el('section');
     css(root, { fontFamily: '"Inter", system-ui, sans-serif' });
 
@@ -1160,47 +1292,58 @@
       wrap.appendChild(loadWrap);
     }
 
-    container.appendChild(root);
+    swapContentWithFade(container, root);
   }
 
   function loadBlogFeed(container, blogEmbedId) {
     if (!blogEmbedId) return;
-    container.innerHTML = '<div style="padding:40px;text-align:center;color:#888;font-size:13px">Loading blog posts...</div>';
+    setSurfaceStatus(container, 'Loading blog posts...');
+    var configUrl = API_BASE + '/embed-config/' + encodeURIComponent(blogEmbedId);
+    var hostTenantId = container.getAttribute('data-tenant-id') || '';
+    var earlyRowsPromise = hostTenantId
+      ? fetchJsonCached(API_BASE + '/blogs?tenantId=' + encodeURIComponent(hostTenantId), 'blogs:' + hostTenantId, 10000)
+      : null;
 
-    fetch(API_BASE + '/embed-config/' + encodeURIComponent(blogEmbedId))
-      .then(function (r) { return r.json(); })
+    fetchJsonCached(configUrl, 'embed-config:blog:' + blogEmbedId, 10000)
       .then(function (embedCfg) {
         var cfg = blogNormalizeConfig(embedCfg && embedCfg.config);
-        var tenantId = container.getAttribute('data-tenant-id') || (embedCfg && embedCfg.tenant_id) || '';
+        var tenantId = hostTenantId || (embedCfg && embedCfg.tenant_id) || '';
         if (!tenantId) {
-          container.innerHTML = '<div style="padding:40px;text-align:center;color:#888">Missing tenant ID.</div>';
-          return;
+          renderError(container, 'Missing tenant ID.');
+          return null;
         }
-        return fetch(API_BASE + '/blogs?tenantId=' + encodeURIComponent(tenantId))
-          .then(function (r) { return r.json(); })
-          .then(function (rows) {
-            var posts = blogNormalizeRows(Array.isArray(rows) ? rows : []);
-            var state = {
-              page: 1,
-              visibleCount: cfg.pagination.mode === 'load_more' || cfg.pagination.mode === 'infinite'
-                ? Math.max(1, cfg.pagination.infiniteBatchSize || 3)
-                : Math.max(1, blogResponsiveValue(cfg.perPage, blogDevice(), 9))
-            };
-            container._blogFeedCfg = cfg;
-            container._blogFeedPosts = posts;
-            container._blogFeedState = state;
-            renderBlogFeed(container, cfg, posts, state);
+        var rowsPromise = earlyRowsPromise && tenantId === hostTenantId
+          ? earlyRowsPromise
+          : fetchJsonCached(API_BASE + '/blogs?tenantId=' + encodeURIComponent(tenantId), 'blogs:' + tenantId, 10000);
+        return rowsPromise.then(function (rows) {
+          return { rows: rows, cfg: cfg };
+        });
+      })
+      .then(function (payload) {
+        if (!payload) return;
+        var rows = payload.rows;
+        var cfg = payload.cfg;
+        var posts = blogNormalizeRows(Array.isArray(rows) ? rows : []);
+        var state = {
+          page: 1,
+          visibleCount: cfg.pagination.mode === 'load_more' || cfg.pagination.mode === 'infinite'
+            ? Math.max(1, cfg.pagination.infiniteBatchSize || 3)
+            : Math.max(1, blogResponsiveValue(cfg.perPage, blogDevice(), 9))
+        };
+        container._blogFeedCfg = cfg;
+        container._blogFeedPosts = posts;
+        container._blogFeedState = state;
+        renderBlogFeed(container, cfg, posts, state);
 
-            if (container._blogFeedResizeHandler) window.removeEventListener('resize', container._blogFeedResizeHandler);
-            container._blogFeedResizeHandler = function () {
-              if (!container._blogFeedCfg || !container._blogFeedPosts || !container._blogFeedState) return;
-              renderBlogFeed(container, container._blogFeedCfg, container._blogFeedPosts, container._blogFeedState);
-            };
-            window.addEventListener('resize', container._blogFeedResizeHandler);
-          });
+        if (container._blogFeedResizeHandler) window.removeEventListener('resize', container._blogFeedResizeHandler);
+        container._blogFeedResizeHandler = function () {
+          if (!container._blogFeedCfg || !container._blogFeedPosts || !container._blogFeedState) return;
+          renderBlogFeed(container, container._blogFeedCfg, container._blogFeedPosts, container._blogFeedState);
+        };
+        window.addEventListener('resize', container._blogFeedResizeHandler);
       })
       .catch(function () {
-        container.innerHTML = '<div style="padding:40px;text-align:center;color:#888">Failed to load blog feed.</div>';
+        renderError(container, 'Failed to load blog feed.');
       });
   }
 
@@ -1209,35 +1352,52 @@
   function init() {
     var containers = document.querySelectorAll('[data-bolt-embed]');
     containers.forEach(function (container) {
+      ensureInstanceId(container);
       var type = container.getAttribute('data-bolt-embed');
+      ensureSurface(container, type);
       if (type === 'listing-feed') {
         var embedId = container.getAttribute('data-embed-id');
         if (embedId) {
-          fetch(API_BASE + '/embed-config/' + encodeURIComponent(embedId))
-            .then(function (r) { return r.json(); })
+          setSurfaceStatus(container, 'Loading listings...');
+          fetchJsonCached(API_BASE + '/embed-config/' + encodeURIComponent(embedId), 'embed-config:listing-feed:' + embedId, 10000)
             .then(function (cfg) {
               var feedConfig = cfg.config || {};
               container._feedConfig = feedConfig;
-              injectStyles(feedConfig);
+              injectStyles(feedConfig, container);
               loadPage(container, feedConfig, 1, 0);
             })
             .catch(function () {
-              container.innerHTML = '<div class="' + PREFIX + '-loading">Failed to load embed configuration.</div>';
+              renderError(container, 'Failed to load embed configuration.');
             });
         }
       } else if (type === 'listing-detail') {
-        injectStyles({});
+        injectStyles({}, container);
         loadDetail(container);
       } else if (type === 'testimonial-feed') {
         var tfEmbedId = container.getAttribute('data-embed-id');
         if (tfEmbedId) {
-          fetch(API_BASE + '/embed-config/' + encodeURIComponent(tfEmbedId))
-            .then(function (r) { return r.json(); })
+          setSurfaceStatus(container, 'Loading testimonials...');
+          var tenantId = container.getAttribute('data-tenant-id') || '';
+          var rowsPromise = tenantId
+            ? fetchJsonCached(API_BASE + '/testimonials?tenantId=' + encodeURIComponent(tenantId), 'testimonials:' + tenantId, 10000)
+            : null;
+          var cfgPromise = fetchJsonCached(
+            API_BASE + '/embed-config/' + encodeURIComponent(tfEmbedId),
+            'embed-config:testimonial:' + tfEmbedId,
+            10000
+          );
+          cfgPromise
             .then(function (cfg) {
+              if (rowsPromise) {
+                rowsPromise
+                  .then(function (rows) { loadTestimonialFeed(container, cfg.config || {}, rows || []); })
+                  .catch(function () { loadTestimonialFeed(container, cfg.config || {}); });
+                return;
+              }
               loadTestimonialFeed(container, cfg.config || {});
             })
             .catch(function () {
-              container.innerHTML = '<div style="padding:40px;text-align:center;color:#888">Failed to load embed configuration.</div>';
+              renderError(container, 'Failed to load embed configuration.');
             });
         }
       } else if (type === 'blog-feed') {
