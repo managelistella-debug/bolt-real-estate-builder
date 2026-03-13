@@ -1,30 +1,33 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import ScrollReveal from "@/components/ScrollReveal";
-import EstateCard from "./EstateCard";
-import Pagination from "@/components/listings/Pagination";
-import { getActiveEstates } from "@/lib/estates";
+import ListingCard from "@/components/listings/ListingCard";
+import { Listing } from "@/lib/listings";
 
 const ITEMS_PER_PAGE = 12;
 
-export default function EstatesListingsPage() {
-  const allEstates = getActiveEstates();
-  const totalPages = Math.ceil(allEstates.length / ITEMS_PER_PAGE);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [direction, setDirection] = useState(0);
+interface EstatesListingsPageProps {
+  listings: Listing[];
+}
 
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const currentEstates = allEstates.slice(
-    startIndex,
-    startIndex + ITEMS_PER_PAGE
-  );
+type FilterState = "all" | "active" | "sold";
 
-  const handlePageChange = (page: number) => {
-    setDirection(page > currentPage ? 1 : -1);
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+export default function EstatesListingsPage({ listings }: EstatesListingsPageProps) {
+  const [filter, setFilter] = useState<FilterState>("all");
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+
+  const filteredListings = listings.filter((listing) => {
+    if (filter === "all") return true;
+    return listing.listingStatus === filter;
+  });
+  const visibleListings = filteredListings.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredListings.length;
+
+  const setFilterAndReset = (next: FilterState) => {
+    setFilter(next);
+    setVisibleCount(ITEMS_PER_PAGE);
   };
 
   return (
@@ -75,7 +78,7 @@ export default function EstatesListingsPage() {
               className="text-white/40 text-[14px]"
               style={{ fontFamily: "'Lato', sans-serif" }}
             >
-              {allEstates.length} {allEstates.length === 1 ? "property" : "properties"} available
+              {filteredListings.length} {filteredListings.length === 1 ? "property" : "properties"} available
             </span>
           </motion.div>
         </div>
@@ -84,34 +87,54 @@ export default function EstatesListingsPage() {
       {/* Listings Grid - 2 columns like active listings */}
       <section className="bg-[#09312a]">
         <div className="max-w-[1440px] mx-auto px-5 md:px-10 lg:px-[60px] py-10 md:py-[60px]">
-          <AnimatePresence mode="wait" custom={direction}>
-            <motion.div
-              key={currentPage}
-              custom={direction}
-              initial={{ opacity: 0, y: direction > 0 ? 30 : -30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: direction < 0 ? 30 : -30 }}
-              transition={{
-                duration: 0.4,
-                ease: [0.25, 0.46, 0.45, 0.94],
-              }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 lg:gap-10"
+          <div className="mb-6 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setFilterAndReset("all")}
+              className={`rounded-md px-4 py-2 text-sm ${filter === "all" ? "gold-gradient-bg text-[#09312a]" : "border border-white/20 text-white/80"}`}
             >
-              {currentEstates.map((estate, index) => (
-                <ScrollReveal key={estate.id} delay={index * 0.08}>
-                  <EstateCard estate={estate} showPrice={true} />
-                </ScrollReveal>
-              ))}
-            </motion.div>
-          </AnimatePresence>
+              All
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterAndReset("active")}
+              className={`rounded-md px-4 py-2 text-sm ${filter === "active" ? "gold-gradient-bg text-[#09312a]" : "border border-white/20 text-white/80"}`}
+            >
+              Active
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterAndReset("sold")}
+              className={`rounded-md px-4 py-2 text-sm ${filter === "sold" ? "gold-gradient-bg text-[#09312a]" : "border border-white/20 text-white/80"}`}
+            >
+              Sold
+            </button>
+          </div>
 
-          {/* Pagination */}
-          <div className="mt-10 md:mt-[60px]">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-            />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 lg:gap-10"
+          >
+            {visibleListings.map((listing, index) => (
+              <ScrollReveal key={listing.id} delay={index * 0.04}>
+                <ListingCard listing={listing} showPrice={true} detailMetric="lotArea" />
+              </ScrollReveal>
+            ))}
+          </motion.div>
+
+          <div className="mt-10 md:mt-[60px] flex justify-center">
+            {hasMore && (
+              <button
+                type="button"
+                onClick={() => setVisibleCount((count) => count + ITEMS_PER_PAGE)}
+                className="gold-gradient-bg h-[52px] px-8 text-[#09312a] font-semibold text-[14px] tracking-wider"
+                style={{ fontFamily: "'Lato', sans-serif" }}
+              >
+                View More
+              </button>
+            )}
           </div>
         </div>
       </section>

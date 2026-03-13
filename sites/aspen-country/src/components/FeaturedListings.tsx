@@ -3,57 +3,25 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
+import { Listing, formatPrice } from "@/lib/listings";
 
-const listings = [
-  {
-    id: 1,
-    price: "$1,200,000",
-    address: "33289 Lakeview Court, Sundre, AB",
-    image: "/images/featured-1.webp",
-    badge: "For Sale",
-  },
-  {
-    id: 2,
-    price: "$1,350,000",
-    address: "22034 Lakeview Drive, Sundre, AB",
-    image: "/images/featured-2.webp",
-    badge: "For Sale",
-  },
-  {
-    id: 3,
-    price: "$1,200,000",
-    address: "33291 Lakeview Court, Sundre, AB",
-    image: "/images/featured-3.webp",
-    badge: "For Sale",
-  },
-  {
-    id: 4,
-    price: "$985,000",
-    address: "14422 Mountain View Road, Olds, AB",
-    image: "/images/featured-1.webp",
-    badge: "For Sale",
-  },
-  {
-    id: 5,
-    price: "$1,475,000",
-    address: "78901 Range Road 54, Sundre, AB",
-    image: "/images/featured-2.webp",
-    badge: "Sold",
-  },
-  {
-    id: 6,
-    price: "$2,100,000",
-    address: "55123 Foothills Drive, Sundre, AB",
-    image: "/images/featured-3.webp",
-    badge: "For Sale",
-  },
-];
+interface FeaturedListingsProps {
+  listings: Listing[];
+}
 
-function ListingCard({ listing }: { listing: (typeof listings)[0] }) {
+function statusLabel(status: Listing["listingStatus"]) {
+  if (status === "sold") return "Sold";
+  if (status === "pending") return "Pending";
+  return "For Sale";
+}
+
+function ListingCard({ listing }: { listing: Listing }) {
   const [hovered, setHovered] = useState(false);
 
   return (
-    <div
+    <Link
+      href={`/listings/${listing.slug}`}
       className="cursor-pointer w-full md:w-[calc(50%-12px)] lg:w-[422px] shrink-0"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -65,7 +33,7 @@ function ListingCard({ listing }: { listing: (typeof listings)[0] }) {
           className="absolute inset-0"
         >
           <Image
-            src={listing.image}
+            src={listing.thumbnail || "/images/featured-1.webp"}
             alt={listing.address}
             fill
             className="object-cover"
@@ -79,7 +47,7 @@ function ListingCard({ listing }: { listing: (typeof listings)[0] }) {
               className="text-[#09312a] text-[14px] md:text-[16px] leading-[24px] font-normal"
               style={{ fontFamily: "'Lato', sans-serif" }}
             >
-              {listing.badge}
+              {statusLabel(listing.listingStatus)}
             </span>
           </div>
         </div>
@@ -90,23 +58,24 @@ function ListingCard({ listing }: { listing: (typeof listings)[0] }) {
           className="gold-gradient-text text-[18px] md:text-[20px] leading-[26px] md:leading-[28px] font-heading"
           style={{ fontWeight: 400 }}
         >
-          {listing.price}
+          {formatPrice(listing.listPrice)}
         </p>
         <p
           className="text-white text-[14px] md:text-[16px] leading-[22px] md:leading-[24px]"
           style={{ fontFamily: "'Lato', sans-serif" }}
         >
-          {listing.address}
+          {listing.address}, {listing.city}
         </p>
       </div>
-    </div>
+    </Link>
   );
 }
 
-export default function FeaturedListings() {
+export default function FeaturedListings({ listings }: FeaturedListingsProps) {
   const [page, setPage] = useState(0);
   const [direction, setDirection] = useState(0);
-  const totalPages = Math.ceil(listings.length / 3);
+  const safeListings = listings.length > 0 ? listings : [];
+  const totalPages = Math.max(1, Math.ceil(safeListings.length / 3));
 
   const paginate = useCallback(
     (newDirection: number) => {
@@ -121,7 +90,7 @@ export default function FeaturedListings() {
     [totalPages]
   );
 
-  const currentListings = listings.slice(page * 3, page * 3 + 3);
+  const currentListings = safeListings.slice(page * 3, page * 3 + 3);
 
   const slideVariants = {
     enter: (dir: number) => ({
@@ -153,9 +122,12 @@ export default function FeaturedListings() {
               }}
               className="flex flex-col md:flex-row items-stretch justify-between gap-6 md:gap-4 lg:gap-0"
             >
-              {currentListings.map((listing) => (
+              {currentListings.map((listing: Listing) => (
                 <ListingCard key={listing.id} listing={listing} />
               ))}
+              {currentListings.length === 0 && (
+                <p className="text-white/60 text-sm">No featured listings yet.</p>
+              )}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -169,13 +141,13 @@ export default function FeaturedListings() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/images/arrow-left.svg" alt="Previous" width={24} height={24} />
           </button>
-          <a
+          <Link
             href="/listings/active"
             className="text-white text-[14px] font-normal border-b border-white/40 pb-[2px] hover:text-[#daaf3a] hover:border-[#daaf3a] transition-all duration-300"
             style={{ fontFamily: "'Lato', sans-serif" }}
           >
             View All Listings
-          </a>
+          </Link>
           <button
             onClick={() => paginate(1)}
             className="w-[24px] h-[24px] flex items-center justify-center hover:opacity-70 transition-opacity duration-300"
@@ -192,13 +164,13 @@ export default function FeaturedListings() {
           </button>
         </div>
 
-        <a
+        <Link
           href="/listings/active"
           className="md:hidden gold-gradient-bg flex items-center justify-center h-[52px] w-full text-[#09312a] font-semibold text-[14px] tracking-wider transition-all duration-300"
           style={{ fontFamily: "'Lato', sans-serif" }}
         >
           View All Listings
-        </a>
+        </Link>
       </div>
     </section>
   );

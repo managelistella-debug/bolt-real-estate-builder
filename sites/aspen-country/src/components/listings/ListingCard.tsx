@@ -9,6 +9,7 @@ import { Listing, formatPrice } from "@/lib/listings";
 interface ListingCardProps {
   listing: Listing;
   showPrice?: boolean;
+  detailMetric?: "livingArea" | "lotArea";
 }
 
 function statusLabel(s: string) {
@@ -18,9 +19,15 @@ function statusLabel(s: string) {
   return "For Sale";
 }
 
+function lotAreaLabel(unit: string) {
+  if (unit.toLowerCase() === "sq ft") return "square feet";
+  return unit;
+}
+
 export default function ListingCard({
   listing,
   showPrice = true,
+  detailMetric = "livingArea",
 }: ListingCardProps) {
   const [hovered, setHovered] = useState(false);
 
@@ -85,7 +92,13 @@ export default function ListingCard({
           <span className="w-[1px] h-[12px] bg-white/30" />
           <span>{listing.bathrooms} Bath</span>
           <span className="w-[1px] h-[12px] bg-white/30" />
-          <span>{listing.livingArea.toLocaleString()} Sq Ft</span>
+          {detailMetric === "lotArea" ? (
+            <span>
+              {listing.lotArea} {lotAreaLabel(listing.lotAreaUnit)}
+            </span>
+          ) : (
+            <span>{listing.livingArea.toLocaleString()} Sq Ft</span>
+          )}
         </div>
       </div>
     </Link>

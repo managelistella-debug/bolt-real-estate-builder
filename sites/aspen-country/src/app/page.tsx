@@ -6,15 +6,22 @@ import FeaturedListings from "@/components/FeaturedListings";
 import About from "@/components/About";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
+import { getFeaturedListings } from "@/lib/listings";
+import { getHomeTestimonials } from "@/lib/testimonials";
 
-export default function Home() {
+export default async function Home() {
+  const [featuredListings, testimonials] = await Promise.all([
+    getFeaturedListings(),
+    getHomeTestimonials(),
+  ]);
+
   return (
     <main className="overflow-x-clip">
       <Header />
       <Hero />
       <ServiceCards />
-      <Testimonials />
-      <FeaturedListings />
+      <Testimonials testimonials={testimonials} />
+      <FeaturedListings listings={featuredListings} />
       <About />
       <Contact />
       <Footer />

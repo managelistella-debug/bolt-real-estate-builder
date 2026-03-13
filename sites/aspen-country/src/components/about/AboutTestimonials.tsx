@@ -3,38 +3,27 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ScrollReveal from "../ScrollReveal";
+import { Testimonial } from "@/lib/testimonials";
 
-const testimonials = [
-  {
-    quote:
-      "We recently worked with Aspen to purchase a recreational RV lot, and the experience was absolutely fantastic. Aspen was knowledgeable, responsive, and incredibly helpful throughout the entire process. Her knowledge of the RV resort made a big difference\u2014she helped us navigate all the little details that come with buying an RV lot.",
-    author: "Patti Lang",
-  },
-  {
-    quote:
-      "Aspen made the entire process of selling our family ranch seamless and stress-free. Her understanding of the rural Alberta market is unmatched, and she positioned our property perfectly to attract the right buyers. Within weeks, we had multiple offers above asking price.",
-    author: "Brayden & Kayla M.",
-  },
-  {
-    quote:
-      "Working with Aspen was a game-changer for us. As first-time acreage buyers, we had a lot of questions and concerns. Aspen guided us through every step with patience and expertise. She found us the perfect property that we didn\u2019t even know existed.",
-    author: "Mark & Jennifer H.",
-  },
-];
+interface AboutTestimonialsProps {
+  testimonials: Testimonial[];
+}
 
-export default function AboutTestimonials() {
+export default function AboutTestimonials({ testimonials }: AboutTestimonialsProps) {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(0);
+  const items = testimonials.length > 0 ? testimonials : [];
 
   const paginate = useCallback((newDir: number) => {
+    if (items.length === 0) return;
     setDirection(newDir);
     setCurrent((prev) => {
       const next = prev + newDir;
-      if (next < 0) return testimonials.length - 1;
-      if (next >= testimonials.length) return 0;
+      if (next < 0) return items.length - 1;
+      if (next >= items.length) return 0;
       return next;
     });
-  }, []);
+  }, [items.length]);
 
   return (
     <section className="bg-[#09312a]">
@@ -101,7 +90,7 @@ export default function AboutTestimonials() {
                   className="text-white/80 text-[15px] md:text-[17px] leading-[24px] md:leading-[30px] italic"
                   style={{ fontFamily: "'Lato', sans-serif" }}
                 >
-                  &ldquo;{testimonials[current].quote}&rdquo;
+                  &ldquo;{items[current]?.quote || "No testimonials available yet."}&rdquo;
                 </p>
 
                 {/* Author */}
@@ -109,13 +98,14 @@ export default function AboutTestimonials() {
                   className="mt-6 md:mt-8 font-heading text-[16px] md:text-[18px] gold-gradient-text"
                   style={{ fontWeight: 400 }}
                 >
-                  {testimonials[current].author}
+                  {items[current]?.author || ""}
                 </p>
               </motion.div>
             </AnimatePresence>
           </div>
 
           {/* Navigation */}
+          {items.length > 1 && (
           <div className="flex items-center justify-center gap-6 mt-8 md:mt-10">
             <button
               onClick={() => paginate(-1)}
@@ -127,7 +117,7 @@ export default function AboutTestimonials() {
             </button>
 
             <div className="flex gap-2">
-              {testimonials.map((_, i) => (
+              {items.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => {
@@ -157,6 +147,7 @@ export default function AboutTestimonials() {
               />
             </button>
           </div>
+          )}
         </div>
       </div>
     </section>

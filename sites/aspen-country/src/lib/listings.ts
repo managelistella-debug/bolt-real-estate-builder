@@ -1,3 +1,6 @@
+import { ListingRow } from "@/lib/supabase/database.types";
+import { getSupabasePublicClient } from "@/lib/supabase/public";
+
 export interface Listing {
   id: string;
   slug: string;
@@ -21,35 +24,100 @@ export interface Listing {
   gallery: string[];
   thumbnail: string;
   homepageFeatured?: boolean;
+  ranchEstateFeatured?: boolean;
   createdAt?: string;
 }
 
-export async function getActiveListings(): Promise<Listing[]> {
-  return fallbackListings.filter((listing) => listing.listingStatus === "active");
+function mapListingRow(row: ListingRow): Listing {
+  return {
+    id: row.id,
+    slug: row.slug,
+    address: row.address,
+    description: row.description,
+    listPrice: Number(row.list_price || 0),
+    listingStatus: row.listing_status,
+    representation: row.representation || undefined,
+    neighborhood: row.neighborhood,
+    city: row.city,
+    bedrooms: Number(row.bedrooms || 0),
+    bathrooms: Number(row.bathrooms || 0),
+    propertyType: row.property_type,
+    yearBuilt: Number(row.year_built || 0),
+    livingArea: Number(row.living_area || 0),
+    lotArea: Number(row.lot_area || 0),
+    lotAreaUnit: row.lot_area_unit || "acres",
+    taxes: Number(row.taxes || 0),
+    listingBrokerage: row.listing_brokerage,
+    mlsNumber: row.mls_number,
+    gallery: Array.isArray(row.gallery) ? row.gallery : [],
+    thumbnail: row.thumbnail || "",
+    homepageFeatured: !!row.homepage_featured,
+    ranchEstateFeatured: !!row.ranch_estate_featured,
+    createdAt: row.created_at,
+  };
 }
 
-export async function getSoldListings(): Promise<Listing[]> {
-  return fallbackListings.filter((listing) => listing.listingStatus === "sold");
+async function fetchListingsFromSupabase(): Promise<Listing[] | null> {
+  const supabase = getSupabasePublicClient();
+  if (!supabase) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from("listings")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) return null;
+    if (!data || data.length === 0) return [];
+    return data.map((row) => mapListingRow(row as ListingRow));
+  } catch {
+    return null;
+  }
 }
 
-export async function getFeaturedListings(): Promise<Listing[]> {
-  const featured = fallbackListings
-    .filter((listing) => listing.homepageFeatured)
-    .sort((a, b) => b.listPrice - a.listPrice);
-  if (featured.length > 0) return featured;
-  return fallbackListings.slice(0, 6);
-}
-
-export async function getAllListings(): Promise<Listing[]> {
+async function getResolvedListings(): Promise<Listing[]> {
+  const remote = await fetchListingsFromSupabase();
+  if (remote && remote.length > 0) return remote;
   return [...fallbackListings];
 }
 
+export async function getActiveListings(): Promise<Listing[]> {
+  const all = await getResolvedListings();
+  return all.filter((listing) => listing.listingStatus === "active");
+}
+
+export async function getSoldListings(): Promise<Listing[]> {
+  const all = await getResolvedListings();
+  return all.filter((listing) => listing.listingStatus === "sold");
+}
+
+export async function getFeaturedListings(): Promise<Listing[]> {
+  const all = await getResolvedListings();
+  const featured = all
+    .filter((listing) => listing.homepageFeatured)
+    .sort((a, b) => b.listPrice - a.listPrice);
+  if (featured.length > 0) return featured;
+  return all.slice(0, 6);
+}
+
+export async function getRanchEstateListings(): Promise<Listing[]> {
+  const all = await getResolvedListings();
+  return all
+    .filter((listing) => listing.ranchEstateFeatured)
+    .sort((a, b) => b.listPrice - a.listPrice);
+}
+
+export async function getAllListings(): Promise<Listing[]> {
+  return getResolvedListings();
+}
+
 export async function getListingById(id: string): Promise<Listing | undefined> {
-  return fallbackListings.find((listing) => listing.id === id);
+  const all = await getResolvedListings();
+  return all.find((listing) => listing.id === id);
 }
 
 export async function getListingBySlug(slug: string): Promise<Listing | undefined> {
-  return fallbackListings.find((listing) => listing.slug === slug);
+  const all = await getResolvedListings();
+  return all.find((listing) => listing.slug === slug);
 }
 
 export function formatPrice(price: number): string {
@@ -60,7 +128,7 @@ export function formatPrice(price: number): string {
   }).format(price);
 }
 
-// Hardcoded fallback data used when Bolt API is unavailable
+// Hardcoded fallback data used when Aspen CMS is unavailable
 const fallbackListings: Listing[] = [
   {
     id: "1",
@@ -90,6 +158,7 @@ const fallbackListings: Listing[] = [
     ],
     thumbnail: "/images/featured-1.webp",
     homepageFeatured: true,
+    ranchEstateFeatured: true,
   },
   {
     id: "2",
@@ -118,6 +187,7 @@ const fallbackListings: Listing[] = [
     ],
     thumbnail: "/images/featured-2.webp",
     homepageFeatured: true,
+    ranchEstateFeatured: true,
   },
   {
     id: "3",
@@ -147,6 +217,7 @@ const fallbackListings: Listing[] = [
     ],
     thumbnail: "/images/featured-3.webp",
     homepageFeatured: true,
+    ranchEstateFeatured: true,
   },
   {
     id: "13",
@@ -175,6 +246,7 @@ const fallbackListings: Listing[] = [
       "/images/featured-3.webp",
     ],
     thumbnail: "/images/featured-2.webp",
+    ranchEstateFeatured: true,
   },
   {
     id: "14",
@@ -203,6 +275,7 @@ const fallbackListings: Listing[] = [
       "/images/featured-1.webp",
     ],
     thumbnail: "/images/featured-3.webp",
+    ranchEstateFeatured: false,
   },
   {
     id: "15",
@@ -230,6 +303,7 @@ const fallbackListings: Listing[] = [
       "/images/featured-2.webp",
     ],
     thumbnail: "/images/featured-1.webp",
+    ranchEstateFeatured: false,
   },
 ];
 

@@ -3,38 +3,27 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ScrollReveal from "./ScrollReveal";
+import { Testimonial } from "@/lib/testimonials";
 
-const testimonials = [
-  {
-    quote:
-      "\" We recently worked with Aspen to purchase a recreational RV lot, and the experience was absolutely fantastic. Aspen was knowledgeable, responsive, and incredibly helpful throughout the entire process. Her knowledge of the RV resort made a big difference-she helped us navigate all the little details that come with buying an RV lot. Aspen was always available to answer questions and made sure everything was handled efficiently and professionally. Thanks to Aspen, we now have the perfect spot to relax and enjoy the outdoors. We couldn't be happier and highly recommend her to anyone looking for a reliable and experienced realtor in the Sundre area! \"",
-    author: "Patti Lang",
-  },
-  {
-    quote:
-      "\" Aspen made the entire process of selling our family ranch seamless and stress-free. Her understanding of the rural Alberta market is unmatched, and she positioned our property perfectly to attract the right buyers. Within weeks, we had multiple offers above asking price. Her professionalism, communication, and genuine care for her clients sets her apart from anyone else in the industry. We are so grateful for her guidance. \"",
-    author: "Brayden & Kayla M.",
-  },
-  {
-    quote:
-      "\" Working with Aspen was a game-changer for us. As first-time acreage buyers, we had a lot of questions and concerns. Aspen guided us through every step with patience and expertise. She found us the perfect property that we didn't even know existed. Her local connections and deep knowledge of the area made all the difference. We couldn't recommend her more highly to anyone looking in the Sundre area. \"",
-    author: "Mark & Jennifer H.",
-  },
-];
+interface TestimonialsProps {
+  testimonials: Testimonial[];
+}
 
-export default function Testimonials() {
+export default function Testimonials({ testimonials }: TestimonialsProps) {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(0);
+  const items = testimonials.length > 0 ? testimonials : [];
 
   const paginate = useCallback((newDirection: number) => {
+    if (items.length === 0) return;
     setDirection(newDirection);
     setCurrent((prev) => {
       const next = prev + newDirection;
-      if (next < 0) return testimonials.length - 1;
-      if (next >= testimonials.length) return 0;
+      if (next < 0) return items.length - 1;
+      if (next >= items.length) return 0;
       return next;
     });
-  }, []);
+  }, [items.length]);
 
   return (
     <section className="relative overflow-hidden">
@@ -78,19 +67,20 @@ export default function Testimonials() {
                   className="text-white text-[14px] md:text-[16px] leading-[22px] md:leading-[24px] font-normal"
                   style={{ fontFamily: "'Lato', sans-serif" }}
                 >
-                  {testimonials[current].quote}
+                  {items[current]?.quote || "No testimonials available yet."}
                 </p>
 
                 <p
                   className="mt-6 md:mt-8 text-white text-[14px] md:text-[16px] leading-[24px] font-normal"
                   style={{ fontFamily: "'Lato', sans-serif" }}
                 >
-                  {testimonials[current].author}
+                  {items[current]?.author || ""}
                 </p>
               </motion.div>
             </AnimatePresence>
           </div>
 
+          {items.length > 1 && (
           <div className="flex items-center justify-center gap-6 mt-8 md:mt-10">
             <button
               onClick={() => paginate(-1)}
@@ -102,7 +92,7 @@ export default function Testimonials() {
             </button>
 
             <div className="flex gap-2">
-              {testimonials.map((_, i) => (
+              {items.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => {
@@ -132,6 +122,7 @@ export default function Testimonials() {
               />
             </button>
           </div>
+          )}
         </div>
       </div>
     </section>

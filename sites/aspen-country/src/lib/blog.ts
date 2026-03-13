@@ -1,3 +1,6 @@
+import { BlogPostRow } from "@/lib/supabase/database.types";
+import { getSupabasePublicClient } from "@/lib/supabase/public";
+
 export interface BlogPost {
   id: string;
   title: string;
@@ -12,8 +15,49 @@ export interface BlogPost {
   tags: string[];
 }
 
+function mapBlogRow(row: BlogPostRow): BlogPost {
+  return {
+    id: row.id,
+    title: row.title,
+    slug: row.slug,
+    author: row.author,
+    publishDate: row.publish_date,
+    featuredImage: row.featured_image || "/images/featured-1.webp",
+    featuredImageAlt: row.featured_image_alt || row.title,
+    excerpt: row.excerpt || "",
+    content: row.content || "",
+    category: row.category || "",
+    tags: Array.isArray(row.tags) ? row.tags : [],
+  };
+}
+
+async function fetchPostsFromSupabase(): Promise<BlogPost[] | null> {
+  const supabase = getSupabasePublicClient();
+  if (!supabase) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from("blog_posts")
+      .select("*")
+      .eq("is_published", true)
+      .order("publish_date", { ascending: false });
+    if (error) return null;
+    if (!data || data.length === 0) return [];
+    return data.map((row) => mapBlogRow(row as BlogPostRow));
+  } catch {
+    return null;
+  }
+}
+
+async function getResolvedPosts(): Promise<BlogPost[]> {
+  const remote = await fetchPostsFromSupabase();
+  if (remote && remote.length > 0) return remote;
+  return [...fallbackPosts];
+}
+
 export async function getAllPosts(): Promise<BlogPost[]> {
-  return [...fallbackPosts].sort(
+  const posts = await getResolvedPosts();
+  return posts.sort(
     (a, b) =>
       new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime()
   );
@@ -22,13 +66,15 @@ export async function getAllPosts(): Promise<BlogPost[]> {
 export async function getPostBySlug(
   slug: string
 ): Promise<BlogPost | undefined> {
-  return fallbackPosts.find((post) => post.slug === slug);
+  const posts = await getResolvedPosts();
+  return posts.find((post) => post.slug === slug);
 }
 
 export async function getPostById(
   id: string
 ): Promise<BlogPost | undefined> {
-  return fallbackPosts.find((post) => post.id === id);
+  const posts = await getResolvedPosts();
+  return posts.find((post) => post.id === id);
 }
 
 export function formatDate(dateString: string): string {
