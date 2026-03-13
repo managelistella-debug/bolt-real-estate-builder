@@ -29,6 +29,20 @@ export interface Listing {
   createdAt?: string;
 }
 
+function normalizeImageUrl(url: string) {
+  const trimmed = url.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("/templates/country/images/")) {
+    const filename = trimmed.split("/").pop() || "";
+    return filename ? `/images/${filename}` : "/images/featured-1.webp";
+  }
+  if (trimmed.startsWith("templates/country/images/")) {
+    const filename = trimmed.split("/").pop() || "";
+    return filename ? `/images/${filename}` : "/images/featured-1.webp";
+  }
+  return trimmed;
+}
+
 function mapListingRow(row: ListingRow): Listing {
   const gallery =
     Array.isArray(row.gallery)
@@ -36,8 +50,9 @@ function mapListingRow(row: ListingRow): Listing {
           .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
           .map((item) => item?.url)
           .filter((url): url is string => !!url)
+          .map(normalizeImageUrl)
       : [];
-  const thumbnail = row.thumbnail || gallery[0] || "";
+  const thumbnail = normalizeImageUrl(row.thumbnail || "") || gallery[0] || "";
   const status =
     row.listing_status === "for_sale" ? "active" : row.listing_status;
 
@@ -116,8 +131,12 @@ export async function getFeaturedListings(): Promise<Listing[]> {
 
 export async function getRanchEstateListings(): Promise<Listing[]> {
   const all = await getResolvedListings();
+  const isRanchEstateLabel = (value: string) => /ranch|estate/i.test(value || "");
   return all
-    .filter((listing) => listing.ranchEstateFeatured)
+    .filter(
+      (listing) =>
+        listing.ranchEstateFeatured || isRanchEstateLabel(listing.propertyType)
+    )
     .sort((a, b) => b.listPrice - a.listPrice);
 }
 

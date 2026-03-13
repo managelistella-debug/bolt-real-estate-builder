@@ -3,15 +3,22 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 
 const navItems = [
   { label: "Home", href: "/" },
   { label: "About", href: "/about" },
   { label: "Buying", href: "/buying" },
   { label: "Selling", href: "/selling" },
-  { label: "Estates/Ranch Properties", href: "/estates" },
-  { label: "Active Listings", href: "/listings/active" },
-  { label: "Sold", href: "/listings/sold" },
+  {
+    label: "Listings",
+    href: "/listings/active",
+    children: [
+      { label: "Active Listings", href: "/listings/active" },
+      { label: "Sold", href: "/listings/sold" },
+      { label: "Estates/Ranch Properties", href: "/estates" },
+    ],
+  },
   { label: "Blog", href: "/blog" },
   { label: "Contact", href: "/contact" },
 ];
@@ -47,7 +54,7 @@ export default function Header() {
       >
         <div className="w-full max-w-[1440px] mx-auto flex items-center justify-between px-5 md:px-10 lg:px-[60px] h-[70px] md:h-[99px]">
           {/* Logo */}
-          <a href="/" className="shrink-0 flex items-center cursor-pointer">
+          <Link href="/" className="shrink-0 flex items-center cursor-pointer">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/images/header-logo.svg"
@@ -56,22 +63,48 @@ export default function Header() {
               height={76}
               className="w-[100px] md:w-[139px] h-auto object-contain"
             />
-          </a>
+          </Link>
 
           {/* Desktop Nav + Actions */}
           <div className="hidden xl:flex items-center">
             <nav className="flex items-center gap-[30px]">
-              {navItems.map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className="relative group flex items-center gap-[4px] text-white text-[14px] font-normal leading-[20px] py-[2px] hover:text-[#daaf3a] transition-colors duration-300 cursor-pointer"
-                  style={{ fontFamily: "'Lato', sans-serif" }}
-                >
-                  {item.label}
-                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#daaf3a] group-hover:w-full transition-all duration-300 ease-out" />
-                </a>
-              ))}
+              {navItems.map((item) =>
+                item.children ? (
+                  <div key={item.label} className="relative group">
+                    <Link
+                      href={item.href}
+                      className="relative flex items-center gap-[6px] text-white text-[14px] font-normal leading-[20px] py-[2px] hover:text-[#daaf3a] transition-colors duration-300 cursor-pointer"
+                      style={{ fontFamily: "'Lato', sans-serif" }}
+                    >
+                      {item.label}
+                      <span className="text-[10px] mt-[1px]">▼</span>
+                      <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#daaf3a] group-hover:w-full transition-all duration-300 ease-out" />
+                    </Link>
+                    <div className="pointer-events-none opacity-0 translate-y-2 group-hover:pointer-events-auto group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 absolute left-0 top-full mt-2 min-w-[230px] bg-[#09312a] border border-[#daaf3a]/30 shadow-[0_8px_20px_rgba(0,0,0,0.35)]">
+                      {item.children.map((child) => (
+                        <Link
+                          key={child.label}
+                          href={child.href}
+                          className="block px-4 py-3 text-[13px] text-white/85 hover:bg-white/10 hover:text-[#daaf3a]"
+                          style={{ fontFamily: "'Lato', sans-serif" }}
+                        >
+                          {child.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className="relative group flex items-center gap-[4px] text-white text-[14px] font-normal leading-[20px] py-[2px] hover:text-[#daaf3a] transition-colors duration-300 cursor-pointer"
+                    style={{ fontFamily: "'Lato', sans-serif" }}
+                  >
+                    {item.label}
+                    <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#daaf3a] group-hover:w-full transition-all duration-300 ease-out" />
+                  </Link>
+                )
+              )}
             </nav>
 
             <div className="flex items-center gap-[43px] ml-[127px]">
@@ -195,9 +228,8 @@ export default function Header() {
                 {/* Nav items */}
                 <nav className="flex-1 flex flex-col justify-center px-5 md:px-10 lg:px-[60px] xl:px-[80px] py-4">
                   {navItems.map((item, i) => (
-                    <motion.a
+                    <motion.div
                       key={item.label}
-                      href={item.href}
                       initial={{ opacity: 0, y: 30 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{
@@ -205,16 +237,32 @@ export default function Header() {
                         duration: 0.5,
                         ease: [0.25, 0.46, 0.45, 0.94],
                       }}
-                      onClick={() => setMenuOpen(false)}
-                      className="group border-b border-white/10 py-[clamp(10px,2vh,20px)] cursor-pointer"
+                      className="group border-b border-white/10 py-[clamp(10px,2vh,20px)]"
                     >
-                      <span
+                      <Link
+                        href={item.href}
+                        onClick={() => setMenuOpen(false)}
                         className="font-heading text-[clamp(18px,2.5vh,28px)] text-white group-hover:text-[#daaf3a] transition-colors duration-300"
                         style={{ fontWeight: 400 }}
                       >
                         {item.label}
-                      </span>
-                    </motion.a>
+                      </Link>
+                      {item.children && (
+                        <div className="mt-3 ml-1 flex flex-col gap-2">
+                          {item.children.map((child) => (
+                            <Link
+                              key={child.label}
+                              href={child.href}
+                              onClick={() => setMenuOpen(false)}
+                              className="text-white/70 hover:text-[#daaf3a] text-[14px]"
+                              style={{ fontFamily: "'Lato', sans-serif" }}
+                            >
+                              {child.label}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </motion.div>
                   ))}
 
                   {/* Contact Aspen button in menu */}
