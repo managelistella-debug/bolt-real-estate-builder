@@ -31,6 +31,13 @@ export default function TestimonialManager() {
   const load = async () => {
     setLoading(true);
     const res = await fetch("/api/admin/testimonials");
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      setMessage(err.error || "Unable to load testimonials.");
+      setRows([]);
+      setLoading(false);
+      return;
+    }
     const data = await res.json();
     const mapped = (Array.isArray(data) ? data : []).map((item) => ({
       id: item.id,
@@ -83,8 +90,8 @@ export default function TestimonialManager() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-white/10 bg-[#0b3a30] p-5">
-        <h2 className="font-heading text-2xl text-white" style={{ fontWeight: 400 }}>
+      <div className="rounded-xl border border-[#EBEBEB] bg-white p-5">
+        <h2 className="font-heading text-2xl text-black" style={{ fontWeight: 400 }}>
           {form.id ? "Edit Testimonial" : "New Testimonial"}
         </h2>
         <textarea className="field mt-4 min-h-[130px] w-full" placeholder="Quote" value={form.quote} onChange={(e) => setForm({ ...form, quote: e.target.value })} />
@@ -98,7 +105,7 @@ export default function TestimonialManager() {
             <option value="about">About only</option>
           </select>
         </div>
-        <label className="mt-3 inline-flex items-center gap-2 text-sm text-white/80">
+        <label className="mt-3 inline-flex items-center gap-2 text-sm text-[#666]">
           <input type="checkbox" checked={form.isPublished} onChange={(e) => setForm({ ...form, isPublished: e.target.checked })} />
           Published
         </label>
@@ -107,32 +114,32 @@ export default function TestimonialManager() {
           <button type="button" onClick={save} disabled={saving} className="gold-gradient-bg rounded-md px-4 py-2 text-sm font-semibold text-[#09312a]">
             {saving ? "Saving..." : form.id ? "Update Testimonial" : "Create Testimonial"}
           </button>
-          <button type="button" onClick={() => setForm(EMPTY_FORM)} className="rounded-md border border-white/20 px-4 py-2 text-sm text-white/80">
+          <button type="button" onClick={() => setForm(EMPTY_FORM)} className="rounded-md border border-[#EBEBEB] bg-white px-4 py-2 text-sm text-[#666]">
             Clear
           </button>
         </div>
-        {message && <p className="mt-3 text-sm text-white/70">{message}</p>}
+        {message && <p className="mt-3 text-sm text-[#666]">{message}</p>}
       </div>
 
-      <div className="rounded-lg border border-white/10 bg-[#0b3a30] p-5">
-        <h3 className="text-lg text-white">All Testimonials</h3>
+      <div className="rounded-xl border border-[#EBEBEB] bg-white p-5">
+        <h3 className="text-lg text-black">All Testimonials</h3>
         {loading ? (
-          <p className="mt-3 text-white/60">Loading...</p>
+          <p className="mt-3 text-[#888C99]">Loading...</p>
         ) : (
           <div className="mt-3 space-y-2">
             {rows.map((row) => (
-              <div key={row.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-white/10 bg-[#07271f] p-3">
+              <div key={row.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-[#EBEBEB] bg-[#F5F5F3] p-3">
                 <div>
-                  <p className="text-sm text-white">{row.author}</p>
-                  <p className="line-clamp-1 text-xs text-white/60">{row.quote}</p>
+                  <p className="text-sm text-black">{row.author}</p>
+                  <p className="line-clamp-1 text-xs text-[#888C99]">{row.quote}</p>
                 </div>
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => setForm(row)} className="rounded-md border border-white/20 px-3 py-1 text-xs text-white/80">Edit</button>
-                  <button type="button" onClick={() => remove(row.id)} className="rounded-md border border-red-300/40 px-3 py-1 text-xs text-red-200">Delete</button>
+                  <button type="button" onClick={() => setForm(row)} className="rounded-md border border-[#EBEBEB] bg-white px-3 py-1 text-xs text-[#666]">Edit</button>
+                  <button type="button" onClick={() => remove(row.id)} className="rounded-md border border-red-300/40 bg-white px-3 py-1 text-xs text-red-500">Delete</button>
                 </div>
               </div>
             ))}
-            {rows.length === 0 && <p className="text-sm text-white/60">No testimonials yet.</p>}
+            {rows.length === 0 && <p className="text-sm text-[#888C99]">No testimonials yet.</p>}
           </div>
         )}
       </div>
@@ -140,11 +147,14 @@ export default function TestimonialManager() {
       <style jsx>{`
         .field {
           border-radius: 8px;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          background: #06241d;
-          color: white;
+          border: 1px solid #ebebeb;
+          background: #f5f5f3;
+          color: #111;
           padding: 8px 10px;
           font-size: 14px;
+        }
+        .field::placeholder {
+          color: #b5b5b5;
         }
       `}</style>
     </div>

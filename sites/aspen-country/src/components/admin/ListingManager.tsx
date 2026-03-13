@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { GripVertical, Star, Upload, X } from "lucide-react";
 
 type ListingForm = {
   id?: string;
@@ -23,7 +24,7 @@ type ListingForm = {
   listingBrokerage: string;
   mlsNumber: string;
   thumbnail: string;
-  galleryText: string;
+  gallery: string[];
   homepageFeatured: boolean;
   ranchEstateFeatured: boolean;
 };
@@ -48,7 +49,7 @@ const EMPTY_FORM: ListingForm = {
   listingBrokerage: "",
   mlsNumber: "",
   thumbnail: "",
-  galleryText: "",
+  gallery: [],
   homepageFeatured: false,
   ranchEstateFeatured: false,
 };
@@ -68,6 +69,9 @@ export default function ListingManager() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [isDropActive, setIsDropActive] = useState(false);
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sortedRows = useMemo(
     () => [...rows].sort((a, b) => (b.listPrice || 0) - (a.listPrice || 0)),
@@ -78,6 +82,12 @@ export default function ListingManager() {
     setLoading(true);
     try {
       const res = await fetch("/api/admin/listings");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setMessage(err.error || "Unable to load listings.");
+        setRows([]);
+        return;
+      }
       const data = await res.json();
       const mapped = (Array.isArray(data) ? data : []).map((item) => ({
         // Normalize shared-table status values to Aspen UI statuses.
@@ -105,14 +115,13 @@ export default function ListingManager() {
         listingBrokerage: item.listing_brokerage || "",
         mlsNumber: item.mls_number || "",
         thumbnail: item.thumbnail || "",
-        galleryText: Array.isArray(item.gallery)
+        gallery: Array.isArray(item.gallery)
           ? item.gallery
               .map((entry: { url?: string }) =>
                 typeof entry === "string" ? entry : entry?.url || ""
               )
               .filter(Boolean)
-              .join("\n")
-          : "",
+          : [],
         homepageFeatured: !!item.homepage_featured,
         ranchEstateFeatured: !!item.ranch_estate_featured,
       }));
@@ -127,7 +136,10 @@ export default function ListingManager() {
   }, []);
 
   const editRow = (row: ListingForm) => {
-    setForm(row);
+    setForm({
+      ...row,
+      thumbnail: row.thumbnail || row.gallery[0] || "",
+    });
     setMessage(null);
   };
 
@@ -139,10 +151,8 @@ export default function ListingManager() {
     const payload = {
       ...form,
       slug: form.slug || slugify(form.address),
-      gallery: form.galleryText
-        .split("\n")
-        .map((item) => item.trim())
-        .filter(Boolean),
+      gallery: form.gallery.map((item) => item.trim()).filter(Boolean),
+      thumbnail: form.thumbnail || form.gallery[0] || "",
     };
 
     const url = form.id ? `/api/admin/listings/${form.id}` : "/api/admin/listings";
@@ -173,10 +183,76 @@ export default function ListingManager() {
     load();
   };
 
+  const readAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => resolve((event.target?.result as string) || "");
+      reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
+      reader.readAsDataURL(file);
+    });
+
+  const addFiles = async (files: FileList | File[]) => {
+    const imageFiles = Array.from(files).filter((file) =>
+      file.type.startsWith("image/")
+    );
+    if (!imageFiles.length) {
+      setMessage("Please select one or more image files.");
+      return;
+    }
+    try {
+      const urls = await Promise.all(imageFiles.map((file) => readAsDataUrl(file)));
+      setForm((prev) => {
+        const nextGallery = [...prev.gallery, ...urls];
+        const nextThumbnail = prev.thumbnail || nextGallery[0] || "";
+        return { ...prev, gallery: nextGallery, thumbnail: nextThumbnail };
+      });
+      setMessage(null);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Failed to add images.");
+    }
+  };
+
+  const handleFilePick = (event: ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) addFiles(event.target.files);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleDropZoneDragOver = (event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDropActive(true);
+  };
+  const handleDropZoneDragLeave = () => setIsDropActive(false);
+  const handleDropZoneDrop = (event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDropActive(false);
+    if (event.dataTransfer.files.length) addFiles(event.dataTransfer.files);
+  };
+
+  const removeImage = (idx: number) => {
+    setForm((prev) => {
+      const nextGallery = prev.gallery.filter((_, i) => i !== idx);
+      const nextThumbnail =
+        prev.thumbnail === prev.gallery[idx]
+          ? nextGallery[0] || ""
+          : prev.thumbnail;
+      return { ...prev, gallery: nextGallery, thumbnail: nextThumbnail };
+    });
+  };
+
+  const moveImage = (from: number, to: number) => {
+    setForm((prev) => {
+      const images = [...prev.gallery];
+      const moved = images[from];
+      images.splice(from, 1);
+      images.splice(to, 0, moved);
+      return { ...prev, gallery: images };
+    });
+  };
+
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-white/10 bg-[#0b3a30] p-5">
-        <h2 className="font-heading text-2xl text-white" style={{ fontWeight: 400 }}>
+      <div className="rounded-xl border border-[#EBEBEB] bg-white p-5">
+        <h2 className="font-heading text-2xl text-black" style={{ fontWeight: 400 }}>
           {form.id ? "Edit Listing" : "New Listing"}
         </h2>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -204,9 +280,88 @@ export default function ListingManager() {
           <input className="field" placeholder="Representation (optional)" value={form.representation} onChange={(e) => setForm({ ...form, representation: e.target.value })} />
         </div>
         <textarea className="field mt-3 min-h-[110px] w-full" placeholder="Description (HTML supported)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-        <textarea className="field mt-3 min-h-[90px] w-full" placeholder="Gallery image URLs (one per line)" value={form.galleryText} onChange={(e) => setForm({ ...form, galleryText: e.target.value })} />
 
-        <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-white/80">
+        <div className="mt-4 space-y-3">
+          <p className="text-[13px] text-[#888C99]">Gallery Images</p>
+          <div
+            className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 text-center transition-colors ${
+              isDropActive ? "border-[#DAFF07] bg-[#DAFF07]/10" : "border-[#EBEBEB] bg-[#F5F5F3]"
+            }`}
+            onDragOver={handleDropZoneDragOver}
+            onDragLeave={handleDropZoneDragLeave}
+            onDrop={handleDropZoneDrop}
+          >
+            <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-[#EBEBEB]">
+              <Upload className="h-4 w-4 text-[#888C99]" />
+            </div>
+            <p className="text-[13px] font-medium text-black">Drag & drop listing photos here</p>
+            <p className="my-1 text-[11px] text-[#CCCCCC]">or</p>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="h-[28px] rounded-lg bg-[#DAFF07] px-3 text-[12px] text-black hover:bg-[#C8ED00]"
+            >
+              Browse Files
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleFilePick}
+            />
+            <p className="mt-2 text-[11px] text-[#CCCCCC]">
+              Click a star to set thumbnail. Drag tiles to reorder.
+            </p>
+          </div>
+
+          {form.gallery.length > 0 && (
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+              {form.gallery.map((url, idx) => (
+                <div
+                  key={`${url}-${idx}`}
+                  draggable
+                  onDragStart={() => setDraggedIdx(idx)}
+                  onDragEnd={() => setDraggedIdx(null)}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    if (draggedIdx === null || draggedIdx === idx) return;
+                    moveImage(draggedIdx, idx);
+                    setDraggedIdx(idx);
+                  }}
+                  className={`group relative overflow-hidden rounded-lg border bg-[#F5F5F3] ${
+                    draggedIdx === idx ? "opacity-40" : ""
+                  } ${form.thumbnail === url ? "border-[#DAFF07] ring-1 ring-[#DAFF07]" : "border-[#EBEBEB]"}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt={`Image ${idx + 1}`} className="aspect-square w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, thumbnail: url }))}
+                    className="absolute left-1 top-1 rounded bg-black/60 p-1 text-white"
+                    title="Set as thumbnail"
+                  >
+                    <Star className={`h-3 w-3 ${form.thumbnail === url ? "fill-current text-[#DAFF07]" : ""}`} />
+                  </button>
+                  <div className="absolute bottom-1 left-1 rounded bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100">
+                    <GripVertical className="h-3 w-3" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeImage(idx)}
+                    className="absolute right-1 top-1 rounded bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-500"
+                    title="Remove image"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-[#555]">
           <label className="inline-flex items-center gap-2">
             <input type="checkbox" checked={form.homepageFeatured} onChange={(e) => setForm({ ...form, homepageFeatured: e.target.checked })} />
             Homepage Featured
@@ -221,32 +376,32 @@ export default function ListingManager() {
           <button type="button" onClick={save} disabled={saving} className="gold-gradient-bg rounded-md px-4 py-2 text-sm font-semibold text-[#09312a]">
             {saving ? "Saving..." : form.id ? "Update Listing" : "Create Listing"}
           </button>
-          <button type="button" onClick={reset} className="rounded-md border border-white/20 px-4 py-2 text-sm text-white/80">
+          <button type="button" onClick={reset} className="rounded-md border border-[#EBEBEB] bg-white px-4 py-2 text-sm text-[#666]">
             Clear
           </button>
         </div>
-        {message && <p className="mt-3 text-sm text-white/70">{message}</p>}
+        {message && <p className="mt-3 text-sm text-[#666]">{message}</p>}
       </div>
 
-      <div className="rounded-lg border border-white/10 bg-[#0b3a30] p-5">
-        <h3 className="text-lg text-white">All Listings</h3>
+      <div className="rounded-xl border border-[#EBEBEB] bg-white p-5">
+        <h3 className="text-lg text-black">All Listings</h3>
         {loading ? (
-          <p className="mt-3 text-white/60">Loading...</p>
+          <p className="mt-3 text-[#888C99]">Loading...</p>
         ) : (
           <div className="mt-3 space-y-2">
             {sortedRows.map((row) => (
-              <div key={row.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-white/10 bg-[#07271f] p-3">
+              <div key={row.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-[#EBEBEB] bg-[#F5F5F3] p-3">
                 <div>
-                  <p className="text-sm text-white">{row.address}, {row.city}</p>
-                  <p className="text-xs text-white/60">{row.slug} · {row.listingStatus}</p>
+                  <p className="text-sm text-black">{row.address}, {row.city}</p>
+                  <p className="text-xs text-[#888C99]">{row.slug} · {row.listingStatus}</p>
                 </div>
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => editRow(row)} className="rounded-md border border-white/20 px-3 py-1 text-xs text-white/80">Edit</button>
-                  <button type="button" onClick={() => remove(row.id)} className="rounded-md border border-red-300/40 px-3 py-1 text-xs text-red-200">Delete</button>
+                  <button type="button" onClick={() => editRow(row)} className="rounded-md border border-[#EBEBEB] bg-white px-3 py-1 text-xs text-[#666]">Edit</button>
+                  <button type="button" onClick={() => remove(row.id)} className="rounded-md border border-red-300/40 bg-white px-3 py-1 text-xs text-red-500">Delete</button>
                 </div>
               </div>
             ))}
-            {sortedRows.length === 0 && <p className="text-sm text-white/60">No listings yet.</p>}
+            {sortedRows.length === 0 && <p className="text-sm text-[#888C99]">No listings yet.</p>}
           </div>
         )}
       </div>
@@ -254,11 +409,14 @@ export default function ListingManager() {
       <style jsx>{`
         .field {
           border-radius: 8px;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          background: #06241d;
-          color: white;
+          border: 1px solid #ebebeb;
+          background: #f5f5f3;
+          color: #111;
           padding: 8px 10px;
           font-size: 14px;
+        }
+        .field::placeholder {
+          color: #b5b5b5;
         }
       `}</style>
     </div>

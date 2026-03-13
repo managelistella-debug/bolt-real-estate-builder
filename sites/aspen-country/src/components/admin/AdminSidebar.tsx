@@ -23,9 +23,9 @@ export default function AdminSidebar() {
   };
 
   return (
-    <aside className="w-full max-w-[260px] border-r border-white/10 bg-[#07271f] p-5">
+    <aside className="w-full max-w-[260px] border-r border-[#EBEBEB] bg-white p-5">
       <div className="mb-8">
-        <p className="font-heading text-2xl text-white" style={{ fontWeight: 400 }}>
+        <p className="font-heading text-2xl text-black" style={{ fontWeight: 400 }}>
           Aspen CMS
         </p>
       </div>
@@ -37,7 +37,7 @@ export default function AdminSidebar() {
               key={item.href}
               href={item.href}
               className={`block rounded-md px-3 py-2 text-sm transition-colors ${
-                active ? "bg-[#daaf3a] text-[#09312a]" : "text-white/80 hover:bg-white/10"
+                active ? "bg-[#DAFF07] text-black" : "text-[#666] hover:bg-[#F5F5F3] hover:text-black"
               }`}
             >
               {item.label}
@@ -48,7 +48,7 @@ export default function AdminSidebar() {
       <button
         type="button"
         onClick={signOut}
-        className="mt-10 w-full rounded-md border border-white/20 px-3 py-2 text-sm text-white/80 hover:bg-white/10"
+        className="mt-10 w-full rounded-md border border-[#EBEBEB] bg-white px-3 py-2 text-sm text-[#666] hover:bg-[#F5F5F3] hover:text-black"
       >
         Log out
       </button>
