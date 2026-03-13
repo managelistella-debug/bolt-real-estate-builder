@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { BlogFeedRenderer } from '@/components/embeds/BlogFeedRenderer';
+import { BlogFeedScriptRenderer } from '@/components/embeds/BlogFeedScriptRenderer';
 import { BlogFeedWidget } from '@/lib/types';
 
 interface BlogRow {
@@ -72,6 +72,6 @@ export function EmbedBlogFeedClient({ tenantId, feedConfig }: Props) {
   }
 
   return (
-    <BlogFeedRenderer posts={mappedBlogs} widget={feedConfig} deviceView={device} />
+    <BlogFeedScriptRenderer posts={mappedBlogs} widget={feedConfig} deviceView={device} />
   );
 }

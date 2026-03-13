@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Code2, Eye, Save } from 'lucide-react';
 import { BlogFeedEditorNew } from '@/components/builder/section-editors/BlogFeedEditorNew';
-import { BlogFeedRenderer } from '@/components/embeds/BlogFeedRenderer';
+import { BlogFeedScriptRenderer } from '@/components/embeds/BlogFeedScriptRenderer';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useBlogsStore } from '@/lib/stores/blogs';
@@ -158,7 +158,7 @@ export default function BlogFeedEditorPage() {
           </div>
 
           <div className="rounded-xl border border-[#EBEBEB] bg-white p-5">
-            <BlogFeedRenderer posts={blogs} widget={config} deviceView={deviceView} />
+            <BlogFeedScriptRenderer posts={blogs} widget={config} deviceView={deviceView} />
           </div>
         </div>
       </div>
