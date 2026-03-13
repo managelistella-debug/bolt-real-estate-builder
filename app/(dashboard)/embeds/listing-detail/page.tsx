@@ -12,6 +12,7 @@ import {
 } from '@/lib/stores/embedConfigs';
 import { ListingDetailEmbedConfig } from '@/lib/types';
 import { EmbedCodeDialog } from '@/components/embeds/EmbedCodeDialog';
+import { EmbedListingDetail } from '@/components/embeds/EmbedListingDetail';
 import { ArrowLeft, Code2, Eye, Save } from 'lucide-react';
 
 function Toggle({
@@ -71,6 +72,39 @@ export default function ListingDetailEmbedPage() {
     () => getListingsForCurrentUser(user?.id),
     [getListingsForCurrentUser, user?.id]
   );
+  const previewListing = listings[0];
+
+  const mappedPreviewListing = useMemo(() => {
+    if (!previewListing) return null;
+    return {
+      id: previewListing.id,
+      slug: previewListing.slug,
+      address: previewListing.address,
+      description: previewListing.description,
+      list_price: previewListing.listPrice,
+      neighborhood: previewListing.neighborhood,
+      city: previewListing.city,
+      listing_status: previewListing.listingStatus,
+      bedrooms: previewListing.bedrooms,
+      bathrooms: previewListing.bathrooms,
+      property_type: previewListing.propertyType,
+      year_built: previewListing.yearBuilt,
+      living_area_sqft: previewListing.livingAreaSqft,
+      lot_area_value: previewListing.lotAreaValue,
+      lot_area_unit: previewListing.lotAreaUnit,
+      taxes_annual: previewListing.taxesAnnual,
+      listing_brokerage: previewListing.listingBrokerage,
+      mls_number: previewListing.mlsNumber,
+      representation: previewListing.representation,
+      gallery: (previewListing.gallery || []).map((image) => ({
+        id: image.id,
+        url: image.url,
+        caption: image.caption,
+        order: image.order,
+      })),
+      thumbnail: previewListing.thumbnail || previewListing.gallery?.[0]?.url,
+    };
+  }, [previewListing]);
 
   const update = useCallback(
     (partial: Partial<ListingDetailEmbedConfig>) => {
@@ -171,103 +205,100 @@ export default function ListingDetailEmbedPage() {
         />
       </div>
 
-      <div className="mx-auto max-w-2xl space-y-6 p-6">
-        <Link
-          href="/embeds"
-          className="inline-flex items-center gap-1.5 text-[13px] text-[#888C99] hover:text-black"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Back to Embeds
-        </Link>
+      <div className="border-b border-[#EBEBEB] bg-white px-6 py-3">
+        <div className="flex items-center gap-2">
+          <Link
+            href="/embeds"
+            className="rounded-lg border border-[#EBEBEB] bg-white px-3 py-1.5 text-[13px] text-[#888C99] transition-colors hover:bg-[#F5F5F3] hover:text-black"
+          >
+            Listing Feed Editor
+          </Link>
+          <span className="rounded-lg bg-black px-3 py-1.5 text-[13px] text-white">
+            Listing Detail Appearance
+          </span>
+        </div>
+      </div>
 
-        {/* Sections */}
-        <div className="rounded-xl border border-[#EBEBEB] bg-white p-5">
-          <h3 className="mb-3 text-[13px] font-medium text-black">
-            Visible Sections
-          </h3>
-          <div className="divide-y divide-[#EBEBEB]">
-            <Toggle
-              label="Photo Gallery"
-              checked={config.showGallery}
-              onChange={(v) => update({ showGallery: v })}
-            />
-            <Toggle
-              label="Mortgage Calculator"
-              checked={config.showMortgageCalculator}
-              onChange={(v) => update({ showMortgageCalculator: v })}
-            />
-            <Toggle
-              label="Property Details"
-              checked={config.showPropertyDetails}
-              onChange={(v) => update({ showPropertyDetails: v })}
-            />
-            <Toggle
-              label="Contact Form"
-              checked={config.showContactForm}
-              onChange={(v) => update({ showContactForm: v })}
-            />
+      <div className="flex min-h-0">
+        <div className="w-[360px] shrink-0 overflow-y-auto border-r border-[#EBEBEB] bg-white p-5">
+          <Link
+            href="/embeds"
+            className="mb-5 inline-flex items-center gap-1.5 text-[13px] text-[#888C99] hover:text-black"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back to Embeds
+          </Link>
+
+          <div className="rounded-xl border border-[#EBEBEB] bg-white p-4">
+            <h3 className="mb-3 text-[13px] font-medium text-black">Visible Sections</h3>
+            <div className="divide-y divide-[#EBEBEB]">
+              <Toggle label="Photo Gallery" checked={config.showGallery} onChange={(v) => update({ showGallery: v })} />
+              <Toggle label="Mortgage Calculator" checked={config.showMortgageCalculator} onChange={(v) => update({ showMortgageCalculator: v })} />
+              <Toggle label="Property Details" checked={config.showPropertyDetails} onChange={(v) => update({ showPropertyDetails: v })} />
+              <Toggle label="Contact Form" checked={config.showContactForm} onChange={(v) => update({ showContactForm: v })} />
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-xl border border-[#EBEBEB] bg-white p-4">
+            <h3 className="mb-3 text-[13px] font-medium text-black">Agent Contact Info</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-[12px] font-medium text-[#888C99]">Name</label>
+                <input
+                  value={config.agentName}
+                  onChange={(e) => update({ agentName: e.target.value })}
+                  placeholder="Jane Doe"
+                  className="h-[34px] w-full rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-3 text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none focus:ring-1 focus:ring-[#DAFF07]"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[12px] font-medium text-[#888C99]">Email</label>
+                <input
+                  type="email"
+                  value={config.agentEmail}
+                  onChange={(e) => update({ agentEmail: e.target.value })}
+                  placeholder="jane@example.com"
+                  className="h-[34px] w-full rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-3 text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none focus:ring-1 focus:ring-[#DAFF07]"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[12px] font-medium text-[#888C99]">Phone</label>
+                <input
+                  type="tel"
+                  value={config.agentPhone}
+                  onChange={(e) => update({ agentPhone: e.target.value })}
+                  placeholder="(555) 123-4567"
+                  className="h-[34px] w-full rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-3 text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none focus:ring-1 focus:ring-[#DAFF07]"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-xl border border-[#EBEBEB] bg-white p-4">
+            <h3 className="mb-3 text-[13px] font-medium text-black">Call to Action</h3>
+            <div>
+              <label className="mb-1 block text-[12px] font-medium text-[#888C99]">CTA Button Label</label>
+              <input
+                value={config.ctaLabel}
+                onChange={(e) => update({ ctaLabel: e.target.value })}
+                placeholder="Schedule a Tour"
+                className="h-[34px] w-full rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-3 text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none focus:ring-1 focus:ring-[#DAFF07]"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Agent Info */}
-        <div className="rounded-xl border border-[#EBEBEB] bg-white p-5">
-          <h3 className="mb-3 text-[13px] font-medium text-black">
-            Agent Contact Info
-          </h3>
-          <div className="space-y-3">
-            <div>
-              <label className="mb-1 block text-[12px] font-medium text-[#888C99]">
-                Name
-              </label>
-              <input
-                value={config.agentName}
-                onChange={(e) => update({ agentName: e.target.value })}
-                placeholder="Jane Doe"
-                className="h-[34px] w-full rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-3 text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none focus:ring-1 focus:ring-[#DAFF07]"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-[12px] font-medium text-[#888C99]">
-                Email
-              </label>
-              <input
-                type="email"
-                value={config.agentEmail}
-                onChange={(e) => update({ agentEmail: e.target.value })}
-                placeholder="jane@example.com"
-                className="h-[34px] w-full rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-3 text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none focus:ring-1 focus:ring-[#DAFF07]"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-[12px] font-medium text-[#888C99]">
-                Phone
-              </label>
-              <input
-                type="tel"
-                value={config.agentPhone}
-                onChange={(e) => update({ agentPhone: e.target.value })}
-                placeholder="(555) 123-4567"
-                className="h-[34px] w-full rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-3 text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none focus:ring-1 focus:ring-[#DAFF07]"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* CTA */}
-        <div className="rounded-xl border border-[#EBEBEB] bg-white p-5">
-          <h3 className="mb-3 text-[13px] font-medium text-black">
-            Call to Action
-          </h3>
-          <div>
-            <label className="mb-1 block text-[12px] font-medium text-[#888C99]">
-              CTA Button Label
-            </label>
-            <input
-              value={config.ctaLabel}
-              onChange={(e) => update({ ctaLabel: e.target.value })}
-              placeholder="Schedule a Tour"
-              className="h-[34px] w-full rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-3 text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none focus:ring-1 focus:ring-[#DAFF07]"
-            />
+        <div className="flex-1 overflow-y-auto p-6">
+          <h2 className="mb-1 text-[13px] font-medium text-black">Visual Preview</h2>
+          <p className="mb-4 text-[12px] text-[#888C99]">Live detail-page preview using your current settings.</p>
+          <div className="rounded-xl border border-[#EBEBEB] bg-white p-3">
+            {mappedPreviewListing ? (
+              <EmbedListingDetail listing={mappedPreviewListing as any} config={config as any} />
+            ) : (
+              <div className="p-10 text-center text-[13px] text-[#888C99]">
+                Add at least one listing to see the detail-page preview.
+              </div>
+            )}
           </div>
         </div>
       </div>

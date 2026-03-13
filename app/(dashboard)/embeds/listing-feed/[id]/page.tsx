@@ -192,6 +192,20 @@ export default function ListingFeedEditorPage() {
         </div>
       </div>
 
+      <div className="border-b border-[#EBEBEB] bg-white px-4 py-2">
+        <div className="flex items-center gap-2">
+          <span className="rounded-lg bg-black px-3 py-1.5 text-[13px] text-white">
+            Listing Feed Appearance
+          </span>
+          <Link
+            href="/embeds/listing-detail"
+            className="rounded-lg border border-[#EBEBEB] bg-white px-3 py-1.5 text-[13px] text-[#888C99] transition-colors hover:bg-[#F5F5F3] hover:text-black"
+          >
+            Listing Detail Appearance
+          </Link>
+        </div>
+      </div>
+
       {/* Split panel */}
       <div className="flex min-h-0 flex-1">
         {/* Left - Settings */}

@@ -21,6 +21,20 @@ export default function BlogDetailsEditorPage() {
         </div>
       </div>
 
+      <div className="border-b border-[#EBEBEB] bg-white px-6 py-3">
+        <div className="flex items-center gap-2">
+          <Link
+            href="/embeds"
+            className="rounded-lg border border-[#EBEBEB] bg-white px-3 py-1.5 text-[13px] text-[#888C99] transition-colors hover:bg-[#F5F5F3] hover:text-black"
+          >
+            Blog Feed Editor
+          </Link>
+          <span className="rounded-lg bg-black px-3 py-1.5 text-[13px] text-white">
+            Blog Detail Appearance
+          </span>
+        </div>
+      </div>
+
       <div className="mx-auto max-w-3xl p-6">
         <div className="rounded-xl border border-[#EBEBEB] bg-white p-6">
           <h2 className="text-[15px] font-medium text-black">Open Blog Template Controls</h2>
