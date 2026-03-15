@@ -21,7 +21,15 @@ For `aspen-country.vercel.app` to show this site, the Vercel project must deploy
    - Set it to: `sites/aspen-country`
    - Save
 
-4. **Deploy**: Push to `main` or click Redeploy. The Aspen site will build and deploy.
+4. **Environment Variables** (required for CMS; optional for static build):
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `NEXT_PUBLIC_TENANT_ID`
+   - `SUPABASE_SERVICE_ROLE_KEY` (for admin API routes)
+   
+   Add these in Vercel: Settings → Environment Variables. The build can run without them (uses fallback data), but the CMS will need them at runtime.
+
+5. **Deploy**: Push to `main` or click Redeploy. The Aspen site will build and deploy.
 
 ### If Root Directory is hard to find
 
