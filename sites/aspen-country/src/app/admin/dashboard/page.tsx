@@ -1,17 +1,14 @@
 import { getAllListings } from "@/lib/listings";
-import { getAllPosts } from "@/lib/blog";
 import { getAllTestimonials } from "@/lib/testimonials";
 
 export default async function AdminDashboardPage() {
-  const [listings, posts, testimonials] = await Promise.all([
+  const [listings, testimonials] = await Promise.all([
     getAllListings(),
-    getAllPosts(),
     getAllTestimonials(),
   ]);
 
   const cards = [
     { label: "Listings", value: listings.length },
-    { label: "Blog Posts", value: posts.length },
     { label: "Testimonials", value: testimonials.length },
   ];
 
@@ -30,7 +27,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       <div className="p-6">
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2">
           {cards.map((card) => (
             <div
               key={card.label}

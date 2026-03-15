@@ -100,6 +100,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   listing?: ListingPayload | null;
   onSubmit: (payload: ListingPayload) => void;
+  livePreviewHref?: string;
 }
 
 export default function ListingFormDialog({
@@ -107,6 +108,7 @@ export default function ListingFormDialog({
   onOpenChange,
   listing,
   onSubmit,
+  livePreviewHref,
 }: Props) {
   const [draft, setDraft] = useState<Draft>(emptyDraft());
   const [error, setError] = useState<string | null>(null);
@@ -137,7 +139,7 @@ export default function ListingFormDialog({
         listingBrokerage: listing.listingBrokerage || "",
         mlsNumber: listing.mlsNumber || "",
         gallery: listing.gallery || [],
-        thumbnail: listing.thumbnail || listing.gallery?.[0] || "",
+        thumbnail: listing.gallery?.[0] || listing.thumbnail || "",
         homepageFeatured: !!listing.homepageFeatured,
         ranchEstateFeatured: !!listing.ranchEstateFeatured,
       });
@@ -221,7 +223,7 @@ export default function ListingFormDialog({
         );
         setDraft((prev) => {
           const next = [...prev.gallery, ...urls];
-          return { ...prev, gallery: next, thumbnail: prev.thumbnail || next[0] || "" };
+          return { ...prev, gallery: next, thumbnail: (prev.gallery[0] || next[0] || "") };
         });
         setError(null);
       } catch (e) {
@@ -251,9 +253,7 @@ export default function ListingFormDialog({
   const removeImage = (idx: number) => {
     setDraft((prev) => {
       const next = prev.gallery.filter((_, i) => i !== idx);
-      const thumb =
-        prev.thumbnail === prev.gallery[idx] ? next[0] || "" : prev.thumbnail;
-      return { ...prev, gallery: next, thumbnail: thumb };
+      return { ...prev, gallery: next, thumbnail: next[0] || "" };
     });
   };
 
@@ -263,7 +263,7 @@ export default function ListingFormDialog({
       const moved = imgs[from];
       imgs.splice(from, 1);
       imgs.splice(to, 0, moved);
-      return { ...prev, gallery: imgs };
+      return { ...prev, gallery: imgs, thumbnail: imgs[0] || "" };
     });
   };
 
@@ -297,7 +297,7 @@ export default function ListingFormDialog({
       taxes: Number(draft.taxes) || 0,
       listingBrokerage: draft.listingBrokerage,
       mlsNumber: draft.mlsNumber,
-      thumbnail: draft.thumbnail || draft.gallery[0] || "",
+      thumbnail: draft.gallery[0] || "",
       gallery: draft.gallery,
       homepageFeatured: draft.homepageFeatured,
       ranchEstateFeatured: draft.ranchEstateFeatured,
@@ -592,7 +592,7 @@ export default function ListingFormDialog({
           </div>
 
           <div className="space-y-1.5">
-            <label className={labelClass}>MLS Number</label>
+            <label className={labelClass}>MLS Listing Number</label>
             <input
               value={draft.mlsNumber}
               onChange={(e) =>
@@ -671,7 +671,7 @@ export default function ListingFormDialog({
                       setDraggedIdx(idx);
                     }}
                     className={`group relative cursor-move overflow-hidden rounded-lg border transition-all ${
-                      draft.thumbnail === url
+                      idx === 0
                         ? "border-[#DAFF07] ring-1 ring-[#DAFF07]"
                         : "border-[#EBEBEB]"
                     } ${draggedIdx === idx ? "opacity-40" : ""}`}
@@ -685,24 +685,11 @@ export default function ListingFormDialog({
                       />
                     </div>
 
-                    {draft.thumbnail === url && (
+                    {idx === 0 && (
                       <div className="absolute left-1 top-1 z-10 flex h-5 items-center gap-0.5 rounded bg-[#DAFF07] px-1 text-[9px] font-semibold text-black">
                         <Star className="h-2.5 w-2.5 fill-current" /> Thumbnail
                       </div>
                     )}
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setDraft((p) => ({ ...p, thumbnail: url }))
-                      }
-                      className={`absolute left-1 ${
-                        draft.thumbnail === url ? "top-7" : "top-1"
-                      } z-10 rounded bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100`}
-                      title="Set as thumbnail"
-                    >
-                      <Star className="h-3 w-3" />
-                    </button>
 
                     <div className="absolute bottom-1 left-1 z-10 rounded bg-black/50 p-0.5 text-white opacity-0 transition-opacity group-hover:opacity-100">
                       <GripVertical className="h-3 w-3" />
@@ -731,6 +718,16 @@ export default function ListingFormDialog({
         {error && <p className="mt-3 text-[13px] text-red-500">{error}</p>}
 
         <div className="mt-4 flex justify-end gap-2">
+          {livePreviewHref && (
+            <a href={livePreviewHref} target="_blank" rel="noopener noreferrer">
+              <button
+                type="button"
+                className="h-[30px] rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black"
+              >
+                View Live Listing
+              </button>
+            </a>
+          )}
           <button
             type="button"
             onClick={() => onOpenChange(false)}

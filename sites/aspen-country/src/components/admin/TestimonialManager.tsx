@@ -36,9 +36,11 @@ export default function TestimonialManager() {
 
   const load = async () => {
     setLoading(true);
+    setMessage(null);
     const res = await fetch("/api/admin/testimonials");
     if (!res.ok) {
-      setMessage("Unable to load testimonials.");
+      const err = await res.json().catch(() => ({}));
+      setMessage((err as { error?: string }).error || "Unable to load testimonials.");
       setRows([]);
       setLoading(false);
       return;

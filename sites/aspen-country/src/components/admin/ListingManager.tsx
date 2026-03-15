@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Edit, Plus, Search, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { Copy, Edit, ExternalLink, Plus, Search, Sparkles, Trash2 } from "lucide-react";
 import ListingFormDialog, {
   ListingPayload,
 } from "@/components/admin/ListingFormDialog";
@@ -10,7 +11,7 @@ type ListingRow = ListingPayload & { id: string };
 
 const STATUS_FILTERS = [
   { label: "All", value: "all" },
-  { label: "Active", value: "active" },
+  { label: "For Sale", value: "active" },
   { label: "Pending", value: "pending" },
   { label: "Sold", value: "sold" },
 ] as const;
@@ -22,9 +23,14 @@ const statusPillClass: Record<string, string> = {
 };
 
 const statusLabel: Record<string, string> = {
-  active: "Active",
+  active: "For Sale",
   pending: "Pending",
   sold: "Sold",
+};
+
+const REPRESENTATION_LABELS: Record<string, string> = {
+  buyer_representation: "Buyer Representation",
+  seller_representation: "Seller Representation",
 };
 
 function slugify(value: string) {
@@ -159,6 +165,94 @@ export default function ListingManager() {
     load();
   };
 
+  const handleDuplicate = async (listing: ListingRow) => {
+    setMessage(null);
+    const baseSlug = listing.slug || slugify(listing.address);
+    const newSlug = `${baseSlug}-copy`;
+    const body: Omit<ListingPayload, "id"> = {
+      slug: newSlug,
+      address: `${listing.address} Copy`,
+      description: listing.description,
+      listPrice: listing.listPrice,
+      listingStatus: listing.listingStatus,
+      representation: listing.representation,
+      neighborhood: listing.neighborhood,
+      city: listing.city,
+      bedrooms: listing.bedrooms,
+      bathrooms: listing.bathrooms,
+      propertyType: listing.propertyType,
+      yearBuilt: listing.yearBuilt,
+      livingArea: listing.livingArea,
+      lotArea: listing.lotArea,
+      lotAreaUnit: listing.lotAreaUnit,
+      taxes: listing.taxes,
+      listingBrokerage: listing.listingBrokerage,
+      mlsNumber: listing.mlsNumber,
+      thumbnail: listing.thumbnail,
+      gallery: listing.gallery,
+      homepageFeatured: listing.homepageFeatured,
+      ranchEstateFeatured: listing.ranchEstateFeatured,
+    };
+    const res = await fetch("/api/admin/listings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      setMessage(err.error || "Failed to duplicate listing.");
+      return;
+    }
+    setMessage("Listing duplicated.");
+    load();
+  };
+
+  const handleCreateSample = async () => {
+    setMessage(null);
+    const body = {
+      slug: `sample-${Date.now().toString().slice(-6)}`,
+      address: "7523 Grover Ave",
+      description: "Sample listing data for interaction testing.",
+      listPrice: 875000,
+      listingStatus: "active",
+      representation: "seller_representation",
+      neighborhood: "Brentwood",
+      city: "Austin",
+      bedrooms: 4,
+      bathrooms: 3,
+      propertyType: "Residential",
+      yearBuilt: 1954,
+      livingArea: 2024,
+      lotArea: 0.21,
+      lotAreaUnit: "acres",
+      taxes: 10318,
+      listingBrokerage: "Compass RE Texas, LLC",
+      mlsNumber: `SAMPLE-${Date.now().toString().slice(-6)}`,
+      thumbnail: "",
+      gallery: [
+        "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1400&q=80",
+        "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1400&q=80",
+        "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=80",
+        "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1400&q=80",
+        "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1400&q=80",
+      ],
+      homepageFeatured: false,
+      ranchEstateFeatured: false,
+    };
+    const res = await fetch("/api/admin/listings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      setMessage(err.error || "Failed to create sample listing.");
+      return;
+    }
+    setMessage("Sample listing created.");
+    load();
+  };
+
   const formatPrice = (price: number) =>
     price > 0
       ? "$" + price.toLocaleString("en-US", { maximumFractionDigits: 0 })
@@ -178,14 +272,24 @@ export default function ListingManager() {
               Manage your real estate property listings
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsCreateOpen(true)}
-            className="flex h-[30px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-3 text-[13px] font-normal text-black transition-colors hover:bg-[#C8ED00]"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            New Listing
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleCreateSample}
+              className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-black transition-colors hover:bg-[#F5F5F3]"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-[#888C99]" />
+              Add Sample
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsCreateOpen(true)}
+              className="flex h-[30px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-3 text-[13px] font-normal text-black transition-colors hover:bg-[#C8ED00]"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New Listing
+            </button>
+          </div>
         </div>
       </div>
 
@@ -233,16 +337,26 @@ export default function ListingManager() {
             <div className="py-16 text-center">
               <p className="text-[15px] text-black">No listings yet</p>
               <p className="mt-1 text-[13px] text-[#888C99]">
-                Create your first property listing to get started.
+                Create your first property listing to start building your listing feed.
               </p>
-              <button
-                type="button"
-                onClick={() => setIsCreateOpen(true)}
-                className="mt-5 inline-flex h-[30px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-3 text-[13px] text-black hover:bg-[#C8ED00]"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Create Listing
-              </button>
+              <div className="mt-5 flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateOpen(true)}
+                  className="flex h-[30px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-3 text-[13px] text-black hover:bg-[#C8ED00]"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Create Listing
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateSample}
+                  className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Add Sample
+                </button>
+              </div>
             </div>
           ) : (
             <div className="divide-y divide-[#EBEBEB]">
@@ -265,6 +379,12 @@ export default function ListingManager() {
                         {statusLabel[listing.listingStatus] ||
                           listing.listingStatus}
                       </span>
+                      {listing.representation && (
+                        <span className="inline-flex rounded-full border border-[#EBEBEB] bg-white px-2 py-0.5 text-[11px] text-[#888C99]">
+                          {REPRESENTATION_LABELS[listing.representation] ||
+                            listing.representation}
+                        </span>
+                      )}
                     </div>
                     <p className="mt-0.5 text-[13px] text-[#888C99]">
                       {listing.neighborhood
@@ -287,6 +407,15 @@ export default function ListingManager() {
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
+                    <Link href={`/listings/${listing.slug}`}>
+                      <button
+                        type="button"
+                        className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-2.5 text-[12px] text-[#888C99] transition-colors hover:bg-[#F5F5F3] hover:text-black"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        View
+                      </button>
+                    </Link>
                     <button
                       type="button"
                       onClick={() => setEditingListing(listing)}
@@ -294,6 +423,14 @@ export default function ListingManager() {
                     >
                       <Edit className="h-3 w-3" />
                       Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDuplicate(listing)}
+                      className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#EBEBEB] bg-white text-[#CCCCCC] transition-colors hover:bg-[#F5F5F3] hover:text-black"
+                      title="Duplicate"
+                    >
+                      <Copy className="h-3 w-3" />
                     </button>
                     <button
                       type="button"
@@ -323,6 +460,7 @@ export default function ListingManager() {
         }}
         listing={editingListing}
         onSubmit={handleSave}
+        livePreviewHref={editingListing ? `/listings/${editingListing.slug}` : undefined}
       />
     </div>
   );

@@ -6,7 +6,6 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import {
   LayoutDashboard,
   Building2,
-  FileText,
   MessageSquareQuote,
   LogOut,
 } from "lucide-react";
@@ -14,7 +13,6 @@ import {
 const NAV_ITEMS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/listings", label: "Listings", icon: Building2 },
-  { href: "/admin/blogs", label: "Blogs", icon: FileText },
   { href: "/admin/testimonials", label: "Testimonials", icon: MessageSquareQuote },
 ];
 
@@ -36,7 +34,7 @@ export default function AdminSidebar() {
     >
       <div className="flex h-14 items-center border-b border-[#EBEBEB] px-5">
         <h1 className="text-[15px] font-medium tracking-tight text-black">
-          Aspen CMS
+          Bolt
         </h1>
       </div>
 
