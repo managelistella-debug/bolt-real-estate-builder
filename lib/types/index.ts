@@ -897,6 +897,7 @@ export interface BlogFeedWidget {
   showFeaturedReadMore: boolean;
   readMoreLabel: string;
   featuredReadMoreLabel: string;
+  detailPageUrlPattern: string;
   thumbnailHeight: ListingsResponsiveNumberConfig;
   thumbnailHeightUnit: 'px' | 'vh';
   equalHeightCards: boolean;
@@ -2014,6 +2015,90 @@ export interface ListingDetailEmbedConfig {
   agentEmail: string;
   agentPhone: string;
   ctaLabel: string;
+  style?: ListingDetailStyleConfig;
+}
+
+export interface DetailTypographyToken {
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: string;
+  color: string;
+}
+
+export interface ListingDetailStyleConfig {
+  fontFamily: string;
+  accentColor: string;
+  accentTextColor: string;
+  backgroundColor: string;
+  lineColor: string;
+  lineWidth: number;
+  borderColor: string;
+  borderWidth: number;
+  borderRadius: number;
+  imageBorderRadius: number;
+  detailsBoxRadius: number;
+  surfaceColor: string;
+  mutedSurfaceColor: string;
+  headingColor: string;
+  bodyTextColor: string;
+  mutedTextColor: string;
+  statusBadgeRadius: number;
+  statusBadgeBorderWidth: number;
+  statusBadgeBorderColor: string;
+  statusColors: {
+    active: string;
+    pending: string;
+    sold: string;
+  };
+  typography: {
+    price: DetailTypographyToken;
+    heading: DetailTypographyToken;
+    body: DetailTypographyToken;
+    meta: DetailTypographyToken;
+    label: DetailTypographyToken;
+    value: DetailTypographyToken;
+    button: DetailTypographyToken;
+  };
+}
+
+export interface BlogDetailStyleConfig {
+  containerBackgroundColor: string;
+  lineColor: string;
+  lineWidth: number;
+  borderColor: string;
+  borderWidth: number;
+  borderRadius: number;
+  heroImageBorderRadius: number;
+  imageBorderRadius: number;
+  headingColor: string;
+  bodyTextColor: string;
+  metaTextColor: string;
+  mutedTextColor: string;
+  tagBackgroundColor: string;
+  tagBorderColor: string;
+  tagBorderWidth: number;
+  tagBorderRadius: number;
+  relatedCardBackgroundColor: string;
+  relatedCardBorderColor: string;
+  relatedCardBorderWidth: number;
+  relatedCardBorderRadius: number;
+  relatedImageBorderRadius: number;
+  typography: {
+    title: DetailTypographyToken;
+    meta: DetailTypographyToken;
+    body: DetailTypographyToken;
+    tag: DetailTypographyToken;
+    relatedTitle: DetailTypographyToken;
+    relatedMeta: DetailTypographyToken;
+  };
+}
+
+export interface BlogDetailEmbedConfig {
+  kind: 'blog_detail';
+  relatedPostsCount: number;
+  showRelatedPosts: boolean;
+  relatedHeading: string;
+  style: BlogDetailStyleConfig;
 }
 
 // ── Testimonial Feed Embed ───────────────────────────────────────────────────
@@ -2107,7 +2192,12 @@ export interface EmbedConfig {
   tenantId: string;
   name: string;
   type: EmbedConfigType;
-  config: ListingFeedConfig | ListingDetailEmbedConfig | TestimonialFeedConfig | BlogFeedWidget;
+  config:
+    | ListingFeedConfig
+    | ListingDetailEmbedConfig
+    | TestimonialFeedConfig
+    | BlogFeedWidget
+    | BlogDetailEmbedConfig;
   createdAt: Date;
   updatedAt: Date;
 }

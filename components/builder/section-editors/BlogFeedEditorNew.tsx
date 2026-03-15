@@ -345,6 +345,17 @@ export function BlogFeedEditorNew({ widget, onChange }: BlogFeedEditorNewProps) 
               </SelectContent>
             </Select>
           </div>
+          <div className="space-y-2">
+            <Label>Blog Detail URL Pattern</Label>
+            <Input
+              value={normalizedWidget.detailPageUrlPattern}
+              onChange={(event) => onChange({ detailPageUrlPattern: event.target.value })}
+              placeholder="https://aspen-country.vercel.app/blog/{slug}"
+            />
+            <p className="text-xs text-muted-foreground">
+              Use {'{slug}'} as the placeholder. Example: /blog/{'{slug}'}
+            </p>
+          </div>
         </div>
       </CollapsibleSection>
 
@@ -1349,6 +1360,10 @@ function normalizeBlogFeedWidget(widget: BlogFeedWidget): BlogFeedWidget {
       typeof oldWidget.showFeaturedReadMore === 'boolean' ? oldWidget.showFeaturedReadMore : true,
     readMoreLabel: oldWidget.readMoreLabel || 'Read More',
     featuredReadMoreLabel: oldWidget.featuredReadMoreLabel || 'Read Article',
+    detailPageUrlPattern:
+      typeof oldWidget.detailPageUrlPattern === 'string' && oldWidget.detailPageUrlPattern.trim().length > 0
+        ? oldWidget.detailPageUrlPattern.trim()
+        : '/blog/{slug}',
     equalHeightCards: typeof oldWidget.equalHeightCards === 'boolean' ? oldWidget.equalHeightCards : true,
     cardClickable: typeof oldWidget.cardClickable === 'boolean' ? oldWidget.cardClickable : true,
     featuredPost: {

@@ -3,8 +3,11 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import {
   EmbedConfig,
   EmbedConfigType,
+  BlogDetailEmbedConfig,
+  BlogDetailStyleConfig,
   BlogFeedWidget,
   ListingFeedConfig,
+  ListingDetailStyleConfig,
   ListingDetailEmbedConfig,
   TestimonialFeedConfig,
 } from '@/lib/types';
@@ -189,7 +192,130 @@ export const DEFAULT_LISTING_DETAIL_CONFIG: ListingDetailEmbedConfig = {
   agentEmail: '',
   agentPhone: '',
   ctaLabel: 'Schedule a Tour',
+  style: {
+    fontFamily: 'Inter',
+    accentColor: '#DAFF07',
+    accentTextColor: '#000000',
+    backgroundColor: '#ffffff',
+    lineColor: '#EBEBEB',
+    lineWidth: 1,
+    borderColor: '#EBEBEB',
+    borderWidth: 1,
+    borderRadius: 12,
+    imageBorderRadius: 12,
+    detailsBoxRadius: 12,
+    surfaceColor: '#ffffff',
+    mutedSurfaceColor: '#F5F5F3',
+    headingColor: '#000000',
+    bodyTextColor: '#000000',
+    mutedTextColor: '#888C99',
+    statusBadgeRadius: 999,
+    statusBadgeBorderWidth: 1,
+    statusBadgeBorderColor: '#EBEBEB',
+    statusColors: {
+      active: '#DAFF07',
+      pending: '#F5F5F3',
+      sold: '#111111',
+    },
+    typography: {
+      price: { fontFamily: 'Inter', fontSize: 32, fontWeight: '500', color: '#000000' },
+      heading: { fontFamily: 'Inter', fontSize: 24, fontWeight: '500', color: '#000000' },
+      body: { fontFamily: 'Inter', fontSize: 13, fontWeight: '400', color: '#888C99' },
+      meta: { fontFamily: 'Inter', fontSize: 13, fontWeight: '400', color: '#888C99' },
+      label: { fontFamily: 'Inter', fontSize: 13, fontWeight: '400', color: '#888C99' },
+      value: { fontFamily: 'Inter', fontSize: 13, fontWeight: '500', color: '#000000' },
+      button: { fontFamily: 'Inter', fontSize: 13, fontWeight: '500', color: '#000000' },
+    },
+  },
 };
+
+export const DEFAULT_BLOG_DETAIL_STYLE_CONFIG: BlogDetailStyleConfig = {
+  containerBackgroundColor: '#ffffff',
+  lineColor: '#E8E8E8',
+  lineWidth: 1,
+  borderColor: '#E8E8E8',
+  borderWidth: 1,
+  borderRadius: 12,
+  heroImageBorderRadius: 12,
+  imageBorderRadius: 8,
+  headingColor: '#111111',
+  bodyTextColor: '#333333',
+  metaTextColor: '#6A6A6A',
+  mutedTextColor: '#7A7A7A',
+  tagBackgroundColor: '#ffffff',
+  tagBorderColor: '#E5E5E5',
+  tagBorderWidth: 1,
+  tagBorderRadius: 999,
+  relatedCardBackgroundColor: '#ffffff',
+  relatedCardBorderColor: '#E8E8E8',
+  relatedCardBorderWidth: 1,
+  relatedCardBorderRadius: 10,
+  relatedImageBorderRadius: 6,
+  typography: {
+    title: { fontFamily: 'Inter', fontSize: 48, fontWeight: '600', color: '#111111' },
+    meta: { fontFamily: 'Inter', fontSize: 14, fontWeight: '400', color: '#6A6A6A' },
+    body: { fontFamily: 'Inter', fontSize: 16, fontWeight: '400', color: '#333333' },
+    tag: { fontFamily: 'Inter', fontSize: 12, fontWeight: '500', color: '#6A6A6A' },
+    relatedTitle: { fontFamily: 'Inter', fontSize: 20, fontWeight: '600', color: '#111111' },
+    relatedMeta: { fontFamily: 'Inter', fontSize: 12, fontWeight: '400', color: '#7A7A7A' },
+  },
+};
+
+export const DEFAULT_BLOG_DETAIL_CONFIG: BlogDetailEmbedConfig = {
+  kind: 'blog_detail',
+  relatedPostsCount: 3,
+  showRelatedPosts: true,
+  relatedHeading: 'Related Posts',
+  style: DEFAULT_BLOG_DETAIL_STYLE_CONFIG,
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function mergeDeep<T>(defaults: T, value: unknown): T {
+  if (!isRecord(defaults) || !isRecord(value)) {
+    return (value === undefined ? defaults : (value as T));
+  }
+  const merged: Record<string, unknown> = { ...defaults };
+  for (const key of Object.keys(value)) {
+    const incoming = value[key];
+    const fallback = merged[key];
+    merged[key] =
+      isRecord(fallback) && isRecord(incoming)
+        ? mergeDeep(fallback, incoming)
+        : incoming;
+  }
+  return merged as T;
+}
+
+export function isBlogDetailEmbedConfig(config: unknown): config is BlogDetailEmbedConfig {
+  return isRecord(config) && config.kind === 'blog_detail';
+}
+
+export function resolveListingDetailConfig(config: unknown): ListingDetailEmbedConfig {
+  return mergeDeep(DEFAULT_LISTING_DETAIL_CONFIG, config);
+}
+
+export function resolveBlogDetailConfig(config: unknown): BlogDetailEmbedConfig {
+  return mergeDeep(DEFAULT_BLOG_DETAIL_CONFIG, config);
+}
+
+function normalizeEmbedConfig(config: EmbedConfig): EmbedConfig {
+  if (config.type === 'listing_detail') {
+    return {
+      ...config,
+      config: resolveListingDetailConfig(config.config),
+    };
+  }
+  if (config.type === 'blog_feed' && isBlogDetailEmbedConfig(config.config)) {
+    return {
+      ...config,
+      config: resolveBlogDetailConfig(config.config),
+    };
+  }
+  return config;
+}
 
 export const DEFAULT_BLOG_FEED_CONFIG: BlogFeedWidget = {
   type: 'blog-feed',
@@ -221,6 +347,7 @@ export const DEFAULT_BLOG_FEED_CONFIG: BlogFeedWidget = {
   showFeaturedReadMore: true,
   readMoreLabel: 'Read More',
   featuredReadMoreLabel: 'Read Article',
+  detailPageUrlPattern: '/blog/{slug}',
   equalHeightCards: true,
   cardClickable: true,
   featuredPost: { enabled: true, showOnTablet: true },
@@ -318,7 +445,12 @@ interface EmbedConfigsState {
     tenantId: string,
     name: string,
     type: EmbedConfigType,
-    config: ListingFeedConfig | ListingDetailEmbedConfig | TestimonialFeedConfig | BlogFeedWidget
+    config:
+      | ListingFeedConfig
+      | ListingDetailEmbedConfig
+      | TestimonialFeedConfig
+      | BlogFeedWidget
+      | BlogDetailEmbedConfig
   ) => EmbedConfig;
   updateConfig: (id: string, updates: Partial<Pick<EmbedConfig, 'name' | 'config'>>) => Promise<void>;
   deleteConfig: (id: string) => Promise<void>;
@@ -344,9 +476,10 @@ export const useEmbedConfigsStore = create<EmbedConfigsState>()(
           createdAt: now,
           updatedAt: now,
         };
-        set((state) => ({ configs: [...state.configs, embedConfig] }));
-        syncConfigToDb(embedConfig);
-        return embedConfig;
+        const normalized = normalizeEmbedConfig(embedConfig);
+        set((state) => ({ configs: [...state.configs, normalized] }));
+        syncConfigToDb(normalized);
+        return normalized;
       },
 
       updateConfig: async (id, updates) => {
@@ -360,8 +493,9 @@ export const useEmbedConfigsStore = create<EmbedConfigsState>()(
               ...(updates.config !== undefined ? { config: updates.config } : {}),
               updatedAt: new Date(),
             };
-            toSync = updated;
-            return updated;
+            const normalized = normalizeEmbedConfig(updated);
+            toSync = normalized;
+            return normalized;
           }),
         }));
         if (toSync) await syncConfigToDb(toSync);
@@ -378,7 +512,7 @@ export const useEmbedConfigsStore = create<EmbedConfigsState>()(
         if (!effectiveId) return [];
         return get()
           .configs.filter((c) => c.tenantId === effectiveId)
-          .map((c) => ({
+          .map((c) => normalizeEmbedConfig({
             ...c,
             createdAt: toDate(c.createdAt),
             updatedAt: toDate(c.updatedAt),
@@ -388,7 +522,7 @@ export const useEmbedConfigsStore = create<EmbedConfigsState>()(
       getConfigById: (id) => {
         const c = get().configs.find((cfg) => cfg.id === id);
         if (!c) return undefined;
-        return { ...c, createdAt: toDate(c.createdAt), updatedAt: toDate(c.updatedAt) };
+        return normalizeEmbedConfig({ ...c, createdAt: toDate(c.createdAt), updatedAt: toDate(c.updatedAt) });
       },
 
       syncAllToDb: (tenantId) => {

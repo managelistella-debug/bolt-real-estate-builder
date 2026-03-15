@@ -1,50 +1,23 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
-  LayoutDashboard, 
-  Users, 
-  FolderKanban,
+  LayoutDashboard,
   Building2,
   FileText,
-  Settings,
-  LogOut,
-  Shield,
-  PlugZap,
   MessageSquareQuote,
-  Code2,
-  ChevronDown,
+  LogOut,
   PanelLeftClose,
-  Sparkles,
-  Globe,
-  ExternalLink,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth';
-import { useTenantSettingsStore } from '@/lib/stores/tenantSettings';
-import { useHostedSitesStore } from '@/lib/stores/hostedSites';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'AI Builder', href: '/ai-builder', icon: Sparkles },
   { name: 'Listings', href: '/listings', icon: Building2 },
   { name: 'Blogs', href: '/blogs', icon: FileText },
   { name: 'Testimonials', href: '/testimonials', icon: MessageSquareQuote },
-  { name: 'CRM', href: '/leads', icon: Users },
-  { name: 'Integrations', href: '/integrations', icon: PlugZap },
-  { name: 'Embeds', href: '/embeds', icon: Code2 },
-  { name: 'Domains & Settings', href: '/settings', icon: Settings },
-];
-
-const adminNavigation = [
-  { name: 'Admin Home', href: '/admin', icon: Shield },
-  { name: 'Admin Staff', href: '/admin/users', icon: Shield },
-  { name: 'Client Users', href: '/admin/clients', icon: Users },
-  { name: 'Admin Templates', href: '/admin/templates', icon: FolderKanban },
-  { name: 'Website Library', href: '/admin/website-library', icon: Globe },
-  { name: 'Admin Audit', href: '/admin/audit', icon: Shield },
 ];
 
 interface SidebarProps {
@@ -54,26 +27,7 @@ interface SidebarProps {
 
 export function Sidebar({ onCollapse, showCollapseButton = false }: SidebarProps) {
   const pathname = usePathname();
-  const { user, logout, canManageTenants } = useAuthStore();
-  const { getSettings } = useTenantSettingsStore();
-  const { getSiteBySlug } = useHostedSitesStore();
-  const [blogsMenuOpen, setBlogsMenuOpen] = useState(pathname?.startsWith('/blogs'));
-
-  const tenantSettings = user ? getSettings(user.id) : null;
-  const aiBuilderDisabled = tenantSettings?.aiBuilderDisabled ?? false;
-  const assignedSiteSlug = tenantSettings?.assignedHostedSiteSlug;
-  const assignedSite = assignedSiteSlug ? getSiteBySlug(assignedSiteSlug) : null;
-  const myWebsiteUrl = assignedSite?.originUrl || null;
-
-  const filteredNavigation = navigation.filter(item => {
-    if ((item as Record<string, unknown>).adminOnly && user?.role !== 'super_admin') {
-      return false;
-    }
-    if (item.href === '/ai-builder' && aiBuilderDisabled) {
-      return false;
-    }
-    return true;
-  });
+  const { user, logout } = useAuthStore();
 
   return (
     <div
@@ -82,7 +36,7 @@ export function Sidebar({ onCollapse, showCollapseButton = false }: SidebarProps
     >
       {/* Logo */}
       <div className="flex h-14 items-center justify-between border-b border-[#EBEBEB] px-5">
-        <h1 className="text-[15px] font-medium text-black tracking-tight">HeadlessCMS</h1>
+        <h1 className="text-[15px] font-medium text-black tracking-tight">Aspen CMS</h1>
         {showCollapseButton && (
           <button
             type="button"
@@ -97,64 +51,8 @@ export function Sidebar({ onCollapse, showCollapseButton = false }: SidebarProps
 
       {/* Navigation */}
       <nav className="flex-1 space-y-0.5 px-3 py-3">
-        {filteredNavigation.map((item) => {
+        {navigation.map((item) => {
           const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
-
-          if (item.name === 'Blogs') {
-            const isArticlesActive = pathname === '/blogs';
-            const isTemplatesActive = pathname?.startsWith('/blogs/templates');
-            return (
-              <div key={item.name} className="space-y-0.5">
-                <div
-                  className={cn(
-                    'flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-colors',
-                    isActive
-                      ? 'bg-[#DAFF07] text-black'
-                      : 'text-[#888C99] hover:bg-[#F5F5F3] hover:text-black'
-                  )}
-                >
-                  <Link href="/blogs" className="flex min-w-0 flex-1 items-center gap-2.5">
-                    <item.icon className="h-4 w-4" />
-                    {item.name}
-                  </Link>
-                  <button
-                    type="button"
-                    aria-label="Toggle blog submenu"
-                    onClick={() => setBlogsMenuOpen((prev) => !prev)}
-                    className="rounded p-0.5 hover:bg-black/5"
-                  >
-                    <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', blogsMenuOpen && 'rotate-180')} />
-                  </button>
-                </div>
-                {blogsMenuOpen && (
-                  <div className="ml-7 space-y-0.5 border-l border-[#EBEBEB] pl-3">
-                    <Link
-                      href="/blogs"
-                      className={cn(
-                        'block rounded-lg px-3 py-1.5 text-[13px] transition-colors',
-                        isArticlesActive
-                          ? 'bg-[#DAFF07]/30 text-black'
-                          : 'text-[#888C99] hover:bg-[#F5F5F3] hover:text-black'
-                      )}
-                    >
-                      Articles
-                    </Link>
-                    <Link
-                      href="/blogs/templates"
-                      className={cn(
-                        'block rounded-lg px-3 py-1.5 text-[13px] transition-colors',
-                        isTemplatesActive
-                          ? 'bg-[#DAFF07]/30 text-black'
-                          : 'text-[#888C99] hover:bg-[#F5F5F3] hover:text-black'
-                      )}
-                    >
-                      Templates
-                    </Link>
-                  </div>
-                )}
-              </div>
-            );
-          }
 
           return (
             <Link
@@ -173,51 +71,6 @@ export function Sidebar({ onCollapse, showCollapseButton = false }: SidebarProps
           );
         })}
 
-        {aiBuilderDisabled && myWebsiteUrl && (
-          <a
-            href={myWebsiteUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(
-              'flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-colors',
-              'text-[#888C99] hover:bg-[#F5F5F3] hover:text-black'
-            )}
-          >
-            <ExternalLink className="h-4 w-4" />
-            My Website
-          </a>
-        )}
-
-        {canManageTenants() && (
-          <div className="pt-3">
-            <p className="px-3 pb-1.5 text-[11px] font-medium uppercase tracking-widest text-[#CCCCCC]">
-              Admin
-            </p>
-            <div className="space-y-0.5">
-              {adminNavigation.map((item) => {
-                const isAdminHome = item.href === '/admin';
-                const isActive = isAdminHome
-                  ? pathname === item.href
-                  : pathname === item.href || pathname?.startsWith(item.href + '/');
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={cn(
-                      'flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-colors',
-                      isActive
-                        ? 'bg-[#DAFF07] text-black'
-                        : 'text-[#888C99] hover:bg-[#F5F5F3] hover:text-black'
-                    )}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.name}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </nav>
 
       {/* User section */}

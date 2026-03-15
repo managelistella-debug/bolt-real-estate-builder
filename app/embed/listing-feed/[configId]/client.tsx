@@ -271,7 +271,12 @@ export function EmbedFeedClient({ configId, tenantId, feedConfig }: Props) {
       .finally(() => setLoading(false));
   }, [tenantId, feedConfig, page, loadedExtra, perPage, isCarousel, d.maxListings]);
 
-  const detailUrl = (slug: string) => feedConfig.detailPageUrlPattern.replace('{slug}', slug);
+  const detailUrl = (slug: string) => {
+    const pattern = feedConfig.detailPageUrlPattern?.includes('{slug}')
+      ? feedConfig.detailPageUrlPattern
+      : '/listings/{slug}';
+    return pattern.replace('{slug}', slug);
+  };
   const hasMore = feedConfig.paginationType === 'load_more' && perPage && (perPage + loadedExtra) < total;
 
   const tabletCols = d.responsive.tablet?.columns || feedConfig.columns;

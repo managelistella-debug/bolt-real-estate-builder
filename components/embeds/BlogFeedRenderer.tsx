@@ -24,7 +24,7 @@ interface BlogFeedRendererProps {
   posts: BlogFeedRenderPost[];
   widget: BlogFeedWidget;
   deviceView: BlogFeedDevice;
-  linkBasePath?: string;
+  linkPattern?: string;
 }
 
 const colorWithOpacity = (color: string | undefined, opacityPercent: number): string => {
@@ -156,6 +156,10 @@ function normalizeWidget(widget: BlogFeedWidget): BlogFeedWidget {
       typeof oldWidget.showFeaturedReadMore === 'boolean' ? oldWidget.showFeaturedReadMore : true,
     readMoreLabel: oldWidget.readMoreLabel || 'Read More',
     featuredReadMoreLabel: oldWidget.featuredReadMoreLabel || 'Read Article',
+    detailPageUrlPattern:
+      typeof oldWidget.detailPageUrlPattern === 'string' && oldWidget.detailPageUrlPattern.trim().length > 0
+        ? oldWidget.detailPageUrlPattern.trim()
+        : '/blog/{slug}',
     equalHeightCards: typeof oldWidget.equalHeightCards === 'boolean' ? oldWidget.equalHeightCards : true,
     cardClickable: typeof oldWidget.cardClickable === 'boolean' ? oldWidget.cardClickable : true,
     featuredPost: {
@@ -252,8 +256,17 @@ function buttonStyle(config: BlogFeedWidget['style']['gridButton']): React.CSSPr
   };
 }
 
-export function BlogFeedRenderer({ posts, widget, deviceView, linkBasePath = '/blog' }: BlogFeedRendererProps) {
+function resolveBlogHref(pattern: string, slug: string) {
+  const safePattern = pattern.includes('{slug}') ? pattern : '/blog/{slug}';
+  return safePattern.replace('{slug}', slug);
+}
+
+export function BlogFeedRenderer({ posts, widget, deviceView, linkPattern }: BlogFeedRendererProps) {
   const normalizedWidget = normalizeWidget(widget);
+  const detailPattern =
+    linkPattern && linkPattern.trim().length > 0
+      ? linkPattern.trim()
+      : normalizedWidget.detailPageUrlPattern;
   const [currentPage, setCurrentPage] = useState(1);
   const [visibleCount, setVisibleCount] = useState(
     normalizedWidget.pagination.mode === 'load_more' || normalizedWidget.pagination.mode === 'infinite'
@@ -333,7 +346,7 @@ export function BlogFeedRenderer({ posts, widget, deviceView, linkBasePath = '/b
   };
 
   const cardWrapper = (post: BlogFeedRenderPost, content: React.ReactNode) => {
-    const href = `${linkBasePath}/${post.slug}`;
+    const href = resolveBlogHref(detailPattern, post.slug);
     if (!normalizedWidget.cardClickable) return <div key={post.id}>{content}</div>;
     return (
       <a key={post.id} href={href} style={{ color: 'inherit', textDecoration: 'none', display: 'block', height: '100%' }}>

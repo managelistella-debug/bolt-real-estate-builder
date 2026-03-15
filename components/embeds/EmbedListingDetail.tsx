@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo, useState, useCallback, useEffect } from 'react';
+import { resolveListingDetailConfig } from '@/lib/stores/embedConfigs';
+import type { ListingDetailStyleConfig } from '@/lib/types';
 
 interface GalleryImage {
   id: string;
@@ -42,6 +44,7 @@ interface DetailConfig {
   agentEmail?: string;
   agentPhone?: string;
   ctaLabel?: string;
+  style?: ListingDetailStyleConfig;
 }
 
 interface EmbedListingDetailProps {
@@ -78,10 +81,26 @@ function formatLot(value: number, unit: string) {
   return `${formatNum(value)} sqft`;
 }
 
-function statusClass(status: string) {
-  if (status === 'for_sale') return 'bg-[#DAFF07] text-black';
-  if (status === 'pending') return 'bg-[#F5F5F3] text-[#888C99] border border-[#EBEBEB]';
-  return 'bg-black text-white';
+function statusStyle(status: string, style: NonNullable<DetailConfig['style']>) {
+  if (status === 'for_sale') {
+    return {
+      backgroundColor: style.statusColors.active,
+      color: style.accentTextColor,
+    };
+  }
+  if (status === 'pending') {
+    return {
+      backgroundColor: style.statusColors.pending,
+      color: style.mutedTextColor,
+      borderColor: style.statusBadgeBorderColor,
+      borderWidth: `${style.statusBadgeBorderWidth}px`,
+      borderStyle: 'solid',
+    };
+  }
+  return {
+    backgroundColor: style.statusColors.sold,
+    color: '#ffffff',
+  };
 }
 
 function Lightbox({
@@ -162,6 +181,7 @@ export function EmbedListingDetail({
   config = {},
   backHref = '/',
 }: EmbedListingDetailProps) {
+  const resolvedConfig = resolveListingDetailConfig(config);
   const {
     showGallery = true,
     showMortgageCalculator = true,
@@ -171,7 +191,8 @@ export function EmbedListingDetail({
     agentEmail,
     agentPhone,
     ctaLabel = 'Schedule a Tour',
-  } = config;
+    style,
+  } = resolvedConfig;
 
   const sortedGallery = useMemo(
     () => [...(listing.gallery || [])].sort((a, b) => a.order - b.order),
@@ -201,10 +222,10 @@ export function EmbedListingDetail({
 
   return (
     <>
-      <main className="mx-auto max-w-[1300px] px-4 py-6 sm:px-6 sm:py-8" style={{ fontFamily: "'Geist', 'Inter', system-ui, sans-serif" }}>
+      <main className="mx-auto max-w-[1300px] px-4 py-6 sm:px-6 sm:py-8" style={{ fontFamily: style.fontFamily }}>
         <div className="mb-4 flex items-center justify-between text-[13px]">
-          <a href={backHref} className="text-[#888C99] hover:text-black">&larr; Back</a>
-          <span className="text-[#CCCCCC]">MLS# {listing.mls_number}</span>
+          <a href={backHref} className="hover:text-black" style={{ color: style.mutedTextColor }}>&larr; Back</a>
+          <span style={{ color: style.mutedTextColor }}>MLS# {listing.mls_number}</span>
         </div>
 
         {/* Gallery */}
@@ -212,12 +233,12 @@ export function EmbedListingDetail({
           <section className="mb-8">
             {sortedGallery.length >= 5 ? (
               <div className="grid gap-2 lg:grid-cols-[1.2fr_1fr]">
-                <button type="button" className="overflow-hidden rounded-xl" onClick={() => setLightboxIndex(0)}>
+                <button type="button" className="overflow-hidden" style={{ borderRadius: `${style.imageBorderRadius}px` }} onClick={() => setLightboxIndex(0)}>
                   <img src={sortedGallery[0].url} alt={listing.address} className="h-[420px] w-full object-cover lg:h-[540px]" />
                 </button>
                 <div className="grid grid-cols-2 gap-2">
                   {sortedGallery.slice(1, 5).map((image, idx) => (
-                    <button key={image.id} type="button" className="relative overflow-hidden rounded-xl" onClick={() => setLightboxIndex(idx + 1)}>
+                    <button key={image.id} type="button" className="relative overflow-hidden" style={{ borderRadius: `${style.imageBorderRadius}px` }} onClick={() => setLightboxIndex(idx + 1)}>
                       <img src={image.url} alt={image.caption || `Image ${idx + 2}`} className="h-[206px] w-full object-cover lg:h-[266px]" />
                       {idx === 3 && sortedGallery.length > 5 && (
                         <span className="absolute bottom-3 right-3 rounded-lg bg-black px-3 py-1.5 text-[12px] font-medium text-white">All photos</span>
@@ -227,7 +248,7 @@ export function EmbedListingDetail({
                 </div>
               </div>
             ) : sortedGallery.length > 0 ? (
-              <button type="button" className="w-full overflow-hidden rounded-xl bg-[#EBEBEB]" onClick={() => setLightboxIndex(0)}>
+              <button type="button" className="w-full overflow-hidden" style={{ borderRadius: `${style.imageBorderRadius}px`, backgroundColor: style.mutedSurfaceColor }} onClick={() => setLightboxIndex(0)}>
                 <img src={sortedGallery[0].url} alt={listing.address} className="h-[320px] w-full object-cover lg:h-[560px]" />
               </button>
             ) : null}
@@ -236,35 +257,35 @@ export function EmbedListingDetail({
 
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
           <section className="space-y-6">
-            <div className="space-y-3 border-b border-[#EBEBEB] pb-5">
+            <div className="space-y-3 pb-5" style={{ borderBottom: `${style.lineWidth}px solid ${style.lineColor}` }}>
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-[32px] font-medium text-black">{formatPrice(listing.list_price)}</h1>
-                <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${statusClass(listing.listing_status)}`}>
+                <h1 className="text-[32px]" style={{ color: style.typography.price.color, fontFamily: style.typography.price.fontFamily, fontWeight: style.typography.price.fontWeight, fontSize: `${style.typography.price.fontSize}px` }}>{formatPrice(listing.list_price)}</h1>
+                <span className="px-2.5 py-1 text-[11px] font-medium" style={{ borderRadius: `${style.statusBadgeRadius}px`, ...statusStyle(listing.listing_status, style) }}>
                   {STATUS_LABELS[listing.listing_status] ?? listing.listing_status}
                 </span>
               </div>
-              <h2 className="text-[24px] font-medium text-black">{listing.address}</h2>
-              <p className="text-[13px] text-[#888C99]">{listing.neighborhood}, {listing.city}</p>
-              <div className="grid grid-cols-2 gap-4 border-t border-[#EBEBEB] pt-4 text-[13px] sm:grid-cols-5">
-                <p><span className="text-[#888C99]">Beds</span><br /><span className="font-medium text-black">{listing.bedrooms}</span></p>
-                <p><span className="text-[#888C99]">Baths</span><br /><span className="font-medium text-black">{listing.bathrooms}</span></p>
-                <p><span className="text-[#888C99]">Sq Ft</span><br /><span className="font-medium text-black">{formatNum(listing.living_area_sqft)}</span></p>
-                <p><span className="text-[#888C99]">Year Built</span><br /><span className="font-medium text-black">{listing.year_built}</span></p>
-                <p><span className="text-[#888C99]">Type</span><br /><span className="font-medium text-black">{listing.property_type}</span></p>
+              <h2 className="text-[24px]" style={{ color: style.typography.heading.color, fontFamily: style.typography.heading.fontFamily, fontWeight: style.typography.heading.fontWeight, fontSize: `${style.typography.heading.fontSize}px` }}>{listing.address}</h2>
+              <p className="text-[13px]" style={{ color: style.typography.meta.color, fontFamily: style.typography.meta.fontFamily, fontWeight: style.typography.meta.fontWeight, fontSize: `${style.typography.meta.fontSize}px` }}>{listing.neighborhood}, {listing.city}</p>
+              <div className="grid grid-cols-2 gap-4 pt-4 text-[13px] sm:grid-cols-5" style={{ borderTop: `${style.lineWidth}px solid ${style.lineColor}` }}>
+                <p><span style={{ color: style.typography.label.color }}>Beds</span><br /><span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{listing.bedrooms}</span></p>
+                <p><span style={{ color: style.typography.label.color }}>Baths</span><br /><span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{listing.bathrooms}</span></p>
+                <p><span style={{ color: style.typography.label.color }}>Sq Ft</span><br /><span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{formatNum(listing.living_area_sqft)}</span></p>
+                <p><span style={{ color: style.typography.label.color }}>Year Built</span><br /><span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{listing.year_built}</span></p>
+                <p><span style={{ color: style.typography.label.color }}>Type</span><br /><span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{listing.property_type}</span></p>
               </div>
               {listing.representation && (
-                <p className="text-[13px] text-[#888C99]">{REPRESENTATION_LABELS[listing.representation] ?? listing.representation}</p>
+                <p className="text-[13px]" style={{ color: style.typography.meta.color }}>{REPRESENTATION_LABELS[listing.representation] ?? listing.representation}</p>
               )}
             </div>
 
             <section>
-              <h3 className="text-[15px] font-medium text-black">About This Property</h3>
-              <p className="mt-3 whitespace-pre-wrap text-[13px] leading-6 text-[#888C99]">{listing.description}</p>
+              <h3 className="text-[15px]" style={{ color: style.typography.heading.color, fontWeight: style.typography.heading.fontWeight }}>About This Property</h3>
+              <p className="mt-3 whitespace-pre-wrap leading-6" style={{ color: style.typography.body.color, fontFamily: style.typography.body.fontFamily, fontSize: `${style.typography.body.fontSize}px`, fontWeight: style.typography.body.fontWeight }}>{listing.description}</p>
             </section>
 
             {showPropertyDetails && (
               <section>
-                <h3 className="mb-3 text-[15px] font-medium text-black">Property Details</h3>
+                <h3 className="mb-3 text-[15px]" style={{ color: style.typography.heading.color, fontWeight: style.typography.heading.fontWeight }}>Property Details</h3>
                 <div className="grid gap-2.5 text-[13px] sm:grid-cols-3">
                   {[
                     { label: 'Property Type', value: listing.property_type },
@@ -275,9 +296,9 @@ export function EmbedListingDetail({
                     { label: 'Brokerage', value: listing.listing_brokerage },
                     ...(listing.representation ? [{ label: 'Representation', value: REPRESENTATION_LABELS[listing.representation] ?? listing.representation }] : []),
                   ].map((item) => (
-                    <div key={item.label} className="rounded-xl border border-[#EBEBEB] bg-white p-4">
-                      <p className="mb-1 text-[#888C99]">{item.label}</p>
-                      <p className="font-medium text-black">{item.value}</p>
+                    <div key={item.label} className="p-4" style={{ borderRadius: `${style.detailsBoxRadius}px`, border: `${style.borderWidth}px solid ${style.borderColor}`, backgroundColor: style.surfaceColor }}>
+                      <p className="mb-1" style={{ color: style.typography.label.color }}>{item.label}</p>
+                      <p style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{item.value}</p>
                     </div>
                   ))}
                 </div>
@@ -287,73 +308,74 @@ export function EmbedListingDetail({
 
           <aside className="space-y-4 lg:sticky lg:top-5 lg:self-start">
             {showContactForm && hasAgent && (
-              <div className="rounded-xl border border-[#EBEBEB] bg-white p-5">
-                <h3 className="text-[15px] font-medium text-black">Contact Agent</h3>
-                {agentName && <p className="mt-2 text-[13px] font-medium text-black">{agentName}</p>}
-                <div className="mt-3 space-y-2 text-[13px] text-[#888C99]">
+              <div className="p-5" style={{ borderRadius: `${style.borderRadius}px`, border: `${style.borderWidth}px solid ${style.borderColor}`, backgroundColor: style.surfaceColor }}>
+                <h3 className="text-[15px]" style={{ color: style.typography.heading.color, fontWeight: style.typography.heading.fontWeight }}>Contact Agent</h3>
+                {agentName && <p className="mt-2 text-[13px]" style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{agentName}</p>}
+                <div className="mt-3 space-y-2 text-[13px]" style={{ color: style.typography.meta.color }}>
                   {agentEmail && <p>{agentEmail}</p>}
                   {agentPhone && <p>{agentPhone}</p>}
                 </div>
-                <button type="button" className="mt-4 w-full rounded-lg bg-[#DAFF07] px-4 py-2.5 text-[13px] font-medium text-black hover:bg-[#C8ED00]">
+                <button type="button" className="mt-4 w-full px-4 py-2.5 text-[13px]" style={{ borderRadius: `${style.borderRadius}px`, backgroundColor: style.accentColor, color: style.typography.button.color, fontFamily: style.typography.button.fontFamily, fontWeight: style.typography.button.fontWeight, fontSize: `${style.typography.button.fontSize}px` }}>
                   {ctaLabel}
                 </button>
-                <button type="button" className="mt-2 w-full rounded-lg border border-[#EBEBEB] bg-white px-4 py-2.5 text-[13px] font-medium text-black hover:bg-[#F5F5F3]">
+                <button type="button" className="mt-2 w-full px-4 py-2.5 text-[13px]" style={{ borderRadius: `${style.borderRadius}px`, border: `${style.borderWidth}px solid ${style.borderColor}`, backgroundColor: style.surfaceColor, color: style.typography.button.color, fontFamily: style.typography.button.fontFamily, fontWeight: style.typography.button.fontWeight, fontSize: `${style.typography.button.fontSize}px` }}>
                   Request Info
                 </button>
               </div>
             )}
 
             {showMortgageCalculator && (
-              <div className="rounded-xl border border-[#EBEBEB] bg-white p-5">
-                <h3 className="text-[15px] font-medium text-black">Estimated Payment</h3>
-                <div className="mt-4 rounded-xl bg-[#F5F5F3] p-4 text-center">
-                  <p className="text-[28px] font-medium leading-tight text-black">{formatPrice(Math.round(estimatedMonthly))}</p>
-                  <p className="mt-1 text-[13px] text-[#888C99]">per month</p>
+              <div className="p-5" style={{ borderRadius: `${style.borderRadius}px`, border: `${style.borderWidth}px solid ${style.borderColor}`, backgroundColor: style.surfaceColor }}>
+                <h3 className="text-[15px]" style={{ color: style.typography.heading.color, fontWeight: style.typography.heading.fontWeight }}>Estimated Payment</h3>
+                <div className="mt-4 p-4 text-center" style={{ borderRadius: `${style.detailsBoxRadius}px`, backgroundColor: style.mutedSurfaceColor }}>
+                  <p className="leading-tight" style={{ color: style.typography.heading.color, fontSize: '28px', fontWeight: style.typography.heading.fontWeight }}>{formatPrice(Math.round(estimatedMonthly))}</p>
+                  <p className="mt-1 text-[13px]" style={{ color: style.typography.meta.color }}>per month</p>
                 </div>
                 <div className="mt-4 space-y-2 text-[13px]">
                   <div className="flex items-center justify-between">
-                    <span className="text-[#888C99]">Principal &amp; Interest</span>
-                    <span className="font-medium text-black">{formatPrice(Math.round(principalAndInterest))}</span>
+                    <span style={{ color: style.typography.label.color }}>Principal &amp; Interest</span>
+                    <span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{formatPrice(Math.round(principalAndInterest))}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[#888C99]">Property Tax</span>
-                    <span className="font-medium text-black">{formatPrice(Math.round(propertyTaxMonthly))}</span>
+                    <span style={{ color: style.typography.label.color }}>Property Tax</span>
+                    <span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{formatPrice(Math.round(propertyTaxMonthly))}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[#888C99]">Home Insurance</span>
-                    <span className="font-medium text-black">{formatPrice(Math.round(homeInsuranceMonthly))}</span>
+                    <span style={{ color: style.typography.label.color }}>Home Insurance</span>
+                    <span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{formatPrice(Math.round(homeInsuranceMonthly))}</span>
                   </div>
                 </div>
                 <button
                   type="button"
-                  className="mt-4 flex w-full items-center justify-center gap-1 text-[13px] text-[#888C99] hover:text-black"
+                  className="mt-4 flex w-full items-center justify-center gap-1 text-[13px] hover:text-black"
+                  style={{ color: style.typography.meta.color }}
                   onClick={() => setShowAssumptions((v) => !v)}
                 >
                   Adjust Assumptions {showAssumptions ? '▲' : '▼'}
                 </button>
                 {showAssumptions && (
-                  <div className="mt-4 space-y-4 border-t border-[#EBEBEB] pt-4">
+                  <div className="mt-4 space-y-4 pt-4" style={{ borderTop: `${style.lineWidth}px solid ${style.lineColor}` }}>
                     <div>
                       <div className="mb-2 flex items-center justify-between text-[13px]">
-                        <span className="text-[#888C99]">Down Payment</span>
-                        <span className="font-medium text-black">{downPaymentPercent}% ({formatPrice(Math.round(downPaymentAmount))})</span>
+                        <span style={{ color: style.typography.label.color }}>Down Payment</span>
+                        <span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{downPaymentPercent}% ({formatPrice(Math.round(downPaymentAmount))})</span>
                       </div>
-                      <input type="range" min={0} max={60} step={1} value={downPaymentPercent} onChange={(e) => setDownPaymentPercent(Number(e.target.value))} className="w-full accent-[#DAFF07]" />
+                      <input type="range" min={0} max={60} step={1} value={downPaymentPercent} onChange={(e) => setDownPaymentPercent(Number(e.target.value))} className="w-full" style={{ accentColor: style.accentColor }} />
                     </div>
                     <div>
                       <div className="mb-2 flex items-center justify-between text-[13px]">
-                        <span className="text-[#888C99]">Interest Rate</span>
-                        <span className="font-medium text-black">{interestRate.toFixed(1)}%</span>
+                        <span style={{ color: style.typography.label.color }}>Interest Rate</span>
+                        <span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{interestRate.toFixed(1)}%</span>
                       </div>
-                      <input type="range" min={2} max={12} step={0.1} value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))} className="w-full accent-[#DAFF07]" />
+                      <input type="range" min={2} max={12} step={0.1} value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))} className="w-full" style={{ accentColor: style.accentColor }} />
                     </div>
-                    <div className="flex items-center justify-between border-t border-[#EBEBEB] pt-3 text-[13px]">
-                      <span className="text-[#888C99]">Loan Amount</span>
-                      <span className="text-[20px] font-medium text-black">{formatPrice(Math.round(loanAmount))}</span>
+                    <div className="flex items-center justify-between pt-3 text-[13px]" style={{ borderTop: `${style.lineWidth}px solid ${style.lineColor}` }}>
+                      <span style={{ color: style.typography.label.color }}>Loan Amount</span>
+                      <span className="text-[20px]" style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{formatPrice(Math.round(loanAmount))}</span>
                     </div>
                   </div>
                 )}
-                <p className="mt-4 text-center text-[11px] text-[#CCCCCC]">This is an estimate. Actual payments may vary.</p>
+                <p className="mt-4 text-center text-[11px]" style={{ color: style.mutedTextColor }}>This is an estimate. Actual payments may vary.</p>
               </div>
             )}
           </aside>

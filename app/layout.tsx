@@ -5,9 +5,9 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "HeadlessCMS — The CMS Built for Real Estate",
+  title: "Aspen Muraski Real Estate",
   description:
-    "Build stunning agent websites, manage listings, capture leads, and grow your brokerage — all from one platform.",
+    "Aspen Muraski Real Estate — luxury properties and estates in Aspen, Colorado.",
 };
 
 export default function RootLayout({

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,14 +9,18 @@ import { ArrowRight, Lock, Mail } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useToast } from '@/components/ui/use-toast';
 import { loginSchema } from '@/lib/validation/schemas';
+import { createClient } from '@/lib/supabase/client';
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
 const inputClass = 'h-[40px] w-full rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] pl-10 pr-3 text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none focus:ring-1 focus:ring-[#DAFF07]';
 
+const useSupabaseAuth = typeof window !== 'undefined' &&
+  process.env.NEXT_PUBLIC_SUPABASE_URL &&
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
 export default function LoginPage() {
   const router = useRouter();
-  const _authStore = useAuthStore;
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -29,33 +32,76 @@ export default function LoginPage() {
       const normalizedEmail = data.email.trim().toLowerCase();
       const normalizedPassword = data.password.trim();
 
-      // Call login API directly to avoid any stale cached store logic
+      if (useSupabaseAuth) {
+        const supabase = createClient();
+        const { data: authData, error } = await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password: normalizedPassword,
+        });
+        if (error) {
+          toast({ variant: 'destructive', title: 'Login failed', description: error.message });
+          setIsLoading(false);
+          return;
+        }
+        const user = authData.user;
+        if (!user) {
+          toast({ variant: 'destructive', title: 'Login failed', description: 'Could not retrieve user.' });
+          setIsLoading(false);
+          return;
+        }
+        const profileRes = await fetch(`/api/auth/profile?userId=${encodeURIComponent(user.id)}`);
+        const profile = profileRes.ok ? await profileRes.json() : null;
+        useAuthStore.setState({
+          user: {
+            id: user.id,
+            email: user.email || normalizedEmail,
+            name: profile?.name || normalizedEmail.split('@')[0],
+            role: profile?.role || 'business_user',
+            createdAt: new Date(profile?.created_at || Date.now()),
+            businessId: profile?.business_id ?? undefined,
+            lastLoginAt: new Date(),
+            permissions: profile?.permissions ?? undefined,
+          },
+          actorUser: {
+            id: user.id,
+            email: user.email || normalizedEmail,
+            name: profile?.name || normalizedEmail.split('@')[0],
+            role: profile?.role || 'business_user',
+            createdAt: new Date(profile?.created_at || Date.now()),
+            businessId: profile?.business_id ?? undefined,
+            lastLoginAt: new Date(),
+            permissions: profile?.permissions ?? undefined,
+          },
+          isAuthenticated: true,
+          isImpersonating: false,
+        });
+        toast({ title: 'Welcome back!', description: "You've successfully logged in." });
+        const nextPath = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('next') : null;
+        router.push(nextPath || '/dashboard');
+        router.refresh();
+        return;
+      }
+
       const loginRes = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: normalizedEmail, password: normalizedPassword }),
       });
-
       if (!loginRes.ok) {
         const err = await loginRes.json().catch(() => ({}));
         toast({ variant: 'destructive', title: 'Login failed', description: err.error || 'Invalid email or password.' });
         setIsLoading(false);
         return;
       }
-
       const loginData = await loginRes.json();
       const userId = loginData.user?.id;
-
       if (!userId) {
         toast({ variant: 'destructive', title: 'Login failed', description: 'Could not retrieve user.' });
         setIsLoading(false);
         return;
       }
-
       const profileRes = await fetch(`/api/auth/profile?userId=${encodeURIComponent(userId)}`);
       const profile = profileRes.ok ? await profileRes.json() : null;
-
-      // Hydrate the auth store directly
       useAuthStore.setState({
         user: {
           id: userId,
@@ -80,7 +126,6 @@ export default function LoginPage() {
         isAuthenticated: true,
         isImpersonating: false,
       });
-
       toast({ title: 'Welcome back!', description: "You've successfully logged in." });
       router.push('/dashboard');
     } catch (err) {
@@ -152,17 +197,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-5 text-center text-[13px]">
-            <span className="text-[#888C99]">Need an account? </span>
-            <Link href="/register" className="font-medium text-black hover:underline">Create one</Link>
-          </div>
-
-          <div className="mt-6 rounded-xl border border-[#EBEBEB] bg-[#F5F5F3] p-4">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#888C99]">Getting Started</p>
-            <p className="text-[12px] text-[#888C99]">
-              <Link href="/register" className="font-medium text-black hover:underline">Create an account</Link> to start managing your listings, blog, and integrations.
-            </p>
-          </div>
         </section>
       </div>
     </div>

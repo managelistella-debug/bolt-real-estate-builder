@@ -769,6 +769,7 @@ export function createDefaultWidget(type: SectionType): any {
         showFeaturedReadMore: true,
         readMoreLabel: 'Read More',
         featuredReadMoreLabel: 'Read Article',
+        detailPageUrlPattern: '/blog/{slug}',
         equalHeightCards: true,
         cardClickable: true,
         featuredPost: {

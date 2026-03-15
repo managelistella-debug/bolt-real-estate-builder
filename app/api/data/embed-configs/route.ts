@@ -20,6 +20,17 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
+  const detailPattern = body?.config?.detailPageUrlPattern;
+  if (typeof detailPattern === 'string') {
+    const trimmed = detailPattern.trim();
+    if (!trimmed.includes('{slug}')) {
+      return NextResponse.json(
+        { error: 'detailPageUrlPattern must include {slug}.' },
+        { status: 400 },
+      );
+    }
+    body.config.detailPageUrlPattern = trimmed;
+  }
   if (body.tenant_id) await ensureTenant(body.tenant_id);
   // Maximum compatibility: old DB constraints only allow listing_feed/listing_detail.
   // Keep full config payload unchanged and use legacy-safe row type for persistence.
