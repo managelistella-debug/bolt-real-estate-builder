@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Edit, Plus, Search, Trash2 } from "lucide-react";
+import { Edit, Plus, Search, Sparkles, Trash2 } from "lucide-react";
 
 type TestimonialForm = {
   id?: string;
@@ -37,27 +37,68 @@ export default function TestimonialManager() {
   const load = async () => {
     setLoading(true);
     setMessage(null);
-    const res = await fetch("/api/admin/testimonials");
+    try {
+      const res = await fetch("/api/admin/testimonials");
+      if (!res.ok) {
+        const contentType = res.headers.get("content-type") || "";
+        const err = contentType.includes("application/json")
+          ? await res.json().catch(() => ({}))
+          : {};
+        setMessage((err as { error?: string }).error || "Unable to load testimonials.");
+        setRows([]);
+        setLoading(false);
+        return;
+      }
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        setMessage("Invalid response from server. Please try again.");
+        setRows([]);
+        setLoading(false);
+        return;
+      }
+      const data = await res.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mapped = (Array.isArray(data) ? data : []).map((item: any) => ({
+        id: item.id,
+        quote: item.quote || "",
+        author: item.author_name || item.author || "",
+        rating: Number(item.rating || 5),
+        displayContext: (item.display_context || "both") as TestimonialForm["displayContext"],
+        sortOrder: Number(item.sort_order || 0),
+        isPublished: item.is_published !== false,
+      }));
+      setRows(mapped);
+    } catch {
+      setMessage("Unable to load testimonials. Please try again.");
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateSample = async () => {
+    setMessage(null);
+    const body = {
+      quote:
+        "We recently worked with Aspen to purchase a recreational RV lot, and the experience was absolutely fantastic. Aspen was knowledgeable, responsive, and incredibly helpful throughout the entire process.",
+      author: "Patti Lang",
+      rating: 5,
+      displayContext: "both",
+      sortOrder: 0,
+      isPublished: true,
+    };
+    const res = await fetch("/api/admin/testimonials", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      setMessage((err as { error?: string }).error || "Unable to load testimonials.");
-      setRows([]);
-      setLoading(false);
+      setMessage((err as { error?: string }).error || "Failed to create sample testimonial.");
       return;
     }
-    const data = await res.json();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mapped = (Array.isArray(data) ? data : []).map((item: any) => ({
-      id: item.id,
-      quote: item.quote || "",
-      author: item.author_name || item.author || "",
-      rating: Number(item.rating || 5),
-      displayContext: (item.display_context || "both") as TestimonialForm["displayContext"],
-      sortOrder: Number(item.sort_order || 0),
-      isPublished: item.is_published !== false,
-    }));
-    setRows(mapped);
-    setLoading(false);
+    setMessage("Sample testimonial created.");
+    load();
   };
 
   useEffect(() => {
@@ -122,14 +163,24 @@ export default function TestimonialManager() {
               Manage testimonials shown on homepage and about page
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setForm({ ...EMPTY_FORM })}
-            className="flex h-[30px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-3 text-[13px] text-black hover:bg-[#C8ED00]"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            New Testimonial
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleCreateSample}
+              className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-black transition-colors hover:bg-[#F5F5F3]"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-[#888C99]" />
+              Add Sample
+            </button>
+            <button
+              type="button"
+              onClick={() => setForm({ ...EMPTY_FORM })}
+              className="flex h-[30px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-3 text-[13px] text-black hover:bg-[#C8ED00]"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New Testimonial
+            </button>
+          </div>
         </div>
       </div>
 
@@ -161,14 +212,24 @@ export default function TestimonialManager() {
               <p className="mt-1 text-[13px] text-[#888C99]">
                 Create your first testimonial.
               </p>
-              <button
-                type="button"
-                onClick={() => setForm({ ...EMPTY_FORM })}
-                className="mt-5 inline-flex h-[30px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-3 text-[13px] text-black hover:bg-[#C8ED00]"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Create Testimonial
-              </button>
+              <div className="mt-5 flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleCreateSample}
+                  className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-3 text-[13px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Add Sample
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...EMPTY_FORM })}
+                  className="flex h-[30px] items-center gap-1.5 rounded-lg bg-[#DAFF07] px-3 text-[13px] text-black hover:bg-[#C8ED00]"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Create Testimonial
+                </button>
+              </div>
             </div>
           ) : (
             <div className="divide-y divide-[#EBEBEB]">

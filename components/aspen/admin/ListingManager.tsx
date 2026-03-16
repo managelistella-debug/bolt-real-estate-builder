@@ -53,11 +53,21 @@ export default function ListingManager() {
 
   const load = async () => {
     setLoading(true);
+    setMessage(null);
     try {
       const res = await fetch("/api/admin/listings");
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        setMessage(err.error || "Unable to load listings.");
+        const contentType = res.headers.get("content-type") || "";
+        const err = contentType.includes("application/json")
+          ? await res.json().catch(() => ({}))
+          : {};
+        setMessage((err as { error?: string }).error || "Unable to load listings.");
+        setRows([]);
+        return;
+      }
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        setMessage("Invalid response from server. Please try again.");
         setRows([]);
         return;
       }
@@ -104,6 +114,9 @@ export default function ListingManager() {
         })
       );
       setRows(mapped);
+    } catch {
+      setMessage("Unable to load listings. Please try again.");
+      setRows([]);
     } finally {
       setLoading(false);
     }
