@@ -41,10 +41,10 @@ export default function TestimonialManager() {
     setLoading(true);
     setMessage(null);
     try {
-      const res = await fetch("/api/admin/testimonials");
+      const res = await fetch("/api/admin/testimonials", { credentials: "include" });
       const text = await res.text();
       if (!res.ok) {
-        let errMsg = "Unable to load testimonials.";
+        let errMsg = `Unable to load testimonials${res.status === 401 ? " — please sign in again" : res.status === 404 ? " (page not found)" : ""}.`;
         if (!text.trimStart().startsWith("<")) {
           try {
             const err = JSON.parse(text) as { error?: string };
@@ -107,6 +107,7 @@ export default function TestimonialManager() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      credentials: "include",
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -143,6 +144,7 @@ export default function TestimonialManager() {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
+      credentials: "include",
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -159,7 +161,7 @@ export default function TestimonialManager() {
   const remove = async (id?: string) => {
     if (!id) return;
     if (!window.confirm("Delete this testimonial?")) return;
-    await fetch(`/api/admin/testimonials/${id}`, { method: "DELETE" });
+    await fetch(`/api/admin/testimonials/${id}`, { method: "DELETE", credentials: "include" });
     if (form?.id === id) setForm(null);
     load();
   };
@@ -214,7 +216,25 @@ export default function TestimonialManager() {
         </div>
 
         {message && (
-          <p className="text-[13px] text-[#888C99]">{safeMsg(message)}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-[13px] text-[#888C99]">{safeMsg(message)}</p>
+            {(message.includes("Unable to load") || message.includes("Invalid response") || message.includes("Unauthorized")) && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => { setMessage(null); load(); }}
+                  className="text-[13px] text-[#DAFF07] hover:underline"
+                >
+                  Retry
+                </button>
+                {(message.includes("sign in") || message.includes("Unauthorized")) && (
+                  <a href="/login" className="text-[13px] text-[#DAFF07] hover:underline">
+                    Sign in
+                  </a>
+                )}
+              </>
+            )}
+          </div>
         )}
 
         <div className="rounded-xl border border-[#EBEBEB] bg-white">

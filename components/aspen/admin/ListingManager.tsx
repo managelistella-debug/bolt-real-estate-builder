@@ -58,10 +58,10 @@ export default function ListingManager() {
     setLoading(true);
     setMessage(null);
     try {
-      const res = await fetch("/api/admin/listings");
+      const res = await fetch("/api/admin/listings", { credentials: "include" });
       const text = await res.text();
       if (!res.ok) {
-        let errMsg = "Unable to load listings.";
+        let errMsg = `Unable to load listings${res.status === 401 ? " — please sign in again" : res.status === 404 ? " (page not found)" : ""}.`;
         if (!text.trimStart().startsWith("<")) {
           try {
             const err = JSON.parse(text) as { error?: string };
@@ -173,6 +173,7 @@ export default function ListingManager() {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      credentials: "include",
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -188,7 +189,7 @@ export default function ListingManager() {
   const handleDelete = async (id: string) => {
     if (!window.confirm("Delete this listing? This action cannot be undone."))
       return;
-    await fetch(`/api/admin/listings/${id}`, { method: "DELETE" });
+    await fetch(`/api/admin/listings/${id}`, { method: "DELETE", credentials: "include" });
     if (editingListing?.id === id) setEditingListing(null);
     load();
   };
@@ -225,6 +226,7 @@ export default function ListingManager() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      credentials: "include",
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -271,6 +273,7 @@ export default function ListingManager() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      credentials: "include",
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -352,7 +355,25 @@ export default function ListingManager() {
         </div>
 
         {message && (
-          <p className="text-[13px] text-[#888C99]">{safeMsg(message)}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-[13px] text-[#888C99]">{safeMsg(message)}</p>
+            {(message.includes("Unable to load") || message.includes("Invalid response") || message.includes("Unauthorized")) && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => { setMessage(null); load(); }}
+                  className="text-[13px] text-[#DAFF07] hover:underline"
+                >
+                  Retry
+                </button>
+                {(message.includes("sign in") || message.includes("Unauthorized")) && (
+                  <a href="/login" className="text-[13px] text-[#DAFF07] hover:underline">
+                    Sign in
+                  </a>
+                )}
+              </>
+            )}
+          </div>
         )}
 
         {/* Listing rows */}

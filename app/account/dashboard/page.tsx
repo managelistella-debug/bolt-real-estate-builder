@@ -14,9 +14,9 @@ export default function AccountDashboardPage() {
     const load = async () => {
       try {
         const [listingsRes, blogsRes, testimonialsRes] = await Promise.all([
-          fetch('/api/admin/listings'),
-          fetch('/api/admin/blogs'),
-          fetch('/api/admin/testimonials'),
+          fetch('/api/admin/listings', { credentials: 'include' }),
+          fetch('/api/admin/blogs', { credentials: 'include' }),
+          fetch('/api/admin/testimonials', { credentials: 'include' }),
         ]);
         const listings = listingsRes.ok ? await listingsRes.json() : [];
         const blogs = blogsRes.ok ? await blogsRes.json() : [];
