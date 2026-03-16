@@ -8,7 +8,14 @@ import Link from "next/link";
 const navItems = [
   { label: "Home", href: "/" },
   { label: "About", href: "/about" },
-  { label: "Buying", href: "/buying" },
+  {
+    label: "Buying",
+    href: "/buying",
+    children: [
+      { label: "The Buying Process", href: "/buying" },
+      { label: "Mortgage Calculator", href: "/buying#mortgage-calculator" },
+    ],
+  },
   { label: "Selling", href: "/selling" },
   {
     label: "Listings",
@@ -22,6 +29,19 @@ const navItems = [
   { label: "Blog", href: "/blog" },
   { label: "Contact", href: "/contact" },
 ];
+
+function ChevronDown({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <polygon points="12 16.4 4.6 9 6 7.6 12 13.6 18 7.6 19.4 9 12 16.4" />
+    </svg>
+  );
+}
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
@@ -71,24 +91,26 @@ export default function Header() {
                   <div key={item.label} className="relative group">
                     <Link
                       href={item.href}
-                      className="relative flex items-center gap-[6px] text-white text-[14px] font-normal leading-[20px] py-[2px] hover:text-[#daaf3a] transition-colors duration-300 cursor-pointer"
+                      className="relative flex items-center gap-[5px] text-white text-[14px] font-normal leading-[20px] py-[2px] hover:text-[#daaf3a] transition-colors duration-300 cursor-pointer"
                       style={{ fontFamily: "'Lato', sans-serif" }}
                     >
                       {item.label}
-                      <span className="text-[10px] mt-[1px]">▼</span>
+                      <ChevronDown className="w-[10px] h-[10px] mt-[1px]" />
                       <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#daaf3a] group-hover:w-full transition-all duration-300 ease-out" />
                     </Link>
-                    <div className="pointer-events-none opacity-0 translate-y-2 group-hover:pointer-events-auto group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 absolute left-0 top-full mt-2 min-w-[230px] bg-[#09312a] border border-[#daaf3a]/30 shadow-[0_8px_20px_rgba(0,0,0,0.35)]">
-                      {item.children.map((child) => (
-                        <Link
-                          key={child.label}
-                          href={child.href}
-                          className="block px-4 py-3 text-[13px] text-white/85 hover:bg-white/10 hover:text-[#daaf3a]"
-                          style={{ fontFamily: "'Lato', sans-serif" }}
-                        >
-                          {child.label}
-                        </Link>
-                      ))}
+                    <div className="pointer-events-none opacity-0 translate-y-0 group-hover:pointer-events-auto group-hover:opacity-100 transition-all duration-200 absolute left-0 top-full pt-2 min-w-[230px]">
+                      <div className="bg-[#09312a] border border-[#daaf3a]/30 shadow-[0_8px_20px_rgba(0,0,0,0.35)]">
+                        {item.children.map((child) => (
+                          <Link
+                            key={child.label}
+                            href={child.href}
+                            className="block px-4 py-3 text-[13px] text-white/85 hover:bg-white/10 hover:text-[#daaf3a]"
+                            style={{ fontFamily: "'Lato', sans-serif" }}
+                          >
+                            {child.label}
+                          </Link>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 ) : (
