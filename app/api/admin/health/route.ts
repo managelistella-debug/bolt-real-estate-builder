@@ -8,7 +8,9 @@ export async function GET() {
   const checks: Record<string, unknown> = {};
 
   const env = getSupabaseServiceEnv();
-  checks.supabaseUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  checks.supabaseUrl = rawUrl;
+  checks.supabaseUrlLooksCorrect = rawUrl.includes(".supabase.co") || rawUrl.includes(".supabase.in");
   checks.supabaseAnonKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   checks.supabaseServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
   checks.envValid = !!env;
