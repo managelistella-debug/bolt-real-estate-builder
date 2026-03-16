@@ -11,6 +11,25 @@ function toSlug(value: string) {
     .replace(/-+/g, "-");
 }
 
+function isMissingColumnInSchemaCache(error: unknown, column: string) {
+  const message =
+    typeof error === "object" && error && "message" in error
+      ? String((error as { message?: string }).message || "")
+      : "";
+  return (
+    message.includes(`'${column}'`) &&
+    message.toLowerCase().includes("schema cache")
+  );
+}
+
+function shouldRetryWithoutOptionalCmsColumns(error: unknown) {
+  return (
+    isMissingColumnInSchemaCache(error, "homepage_featured") ||
+    isMissingColumnInSchemaCache(error, "ranch_estate_featured") ||
+    isMissingColumnInSchemaCache(error, "thumbnail")
+  );
+}
+
 export async function GET() {
   const auth = await requireRouteUser();
   if (!auth.ok) return auth.response;
@@ -98,6 +117,26 @@ export async function POST(request: NextRequest) {
     .select("*")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data, { status: 201 });
+  if (!error) return NextResponse.json(data, { status: 201 });
+  if (!shouldRetryWithoutOptionalCmsColumns(error)) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  const {
+    thumbnail: _thumbnail,
+    homepage_featured: _homepage_featured,
+    ranch_estate_featured: _ranch_estate_featured,
+    ...legacyInsertPayload
+  } = insertPayload;
+
+  const { data: legacyData, error: legacyError } = await auth.db
+    .from("listings")
+    .insert(legacyInsertPayload as never)
+    .select("*")
+    .single();
+
+  if (legacyError) {
+    return NextResponse.json({ error: legacyError.message }, { status: 500 });
+  }
+  return NextResponse.json(legacyData, { status: 201 });
 }

@@ -2,6 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireRouteUser } from "@/lib/aspen/api-auth";
 import { getTenantId } from "@/lib/aspen/tenant";
 
+function isMissingColumnInSchemaCache(error: unknown, column: string) {
+  const message =
+    typeof error === "object" && error && "message" in error
+      ? String((error as { message?: string }).message || "")
+      : "";
+  return (
+    message.includes(`'${column}'`) &&
+    message.toLowerCase().includes("schema cache")
+  );
+}
+
+function shouldRetryWithoutOptionalCmsColumns(error: unknown) {
+  return (
+    isMissingColumnInSchemaCache(error, "homepage_featured") ||
+    isMissingColumnInSchemaCache(error, "ranch_estate_featured") ||
+    isMissingColumnInSchemaCache(error, "thumbnail")
+  );
+}
+
 export async function GET(
   _request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -82,8 +101,30 @@ export async function PUT(
     .select("*")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+  if (!error) return NextResponse.json(data);
+  if (!shouldRetryWithoutOptionalCmsColumns(error)) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  const {
+    thumbnail: _thumbnail,
+    homepage_featured: _homepage_featured,
+    ranch_estate_featured: _ranch_estate_featured,
+    ...legacyUpdatePayload
+  } = updatePayload;
+
+  const { data: legacyData, error: legacyError } = await auth.db
+    .from("listings")
+    .update(legacyUpdatePayload as never)
+    .eq("id", id)
+    .eq("tenant_id", tenantId)
+    .select("*")
+    .single();
+
+  if (legacyError) {
+    return NextResponse.json({ error: legacyError.message }, { status: 500 });
+  }
+  return NextResponse.json(legacyData);
 }
 
 export async function DELETE(
