@@ -50,8 +50,9 @@ async function fetchTestimonialsFromSupabase(): Promise<Testimonial[] | null> {
 
 async function getResolvedTestimonials(): Promise<Testimonial[]> {
   const remote = await fetchTestimonialsFromSupabase();
-  if (remote && remote.length > 0) return remote;
-  return [...fallbackTestimonials];
+  // Only use fallback when Supabase is unavailable (null). Empty DB = show empty.
+  if (remote === null) return [...fallbackTestimonials];
+  return remote;
 }
 
 export async function getAllTestimonials(): Promise<Testimonial[]> {

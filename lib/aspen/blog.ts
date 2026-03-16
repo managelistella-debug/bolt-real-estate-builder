@@ -55,8 +55,9 @@ async function fetchPostsFromSupabase(): Promise<BlogPost[] | null> {
 
 async function getResolvedPosts(): Promise<BlogPost[]> {
   const remote = await fetchPostsFromSupabase();
-  if (remote && remote.length > 0) return remote;
-  return [...fallbackPosts];
+  // Only use fallback when Supabase is unavailable (null). Empty DB = show empty.
+  if (remote === null) return [...fallbackPosts];
+  return remote;
 }
 
 export async function getAllPosts(): Promise<BlogPost[]> {

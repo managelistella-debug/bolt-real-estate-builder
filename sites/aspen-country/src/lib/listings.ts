@@ -106,8 +106,9 @@ async function fetchListingsFromSupabase(): Promise<Listing[] | null> {
 
 async function getResolvedListings(): Promise<Listing[]> {
   const remote = await fetchListingsFromSupabase();
-  if (remote && remote.length > 0) return remote;
-  return [...fallbackListings];
+  // Only use fallback when Supabase is unavailable (null). Empty DB = show empty.
+  if (remote === null) return [...fallbackListings];
+  return remote;
 }
 
 export async function getActiveListings(): Promise<Listing[]> {
