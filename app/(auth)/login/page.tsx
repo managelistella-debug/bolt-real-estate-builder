@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,18 +8,12 @@ import { ArrowRight, Lock, Mail } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useToast } from '@/components/ui/use-toast';
 import { loginSchema } from '@/lib/validation/schemas';
-import { createClient } from '@/lib/supabase/client';
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
 const inputClass = 'h-[40px] w-full rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] pl-10 pr-3 text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none focus:ring-1 focus:ring-[#DAFF07]';
 
-const useSupabaseAuth = typeof window !== 'undefined' &&
-  process.env.NEXT_PUBLIC_SUPABASE_URL &&
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
 export default function LoginPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -31,56 +24,6 @@ export default function LoginPage() {
     try {
       const normalizedEmail = data.email.trim().toLowerCase();
       const normalizedPassword = data.password.trim();
-
-      if (useSupabaseAuth) {
-        const supabase = createClient();
-        const { data: authData, error } = await supabase.auth.signInWithPassword({
-          email: normalizedEmail,
-          password: normalizedPassword,
-        });
-        if (error) {
-          toast({ variant: 'destructive', title: 'Login failed', description: error.message });
-          setIsLoading(false);
-          return;
-        }
-        const user = authData.user;
-        if (!user) {
-          toast({ variant: 'destructive', title: 'Login failed', description: 'Could not retrieve user.' });
-          setIsLoading(false);
-          return;
-        }
-        const profileRes = await fetch(`/api/auth/profile?userId=${encodeURIComponent(user.id)}`);
-        const profile = profileRes.ok ? await profileRes.json() : null;
-        useAuthStore.setState({
-          user: {
-            id: user.id,
-            email: user.email || normalizedEmail,
-            name: profile?.name || normalizedEmail.split('@')[0],
-            role: profile?.role || 'business_user',
-            createdAt: new Date(profile?.created_at || Date.now()),
-            businessId: profile?.business_id ?? undefined,
-            lastLoginAt: new Date(),
-            permissions: profile?.permissions ?? undefined,
-          },
-          actorUser: {
-            id: user.id,
-            email: user.email || normalizedEmail,
-            name: profile?.name || normalizedEmail.split('@')[0],
-            role: profile?.role || 'business_user',
-            createdAt: new Date(profile?.created_at || Date.now()),
-            businessId: profile?.business_id ?? undefined,
-            lastLoginAt: new Date(),
-            permissions: profile?.permissions ?? undefined,
-          },
-          isAuthenticated: true,
-          isImpersonating: false,
-        });
-        toast({ title: 'Welcome back!', description: "You've successfully logged in." });
-        const nextPath = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('next') : null;
-        router.push(nextPath || '/account/dashboard');
-        router.refresh();
-        return;
-      }
 
       const loginRes = await fetch('/api/auth/login', {
         method: 'POST',
@@ -127,7 +70,8 @@ export default function LoginPage() {
         isImpersonating: false,
       });
       toast({ title: 'Welcome back!', description: "You've successfully logged in." });
-      router.push('/account/dashboard');
+      const nextPath = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('next') : null;
+      window.location.assign(nextPath || '/account/dashboard');
     } catch (err) {
       console.error('Login error:', err);
       toast({ variant: 'destructive', title: 'Error', description: 'Something went wrong. Please try again.' });

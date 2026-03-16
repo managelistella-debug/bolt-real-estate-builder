@@ -40,3 +40,6 @@ sites/*/out
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local runtime auth data
+data/cms-auth.json

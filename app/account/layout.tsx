@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Toaster } from '@/components/ui/toaster';
 import { useAuthStore } from '@/lib/stores/auth';
+import { useTenantContextStore } from '@/lib/stores/tenantContext';
 import { BrandLoader } from '@/components/ui/BrandLoader';
 
 export default function AccountLayout({
@@ -16,6 +17,7 @@ export default function AccountLayout({
   const { isAuthenticated } = useAuthStore();
   const [isHydrated, setIsHydrated] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
+  const [sessionCheckDone, setSessionCheckDone] = useState(false);
 
   useEffect(() => {
     const showLoaderTimer = setTimeout(() => setShowLoader(true), 220);
@@ -26,11 +28,39 @@ export default function AccountLayout({
     };
   }, []);
 
+  // Hydrate auth store from server session cookie on refresh/direct load.
   useEffect(() => {
-    if (isHydrated && !isAuthenticated) {
+    if (!isHydrated || sessionCheckDone) return;
+    fetch('/api/auth/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((me) => {
+        if (!me) return;
+        const u = {
+          id: me.id,
+          email: me.email,
+          name: me.email?.split('@')[0] ?? 'User',
+          role: (me.role as 'super_admin' | 'internal_admin' | 'business_user') ?? 'business_user',
+          createdAt: new Date(),
+          businessId: 'aspen',
+          lastLoginAt: new Date(),
+          permissions: undefined,
+        };
+        useAuthStore.setState({
+          user: u,
+          actorUser: u,
+          isAuthenticated: true,
+          isImpersonating: false,
+        });
+        useTenantContextStore.getState().setActor({ id: u.id, role: u.role });
+      })
+      .finally(() => setSessionCheckDone(true));
+  }, [isHydrated, sessionCheckDone]);
+
+  useEffect(() => {
+    if (isHydrated && sessionCheckDone && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isHydrated, isAuthenticated, router]);
+  }, [isHydrated, isAuthenticated, sessionCheckDone, router]);
 
   if (!isHydrated) {
     if (!showLoader) {

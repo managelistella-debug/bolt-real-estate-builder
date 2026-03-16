@@ -87,6 +87,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
+        fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
         set({ user: null, actorUser: null, isAuthenticated: false, isImpersonating: false });
         useTenantContextStore.setState({
           actorUserId: '',

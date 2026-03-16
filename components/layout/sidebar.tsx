@@ -10,14 +10,16 @@ import {
   MessageSquareQuote,
   LogOut,
   PanelLeftClose,
+  Settings,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth';
 
-const navigation = [
+const baseNavigation = [
   { name: 'Dashboard', href: '/account/dashboard', icon: LayoutDashboard },
   { name: 'Listings', href: '/account/listings', icon: Building2 },
   { name: 'Blogs', href: '/account/blogs', icon: FileText },
   { name: 'Testimonials', href: '/account/testimonials', icon: MessageSquareQuote },
+  { name: 'Settings', href: '/account/settings', icon: Settings },
 ];
 
 interface SidebarProps {
@@ -28,6 +30,7 @@ interface SidebarProps {
 export function Sidebar({ onCollapse, showCollapseButton = false }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
+  const navigation = baseNavigation;
 
   return (
     <div
