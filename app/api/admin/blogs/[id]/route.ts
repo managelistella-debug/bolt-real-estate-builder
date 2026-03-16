@@ -64,6 +64,39 @@ export async function PUT(
   return NextResponse.json(data);
 }
 
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireRouteUser();
+  if (!auth.ok) return auth.response;
+  const tenantId = getTenantId();
+  if (!tenantId) {
+    return NextResponse.json({ error: "NEXT_PUBLIC_TENANT_ID is required." }, { status: 500 });
+  }
+  const { id } = await context.params;
+  const payload = await request.json();
+
+  const updates: Record<string, unknown> = {};
+  if ("isPublished" in payload) {
+    updates.status = payload.isPublished ? "published" : "draft";
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: "No fields to update." }, { status: 400 });
+  }
+
+  const { data, error } = await auth.db
+    .from("blog_posts")
+    .update(updates as never)
+    .eq("id", id)
+    .eq("tenant_id", tenantId)
+    .select("*")
+    .single();
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data);
+}
+
 export async function DELETE(
   _request: NextRequest,
   context: { params: Promise<{ id: string }> }

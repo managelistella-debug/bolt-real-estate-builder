@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { Edit, Plus, Search, Sparkles, Trash2, Upload, X } from "lucide-react";
+import "react-quill/dist/quill.snow.css";
+
+const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
 type BlogForm = {
   id?: string;
@@ -198,6 +202,26 @@ export default function BlogManager() {
     load();
   };
 
+  const handleTogglePublish = async (row: BlogForm) => {
+    if (!row.id) return;
+    const next = !row.isPublished;
+    setRows((prev) =>
+      prev.map((r) => (r.id === row.id ? { ...r, isPublished: next } : r))
+    );
+    const res = await fetch(`/api/admin/blogs/${row.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isPublished: next }),
+      credentials: "include",
+    });
+    if (!res.ok) {
+      setRows((prev) =>
+        prev.map((r) => (r.id === row.id ? { ...r, isPublished: !next } : r))
+      );
+      setMessage("Failed to update publish status.");
+    }
+  };
+
   const remove = async (id?: string) => {
     if (!id) return;
     if (!window.confirm("Delete this blog post?")) return;
@@ -338,22 +362,41 @@ export default function BlogManager() {
                       )}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-1.5">
+                  <div className="flex shrink-0 items-center gap-3">
                     <button
                       type="button"
-                      onClick={() => setForm(row)}
-                      className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-2.5 text-[12px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black"
+                      onClick={() => handleTogglePublish(row)}
+                      className={`relative inline-block h-4 w-7 flex-shrink-0 rounded-full transition-colors ${
+                        row.isPublished ? "bg-[#DAFF07]" : "bg-[#CCCCCC]"
+                      }`}
+                      title={row.isPublished ? "Published — click to unpublish" : "Draft — click to publish"}
                     >
-                      <Edit className="h-3 w-3" />
-                      Edit
+                      <span
+                        className={`mt-0.5 block h-3 w-3 rounded-full bg-white shadow transition-transform ${
+                          row.isPublished ? "translate-x-3.5" : "translate-x-0.5"
+                        }`}
+                      />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => remove(row.id)}
-                      className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#EBEBEB] bg-white text-[#CCCCCC] hover:bg-[#F5F5F3] hover:text-red-500"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
+                    <span className="text-[11px] text-[#888C99] w-14">
+                      {row.isPublished ? "Published" : "Draft"}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setForm(row)}
+                        className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-2.5 text-[12px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black"
+                      >
+                        <Edit className="h-3 w-3" />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => remove(row.id)}
+                        className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#EBEBEB] bg-white text-[#CCCCCC] hover:bg-[#F5F5F3] hover:text-red-500"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -502,15 +545,24 @@ export default function BlogManager() {
                 />
               </div>
               <div className="space-y-1.5 md:col-span-2">
-                <label className={labelClass}>Content (HTML)</label>
-                <textarea
-                  rows={8}
-                  value={form.content}
-                  onChange={(e) =>
-                    setForm({ ...form, content: e.target.value })
-                  }
-                  className="w-full rounded-lg border border-[#EBEBEB] bg-[#F5F5F3] px-3 py-2 text-[13px] text-black placeholder:text-[#CCCCCC] focus:border-[#DAFF07] focus:outline-none focus:ring-1 focus:ring-[#DAFF07]"
-                />
+                <label className={labelClass}>Content</label>
+                <div className="rounded-lg border border-[#EBEBEB] bg-white [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-[#EBEBEB] [&_.ql-toolbar]:bg-[#F5F5F3] [&_.ql-toolbar]:rounded-t-lg [&_.ql-container]:border-0 [&_.ql-container]:min-h-[200px] [&_.ql-editor]:min-h-[200px] [&_.ql-editor]:text-[13px] [&_.ql-editor]:text-black">
+                  <ReactQuill
+                    theme="snow"
+                    value={form.content}
+                    onChange={(value) => setForm({ ...form, content: value })}
+                    modules={{
+                      toolbar: [
+                        [{ header: [1, 2, 3, false] }],
+                        ["bold", "italic", "underline", "strike"],
+                        ["blockquote"],
+                        [{ list: "ordered" }, { list: "bullet" }],
+                        ["link", "image"],
+                        ["clean"],
+                      ],
+                    }}
+                  />
+                </div>
               </div>
 
               <div className="flex items-center gap-2 md:col-span-2">

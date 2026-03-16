@@ -158,6 +158,26 @@ export default function TestimonialManager() {
     load();
   };
 
+  const handleTogglePublish = async (row: TestimonialForm) => {
+    if (!row.id) return;
+    const next = !row.isPublished;
+    setRows((prev) =>
+      prev.map((r) => (r.id === row.id ? { ...r, isPublished: next } : r))
+    );
+    const res = await fetch(`/api/admin/testimonials/${row.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isPublished: next }),
+      credentials: "include",
+    });
+    if (!res.ok) {
+      setRows((prev) =>
+        prev.map((r) => (r.id === row.id ? { ...r, isPublished: !next } : r))
+      );
+      setMessage("Failed to update publish status.");
+    }
+  };
+
   const remove = async (id?: string) => {
     if (!id) return;
     if (!window.confirm("Delete this testimonial?")) return;
@@ -282,22 +302,41 @@ export default function TestimonialManager() {
                       {row.quote}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-1.5">
+                  <div className="flex shrink-0 items-center gap-3">
                     <button
                       type="button"
-                      onClick={() => setForm(row)}
-                      className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-2.5 text-[12px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black"
+                      onClick={() => handleTogglePublish(row)}
+                      className={`relative inline-block h-4 w-7 flex-shrink-0 rounded-full transition-colors ${
+                        row.isPublished ? "bg-[#DAFF07]" : "bg-[#CCCCCC]"
+                      }`}
+                      title={row.isPublished ? "Published — click to unpublish" : "Unpublished — click to publish"}
                     >
-                      <Edit className="h-3 w-3" />
-                      Edit
+                      <span
+                        className={`mt-0.5 block h-3 w-3 rounded-full bg-white shadow transition-transform ${
+                          row.isPublished ? "translate-x-3.5" : "translate-x-0.5"
+                        }`}
+                      />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => remove(row.id)}
-                      className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#EBEBEB] bg-white text-[#CCCCCC] hover:bg-[#F5F5F3] hover:text-red-500"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
+                    <span className="text-[11px] text-[#888C99] w-14">
+                      {row.isPublished ? "Published" : "Hidden"}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setForm(row)}
+                        className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[#EBEBEB] bg-white px-2.5 text-[12px] text-[#888C99] hover:bg-[#F5F5F3] hover:text-black"
+                      >
+                        <Edit className="h-3 w-3" />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => remove(row.id)}
+                        className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#EBEBEB] bg-white text-[#CCCCCC] hover:bg-[#F5F5F3] hover:text-red-500"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
