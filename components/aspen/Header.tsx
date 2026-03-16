@@ -46,6 +46,7 @@ function ChevronDown({ className }: { className?: string }) {
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [expandedMenuItems, setExpandedMenuItems] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -55,6 +56,7 @@ export default function Header() {
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
+    if (!menuOpen) setExpandedMenuItems(new Set());
     return () => {
       document.body.style.overflow = "";
     };
@@ -248,28 +250,63 @@ export default function Header() {
                       }}
                       className="group border-b border-white/10 py-[clamp(10px,2vh,20px)]"
                     >
-                      <Link
-                        href={item.href}
-                        onClick={() => setMenuOpen(false)}
-                        className="font-heading text-[clamp(18px,2.5vh,28px)] text-white group-hover:text-[#daaf3a] transition-colors duration-300"
-                        style={{ fontWeight: 400 }}
-                      >
-                        {item.label}
-                      </Link>
-                      {item.children && (
-                        <div className="mt-3 ml-1 flex flex-col gap-2">
-                          {item.children.map((child) => (
-                            <Link
-                              key={child.label}
-                              href={child.href}
-                              onClick={() => setMenuOpen(false)}
-                              className="text-white/70 hover:text-[#daaf3a] text-[14px]"
-                              style={{ fontFamily: "'Lato', sans-serif" }}
-                            >
-                              {child.label}
-                            </Link>
-                          ))}
-                        </div>
+                      {item.children ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpandedMenuItems((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(item.label)) next.delete(item.label);
+                                else next.add(item.label);
+                                return next;
+                              })
+                            }
+                            className="flex items-center gap-2 font-heading text-[clamp(18px,2.5vh,28px)] text-white hover:text-[#daaf3a] transition-colors duration-300 cursor-pointer"
+                            style={{ fontWeight: 400 }}
+                          >
+                            {item.label}
+                            <ChevronDown
+                              className={`w-[14px] h-[14px] mt-[2px] transition-transform duration-300 ${
+                                expandedMenuItems.has(item.label) ? "rotate-180" : ""
+                              }`}
+                            />
+                          </button>
+                          <AnimatePresence>
+                            {expandedMenuItems.has(item.label) && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.25, ease: "easeInOut" }}
+                                className="overflow-hidden ml-1"
+                              >
+                                <div className="mt-3 flex flex-col gap-2">
+                                  {item.children.map((child) => (
+                                    <Link
+                                      key={child.label}
+                                      href={child.href}
+                                      onClick={() => setMenuOpen(false)}
+                                      className="text-white/70 hover:text-[#daaf3a] text-[14px]"
+                                      style={{ fontFamily: "'Lato', sans-serif" }}
+                                    >
+                                      {child.label}
+                                    </Link>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </>
+                      ) : (
+                        <Link
+                          href={item.href}
+                          onClick={() => setMenuOpen(false)}
+                          className="font-heading text-[clamp(18px,2.5vh,28px)] text-white group-hover:text-[#daaf3a] transition-colors duration-300"
+                          style={{ fontWeight: 400 }}
+                        >
+                          {item.label}
+                        </Link>
                       )}
                     </motion.div>
                   ))}
