@@ -77,7 +77,7 @@ export default function LoginPage() {
         });
         toast({ title: 'Welcome back!', description: "You've successfully logged in." });
         const nextPath = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('next') : null;
-        router.push(nextPath || '/dashboard');
+        router.push(nextPath || '/account/dashboard');
         router.refresh();
         return;
       }
@@ -127,7 +127,7 @@ export default function LoginPage() {
         isImpersonating: false,
       });
       toast({ title: 'Welcome back!', description: "You've successfully logged in." });
-      router.push('/dashboard');
+      router.push('/account/dashboard');
     } catch (err) {
       console.error('Login error:', err);
       toast({ variant: 'destructive', title: 'Error', description: 'Something went wrong. Please try again.' });

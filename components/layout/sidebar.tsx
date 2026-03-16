@@ -14,10 +14,10 @@ import {
 import { useAuthStore } from '@/lib/stores/auth';
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Listings', href: '/listings', icon: Building2 },
-  { name: 'Blogs', href: '/blogs', icon: FileText },
-  { name: 'Testimonials', href: '/testimonials', icon: MessageSquareQuote },
+  { name: 'Dashboard', href: '/account/dashboard', icon: LayoutDashboard },
+  { name: 'Listings', href: '/account/listings', icon: Building2 },
+  { name: 'Blogs', href: '/account/blogs', icon: FileText },
+  { name: 'Testimonials', href: '/account/testimonials', icon: MessageSquareQuote },
 ];
 
 interface SidebarProps {

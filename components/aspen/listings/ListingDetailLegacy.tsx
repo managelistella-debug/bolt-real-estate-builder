@@ -64,7 +64,7 @@ export default function ListingDetailLegacy({ listing }: ListingDetailProps) {
     { label: "Bedrooms", value: String(listing.bedrooms) },
     { label: "Bathrooms", value: String(listing.bathrooms) },
     { label: "Living Area", value: `${listing.livingArea.toLocaleString()} Sq Ft` },
-    { label: "Lot Area", value: `${listing.lotArea.toLocaleString()} ${listing.lotAreaUnit}` },
+    { label: "Lot Area", value: `${listing.lotArea.toLocaleString()} ${listing.lotAreaUnit === "sqft" || listing.lotAreaUnit === "sq ft" ? "square feet" : listing.lotAreaUnit || "acres"}` },
     { label: "Property Type", value: listing.propertyType },
     { label: "Year Built", value: String(listing.yearBuilt) },
     { label: "Taxes (Annual)", value: formatPrice(listing.taxes) },

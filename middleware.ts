@@ -12,7 +12,7 @@ function isPublicApi(pathname: string) {
   return pathname.startsWith('/api/public/');
 }
 
-const DASHBOARD_PREFIXES = ['/dashboard', '/listings', '/blogs', '/testimonials'];
+const ACCOUNT_PREFIXES = ['/account'];
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -32,7 +32,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (supabaseUrl && supabaseAnonKey && DASHBOARD_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
+  if (supabaseUrl && supabaseAnonKey && ACCOUNT_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
     let response = NextResponse.next({ request });
     const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
@@ -73,7 +73,7 @@ export async function middleware(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const url = request.nextUrl.clone();
-      url.pathname = '/dashboard';
+      url.pathname = '/account/dashboard';
       url.searchParams.delete('next');
       return NextResponse.redirect(url);
     }

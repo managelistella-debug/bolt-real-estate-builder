@@ -20,8 +20,9 @@ function statusLabel(s: string) {
 }
 
 function lotAreaLabel(unit: string) {
-  if (unit.toLowerCase() === "sq ft") return "square feet";
-  return unit;
+  const u = (unit || "").toLowerCase();
+  if (u === "sq ft" || u === "sqft") return "square feet";
+  return unit || "acres";
 }
 
 export default function ListingCard({
