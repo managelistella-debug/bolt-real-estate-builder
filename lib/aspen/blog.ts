@@ -67,6 +67,11 @@ export async function getAllPosts(): Promise<BlogPost[]> {
   );
 }
 
+export async function getRecentPosts(limit = 3): Promise<BlogPost[]> {
+  const posts = await getAllPosts();
+  return posts.slice(0, limit);
+}
+
 export async function getPostBySlug(
   slug: string
 ): Promise<BlogPost | undefined> {

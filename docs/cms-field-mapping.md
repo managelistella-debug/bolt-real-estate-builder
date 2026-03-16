@@ -72,6 +72,8 @@ All CMS pages live under `/account/` to avoid conflicting with the public site:
 
 **Public site** (`lib/aspen/blog.ts`): Filters by `status = 'published'`, maps to camelCase for display.
 
+**Homepage display** (`HomepageBlogPreview`): Recent blog section shows latest 3 published posts via `getRecentPosts(3)`; cards with title, excerpt, featured image, link to `/blog/[slug]`. Optional future: `homepage_featured` toggle for parity with listings.
+
 ---
 
 ## Testimonials
