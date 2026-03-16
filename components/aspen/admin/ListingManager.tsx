@@ -51,27 +51,42 @@ export default function ListingManager() {
   const [editingListing, setEditingListing] = useState<ListingRow | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
+  const safeMsg = (s: string) =>
+    typeof s === "string" && s.trimStart().startsWith("<") ? "Unable to load listings. Please try again." : s;
+
   const load = async () => {
     setLoading(true);
     setMessage(null);
     try {
       const res = await fetch("/api/admin/listings");
+      const text = await res.text();
       if (!res.ok) {
-        const contentType = res.headers.get("content-type") || "";
-        const err = contentType.includes("application/json")
-          ? await res.json().catch(() => ({}))
-          : {};
-        setMessage((err as { error?: string }).error || "Unable to load listings.");
+        let errMsg = "Unable to load listings.";
+        if (!text.trimStart().startsWith("<")) {
+          try {
+            const err = JSON.parse(text) as { error?: string };
+            errMsg = err.error || errMsg;
+          } catch {
+            /* use default */
+          }
+        }
+        setMessage(safeMsg(errMsg));
         setRows([]);
         return;
       }
-      const contentType = res.headers.get("content-type") || "";
-      if (!contentType.includes("application/json")) {
+      if (text.trimStart().startsWith("<")) {
         setMessage("Invalid response from server. Please try again.");
         setRows([]);
         return;
       }
-      const data = await res.json();
+      let data: unknown;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        setMessage("Invalid response. Please try again.");
+        setRows([]);
+        return;
+      }
       const mapped: ListingRow[] = (Array.isArray(data) ? data : []).map(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (item: any) => ({
@@ -337,7 +352,7 @@ export default function ListingManager() {
         </div>
 
         {message && (
-          <p className="text-[13px] text-[#888C99]">{message}</p>
+          <p className="text-[13px] text-[#888C99]">{safeMsg(message)}</p>
         )}
 
         {/* Listing rows */}

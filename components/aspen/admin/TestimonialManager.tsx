@@ -34,29 +34,45 @@ export default function TestimonialManager() {
   const [message, setMessage] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
+  const safeMsg = (s: string) =>
+    typeof s === "string" && s.trimStart().startsWith("<") ? "Unable to load testimonials. Please try again." : s;
+
   const load = async () => {
     setLoading(true);
     setMessage(null);
     try {
       const res = await fetch("/api/admin/testimonials");
+      const text = await res.text();
       if (!res.ok) {
-        const contentType = res.headers.get("content-type") || "";
-        const err = contentType.includes("application/json")
-          ? await res.json().catch(() => ({}))
-          : {};
-        setMessage((err as { error?: string }).error || "Unable to load testimonials.");
+        let errMsg = "Unable to load testimonials.";
+        if (!text.trimStart().startsWith("<")) {
+          try {
+            const err = JSON.parse(text) as { error?: string };
+            errMsg = err.error || errMsg;
+          } catch {
+            /* use default */
+          }
+        }
+        setMessage(safeMsg(errMsg));
         setRows([]);
         setLoading(false);
         return;
       }
-      const contentType = res.headers.get("content-type") || "";
-      if (!contentType.includes("application/json")) {
+      if (text.trimStart().startsWith("<")) {
         setMessage("Invalid response from server. Please try again.");
         setRows([]);
         setLoading(false);
         return;
       }
-      const data = await res.json();
+      let data: unknown;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        setMessage("Invalid response. Please try again.");
+        setRows([]);
+        setLoading(false);
+        return;
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mapped = (Array.isArray(data) ? data : []).map((item: any) => ({
         id: item.id,
@@ -198,7 +214,7 @@ export default function TestimonialManager() {
         </div>
 
         {message && (
-          <p className="text-[13px] text-[#888C99]">{message}</p>
+          <p className="text-[13px] text-[#888C99]">{safeMsg(message)}</p>
         )}
 
         <div className="rounded-xl border border-[#EBEBEB] bg-white">
