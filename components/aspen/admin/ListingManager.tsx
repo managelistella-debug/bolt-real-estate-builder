@@ -61,7 +61,7 @@ export default function ListingManager() {
       const res = await fetch("/api/admin/listings", { credentials: "include" });
       const text = await res.text();
       if (!res.ok) {
-        let errMsg = `Unable to load listings${res.status === 401 ? " — please sign in again" : res.status === 404 ? " (page not found)" : ""}.`;
+        let errMsg = `Unable to load listings (HTTP ${res.status}${res.status === 401 ? " — please sign in again" : res.status === 404 ? ", page not found" : ""}).`;
         if (!text.trimStart().startsWith("<")) {
           try {
             const err = JSON.parse(text) as { error?: string };
@@ -129,8 +129,8 @@ export default function ListingManager() {
         })
       );
       setRows(mapped);
-    } catch {
-      setMessage("Unable to load listings. Please try again.");
+    } catch (err) {
+      setMessage(`Unable to load listings: ${err instanceof Error ? err.message : String(err)}`);
       setRows([]);
     } finally {
       setLoading(false);
@@ -357,7 +357,7 @@ export default function ListingManager() {
         {message && (
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-[13px] text-[#888C99]">{safeMsg(message)}</p>
-            {(message.includes("Unable to load") || message.includes("Invalid response") || message.includes("Unauthorized")) && (
+            {(message.includes("Unable to load") || message.includes("Invalid response") || message.includes("Unauthorized") || message.includes("HTTP")) && (
               <>
                 <button
                   type="button"

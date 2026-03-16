@@ -44,7 +44,7 @@ export default function TestimonialManager() {
       const res = await fetch("/api/admin/testimonials", { credentials: "include" });
       const text = await res.text();
       if (!res.ok) {
-        let errMsg = `Unable to load testimonials${res.status === 401 ? " — please sign in again" : res.status === 404 ? " (page not found)" : ""}.`;
+        let errMsg = `Unable to load testimonials (HTTP ${res.status}${res.status === 401 ? " — please sign in again" : res.status === 404 ? ", page not found" : ""}).`;
         if (!text.trimStart().startsWith("<")) {
           try {
             const err = JSON.parse(text) as { error?: string };
@@ -84,8 +84,8 @@ export default function TestimonialManager() {
         isPublished: item.is_published !== false,
       }));
       setRows(mapped);
-    } catch {
-      setMessage("Unable to load testimonials. Please try again.");
+    } catch (err) {
+      setMessage(`Unable to load testimonials: ${err instanceof Error ? err.message : String(err)}`);
       setRows([]);
     } finally {
       setLoading(false);
@@ -218,7 +218,7 @@ export default function TestimonialManager() {
         {message && (
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-[13px] text-[#888C99]">{safeMsg(message)}</p>
-            {(message.includes("Unable to load") || message.includes("Invalid response") || message.includes("Unauthorized")) && (
+            {(message.includes("Unable to load") || message.includes("Invalid response") || message.includes("Unauthorized") || message.includes("HTTP")) && (
               <>
                 <button
                   type="button"
