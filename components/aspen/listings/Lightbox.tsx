@@ -135,7 +135,7 @@ export default function Lightbox({
               e.stopPropagation();
               navigate(-1);
             }}
-            className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 z-10 w-[40px] h-[40px] md:w-[48px] md:h-[48px] flex items-center justify-center border border-white/30 hover:border-white/60 bg-black/30 hover:bg-black/50 transition-all duration-300"
+            className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 z-10 w-[40px] h-[40px] md:w-[48px] md:h-[48px] flex items-center justify-center bg-black/30 hover:bg-black/50 transition-all duration-300"
             aria-label="Previous image"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -146,7 +146,7 @@ export default function Lightbox({
               e.stopPropagation();
               navigate(1);
             }}
-            className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 z-10 w-[40px] h-[40px] md:w-[48px] md:h-[48px] flex items-center justify-center border border-white/30 hover:border-white/60 bg-black/30 hover:bg-black/50 transition-all duration-300"
+            className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 z-10 w-[40px] h-[40px] md:w-[48px] md:h-[48px] flex items-center justify-center bg-black/30 hover:bg-black/50 transition-all duration-300"
             aria-label="Next image"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
