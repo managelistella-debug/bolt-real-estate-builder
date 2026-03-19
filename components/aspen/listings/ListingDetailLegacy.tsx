@@ -148,8 +148,8 @@ export default function ListingDetailLegacy({ listing }: ListingDetailProps) {
             </div>
           </ScrollReveal>
 
-          <div className="flex flex-col lg:flex-row items-start gap-10 lg:gap-[60px]">
-            <div className="flex-1 min-w-0">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-start gap-10 lg:gap-[60px]">
+            <div className="w-full flex-1 min-w-0">
               <ScrollReveal delay={0.1}>
                 <h2 className="font-heading text-[22px] md:text-[26px] leading-[1.3] gold-gradient-text mb-4 md:mb-6" style={{ fontWeight: 400 }}>
                   About This Property
