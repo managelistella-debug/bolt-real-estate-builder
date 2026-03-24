@@ -1,33 +1,9 @@
-import { ListingRow } from "@/lib/aspen/supabase/database.types";
-import { getSupabasePublicClient } from "@/lib/aspen/supabase/public";
-import { getTenantId } from "@/lib/aspen/tenant";
+import type { Listing } from "./listing.types";
+export type { Listing } from "./listing.types";
 
-export interface Listing {
-  id: string;
-  slug: string;
-  address: string;
-  description: string;
-  listPrice: number;
-  listingStatus: "active" | "sold" | "pending";
-  representation?: string;
-  neighborhood: string;
-  city: string;
-  bedrooms: number;
-  bathrooms: number;
-  propertyType: string;
-  yearBuilt: number;
-  livingArea: number;
-  lotArea: number;
-  lotAreaUnit: string;
-  taxes: number;
-  listingBrokerage: string;
-  mlsNumber: string;
-  gallery: string[];
-  thumbnail: string;
-  homepageFeatured?: boolean;
-  ranchEstateFeatured?: boolean;
-  createdAt?: string;
-}
+import { fetchWpListingBySlugRaw, fetchWpListingsRaw } from "../wordpress/client";
+import { mapWpListingToListing } from "../wordpress/mappers";
+import { getWordPressBaseUrl } from "../wordpress/env";
 
 function normalizeImageUrl(url: string) {
   const trimmed = url.trim();
@@ -43,70 +19,18 @@ function normalizeImageUrl(url: string) {
   return trimmed;
 }
 
-function mapListingRow(row: ListingRow): Listing {
-  const gallery =
-    Array.isArray(row.gallery)
-      ? [...row.gallery]
-          .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
-          .map((item) => item?.url)
-          .filter((url): url is string => !!url)
-          .map(normalizeImageUrl)
-      : [];
-  const thumbnail = normalizeImageUrl(row.thumbnail || "") || gallery[0] || "";
-  const status =
-    row.listing_status === "for_sale" ? "active" : row.listing_status;
-
-  return {
-    id: row.id,
-    slug: row.slug,
-    address: row.address,
-    description: row.description,
-    listPrice: Number(row.list_price || 0),
-    listingStatus: status,
-    representation: row.representation || undefined,
-    neighborhood: row.neighborhood,
-    city: row.city,
-    bedrooms: Number(row.bedrooms || 0),
-    bathrooms: Number(row.bathrooms || 0),
-    propertyType: row.property_type,
-    yearBuilt: Number(row.year_built || 0),
-    livingArea: Number(row.living_area_sqft || 0),
-    lotArea: Number(row.lot_area_value || 0),
-    lotAreaUnit: row.lot_area_unit || "acres",
-    taxes: Number(row.taxes_annual || 0),
-    listingBrokerage: row.listing_brokerage,
-    mlsNumber: row.mls_number,
-    gallery,
-    thumbnail,
-    homepageFeatured: !!row.homepage_featured,
-    ranchEstateFeatured: !!row.ranch_estate_featured,
-    createdAt: row.created_at,
-  };
-}
-
-async function fetchListingsFromSupabase(): Promise<Listing[] | null> {
-  const supabase = getSupabasePublicClient();
-  const tenantId = getTenantId();
-  if (!supabase) return null;
-  if (!tenantId) return null;
-
+async function fetchListingsFromWordPress(): Promise<Listing[] | null> {
+  if (!getWordPressBaseUrl()) return null;
   try {
-    const { data, error } = await supabase
-      .from("listings")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .order("created_at", { ascending: false });
-    if (error) return null;
-    if (!data || data.length === 0) return [];
-    return data.map((row) => mapListingRow(row as ListingRow));
+    const raw = await fetchWpListingsRaw();
+    return raw.map(mapWpListingToListing);
   } catch {
     return null;
   }
 }
 
 async function getResolvedListings(): Promise<Listing[]> {
-  const remote = await fetchListingsFromSupabase();
-  // Only use fallback when Supabase is unavailable (null). Empty DB = show empty.
+  const remote = await fetchListingsFromWordPress();
   if (remote === null) return [...fallbackListings];
   return remote;
 }
@@ -146,11 +70,24 @@ export async function getAllListings(): Promise<Listing[]> {
 }
 
 export async function getListingById(id: string): Promise<Listing | undefined> {
+  if (getWordPressBaseUrl()) {
+    const all = await getResolvedListings();
+    return all.find((listing) => listing.id === id);
+  }
   const all = await getResolvedListings();
   return all.find((listing) => listing.id === id);
 }
 
 export async function getListingBySlug(slug: string): Promise<Listing | undefined> {
+  if (getWordPressBaseUrl()) {
+    try {
+      const raw = await fetchWpListingBySlugRaw(slug);
+      if (raw) return mapWpListingToListing(raw);
+    } catch {
+      /* fall through */
+    }
+    return undefined;
+  }
   const all = await getResolvedListings();
   return all.find((listing) => listing.slug === slug);
 }
@@ -163,7 +100,6 @@ export function formatPrice(price: number): string {
   }).format(price);
 }
 
-// Hardcoded fallback data used when Aspen CMS is unavailable
 const fallbackListings: Listing[] = [
   {
     id: "1",
@@ -190,8 +126,8 @@ const fallbackListings: Listing[] = [
       "/images/featured-1.webp",
       "/images/featured-2.webp",
       "/images/featured-3.webp",
-    ],
-    thumbnail: "/images/featured-1.webp",
+    ].map(normalizeImageUrl),
+    thumbnail: normalizeImageUrl("/images/featured-1.webp"),
     homepageFeatured: true,
     ranchEstateFeatured: true,
   },
@@ -219,8 +155,8 @@ const fallbackListings: Listing[] = [
       "/images/featured-2.webp",
       "/images/featured-1.webp",
       "/images/featured-3.webp",
-    ],
-    thumbnail: "/images/featured-2.webp",
+    ].map(normalizeImageUrl),
+    thumbnail: normalizeImageUrl("/images/featured-2.webp"),
     homepageFeatured: true,
     ranchEstateFeatured: true,
   },
@@ -249,8 +185,8 @@ const fallbackListings: Listing[] = [
       "/images/featured-3.webp",
       "/images/featured-1.webp",
       "/images/featured-2.webp",
-    ],
-    thumbnail: "/images/featured-3.webp",
+    ].map(normalizeImageUrl),
+    thumbnail: normalizeImageUrl("/images/featured-3.webp"),
     homepageFeatured: true,
     ranchEstateFeatured: true,
   },
@@ -279,8 +215,8 @@ const fallbackListings: Listing[] = [
       "/images/featured-2.webp",
       "/images/featured-1.webp",
       "/images/featured-3.webp",
-    ],
-    thumbnail: "/images/featured-2.webp",
+    ].map(normalizeImageUrl),
+    thumbnail: normalizeImageUrl("/images/featured-2.webp"),
     ranchEstateFeatured: true,
   },
   {
@@ -308,8 +244,8 @@ const fallbackListings: Listing[] = [
       "/images/featured-3.webp",
       "/images/featured-2.webp",
       "/images/featured-1.webp",
-    ],
-    thumbnail: "/images/featured-3.webp",
+    ].map(normalizeImageUrl),
+    thumbnail: normalizeImageUrl("/images/featured-3.webp"),
     ranchEstateFeatured: false,
   },
   {
@@ -336,8 +272,8 @@ const fallbackListings: Listing[] = [
       "/images/featured-1.webp",
       "/images/featured-3.webp",
       "/images/featured-2.webp",
-    ],
-    thumbnail: "/images/featured-1.webp",
+    ].map(normalizeImageUrl),
+    thumbnail: normalizeImageUrl("/images/featured-1.webp"),
     ranchEstateFeatured: false,
   },
 ];

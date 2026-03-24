@@ -1,7 +1,7 @@
 'use client';
 
 import { Header } from '@/components/layout/header';
-import ListingManager from '@/components/aspen/admin/ListingManager';
+import WordPressCmsPanel from '@/components/aspen/admin/WordPressCmsPanel';
 
 export default function AccountListingsPage() {
   return (
@@ -9,10 +9,12 @@ export default function AccountListingsPage() {
       <div className="border-b border-[#EBEBEB] bg-white">
         <Header
           title="Listings"
-          description="Manage your property listings"
+          description="Manage your property listings in WordPress"
         />
       </div>
-      <ListingManager />
+      <div className="p-4 sm:p-6">
+        <WordPressCmsPanel kind="listings" />
+      </div>
     </div>
   );
 }

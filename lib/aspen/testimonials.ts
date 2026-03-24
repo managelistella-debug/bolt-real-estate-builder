@@ -1,56 +1,22 @@
-import { TestimonialRow } from "@/lib/aspen/supabase/database.types";
-import { getSupabasePublicClient } from "@/lib/aspen/supabase/public";
-import { getTenantId } from "@/lib/aspen/tenant";
+import type { Testimonial } from "./testimonials.types";
+import { fetchWpTestimonialsRaw } from "../wordpress/client";
+import { mapWpTestimonialToTestimonial } from "../wordpress/mappers";
+import { getWordPressBaseUrl } from "../wordpress/env";
 
-export interface Testimonial {
-  id: string;
-  quote: string;
-  author: string;
-  rating: number;
-  displayContext: "home" | "about" | "both";
-  sortOrder: number;
-}
+export type { Testimonial } from "./testimonials.types";
 
-function mapTestimonialRow(row: TestimonialRow): Testimonial {
-  return {
-    id: row.id,
-    quote: row.quote,
-    author: row.author_name,
-    rating: Number(row.rating || 5),
-    displayContext: row.display_context || "both",
-    sortOrder: Number(row.sort_order || 0),
-  };
-}
-
-async function fetchTestimonialsFromSupabase(): Promise<Testimonial[] | null> {
-  const supabase = getSupabasePublicClient();
-  const tenantId = getTenantId();
-  if (!supabase) return null;
-  if (!tenantId) return null;
-
+async function fetchTestimonialsFromWordPress(): Promise<Testimonial[] | null> {
+  if (!getWordPressBaseUrl()) return null;
   try {
-    const { data, error } = await supabase
-      .from("testimonials")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: true });
-    if (error) return null;
-    if (!data || data.length === 0) return [];
-    return data
-      .map((row) => mapTestimonialRow(row as TestimonialRow))
-      .filter((row, index) => {
-        const source = data[index] as TestimonialRow;
-        return source.is_published !== false;
-      });
+    const raw = await fetchWpTestimonialsRaw();
+    return raw.map(mapWpTestimonialToTestimonial);
   } catch {
     return null;
   }
 }
 
 async function getResolvedTestimonials(): Promise<Testimonial[]> {
-  const remote = await fetchTestimonialsFromSupabase();
-  // Only use fallback when Supabase is unavailable (null). Empty DB = show empty.
+  const remote = await fetchTestimonialsFromWordPress();
   if (remote === null) return [...fallbackTestimonials];
   return remote;
 }

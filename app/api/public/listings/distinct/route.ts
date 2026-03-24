@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/server';
+import { fetchWpListingsRaw } from '@/lib/wordpress/client';
+import { getWordPressBaseUrl } from '@/lib/wordpress/env';
+import { listingStatusToApiEnum, mapWpListingToListing } from '@/lib/wordpress/mappers';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,6 +30,35 @@ export async function GET(req: NextRequest) {
   const tenantId = req.nextUrl.searchParams.get('tenantId');
   if (!tenantId) {
     return NextResponse.json({ error: 'tenantId required' }, { status: 400, headers: corsHeaders });
+  }
+
+  if (getWordPressBaseUrl()) {
+    try {
+      const raw = await fetchWpListingsRaw();
+      const listings = raw.map(mapWpListingToListing);
+      const cities = new Set<string>();
+      const neighborhoods = new Set<string>();
+      const propertyTypes = new Set<string>();
+      const statuses = new Set<string>();
+      listings.forEach((row) => {
+        if (row.city) cities.add(row.city);
+        if (row.neighborhood) neighborhoods.add(row.neighborhood);
+        if (row.propertyType) propertyTypes.add(row.propertyType);
+        statuses.add(listingStatusToApiEnum(row.listingStatus));
+      });
+      return NextResponse.json(
+        {
+          cities: Array.from(cities).sort(),
+          neighborhoods: Array.from(neighborhoods).sort(),
+          propertyTypes: Array.from(propertyTypes).sort(),
+          statuses: Array.from(statuses).sort(),
+        },
+        { headers: corsHeaders }
+      );
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'WordPress listings unavailable';
+      return NextResponse.json({ error: msg }, { status: 502, headers: corsHeaders });
+    }
   }
 
   const sb = getServiceClient();

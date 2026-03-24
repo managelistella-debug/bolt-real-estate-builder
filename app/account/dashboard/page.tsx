@@ -6,6 +6,8 @@ import { useAuthStore } from '@/lib/stores/auth';
 import { Building2, FileText, MessageSquareQuote, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
 
+const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID || 'aspen';
+
 export default function AccountDashboardPage() {
   const { user } = useAuthStore();
   const [counts, setCounts] = useState({ listings: 0, blogs: 0, testimonials: 0 });
@@ -14,17 +16,24 @@ export default function AccountDashboardPage() {
     const load = async () => {
       try {
         const [listingsRes, blogsRes, testimonialsRes] = await Promise.all([
-          fetch('/api/admin/listings', { credentials: 'include' }),
-          fetch('/api/admin/blogs', { credentials: 'include' }),
-          fetch('/api/admin/testimonials', { credentials: 'include' }),
+          fetch(`/api/public/listings?tenantId=${encodeURIComponent(TENANT_ID)}`, { credentials: 'omit' }),
+          fetch(`/api/public/blogs?tenantId=${encodeURIComponent(TENANT_ID)}`, { credentials: 'omit' }),
+          fetch(`/api/public/testimonials?tenantId=${encodeURIComponent(TENANT_ID)}`, { credentials: 'omit' }),
         ]);
-        const listings = listingsRes.ok ? await listingsRes.json() : [];
-        const blogs = blogsRes.ok ? await blogsRes.json() : [];
-        const testimonials = testimonialsRes.ok ? await testimonialsRes.json() : [];
+        const listingsJson = listingsRes.ok ? await listingsRes.json() : [];
+        const blogsJson = blogsRes.ok ? await blogsRes.json() : [];
+        const testimonialsJson = testimonialsRes.ok ? await testimonialsRes.json() : [];
+
+        const listingsCount = Array.isArray(listingsJson)
+          ? listingsJson.length
+          : listingsJson?.data && Array.isArray(listingsJson.data)
+            ? listingsJson.total ?? listingsJson.data.length
+            : 0;
+
         setCounts({
-          listings: Array.isArray(listings) ? listings.length : 0,
-          blogs: Array.isArray(blogs) ? blogs.length : 0,
-          testimonials: Array.isArray(testimonials) ? testimonials.length : 0,
+          listings: listingsCount,
+          blogs: Array.isArray(blogsJson) ? blogsJson.length : 0,
+          testimonials: Array.isArray(testimonialsJson) ? testimonialsJson.length : 0,
         });
       } catch {
         // Ignore

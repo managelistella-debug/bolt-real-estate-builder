@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRouteUser } from "@/lib/aspen/api-auth";
 import { getTenantId } from "@/lib/aspen/tenant";
+import { wordPressAdminRouteBlocked } from "@/lib/wordpress/adminRouteGuard";
 
 function toSlug(value: string) {
   return value
@@ -14,6 +15,8 @@ function toSlug(value: string) {
 export async function GET() {
   const auth = await requireRouteUser();
   if (!auth.ok) return auth.response;
+  const blocked = wordPressAdminRouteBlocked();
+  if (blocked) return blocked;
   const tenantId = getTenantId();
   if (!tenantId) {
     return NextResponse.json({ error: "NEXT_PUBLIC_TENANT_ID is required." }, { status: 500 });
@@ -32,6 +35,8 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const auth = await requireRouteUser();
   if (!auth.ok) return auth.response;
+  const blocked = wordPressAdminRouteBlocked();
+  if (blocked) return blocked;
   const tenantId = getTenantId();
   if (!tenantId) {
     return NextResponse.json({ error: "NEXT_PUBLIC_TENANT_ID is required." }, { status: 500 });

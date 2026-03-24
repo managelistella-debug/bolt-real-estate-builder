@@ -24,40 +24,29 @@ export default function ListingDetailLegacy({ listing }: ListingDetailProps) {
     setLightboxOpen(true);
   };
 
-  const imagesPerPage = 3;
-  const totalGalleryPages = Math.ceil(listing.gallery.length / imagesPerPage);
+  const desktopVisible = 3;
   const [mobileIndex, setMobileIndex] = useState(0);
   const [mobileDirection, setMobileDirection] = useState(0);
+  const galleryLen = listing.gallery.length;
 
   const navigateGallery = useCallback(
     (dir: number) => {
       setGalleryDirection(dir);
-      setGalleryPage((prev) => {
-        const next = prev + dir;
-        if (next < 0) return totalGalleryPages - 1;
-        if (next >= totalGalleryPages) return 0;
-        return next;
-      });
+      setGalleryPage((prev) => (prev + dir + galleryLen) % galleryLen);
     },
-    [totalGalleryPages]
+    [galleryLen]
   );
 
   const navigateMobileGallery = useCallback(
     (dir: number) => {
       setMobileDirection(dir);
-      setMobileIndex((prev) => {
-        const next = prev + dir;
-        if (next < 0) return listing.gallery.length - 1;
-        if (next >= listing.gallery.length) return 0;
-        return next;
-      });
+      setMobileIndex((prev) => (prev + dir + galleryLen) % galleryLen);
     },
-    [listing.gallery.length]
+    [galleryLen]
   );
 
-  const currentGalleryImages = listing.gallery.slice(
-    galleryPage * imagesPerPage,
-    galleryPage * imagesPerPage + imagesPerPage
+  const currentGalleryImages = Array.from({ length: Math.min(desktopVisible, galleryLen) }, (_, i) =>
+    listing.gallery[(galleryPage + i) % galleryLen]
   );
 
   const detailItems = [
@@ -211,9 +200,9 @@ export default function ListingDetailLegacy({ listing }: ListingDetailProps) {
               <AnimatePresence mode="wait" custom={galleryDirection}>
                 <motion.div key={galleryPage} custom={galleryDirection} variants={gallerySlideVariants} initial="enter" animate="center" exit="exit" transition={{ x: { type: "spring", stiffness: 200, damping: 30 }, opacity: { duration: 0.25 } }} className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                   {currentGalleryImages.map((image, index) => {
-                    const absoluteIndex = galleryPage * imagesPerPage + index;
+                    const absoluteIndex = (galleryPage + index) % galleryLen;
                     return (
-                      <button key={absoluteIndex} onClick={() => openLightbox(absoluteIndex)} className="relative w-full aspect-[4/3] overflow-clip group">
+                      <button key={`${galleryPage}-${index}`} onClick={() => openLightbox(absoluteIndex)} className="relative w-full aspect-[4/3] overflow-clip group">
                         <Image src={image} alt={`${listing.address} - Photo ${absoluteIndex + 1}`} fill className="object-cover group-hover:scale-105 transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]" sizes="(max-width: 1024px) 50vw, 33vw" />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
                       </button>
@@ -222,7 +211,7 @@ export default function ListingDetailLegacy({ listing }: ListingDetailProps) {
                 </motion.div>
               </AnimatePresence>
             </div>
-            {totalGalleryPages > 1 && (
+            {galleryLen > 1 && (
               <div className="flex items-center justify-center gap-[28px] mt-8">
                 <button onClick={() => navigateGallery(-1)} className="w-[24px] h-[24px] flex items-center justify-center hover:opacity-70 transition-opacity duration-300" aria-label="Previous photos">
                   {/* eslint-disable-next-line @next/next/no-img-element */}

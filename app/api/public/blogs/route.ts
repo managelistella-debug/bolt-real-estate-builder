@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/server';
+import { fetchWpPostsRaw } from '@/lib/wordpress/client';
+import { getWordPressBaseUrl } from '@/lib/wordpress/env';
+import { mapWpPostToBlogPost } from '@/lib/wordpress/mappers';
+import { blogPostToPublicApiRow } from '@/lib/wordpress/publicRows';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -33,6 +37,17 @@ export async function GET(req: NextRequest) {
   const tenantId = req.nextUrl.searchParams.get('tenantId');
   if (!tenantId) {
     return NextResponse.json({ error: 'tenantId required' }, { status: 400, headers: corsHeaders });
+  }
+
+  if (getWordPressBaseUrl()) {
+    try {
+      const raw = await fetchWpPostsRaw();
+      const rows = raw.map((p) => blogPostToPublicApiRow(mapWpPostToBlogPost(p)));
+      return NextResponse.json(rows, { headers: corsHeaders });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'WordPress blogs unavailable';
+      return NextResponse.json({ error: msg }, { status: 502, headers: corsHeaders });
+    }
   }
 
   const sb = getServiceClient();

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/server';
+import { getWordPressBaseUrl } from '@/lib/wordpress/env';
+import { getWordPressPublicListingsResponse } from '@/lib/wordpress/publicListingsApi';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -64,6 +66,28 @@ export async function GET(req: NextRequest) {
   const perPage = perPageParam ? Math.max(1, parseInt(perPageParam, 10)) : null;
   const limitParam = sp.get('limit');
   const hardLimit = limitParam ? Math.max(1, parseInt(limitParam, 10)) : null;
+
+  if (getWordPressBaseUrl()) {
+    try {
+      const { enriched, total } = await getWordPressPublicListingsResponse(req.nextUrl.searchParams);
+      if (perPage) {
+        return NextResponse.json(
+          {
+            data: enriched,
+            total,
+            page,
+            perPage,
+            totalPages: Math.ceil(total / perPage),
+          },
+          { headers: corsHeaders }
+        );
+      }
+      return NextResponse.json(enriched, { headers: corsHeaders });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'WordPress listings unavailable';
+      return NextResponse.json({ error: msg }, { status: 502, headers: corsHeaders });
+    }
+  }
 
   const sb = getServiceClient();
   const tenantIds = await resolveListingsTenantIds(tenantId);

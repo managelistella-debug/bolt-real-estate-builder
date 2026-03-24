@@ -1,5 +1,9 @@
 import { getServiceClient } from '@/lib/supabase/server';
 import type { BlogPost, Listing, ListingGalleryImage } from '@/lib/types';
+import { fetchWpBlogPostBySlugRaw, fetchWpListingBySlugRaw, fetchWpPostsRaw } from '../wordpress/client';
+import { getWordPressBaseUrl } from '../wordpress/env';
+import { aspenBlogPostToHeadless, aspenListingToHeadless } from '../wordpress/headlessBridge';
+import { mapWpListingToListing, mapWpPostToBlogPost } from '../wordpress/mappers';
 
 type ListingRow = {
   id: string;
@@ -123,6 +127,16 @@ async function resolveTenantIdByHost(host?: string | null): Promise<string | nul
 }
 
 export async function getPublicListingBySlug(slug: string, host?: string | null): Promise<Listing | null> {
+  if (getWordPressBaseUrl()) {
+    try {
+      const raw = await fetchWpListingBySlugRaw(slug);
+      if (!raw) return null;
+      return aspenListingToHeadless(mapWpListingToListing(raw));
+    } catch {
+      return null;
+    }
+  }
+
   const tenantId = await resolveTenantIdByHost(host);
   const sb = getServiceClient();
   let query = sb
@@ -139,6 +153,16 @@ export async function getPublicListingBySlug(slug: string, host?: string | null)
 }
 
 export async function getPublishedBlogBySlug(slug: string, host?: string | null): Promise<BlogPost | null> {
+  if (getWordPressBaseUrl()) {
+    try {
+      const raw = await fetchWpBlogPostBySlugRaw(slug);
+      if (!raw) return null;
+      return aspenBlogPostToHeadless(mapWpPostToBlogPost(raw));
+    } catch {
+      return null;
+    }
+  }
+
   const tenantId = await resolveTenantIdByHost(host);
   const sb = getServiceClient();
   let query = sb
@@ -159,6 +183,19 @@ export async function getRecentPublishedBlogs(
   limit: number,
   options?: { excludeId?: string; host?: string | null },
 ): Promise<BlogPost[]> {
+  if (getWordPressBaseUrl()) {
+    try {
+      const raw = await fetchWpPostsRaw();
+      const mapped = raw.map((p) => aspenBlogPostToHeadless(mapWpPostToBlogPost(p)));
+      return mapped
+        .filter((row) => row.id !== options?.excludeId)
+        .sort((a, b) => (b.publishedAt?.getTime() ?? 0) - (a.publishedAt?.getTime() ?? 0))
+        .slice(0, limit);
+    } catch {
+      return [];
+    }
+  }
+
   const tenantId = await resolveTenantIdByHost(options?.host);
   const sb = getServiceClient();
   let query = sb

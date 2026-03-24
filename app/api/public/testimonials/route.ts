@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/server';
+import { fetchWpTestimonialsRaw } from '@/lib/wordpress/client';
+import { getWordPressBaseUrl } from '@/lib/wordpress/env';
+import { mapWpTestimonialToTestimonial } from '@/lib/wordpress/mappers';
+import { testimonialToPublicApiRow } from '@/lib/wordpress/publicRows';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -32,6 +36,20 @@ export async function GET(req: NextRequest) {
   const tenantId = req.nextUrl.searchParams.get('tenantId');
   if (!tenantId) {
     return NextResponse.json({ error: 'tenantId required' }, { status: 400, headers: corsHeaders });
+  }
+
+  if (getWordPressBaseUrl()) {
+    try {
+      const raw = await fetchWpTestimonialsRaw();
+      const rows = raw
+        .map((p) => mapWpTestimonialToTestimonial(p))
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((t) => testimonialToPublicApiRow(t));
+      return NextResponse.json(rows, { headers: corsHeaders });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'WordPress testimonials unavailable';
+      return NextResponse.json({ error: msg }, { status: 502, headers: corsHeaders });
+    }
   }
 
   const sb = getServiceClient();

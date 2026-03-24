@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRouteUser } from "@/lib/aspen/api-auth";
 import { getTenantId } from "@/lib/aspen/tenant";
+import { wordPressAdminRouteBlocked } from "@/lib/wordpress/adminRouteGuard";
 
 function isMissingColumnInSchemaCache(error: unknown, column: string) {
   const message =
@@ -27,6 +28,8 @@ export async function GET(
 ) {
   const auth = await requireRouteUser();
   if (!auth.ok) return auth.response;
+  const blocked = wordPressAdminRouteBlocked();
+  if (blocked) return blocked;
   const tenantId = getTenantId();
   if (!tenantId) {
     return NextResponse.json({ error: "NEXT_PUBLIC_TENANT_ID is required." }, { status: 500 });
@@ -50,6 +53,8 @@ export async function PUT(
 ) {
   const auth = await requireRouteUser();
   if (!auth.ok) return auth.response;
+  const blocked = wordPressAdminRouteBlocked();
+  if (blocked) return blocked;
   const tenantId = getTenantId();
   if (!tenantId) {
     return NextResponse.json({ error: "NEXT_PUBLIC_TENANT_ID is required." }, { status: 500 });
@@ -133,6 +138,8 @@ export async function DELETE(
 ) {
   const auth = await requireRouteUser();
   if (!auth.ok) return auth.response;
+  const blocked = wordPressAdminRouteBlocked();
+  if (blocked) return blocked;
   const tenantId = getTenantId();
   if (!tenantId) {
     return NextResponse.json({ error: "NEXT_PUBLIC_TENANT_ID is required." }, { status: 500 });

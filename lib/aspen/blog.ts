@@ -1,61 +1,22 @@
-import { BlogPostRow } from "@/lib/aspen/supabase/database.types";
-import { getSupabasePublicClient } from "@/lib/aspen/supabase/public";
-import { getTenantId } from "@/lib/aspen/tenant";
+import type { BlogPost } from "./blog.types";
+export type { BlogPost } from "./blog.types";
 
-export interface BlogPost {
-  id: string;
-  title: string;
-  slug: string;
-  author: string;
-  publishDate: string;
-  featuredImage: string;
-  featuredImageAlt: string;
-  excerpt: string;
-  content: string;
-  category: string;
-  tags: string[];
-}
+import { fetchWpBlogPostBySlugRaw, fetchWpPostsRaw } from "../wordpress/client";
+import { mapWpPostToBlogPost } from "../wordpress/mappers";
+import { getWordPressBaseUrl } from "../wordpress/env";
 
-function mapBlogRow(row: BlogPostRow): BlogPost {
-  return {
-    id: row.id,
-    title: row.title,
-    slug: row.slug,
-    author: row.author_name || "Aspen Muraski",
-    publishDate: (row.published_at || row.created_at || "").slice(0, 10),
-    featuredImage: row.featured_image || "/images/featured-1.webp",
-    featuredImageAlt: row.title,
-    excerpt: row.excerpt || row.meta_description || "",
-    content: row.content_html || "",
-    category: row.category || "",
-    tags: Array.isArray(row.tags) ? row.tags : [],
-  };
-}
-
-async function fetchPostsFromSupabase(): Promise<BlogPost[] | null> {
-  const supabase = getSupabasePublicClient();
-  const tenantId = getTenantId();
-  if (!supabase) return null;
-  if (!tenantId) return null;
-
+async function fetchPostsFromWordPress(): Promise<BlogPost[] | null> {
+  if (!getWordPressBaseUrl()) return null;
   try {
-    const { data, error } = await supabase
-      .from("blog_posts")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .eq("status", "published")
-      .order("published_at", { ascending: false });
-    if (error) return null;
-    if (!data || data.length === 0) return [];
-    return data.map((row) => mapBlogRow(row as BlogPostRow));
+    const raw = await fetchWpPostsRaw();
+    return raw.map(mapWpPostToBlogPost);
   } catch {
     return null;
   }
 }
 
 async function getResolvedPosts(): Promise<BlogPost[]> {
-  const remote = await fetchPostsFromSupabase();
-  // Only use fallback when Supabase is unavailable (null). Empty DB = show empty.
+  const remote = await fetchPostsFromWordPress();
   if (remote === null) return [...fallbackPosts];
   return remote;
 }
@@ -73,16 +34,21 @@ export async function getRecentPosts(limit = 3): Promise<BlogPost[]> {
   return posts.slice(0, limit);
 }
 
-export async function getPostBySlug(
-  slug: string
-): Promise<BlogPost | undefined> {
+export async function getPostBySlug(slug: string): Promise<BlogPost | undefined> {
+  if (getWordPressBaseUrl()) {
+    try {
+      const raw = await fetchWpBlogPostBySlugRaw(slug);
+      if (raw) return mapWpPostToBlogPost(raw);
+    } catch {
+      /* fall through */
+    }
+    return undefined;
+  }
   const posts = await getResolvedPosts();
   return posts.find((post) => post.slug === slug);
 }
 
-export async function getPostById(
-  id: string
-): Promise<BlogPost | undefined> {
+export async function getPostById(id: string): Promise<BlogPost | undefined> {
   const posts = await getResolvedPosts();
   return posts.find((post) => post.id === id);
 }

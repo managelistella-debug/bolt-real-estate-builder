@@ -11,11 +11,19 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "images.unsplash.com",
       },
-      {
-        protocol: "https",
-        hostname: "*.supabase.co",
-      },
-    ],
+    {
+      protocol: "https",
+      hostname: "*.supabase.co",
+    },
+    {
+      protocol: "https",
+      hostname: "*.hostingersite.com",
+    },
+    {
+      protocol: "https",
+      hostname: "**.wp.com",
+    },
+  ],
     unoptimized: true,
   },
 };

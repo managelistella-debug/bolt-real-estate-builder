@@ -75,22 +75,21 @@ export default function FeaturedListings({ listings }: FeaturedListingsProps) {
   const [page, setPage] = useState(0);
   const [direction, setDirection] = useState(0);
   const safeListings = listings.length > 0 ? listings : [];
-  const totalPages = Math.max(1, Math.ceil(safeListings.length / 3));
+  const len = safeListings.length;
 
   const paginate = useCallback(
     (newDirection: number) => {
+      if (len <= 1) return;
       setDirection(newDirection);
-      setPage((prev) => {
-        const next = prev + newDirection;
-        if (next < 0) return totalPages - 1;
-        if (next >= totalPages) return 0;
-        return next;
-      });
+      setPage((prev) => (prev + newDirection + len) % len);
     },
-    [totalPages]
+    [len]
   );
 
-  const currentListings = safeListings.slice(page * 3, page * 3 + 3);
+  const visible = Math.min(3, len);
+  const currentListings = Array.from({ length: visible }, (_, i) =>
+    safeListings[(page + i) % len]
+  );
 
   const slideVariants = {
     enter: (dir: number) => ({
@@ -122,8 +121,8 @@ export default function FeaturedListings({ listings }: FeaturedListingsProps) {
               }}
               className="flex flex-col md:flex-row items-stretch justify-between gap-6 md:gap-4 lg:gap-0"
             >
-              {currentListings.map((listing: Listing) => (
-                <ListingCard key={listing.id} listing={listing} />
+              {currentListings.map((listing: Listing, i: number) => (
+                <ListingCard key={`${page}-${i}`} listing={listing} />
               ))}
               {currentListings.length === 0 && (
                 <p className="text-white/60 text-sm">No featured listings yet.</p>

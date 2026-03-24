@@ -1,7 +1,7 @@
 'use client';
 
 import { Header } from '@/components/layout/header';
-import TestimonialManager from '@/components/aspen/admin/TestimonialManager';
+import WordPressCmsPanel from '@/components/aspen/admin/WordPressCmsPanel';
 
 export default function AccountTestimonialsPage() {
   return (
@@ -9,10 +9,12 @@ export default function AccountTestimonialsPage() {
       <div className="border-b border-[#EBEBEB] bg-white">
         <Header
           title="Testimonials"
-          description="Manage customer testimonials"
+          description="Manage customer testimonials in WordPress"
         />
       </div>
-      <TestimonialManager />
+      <div className="p-4 sm:p-6">
+        <WordPressCmsPanel kind="testimonials" />
+      </div>
     </div>
   );
 }

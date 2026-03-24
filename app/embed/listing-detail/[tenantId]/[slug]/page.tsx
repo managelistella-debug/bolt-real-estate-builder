@@ -1,5 +1,9 @@
 import { Metadata } from 'next';
 import { getServiceClient } from '@/lib/supabase/server';
+import { fetchWpListingBySlugRaw } from '@/lib/wordpress/client';
+import { getWordPressBaseUrl } from '@/lib/wordpress/env';
+import { mapWpListingToListing } from '@/lib/wordpress/mappers';
+import { listingToEmbedRow } from '@/lib/wordpress/publicRows';
 import { EmbedDetailClient } from './client';
 
 export const dynamic = 'force-dynamic';
@@ -10,6 +14,16 @@ interface Props {
 }
 
 async function getListing(tenantId: string, slug: string) {
+  if (getWordPressBaseUrl()) {
+    try {
+      const raw = await fetchWpListingBySlugRaw(slug);
+      if (!raw) return null;
+      return listingToEmbedRow(mapWpListingToListing(raw));
+    } catch {
+      return null;
+    }
+  }
+
   const sb = getServiceClient();
 
   const possibleTenantIds = [tenantId];
