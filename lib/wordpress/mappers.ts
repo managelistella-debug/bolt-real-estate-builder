@@ -34,6 +34,27 @@ function parseNum(raw: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/** MLS-style baths: "1 + 1" / "1+1" = one full + one half (1.5). Plain numbers use parseNum. */
+function parseBathrooms(raw: unknown): number {
+  const s = asString(raw);
+  if (!s) return 0;
+  if (!s.includes("+")) return parseNum(s);
+  const parts = s
+    .split("+")
+    .map((p) => parseFloat(p.trim().replace(/,/g, "")))
+    .filter((n) => Number.isFinite(n));
+  if (parts.length >= 2) {
+    return parts[0] + 0.5 * parts[1];
+  }
+  return parts[0] ?? 0;
+}
+
+function parseLotSize(raw: unknown): number {
+  const s = asString(raw).toLowerCase();
+  if (!s || /^n\/?a$/i.test(s) || s === "—" || s === "-") return 0;
+  return parseNum(raw);
+}
+
 function getPropertyType(raw: unknown): string {
   if (Array.isArray(raw)) return raw.map((x) => asString(x)).filter(Boolean).join(", ");
   return asString(raw);
@@ -44,7 +65,15 @@ function normalizeListingStatus(raw: unknown): Listing["listingStatus"] {
   const s = asString(raw).toLowerCase();
   if (s === "sold") return "sold";
   if (s === "pending") return "pending";
-  if (s === "active" || s === "for_sale" || s === "for sale") return "active";
+  // WordPress may send "Active", "active", "for_sale", etc.
+  if (
+    s === "active" ||
+    s === "for_sale" ||
+    s === "for sale" ||
+    s === "for-sale"
+  ) {
+    return "active";
+  }
   return "active";
 }
 
@@ -76,10 +105,10 @@ function getGalleryUrls(post: WpRestPost, featured: string): string[] {
       const ids = galleryRaw.map((x) => (typeof x === "number" ? x : parseInt(asString(x), 10))).filter((n) => Number.isFinite(n));
       const embedded = post._embedded?.["acf:attachment"] ?? [];
       const byId = new Map<number, string>();
-      embedded.forEach((m, i) => {
-        const id = typeof m.id === "number" ? m.id : ids[i];
+      embedded.forEach((m) => {
+        const mid = typeof m.id === "number" ? m.id : parseInt(asString(m.id), 10);
         const url = asString(m.source_url);
-        if (id !== undefined && url) byId.set(id, url);
+        if (Number.isFinite(mid) && url) byId.set(mid, url);
       });
       ids.forEach((id) => {
         const u = byId.get(id);
@@ -118,11 +147,11 @@ export function mapWpListingToListing(post: WpRestPost): Listing {
     neighborhood: asString(acf.neighborhood),
     city,
     bedrooms: parseNum(acf.bed ?? acf.bedrooms),
-    bathrooms: parseNum(acf.bath ?? acf.bathrooms),
+    bathrooms: parseBathrooms(acf.bath ?? acf.bathrooms),
     propertyType: getPropertyType(acf.property_type),
     yearBuilt: parseNum(acf.year_built),
     livingArea: parseNum(acf.size_sqft ?? acf.living_area_sqft),
-    lotArea: parseNum(acf.lot_size ?? acf.lot_area_value),
+    lotArea: parseLotSize(acf.lot_size ?? acf.lot_area_value),
     lotAreaUnit: (() => {
       const u = asString(acf.lot_size_type ?? acf.lot_area_unit).toLowerCase();
       if (u.includes("acre")) return "acres";
@@ -131,7 +160,7 @@ export function mapWpListingToListing(post: WpRestPost): Listing {
     })(),
     taxes: parsePrice(acf.property_taxes ?? acf.taxes_annual),
     listingBrokerage: asString(acf.listing_brokerage),
-    mlsNumber: asString(acf.listing_id ?? acf.mls_number),
+    mlsNumber: asString(acf.listing_id ?? acf.mls_number).replace(/^#/, ""),
     gallery,
     thumbnail,
     homepageFeatured: acfBool(acf.homepage_featured),
