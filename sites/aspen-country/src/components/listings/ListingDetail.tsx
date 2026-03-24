@@ -91,11 +91,20 @@ const STATUS_LABELS: Record<Listing["listingStatus"], string> = {
   sold: "Sold",
 };
 
-function formatNumber(value: number) {
+function formatNumber(value: number | string) {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed || "—";
+  }
   return new Intl.NumberFormat("en-US").format(value || 0);
 }
 
-function formatLotArea(value: number, unit: string) {
+function formatLotArea(value: number | string, unit: string) {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return "—";
+    return unit === "acres" ? `${trimmed} acres` : `${trimmed} sqft`;
+  }
   return unit === "acres"
     ? `${value.toLocaleString("en-US")} acres`
     : `${formatNumber(value)} sqft`;
