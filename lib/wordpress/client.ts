@@ -73,9 +73,9 @@ export async function fetchWpTestimonialsRaw(): Promise<WpRestPost[]> {
 }
 
 export async function fetchWpPostsRaw(): Promise<WpRestPost[]> {
-  return wpFetchAllPosts("post");
+  return wpFetchAllPosts("posts");
 }
 
 export async function fetchWpBlogPostBySlugRaw(slug: string): Promise<WpRestPost | null> {
-  return wpFetchPostBySlug("post", slug);
+  return wpFetchPostBySlug("posts", slug);
 }

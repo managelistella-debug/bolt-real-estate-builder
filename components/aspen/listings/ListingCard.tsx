@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { Listing, formatPrice } from "@/lib/aspen/listings";
+import { formatLivingArea, formatLotAreaValue } from "@/lib/aspen/listingDisplay";
 
 interface ListingCardProps {
   listing: Listing;
@@ -91,10 +92,10 @@ export default function ListingCard({
           <span className="w-[1px] h-[12px] bg-white/30" />
           {detailMetric === "lotArea" ? (
             <span>
-              {listing.lotArea} {lotAreaLabel(listing.lotAreaUnit)}
+              {formatLotAreaValue(listing)} {lotAreaLabel(listing.lotAreaUnit)}
             </span>
           ) : (
-            <span>{listing.livingArea.toLocaleString()} Sq Ft</span>
+            <span>{formatLivingArea(listing)} Sq Ft</span>
           )}
         </div>
       </div>

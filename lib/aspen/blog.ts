@@ -5,20 +5,19 @@ import { fetchWpBlogPostBySlugRaw, fetchWpPostsRaw } from "../wordpress/client";
 import { mapWpPostToBlogPost } from "../wordpress/mappers";
 import { getWordPressBaseUrl } from "../wordpress/env";
 
-async function fetchPostsFromWordPress(): Promise<BlogPost[] | null> {
-  if (!getWordPressBaseUrl()) return null;
+async function fetchPostsFromWordPress(): Promise<BlogPost[]> {
+  if (!getWordPressBaseUrl()) return [];
   try {
     const raw = await fetchWpPostsRaw();
     return raw.map(mapWpPostToBlogPost);
   } catch {
-    return null;
+    return [];
   }
 }
 
 async function getResolvedPosts(): Promise<BlogPost[]> {
-  const remote = await fetchPostsFromWordPress();
-  if (remote === null) return [...fallbackPosts];
-  return remote;
+  if (!getWordPressBaseUrl()) return [...fallbackPosts];
+  return fetchPostsFromWordPress();
 }
 
 export async function getAllPosts(): Promise<BlogPost[]> {

@@ -9,11 +9,13 @@ export interface Listing {
   neighborhood: string;
   city: string;
   bedrooms: number;
-  bathrooms: number;
+  /** From WordPress ACF as plain text (e.g. "1 + 1", "2.5") */
+  bathrooms: string;
   propertyType: string;
   yearBuilt: number;
-  livingArea: number;
-  lotArea: number;
+  /** Square feet: string from WP keeps commas/text; number = legacy/demo data */
+  livingArea: number | string;
+  lotArea: number | string;
   lotAreaUnit: string;
   taxes: number;
   listingBrokerage: string;

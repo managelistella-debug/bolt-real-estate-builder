@@ -7,6 +7,7 @@ import Link from "next/link";
 import ScrollReveal from "@/components/aspen/ScrollReveal";
 import Lightbox from "@/components/aspen/listings/Lightbox";
 import { Listing, formatPrice } from "@/lib/aspen/listings";
+import { formatLivingArea, formatLotAreaValue } from "@/lib/aspen/listingDisplay";
 
 interface ListingDetailProps {
   listing: Listing;
@@ -52,8 +53,11 @@ export default function ListingDetailLegacy({ listing }: ListingDetailProps) {
   const detailItems = [
     { label: "Bedrooms", value: String(listing.bedrooms) },
     { label: "Bathrooms", value: String(listing.bathrooms) },
-    { label: "Living Area", value: `${listing.livingArea.toLocaleString()} Sq Ft` },
-    { label: "Lot Area", value: `${listing.lotArea.toLocaleString()} ${listing.lotAreaUnit === "sqft" || listing.lotAreaUnit === "sq ft" ? "square feet" : listing.lotAreaUnit || "acres"}` },
+    { label: "Living Area", value: `${formatLivingArea(listing)} Sq Ft` },
+    {
+      label: "Lot Area",
+      value: `${formatLotAreaValue(listing)} ${listing.lotAreaUnit === "sqft" || listing.lotAreaUnit === "sq ft" ? "square feet" : listing.lotAreaUnit || "acres"}`,
+    },
     { label: "Property Type", value: listing.propertyType },
     { label: "Year Built", value: String(listing.yearBuilt) },
     { label: "Taxes (Annual)", value: formatPrice(listing.taxes) },

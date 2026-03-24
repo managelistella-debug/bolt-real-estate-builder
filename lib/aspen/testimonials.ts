@@ -5,20 +5,19 @@ import { getWordPressBaseUrl } from "../wordpress/env";
 
 export type { Testimonial } from "./testimonials.types";
 
-async function fetchTestimonialsFromWordPress(): Promise<Testimonial[] | null> {
-  if (!getWordPressBaseUrl()) return null;
+async function fetchTestimonialsFromWordPress(): Promise<Testimonial[]> {
+  if (!getWordPressBaseUrl()) return [];
   try {
     const raw = await fetchWpTestimonialsRaw();
     return raw.map(mapWpTestimonialToTestimonial);
   } catch {
-    return null;
+    return [];
   }
 }
 
 async function getResolvedTestimonials(): Promise<Testimonial[]> {
-  const remote = await fetchTestimonialsFromWordPress();
-  if (remote === null) return [...fallbackTestimonials];
-  return remote;
+  if (!getWordPressBaseUrl()) return [...fallbackTestimonials];
+  return fetchTestimonialsFromWordPress();
 }
 
 export async function getAllTestimonials(): Promise<Testimonial[]> {

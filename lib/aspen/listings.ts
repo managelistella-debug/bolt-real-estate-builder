@@ -19,20 +19,20 @@ function normalizeImageUrl(url: string) {
   return trimmed;
 }
 
-async function fetchListingsFromWordPress(): Promise<Listing[] | null> {
-  if (!getWordPressBaseUrl()) return null;
+async function fetchListingsFromWordPress(): Promise<Listing[]> {
+  if (!getWordPressBaseUrl()) return [];
   try {
     const raw = await fetchWpListingsRaw();
     return raw.map(mapWpListingToListing);
   } catch {
-    return null;
+    return [];
   }
 }
 
+/** Demo listings only when WordPress is not configured. If `WORDPRESS_BASE_URL` is set, data comes from WP only (empty on failure/empty CMS). */
 async function getResolvedListings(): Promise<Listing[]> {
-  const remote = await fetchListingsFromWordPress();
-  if (remote === null) return [...fallbackListings];
-  return remote;
+  if (!getWordPressBaseUrl()) return [...fallbackListings];
+  return fetchListingsFromWordPress();
 }
 
 export async function getActiveListings(): Promise<Listing[]> {
@@ -113,7 +113,7 @@ const fallbackListings: Listing[] = [
     neighborhood: "Lakeview Estates",
     city: "Sundre",
     bedrooms: 5,
-    bathrooms: 4,
+    bathrooms: "4",
     propertyType: "Detached",
     yearBuilt: 2018,
     livingArea: 3800,
@@ -142,7 +142,7 @@ const fallbackListings: Listing[] = [
     neighborhood: "Lakeview",
     city: "Sundre",
     bedrooms: 5,
-    bathrooms: 3.5,
+    bathrooms: "3.5",
     propertyType: "Detached",
     yearBuilt: 2020,
     livingArea: 4200,
@@ -172,7 +172,7 @@ const fallbackListings: Listing[] = [
     neighborhood: "Lakeview Estates",
     city: "Sundre",
     bedrooms: 4,
-    bathrooms: 3,
+    bathrooms: "3",
     propertyType: "Detached",
     yearBuilt: 2019,
     livingArea: 3200,
@@ -202,7 +202,7 @@ const fallbackListings: Listing[] = [
     neighborhood: "Rural Sundre",
     city: "Sundre",
     bedrooms: 4,
-    bathrooms: 3,
+    bathrooms: "3",
     propertyType: "Ranch/Farm",
     yearBuilt: 2010,
     livingArea: 2700,
@@ -231,7 +231,7 @@ const fallbackListings: Listing[] = [
     neighborhood: "Mountain Avenue",
     city: "Sundre",
     bedrooms: 4,
-    bathrooms: 2,
+    bathrooms: "2",
     propertyType: "Detached",
     yearBuilt: 1998,
     livingArea: 1600,
@@ -259,7 +259,7 @@ const fallbackListings: Listing[] = [
     neighborhood: "Ridgeview",
     city: "Olds",
     bedrooms: 3,
-    bathrooms: 2.5,
+    bathrooms: "2.5",
     propertyType: "Detached",
     yearBuilt: 2019,
     livingArea: 2200,

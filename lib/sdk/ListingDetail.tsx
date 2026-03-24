@@ -43,11 +43,20 @@ function formatPrice(value: number) {
   }).format(value || 0);
 }
 
-function formatNum(value: number) {
+function formatNum(value: number | string) {
+  if (typeof value === 'string') {
+    const t = value.trim();
+    return t || '—';
+  }
   return new Intl.NumberFormat('en-US').format(value || 0);
 }
 
-function formatLot(value: number, unit: string) {
+function formatLot(value: number | string, unit: string) {
+  if (typeof value === 'string') {
+    const t = value.trim();
+    if (!t) return '—';
+    return unit === 'acres' ? `${t} acres` : `${t} sqft`;
+  }
   if (unit === 'acres') return `${value.toLocaleString('en-US')} acres`;
   return `${formatNum(value)} sqft`;
 }

@@ -40,12 +40,18 @@ interface FeedConfig {
 
 interface ListingRow {
   id: string; slug: string; address: string; city: string; list_price: number;
-  listing_status: string; bedrooms: number; bathrooms: number; living_area_sqft: number;
+  listing_status: string; bedrooms: number; bathrooms: number | string; living_area_sqft: number | string;
   thumbnail: string | null; gallery: { url: string }[]; representation?: string;
 }
 
 function formatPrice(v: number) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v || 0); }
-function formatNum(v: number) { return new Intl.NumberFormat('en-US').format(v || 0); }
+function formatNum(v: number | string) {
+  if (typeof v === 'string') {
+    const t = v.trim();
+    return t || '—';
+  }
+  return new Intl.NumberFormat('en-US').format(v || 0);
+}
 const STATUS_LABELS: Record<string, string> = { for_sale: 'For Sale', pending: 'Pending', sold: 'Sold' };
 const REP_LABELS: Record<string, string> = { buyer_representation: 'Buyer Representation', seller_representation: 'Seller Representation' };
 

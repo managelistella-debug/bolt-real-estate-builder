@@ -4,6 +4,11 @@ import Header from "@/components/aspen/Header";
 import Footer from "@/components/aspen/Footer";
 import ListingDetailLegacy from "@/components/aspen/listings/ListingDetailLegacy";
 import { getAllListings, getListingBySlug } from "@/lib/aspen/listings";
+import {
+  bathroomsNumericForSchema,
+  formatLivingArea,
+  livingAreaNumericForSchema,
+} from "@/lib/aspen/listingDisplay";
 
 interface ListingPageProps {
   params: Promise<{ slug: string }>;
@@ -28,13 +33,13 @@ export async function generateMetadata({ params }: ListingPageProps): Promise<Me
 
   return {
     title: `${listing.address} | Aspen Muraski Real Estate`,
-    description: `${listing.propertyType} in ${listing.city} - ${listing.bedrooms} bed, ${listing.bathrooms} bath, ${listing.livingArea.toLocaleString()} sq ft.`,
+    description: `${listing.propertyType} in ${listing.city} - ${listing.bedrooms} bed, ${listing.bathrooms} bath, ${formatLivingArea(listing)} sq ft.`,
     alternates: {
       canonical: `/listings/${listing.slug}`,
     },
     openGraph: {
       title: `${listing.address} | Aspen Muraski Real Estate`,
-      description: `${listing.propertyType} in ${listing.city} - ${listing.bedrooms} bed, ${listing.bathrooms} bath, ${listing.livingArea.toLocaleString()} sq ft.`,
+      description: `${listing.propertyType} in ${listing.city} - ${listing.bedrooms} bed, ${listing.bathrooms} bath, ${formatLivingArea(listing)} sq ft.`,
       images: listing.thumbnail ? [{ url: listing.thumbnail }] : undefined,
       type: "article",
     },
@@ -48,6 +53,8 @@ export default async function ListingPage({ params }: ListingPageProps) {
     notFound();
   }
 
+  const sqftNum = livingAreaNumericForSchema(resolved);
+  const bathNum = bathroomsNumericForSchema(resolved.bathrooms);
   const listingJsonLd = {
     "@context": "https://schema.org",
     "@type": "RealEstateListing",
@@ -68,13 +75,17 @@ export default async function ListingPage({ params }: ListingPageProps) {
         streetAddress: resolved.address,
         addressLocality: resolved.city,
       },
-      floorSize: {
-        "@type": "QuantitativeValue",
-        value: resolved.livingArea,
-        unitText: "sqft",
-      },
+      ...(sqftNum !== undefined
+        ? {
+            floorSize: {
+              "@type": "QuantitativeValue",
+              value: sqftNum,
+              unitText: "sqft",
+            },
+          }
+        : {}),
       numberOfRooms: resolved.bedrooms,
-      numberOfBathroomsTotal: resolved.bathrooms,
+      ...(bathNum !== undefined ? { numberOfBathroomsTotal: bathNum } : {}),
       yearBuilt: resolved.yearBuilt,
     },
   };

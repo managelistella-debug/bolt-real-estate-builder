@@ -160,11 +160,12 @@ export interface Listing {
   city: string;
   listingStatus: ListingStatus;
   bedrooms: number;
-  bathrooms: number;
+  /** WordPress ACF may be plain text (e.g. "1 + 1"); builder DB rows stay numeric. */
+  bathrooms: number | string;
   propertyType: string;
   yearBuilt: number;
-  livingAreaSqft: number;
-  lotAreaValue: number;
+  livingAreaSqft: number | string;
+  lotAreaValue: number | string;
   lotAreaUnit: LotAreaUnit;
   taxesAnnual: number;
   listingBrokerage: string;

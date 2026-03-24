@@ -4,6 +4,7 @@ import { fetchWpListingBySlugRaw } from '@/lib/wordpress/client';
 import { getWordPressBaseUrl } from '@/lib/wordpress/env';
 import { mapWpListingToListing } from '@/lib/wordpress/mappers';
 import { listingToEmbedRow } from '@/lib/wordpress/publicRows';
+import { formatAreaField } from '@/lib/aspen/listingDisplay';
 import { EmbedDetailClient } from './client';
 
 export const dynamic = 'force-dynamic';
@@ -74,7 +75,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `${listing.address} | ${price}`,
-    description: `${listing.bedrooms} bed, ${listing.bathrooms} bath, ${listing.living_area_sqft?.toLocaleString()} sqft property in ${listing.city}. ${listing.description?.slice(0, 150)}`,
+    description: `${listing.bedrooms} bed, ${listing.bathrooms} bath, ${formatAreaField(listing.living_area_sqft ?? null)} sqft property in ${listing.city}. ${listing.description?.slice(0, 150)}`,
     openGraph: {
       title: `${listing.address} - ${price}`,
       description: listing.description?.slice(0, 200),

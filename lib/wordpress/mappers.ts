@@ -34,27 +34,6 @@ function parseNum(raw: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-/** MLS-style baths: "1 + 1" / "1+1" = one full + one half (1.5). Plain numbers use parseNum. */
-function parseBathrooms(raw: unknown): number {
-  const s = asString(raw);
-  if (!s) return 0;
-  if (!s.includes("+")) return parseNum(s);
-  const parts = s
-    .split("+")
-    .map((p) => parseFloat(p.trim().replace(/,/g, "")))
-    .filter((n) => Number.isFinite(n));
-  if (parts.length >= 2) {
-    return parts[0] + 0.5 * parts[1];
-  }
-  return parts[0] ?? 0;
-}
-
-function parseLotSize(raw: unknown): number {
-  const s = asString(raw).toLowerCase();
-  if (!s || /^n\/?a$/i.test(s) || s === "—" || s === "-") return 0;
-  return parseNum(raw);
-}
-
 function getPropertyType(raw: unknown): string {
   if (Array.isArray(raw)) return raw.map((x) => asString(x)).filter(Boolean).join(", ");
   return asString(raw);
@@ -147,11 +126,11 @@ export function mapWpListingToListing(post: WpRestPost): Listing {
     neighborhood: asString(acf.neighborhood),
     city,
     bedrooms: parseNum(acf.bed ?? acf.bedrooms),
-    bathrooms: parseBathrooms(acf.bath ?? acf.bathrooms),
+    bathrooms: asString(acf.bath ?? acf.bathrooms),
     propertyType: getPropertyType(acf.property_type),
     yearBuilt: parseNum(acf.year_built),
-    livingArea: parseNum(acf.size_sqft ?? acf.living_area_sqft),
-    lotArea: parseLotSize(acf.lot_size ?? acf.lot_area_value),
+    livingArea: asString(acf.size_sqft ?? acf.living_area_sqft),
+    lotArea: asString(acf.lot_size ?? acf.lot_area_value),
     lotAreaUnit: (() => {
       const u = asString(acf.lot_size_type ?? acf.lot_area_unit).toLowerCase();
       if (u.includes("acre")) return "acres";
@@ -160,7 +139,7 @@ export function mapWpListingToListing(post: WpRestPost): Listing {
     })(),
     taxes: parsePrice(acf.property_taxes ?? acf.taxes_annual),
     listingBrokerage: asString(acf.listing_brokerage),
-    mlsNumber: asString(acf.listing_id ?? acf.mls_number).replace(/^#/, ""),
+    mlsNumber: asString(acf.listing_id ?? acf.mls_number),
     gallery,
     thumbnail,
     homepageFeatured: acfBool(acf.homepage_featured),

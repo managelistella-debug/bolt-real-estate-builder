@@ -24,10 +24,20 @@ export const formatListingPrice = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value || 0);
 
-export const formatNumber = (value: number) =>
-  new Intl.NumberFormat('en-US').format(value || 0);
+export const formatNumber = (value: number | string) => {
+  if (typeof value === 'string') {
+    const t = value.trim();
+    return t || '—';
+  }
+  return new Intl.NumberFormat('en-US').format(value || 0);
+};
 
-export const formatLotArea = (value: number, unit: 'sqft' | 'acres') => {
+export const formatLotArea = (value: number | string, unit: 'sqft' | 'acres') => {
+  if (typeof value === 'string') {
+    const t = value.trim();
+    if (!t) return '—';
+    return unit === 'acres' ? `${t} acres` : `${t} sqft`;
+  }
   if (unit === 'acres') return `${value.toLocaleString('en-US')} acres`;
   return `${formatNumber(value)} sqft`;
 };
