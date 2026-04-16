@@ -29,7 +29,7 @@ export default function AboutHero() {
               className="absolute inset-0"
             >
               <Image
-                src="/images/about-image.webp"
+                src="/images/about-image.png"
                 alt="Aspen Muraski"
                 fill
                 className="object-cover"

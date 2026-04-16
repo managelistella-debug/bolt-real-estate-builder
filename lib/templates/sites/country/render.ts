@@ -125,7 +125,7 @@ export function renderCountrySite(
     </div></section>
   <section class="feat-listings" data-source="cms-listings"><div class="fl-container"><div class="fl-grid">${sampleActive.map(l => listingCard(l, 'For Sale')).join('')}</div><div class="fl-nav"><a href="/listings/active" class="view-all">View All Listings</a></div></div></section>
   <section class="about-sec"><div class="about-inner">
-    <div class="about-img-wrap"><img src="${I}/about-image.webp" alt="${esc(agent)}" class="about-img"/></div>
+    <div class="about-img-wrap"><img src="${I}/about-image.png" alt="${esc(agent)}" class="about-img"/></div>
     <div class="about-txt"><h2 class="font-h gold-grad-text">Meet ${esc(agent)}</h2><p>${esc(about1)}</p><p>${esc(about2)}</p><a href="/about" class="cta gold-grad-bg">Learn More</a></div>
   </div></section>
   <section class="contact-sec"><div class="ctc-bg parallax-bg" style="background-image:url(${I}/homepage-contact-bg.webp)"></div><div class="ctc-ov"></div>
@@ -142,7 +142,7 @@ export function renderCountrySite(
 </div>`;
 
   const pgAbout = `<div data-page="/about" style="display:none">
-  <section class="pg-hero-split"><div class="pg-hero-img-side"><img src="${I}/about-image.webp" alt="${esc(agent)}" class="pg-hero-portrait"/></div>
+  <section class="pg-hero-split"><div class="pg-hero-img-side"><img src="${I}/about-image.png" alt="${esc(agent)}" class="pg-hero-portrait"/></div>
     <div class="pg-hero-txt-side"><span class="font-h" style="font-size:16px;color:#fff">Meet Your Realtor</span><h1 class="font-h gold-grad-text" style="font-size:clamp(36px,5vw,64px);line-height:1.1;margin-top:12px">${esc(agent)}</h1><div class="gold-accent-line"></div><p class="hero-body">${esc(about1)}</p><p class="hero-body">${esc(about2)}</p></div></section>
   <section class="story-sec"><div class="story-grid">
     <div class="story-card"><span class="font-h gold-grad-text" style="font-size:15px">Professional Background</span><h2 class="font-h" style="font-size:clamp(24px,3vw,30px);color:#fff;margin-top:8px">Built on Experience</h2><div class="gold-accent-line"></div><p>${esc(agent)}'s career in real estate is rooted in a genuine passion for connecting people with the right property. Over the years, a reputation for being thorough, strategic, and deeply committed to clients' success has been developed.</p></div>
