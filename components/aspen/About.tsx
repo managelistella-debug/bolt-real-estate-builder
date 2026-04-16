@@ -32,7 +32,7 @@ export default function About() {
                 src="/images/about-image.webp"
                 alt="Aspen Muraski"
                 fill
-                unoptimized
+                quality={85}
                 className="object-cover object-[center_35%]"
                 sizes="(max-width: 1024px) 100vw, 696px"
               />
