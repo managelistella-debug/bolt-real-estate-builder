@@ -29,10 +29,11 @@ export default function About() {
               className="absolute inset-0"
             >
               <Image
-                src="/images/about-image.png"
+                src="/images/about-image.webp"
                 alt="Aspen Muraski"
                 fill
-                className="object-cover"
+                quality={100}
+                className="object-cover object-[center_35%]"
                 sizes="(max-width: 1024px) 100vw, 696px"
               />
             </motion.div>

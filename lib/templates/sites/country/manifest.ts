@@ -125,7 +125,7 @@ const builderTemplate: Template = {
       slug: '/about',
       isHomepage: false,
       sections: [
-        { id: 'sp-about-hero', type: 'hero', order: 0, widget: { type: 'hero', background: { type: 'image', url: `${BASE}/about-image.png` }, headline: 'About Us', subheadline: 'Local knowledge, honest advice, and results that speak for themselves.', alignment: 'center' } },
+        { id: 'sp-about-hero', type: 'hero', order: 0, widget: { type: 'hero', background: { type: 'image', url: `${BASE}/about-image.webp` }, headline: 'About Us', subheadline: 'Local knowledge, honest advice, and results that speak for themselves.', alignment: 'center' } },
         { id: 'sp-about-text', type: 'text-section', order: 1, widget: { type: 'text-section', title: 'Our Story', body: '<p>With deep roots in Mountain View County, we understand the land, the community, and what it takes to achieve exceptional results for our clients.</p>' } },
         { id: 'sp-about-testimonials', type: 'testimonials', order: 2, widget: { type: 'testimonials', title: 'What Our Clients Say' } },
         { id: 'sp-about-cta', type: 'contact-form', order: 3, widget: { type: 'contact-form', formFields: [{ id: 'f1', type: 'text', label: 'Name', required: true, order: 0 }, { id: 'f2', type: 'email', label: 'Email', required: true, order: 1 }, { id: 'f3', type: 'textarea', label: 'Message', required: true, order: 2 }], buttonText: 'Contact Us', confirmationMessage: "Thank you! We'll be in touch." } },

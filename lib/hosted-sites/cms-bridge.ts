@@ -28,7 +28,7 @@ export function getCmsBridgeScript(): string {
   }
 
   function blogCardHtml(post) {
-    var img = post.featuredImage || IMG + '/about-image.png';
+    var img = post.featuredImage || IMG + '/about-image.webp';
     var title = post.title || 'Blog Post';
     var cat = post.category || 'Article';
     var excerpt = post.excerpt || '';
