@@ -1,6 +1,6 @@
 /**
  * WordPress headless CMS configuration.
- * Set WORDPRESS_BASE_URL (e.g. https://yoursite.hostingersite.com) to load listings, posts, and testimonials from WP REST.
+ * Set WORDPRESS_BASE_URL (e.g. https://yoursite.hostingersite.com) to load listings and blog posts from WP REST. Testimonials are hardcoded in the app.
  * Falls back to NEXT_PUBLIC_WORDPRESS_BASE_URL so server-side fetches work when Vercel only has the public var set.
  */
 

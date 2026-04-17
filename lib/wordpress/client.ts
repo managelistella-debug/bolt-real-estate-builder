@@ -1,6 +1,5 @@
 import {
   getListingRestBase,
-  getTestimonialRestBase,
   getWordPressBaseUrl,
   WORDPRESS_REVALIDATE_SECONDS,
 } from "./env";
@@ -66,10 +65,6 @@ export async function fetchWpListingsRaw(): Promise<WpRestPost[]> {
 
 export async function fetchWpListingBySlugRaw(slug: string): Promise<WpRestPost | null> {
   return wpFetchPostBySlug(getListingRestBase(), slug);
-}
-
-export async function fetchWpTestimonialsRaw(): Promise<WpRestPost[]> {
-  return wpFetchAllPosts(getTestimonialRestBase());
 }
 
 export async function fetchWpPostsRaw(): Promise<WpRestPost[]> {

@@ -196,6 +196,24 @@ export function mapWpPostToBlogPost(post: WpRestPost): BlogPost {
   };
 }
 
+function pickTestimonialAuthor(post: WpRestPost, acf: Record<string, unknown>): string {
+  const acfKeys = [
+    acf.author_name,
+    acf.author,
+    acf.reviewer_name,
+    acf.client_name,
+    acf.reviewer,
+    acf.name,
+  ];
+  for (const v of acfKeys) {
+    const s = asString(v);
+    if (s) return s;
+  }
+  const title = post.title?.rendered ? stripHtml(post.title.rendered) : "";
+  if (title.length > 0 && title.length <= 120) return title;
+  return "";
+}
+
 export function mapWpTestimonialToTestimonial(post: WpRestPost): Testimonial {
   const acf = post.acf ?? {};
   /** ACF: Text Area `testimonial` (see WP field group); fallbacks for older `quote` or post body */
@@ -204,7 +222,7 @@ export function mapWpTestimonialToTestimonial(post: WpRestPost): Testimonial {
     asString(acf.quote) ||
     (post.content?.rendered ? stripHtml(post.content.rendered) : "");
   const quote = quoteRaw || stripHtml(post.content?.rendered ?? "");
-  const author = asString(acf.author_name ?? acf.author);
+  const author = pickTestimonialAuthor(post, acf);
   /** ACF: Radio `star_rating`; fallbacks `rating` */
   let rating = parseNum(acf.star_rating ?? acf.rating);
   if (rating < 1) rating = 5;
@@ -218,7 +236,7 @@ export function mapWpTestimonialToTestimonial(post: WpRestPost): Testimonial {
   return {
     id: String(post.id),
     quote,
-    author: author || "Client",
+    author: author.trim() || "Client",
     rating,
     displayContext,
     sortOrder: parseNum(acf.sort_order ?? post.menu_order),

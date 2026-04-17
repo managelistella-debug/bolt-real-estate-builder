@@ -40,7 +40,7 @@ export default function AboutTestimonials({ testimonials }: AboutTestimonialsPro
         </ScrollReveal>
 
         <div className="mt-10 md:mt-14 lg:mt-[60px] max-w-[800px] mx-auto">
-          <div className="relative h-[300px] sm:h-[260px] md:h-[240px] flex items-center overflow-hidden">
+          <div className="relative flex min-h-[280px] flex-col justify-center">
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
                 key={current}
@@ -52,10 +52,10 @@ export default function AboutTestimonials({ testimonials }: AboutTestimonialsPro
                   x: { type: "spring", stiffness: 200, damping: 30 },
                   opacity: { duration: 0.25 },
                 }}
-                className="w-full text-center"
+                className="flex w-full flex-col items-center text-center"
               >
                 {/* Stars */}
-                <div className="flex items-center justify-center gap-1 mb-6 md:mb-8">
+                <div className="mb-6 flex shrink-0 items-center justify-center gap-1 md:mb-8">
                   {[...Array(5)].map((_, i) => (
                     <svg
                       key={i}
@@ -66,11 +66,11 @@ export default function AboutTestimonials({ testimonials }: AboutTestimonialsPro
                     >
                       <path
                         d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
-                        fill="url(#starGrad)"
+                        fill={`url(#aboutStarGrad-${i})`}
                       />
                       <defs>
                         <linearGradient
-                          id="starGrad"
+                          id={`aboutStarGrad-${i}`}
                           x1="0%"
                           y1="0%"
                           x2="100%"
@@ -85,20 +85,22 @@ export default function AboutTestimonials({ testimonials }: AboutTestimonialsPro
                   ))}
                 </div>
 
-                {/* Quote */}
-                <p
-                  className="text-white/80 text-[15px] md:text-[17px] leading-[24px] md:leading-[30px] italic"
-                  style={{ fontFamily: "'Lato', sans-serif" }}
-                >
-                  &ldquo;{items[current]?.quote || "No testimonials available yet."}&rdquo;
-                </p>
+                {/* Quote — scroll when long so the author line stays visible */}
+                <div className="max-h-[min(280px,42vh)] w-full min-h-0 overflow-y-auto overflow-x-hidden px-1">
+                  <p
+                    className="text-white/80 text-[15px] md:text-[17px] leading-[24px] md:leading-[30px] italic"
+                    style={{ fontFamily: "'Lato', sans-serif" }}
+                  >
+                    &ldquo;{items[current]?.quote || "No testimonials available yet."}&rdquo;
+                  </p>
+                </div>
 
                 {/* Author */}
                 <p
-                  className="mt-6 md:mt-8 font-heading text-[16px] md:text-[18px] gold-gradient-text"
+                  className="mt-6 shrink-0 font-heading text-[16px] md:mt-8 md:text-[18px] gold-gradient-text"
                   style={{ fontWeight: 400 }}
                 >
-                  {items[current]?.author || ""}
+                  {items[current]?.author?.trim() ? items[current].author : "Client"}
                 </p>
               </motion.div>
             </AnimatePresence>

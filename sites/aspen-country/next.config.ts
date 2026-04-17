@@ -21,6 +21,10 @@ const nextConfig: NextConfig = {
     },
     {
       protocol: "https",
+      hostname: "admin.sundrerealestate.com",
+    },
+    {
+      protocol: "https",
       hostname: "**.wp.com",
     },
   ],

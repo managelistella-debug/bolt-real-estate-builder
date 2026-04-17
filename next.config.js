@@ -7,6 +7,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'via.placeholder.com' },
       { protocol: 'https', hostname: '*.hostingersite.com' },
+      { protocol: 'https', hostname: 'admin.sundrerealestate.com' },
       { protocol: 'https', hostname: '**.wp.com' },
     ],
   },

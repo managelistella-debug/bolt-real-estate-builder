@@ -7,11 +7,9 @@ import {
   wordPressAdminListings,
   wordPressAdminNewListing,
   wordPressAdminNewPost,
-  wordPressAdminNewTestimonial,
-  wordPressAdminTestimonials,
 } from "@/lib/wordpress/adminLinks";
 
-type PanelKind = "listings" | "blogs" | "testimonials";
+type PanelKind = "listings" | "blogs";
 
 export default function WordPressCmsPanel({ kind }: { kind: PanelKind }) {
   const base = getPublicWordPressBaseUrl();
@@ -33,14 +31,6 @@ export default function WordPressCmsPanel({ kind }: { kind: PanelKind }) {
             "Use WordPress Posts for articles. The Next.js site reads published posts from the REST API.",
           primary: { label: "All posts", href: wordPressAdminBlogs() },
           secondary: { label: "Add new post", href: wordPressAdminNewPost() },
-        };
-      case "testimonials":
-        return {
-          title: "Testimonials are managed in WordPress",
-          body:
-            "Edit the testimonial custom post type in WordPress. The post date is used for display; author and star rating use ACF fields.",
-          primary: { label: "All testimonials", href: wordPressAdminTestimonials() },
-          secondary: { label: "Add new testimonial", href: wordPressAdminNewTestimonial() },
         };
     }
   })();
