@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { motion, useAnimate } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { Listing, formatPrice } from "@/lib/aspen/listings";
@@ -16,11 +16,18 @@ function statusLabel(status: Listing["listingStatus"]) {
   return "For Sale";
 }
 
-function ListingCard({ listing }: { listing: Listing }) {
+function ListingCard({
+  listing,
+  cardRef,
+}: {
+  listing: Listing;
+  cardRef?: React.Ref<HTMLAnchorElement>;
+}) {
   const [hovered, setHovered] = useState(false);
 
   return (
     <Link
+      ref={cardRef}
       href={`/listings/${listing.slug}`}
       className="cursor-pointer w-full md:w-[calc(50%-12px)] lg:w-[422px] shrink-0"
       onMouseEnter={() => setHovered(true)}
@@ -72,96 +79,149 @@ function ListingCard({ listing }: { listing: Listing }) {
 }
 
 export default function FeaturedListings({ listings }: FeaturedListingsProps) {
-  const [page, setPage] = useState(0);
-  const [direction, setDirection] = useState(0);
   const safeListings = listings.length > 0 ? listings : [];
   const len = safeListings.length;
 
+  // Duplicate the list so the track always has extra cards off the right edge,
+  // giving us a seamless forward slide. A second duplicate at the left end is
+  // not needed because we normalize the logical index after each transition.
+  const trackListings = len > 0 ? [...safeListings, ...safeListings] : [];
+
+  const [index, setIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [step, setStep] = useState(0);
+
+  const [scope, animate] = useAnimate<HTMLDivElement>();
+  const firstCardRef = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    const measure = () => {
+      const card = firstCardRef.current;
+      const track = scope.current;
+      if (!card || !track) return;
+      const styles = window.getComputedStyle(track);
+      const gap = parseFloat(styles.columnGap || styles.gap || "0") || 0;
+      const next = card.offsetWidth + gap;
+      setStep(next);
+      // Keep the currently-visible listing aligned after a resize so we never
+      // show a half-card because the step size changed under us.
+      track.style.transform = `translateX(${-index * next}px)`;
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [index, len, scope]);
+
   const paginate = useCallback(
-    (newDirection: number) => {
-      if (len <= 1) return;
-      setDirection(newDirection);
-      setPage((prev) => (prev + newDirection + len) % len);
+    async (direction: number) => {
+      if (isAnimating || len <= 1 || step === 0) return;
+      setIsAnimating(true);
+
+      const transition = {
+        type: "spring" as const,
+        stiffness: 180,
+        damping: 28,
+      };
+
+      try {
+        if (direction > 0) {
+          // Slide left to reveal the next listing on the right.
+          const target = index + 1;
+          await animate(scope.current, { x: -target * step }, transition);
+          if (target >= len) {
+            // We are now showing cards from the duplicated half. Silently snap
+            // the track back to the equivalent position in the first half so
+            // we never run out of buffer.
+            await animate(scope.current, { x: 0 }, { duration: 0 });
+            setIndex(0);
+          } else {
+            setIndex(target);
+          }
+        } else {
+          // Going backwards: jump the track forward into the duplicated half
+          // first (invisibly), then animate back to show the previous listing.
+          const pre = index + len;
+          await animate(scope.current, { x: -pre * step }, { duration: 0 });
+          const target = pre - 1;
+          await animate(scope.current, { x: -target * step }, transition);
+          setIndex(target - len);
+        }
+      } finally {
+        setIsAnimating(false);
+      }
     },
-    [len]
+    [animate, index, isAnimating, len, scope, step]
   );
-
-  const visible = Math.min(3, len);
-  const currentListings = Array.from({ length: visible }, (_, i) =>
-    safeListings[(page + i) % len]
-  );
-
-  const slideVariants = {
-    enter: (dir: number) => ({
-      x: dir > 0 ? 800 : -800,
-      opacity: 0,
-    }),
-    center: { x: 0, opacity: 1 },
-    exit: (dir: number) => ({
-      x: dir < 0 ? 800 : -800,
-      opacity: 0,
-    }),
-  };
 
   return (
     <section id="featured" className="bg-[#09312a]">
       <div className="max-w-[1440px] mx-auto py-10 md:py-[60px] px-5 md:px-10 lg:px-[60px] flex flex-col items-center gap-8 md:gap-[60px]">
-        <div className="w-full overflow-hidden">
-          <AnimatePresence mode="wait" custom={direction}>
-            <motion.div
-              key={page}
-              custom={direction}
-              variants={slideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{
-                x: { type: "spring", stiffness: 180, damping: 28 },
-                opacity: { duration: 0.3 },
-              }}
-              className="flex flex-col md:flex-row items-stretch justify-between gap-6 md:gap-4 lg:gap-0"
-            >
-              {currentListings.map((listing: Listing, i: number) => (
-                <ListingCard key={`${page}-${i}`} listing={listing} />
-              ))}
-              {currentListings.length === 0 && (
-                <p className="text-white/60 text-sm">No featured listings yet.</p>
-              )}
-            </motion.div>
-          </AnimatePresence>
+        {/* Mobile: simple stacked list. The carousel is desktop/tablet only. */}
+        <div className="flex flex-col gap-6 w-full md:hidden">
+          {safeListings.slice(0, 3).map((listing) => (
+            <ListingCard key={`mobile-${listing.id}`} listing={listing} />
+          ))}
+          {safeListings.length === 0 && (
+            <p className="text-white/60 text-sm">No featured listings yet.</p>
+          )}
         </div>
 
-        <div className="hidden md:flex items-center justify-center gap-[28px]">
-          <button
-            onClick={() => paginate(-1)}
-            className="w-[24px] h-[24px] flex items-center justify-center hover:opacity-70 transition-opacity duration-300"
-            aria-label="Previous listings"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/arrow-left.svg" alt="Previous" width={24} height={24} />
-          </button>
-          <Link
-            href="/listings/active"
-            className="text-white text-[14px] font-normal border-b border-white/40 pb-[2px] hover:text-[#daaf3a] hover:border-[#daaf3a] transition-all duration-300"
-            style={{ fontFamily: "'Lato', sans-serif" }}
-          >
-            View All Listings
-          </Link>
-          <button
-            onClick={() => paginate(1)}
-            className="w-[24px] h-[24px] flex items-center justify-center hover:opacity-70 transition-opacity duration-300"
-            aria-label="Next listings"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/images/arrow-left.svg"
-              alt="Next"
-              width={24}
-              height={24}
-              className="scale-x-[-1]"
-            />
-          </button>
+        {/* Desktop / tablet carousel */}
+        <div className="w-full overflow-hidden hidden md:block">
+          {trackListings.length > 0 ? (
+            <motion.div
+              ref={scope}
+              className="flex flex-row items-stretch gap-4 lg:gap-0"
+              style={{ willChange: "transform" }}
+            >
+              {trackListings.map((listing, i) => (
+                <ListingCard
+                  key={`${listing.id}-${i}`}
+                  listing={listing}
+                  cardRef={i === 0 ? firstCardRef : undefined}
+                />
+              ))}
+            </motion.div>
+          ) : (
+            <p className="text-white/60 text-sm">No featured listings yet.</p>
+          )}
         </div>
+
+        {len > 1 && (
+          <div className="hidden md:flex items-center justify-center gap-[28px]">
+            <button
+              onClick={() => paginate(-1)}
+              disabled={isAnimating}
+              className="w-[24px] h-[24px] flex items-center justify-center hover:opacity-70 transition-opacity duration-300 disabled:cursor-not-allowed"
+              aria-label="Previous listings"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/arrow-left.svg" alt="Previous" width={24} height={24} />
+            </button>
+            <Link
+              href="/listings/active"
+              className="text-white text-[14px] font-normal border-b border-white/40 pb-[2px] hover:text-[#daaf3a] hover:border-[#daaf3a] transition-all duration-300"
+              style={{ fontFamily: "'Lato', sans-serif" }}
+            >
+              View All Listings
+            </Link>
+            <button
+              onClick={() => paginate(1)}
+              disabled={isAnimating}
+              className="w-[24px] h-[24px] flex items-center justify-center hover:opacity-70 transition-opacity duration-300 disabled:cursor-not-allowed"
+              aria-label="Next listings"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/arrow-left.svg"
+                alt="Next"
+                width={24}
+                height={24}
+                className="scale-x-[-1]"
+              />
+            </button>
+          </div>
+        )}
 
         <Link
           href="/listings/active"
