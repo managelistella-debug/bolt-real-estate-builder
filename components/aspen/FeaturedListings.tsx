@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion, useAnimate } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -9,6 +9,9 @@ import { Listing, formatPrice } from "@/lib/aspen/listings";
 interface FeaturedListingsProps {
   listings: Listing[];
 }
+
+/** Matches `gap-8` (32px) on the carousel track for md+ */
+const CAROUSEL_GAP_PX = 32;
 
 function statusLabel(status: Listing["listingStatus"]) {
   if (status === "sold") return "Sold";
@@ -19,9 +22,12 @@ function statusLabel(status: Listing["listingStatus"]) {
 function ListingCard({
   listing,
   cardRef,
+  fixedCardWidthPx,
 }: {
   listing: Listing;
   cardRef?: React.Ref<HTMLAnchorElement>;
+  /** Pixel width from viewport measurement — avoids cqw/0-width bugs that break next/image fill */
+  fixedCardWidthPx?: number | null;
 }) {
   const [hovered, setHovered] = useState(false);
 
@@ -29,7 +35,8 @@ function ListingCard({
     <Link
       ref={cardRef}
       href={`/listings/${listing.slug}`}
-      className="cursor-pointer w-full md:w-[calc(50%-1rem)] lg:w-[calc((100%-4rem)/3)] shrink-0"
+      className={`cursor-pointer shrink-0 ${fixedCardWidthPx == null ? "w-full" : ""}`}
+      style={fixedCardWidthPx != null ? { width: fixedCardWidthPx } : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -44,7 +51,7 @@ function ListingCard({
             alt={listing.address}
             fill
             className="object-cover"
-            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 422px"
+            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
         </motion.div>
 
@@ -82,17 +89,39 @@ export default function FeaturedListings({ listings }: FeaturedListingsProps) {
   const safeListings = listings.length > 0 ? listings : [];
   const len = safeListings.length;
 
-  // Duplicate the list so the track always has extra cards off the right edge,
-  // giving us a seamless forward slide. A second duplicate at the left end is
-  // not needed because we normalize the logical index after each transition.
   const trackListings = len > 0 ? [...safeListings, ...safeListings] : [];
 
   const [index, setIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [step, setStep] = useState(0);
+  const [cardWidthPx, setCardWidthPx] = useState<number | null>(null);
 
   const [scope, animate] = useAnimate<HTMLDivElement>();
   const firstCardRef = useRef<HTMLAnchorElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+
+    const update = () => {
+      const w = el.getBoundingClientRect().width;
+      if (w <= 0) return;
+      const cols = window.matchMedia("(min-width: 1024px)").matches ? 3 : 2;
+      const totalGap = (cols - 1) * CAROUSEL_GAP_PX;
+      setCardWidthPx((w - totalGap) / cols);
+    };
+
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    const mq = window.matchMedia("(min-width: 1024px)");
+    mq.addEventListener("change", update);
+    return () => {
+      ro.disconnect();
+      mq.removeEventListener("change", update);
+    };
+  }, []);
 
   useEffect(() => {
     const measure = () => {
@@ -103,14 +132,12 @@ export default function FeaturedListings({ listings }: FeaturedListingsProps) {
       const gap = parseFloat(styles.columnGap || styles.gap || "0") || 0;
       const next = card.offsetWidth + gap;
       setStep(next);
-      // Keep the currently-visible listing aligned after a resize so we never
-      // show a half-card because the step size changed under us.
       track.style.transform = `translateX(${-index * next}px)`;
     };
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [index, len, scope]);
+  }, [index, len, scope, cardWidthPx]);
 
   const paginate = useCallback(
     async (direction: number) => {
@@ -125,21 +152,15 @@ export default function FeaturedListings({ listings }: FeaturedListingsProps) {
 
       try {
         if (direction > 0) {
-          // Slide left to reveal the next listing on the right.
           const target = index + 1;
           await animate(scope.current, { x: -target * step }, transition);
           if (target >= len) {
-            // We are now showing cards from the duplicated half. Silently snap
-            // the track back to the equivalent position in the first half so
-            // we never run out of buffer.
             await animate(scope.current, { x: 0 }, { duration: 0 });
             setIndex(0);
           } else {
             setIndex(target);
           }
         } else {
-          // Going backwards: jump the track forward into the duplicated half
-          // first (invisibly), then animate back to show the previous listing.
           const pre = index + len;
           await animate(scope.current, { x: -pre * step }, { duration: 0 });
           const target = pre - 1;
@@ -156,7 +177,6 @@ export default function FeaturedListings({ listings }: FeaturedListingsProps) {
   return (
     <section id="featured" className="bg-[#09312a]">
       <div className="max-w-[1440px] mx-auto py-10 md:py-[60px] px-5 md:px-10 lg:px-[60px] flex flex-col items-center gap-8 md:gap-[60px]">
-        {/* Mobile: simple stacked list. The carousel is desktop/tablet only. */}
         <div className="flex flex-col gap-6 w-full md:hidden">
           {safeListings.slice(0, 3).map((listing) => (
             <ListingCard key={`mobile-${listing.id}`} listing={listing} />
@@ -166,8 +186,7 @@ export default function FeaturedListings({ listings }: FeaturedListingsProps) {
           )}
         </div>
 
-        {/* Desktop / tablet carousel */}
-        <div className="w-full overflow-hidden hidden md:block">
+        <div ref={viewportRef} className="w-full overflow-hidden hidden md:block">
           {trackListings.length > 0 ? (
             <motion.div
               ref={scope}
@@ -179,6 +198,7 @@ export default function FeaturedListings({ listings }: FeaturedListingsProps) {
                   key={`${listing.id}-${i}`}
                   listing={listing}
                   cardRef={i === 0 ? firstCardRef : undefined}
+                  fixedCardWidthPx={cardWidthPx}
                 />
               ))}
             </motion.div>

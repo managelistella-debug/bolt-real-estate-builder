@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion, useAnimate } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -9,6 +9,8 @@ import { Listing, formatPrice } from "@/lib/listings";
 interface FeaturedListingsProps {
   listings: Listing[];
 }
+
+const CAROUSEL_GAP_PX = 32;
 
 function statusLabel(status: Listing["listingStatus"]) {
   if (status === "sold") return "Sold";
@@ -19,9 +21,11 @@ function statusLabel(status: Listing["listingStatus"]) {
 function ListingCard({
   listing,
   cardRef,
+  fixedCardWidthPx,
 }: {
   listing: Listing;
   cardRef?: React.Ref<HTMLAnchorElement>;
+  fixedCardWidthPx?: number | null;
 }) {
   const [hovered, setHovered] = useState(false);
 
@@ -29,7 +33,8 @@ function ListingCard({
     <Link
       ref={cardRef}
       href={`/listings/${listing.slug}`}
-      className="cursor-pointer w-full md:w-[calc(50%-1rem)] lg:w-[calc((100%-4rem)/3)] shrink-0"
+      className={`cursor-pointer shrink-0 ${fixedCardWidthPx == null ? "w-full" : ""}`}
+      style={fixedCardWidthPx != null ? { width: fixedCardWidthPx } : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -44,7 +49,7 @@ function ListingCard({
             alt={listing.address}
             fill
             className="object-cover"
-            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 422px"
+            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
         </motion.div>
 
@@ -82,17 +87,39 @@ export default function FeaturedListings({ listings }: FeaturedListingsProps) {
   const safeListings = listings.length > 0 ? listings : [];
   const len = safeListings.length;
 
-  // Duplicate the list so the track always has extra cards off the right edge,
-  // giving us a seamless forward slide. A second duplicate at the left end is
-  // not needed because we normalize the logical index after each transition.
   const trackListings = len > 0 ? [...safeListings, ...safeListings] : [];
 
   const [index, setIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [step, setStep] = useState(0);
+  const [cardWidthPx, setCardWidthPx] = useState<number | null>(null);
 
   const [scope, animate] = useAnimate<HTMLDivElement>();
   const firstCardRef = useRef<HTMLAnchorElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+
+    const update = () => {
+      const w = el.getBoundingClientRect().width;
+      if (w <= 0) return;
+      const cols = window.matchMedia("(min-width: 1024px)").matches ? 3 : 2;
+      const totalGap = (cols - 1) * CAROUSEL_GAP_PX;
+      setCardWidthPx((w - totalGap) / cols);
+    };
+
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    const mq = window.matchMedia("(min-width: 1024px)");
+    mq.addEventListener("change", update);
+    return () => {
+      ro.disconnect();
+      mq.removeEventListener("change", update);
+    };
+  }, []);
 
   useEffect(() => {
     const measure = () => {
@@ -108,7 +135,7 @@ export default function FeaturedListings({ listings }: FeaturedListingsProps) {
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [index, len, scope]);
+  }, [index, len, scope, cardWidthPx]);
 
   const paginate = useCallback(
     async (direction: number) => {
@@ -157,7 +184,7 @@ export default function FeaturedListings({ listings }: FeaturedListingsProps) {
           )}
         </div>
 
-        <div className="w-full overflow-hidden hidden md:block">
+        <div ref={viewportRef} className="w-full overflow-hidden hidden md:block">
           {trackListings.length > 0 ? (
             <motion.div
               ref={scope}
@@ -169,6 +196,7 @@ export default function FeaturedListings({ listings }: FeaturedListingsProps) {
                   key={`${listing.id}-${i}`}
                   listing={listing}
                   cardRef={i === 0 ? firstCardRef : undefined}
+                  fixedCardWidthPx={cardWidthPx}
                 />
               ))}
             </motion.div>
