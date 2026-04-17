@@ -29,7 +29,7 @@ function ListingCard({
     <Link
       ref={cardRef}
       href={`/listings/${listing.slug}`}
-      className="cursor-pointer w-full md:w-[calc(50%-12px)] lg:w-[422px] shrink-0"
+      className="cursor-pointer w-full md:w-[calc(50%-1rem)] lg:w-[calc((100%-4rem)/3)] shrink-0"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -161,7 +161,7 @@ export default function FeaturedListings({ listings }: FeaturedListingsProps) {
           {trackListings.length > 0 ? (
             <motion.div
               ref={scope}
-              className="flex flex-row items-stretch gap-4 lg:gap-0"
+              className="flex flex-row items-stretch gap-6 md:gap-8"
               style={{ willChange: "transform" }}
             >
               {trackListings.map((listing, i) => (
