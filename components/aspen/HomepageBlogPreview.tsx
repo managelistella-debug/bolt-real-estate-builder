@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import ScrollReveal from "@/components/aspen/ScrollReveal";
 import { BlogPost, formatDate } from "@/lib/aspen/blog";
+import { decodeHtmlEntities } from "@/lib/html-entities";
 
 interface HomepageBlogPreviewProps {
   posts: BlogPost[];
@@ -48,7 +49,7 @@ function BlogCard({ post }: { post: BlogPost }) {
             className="mt-3 text-white/60 text-[14px] md:text-[15px] leading-[22px] md:leading-[24px] line-clamp-2"
             style={{ fontFamily: "'Lato', sans-serif" }}
           >
-            {post.excerpt}
+            {decodeHtmlEntities(post.excerpt)}
           </p>
         )}
         <div className="mt-4">

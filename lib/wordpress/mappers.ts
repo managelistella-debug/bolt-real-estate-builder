@@ -1,6 +1,7 @@
 import type { BlogPost } from "../aspen/blog.types";
 import type { Listing } from "../aspen/listing.types";
 import type { Testimonial } from "../aspen/testimonials.types";
+import { decodeHtmlEntities } from "../html-entities";
 import type { WpRestPost } from "./types";
 
 function asString(v: unknown): string {
@@ -12,15 +13,6 @@ function asString(v: unknown): string {
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
-}
-
-function decodeEntities(text: string): string {
-  return text
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'");
 }
 
 function parsePrice(raw: unknown): number {
@@ -171,10 +163,10 @@ function extractTerms(post: WpRestPost): { category: string; tags: string[] } {
 export function mapWpPostToBlogPost(post: WpRestPost): BlogPost {
   const acf = post.acf ?? {};
   const featured = getFeaturedImage(post);
-  const title = post.title?.rendered ? stripHtml(decodeEntities(post.title.rendered)) : "";
+  const title = post.title?.rendered ? stripHtml(decodeHtmlEntities(post.title.rendered)) : "";
   const content = post.content?.rendered ?? "";
   const excerptRaw = post.excerpt?.rendered ?? "";
-  const excerpt = excerptRaw ? stripHtml(decodeEntities(excerptRaw)) : "";
+  const excerpt = excerptRaw ? stripHtml(decodeHtmlEntities(excerptRaw)) : "";
   const { category, tags } = extractTerms(post);
   const author =
     asString(acf.author_name ?? acf.author) ||

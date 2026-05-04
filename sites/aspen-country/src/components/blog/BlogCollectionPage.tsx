@@ -7,6 +7,7 @@ import Link from "next/link";
 import ScrollReveal from "@/components/ScrollReveal";
 import Pagination from "@/components/listings/Pagination";
 import { BlogPost, formatDate } from "@/lib/blog";
+import { decodeHtmlEntities } from "@bolt/lib/html-entities";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -136,7 +137,7 @@ export default function BlogCollectionPage({ posts: allPosts }: BlogCollectionPa
                             className="mt-3 md:mt-4 text-white/70 text-[14px] md:text-[15px] leading-[24px] md:leading-[26px] line-clamp-3"
                             style={{ fontFamily: "'Lato', sans-serif" }}
                           >
-                            {featuredPost.excerpt}
+                            {decodeHtmlEntities(featuredPost.excerpt)}
                           </p>
                         )}
                         <div className="mt-5 md:mt-6">
@@ -200,7 +201,7 @@ export default function BlogCollectionPage({ posts: allPosts }: BlogCollectionPa
                             className="mt-3 text-white/60 text-[14px] md:text-[15px] leading-[22px] md:leading-[24px] line-clamp-2"
                             style={{ fontFamily: "'Lato', sans-serif" }}
                           >
-                            {post.excerpt}
+                            {decodeHtmlEntities(post.excerpt)}
                           </p>
                         )}
                         <div className="mt-4">

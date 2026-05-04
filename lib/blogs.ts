@@ -1,4 +1,5 @@
 import { BlogPost, BlogStatus } from '@/lib/types';
+import { decodeHtmlEntities } from '@/lib/html-entities';
 
 export const BLOG_STATUS_LABELS: Record<BlogStatus, string> = {
   draft: 'Draft',
@@ -28,4 +29,6 @@ export const getBlogDisplayDate = (post: BlogPost) => post.publishedAt || post.c
 export const stripHtml = (html: string) => html.replace(/<[^>]+>/g, '').trim();
 
 export const getBlogPreviewText = (post: BlogPost) =>
-  post.excerpt?.trim() || stripHtml(post.contentHtml).slice(0, 180);
+  decodeHtmlEntities(
+    (post.excerpt?.trim() || stripHtml(post.contentHtml).slice(0, 180)).trim()
+  );

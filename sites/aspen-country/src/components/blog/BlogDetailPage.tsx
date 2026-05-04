@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BlogPost, formatDate } from "@/lib/blog";
+import { decodeHtmlEntities } from "@bolt/lib/html-entities";
 
 interface BlogTypographyToken {
   fontFamily: string;
@@ -89,9 +90,10 @@ interface BlogDetailPageProps {
 }
 
 function previewText(post: BlogPost) {
-  if (post.excerpt) return post.excerpt;
-  const stripped = post.content.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-  return stripped.slice(0, 160);
+  const raw = post.excerpt
+    ? post.excerpt
+    : post.content.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160);
+  return decodeHtmlEntities(raw);
 }
 
 export default function BlogDetailPage({

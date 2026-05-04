@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { BlogFeedWidget } from '@/lib/types';
+import { decodeHtmlEntities } from '@/lib/html-entities';
 
 export type BlogFeedDevice = 'desktop' | 'tablet' | 'mobile';
 
@@ -219,7 +220,7 @@ function formatDate(post: BlogFeedRenderPost): string {
 }
 
 function previewText(post: BlogFeedRenderPost): string {
-  return (post.excerpt || '').trim();
+  return decodeHtmlEntities((post.excerpt || '').trim());
 }
 
 function typographyStyle(config: BlogFeedWidget['style']['typography']['title']): React.CSSProperties {

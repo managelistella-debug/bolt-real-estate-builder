@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { decodeHtmlEntities } from '@/lib/html-entities';
 import { BlogFeedWidget } from '@/lib/types';
 import type { BlogFeedDevice, BlogFeedRenderPost } from './BlogFeedRenderer';
 
@@ -187,7 +188,9 @@ export function BlogFeedScriptRenderer({ posts, widget, deviceView, linkPattern 
             </p>
           ) : null}
           {normalizedWidget.showExcerpt && post.excerpt ? (
-            <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5, color: '#374151' }}>{post.excerpt}</p>
+            <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5, color: '#374151' }}>
+              {decodeHtmlEntities(post.excerpt)}
+            </p>
           ) : null}
           {(isFeatured ? normalizedWidget.showFeaturedReadMore : normalizedWidget.showReadMore) ? (
             <span

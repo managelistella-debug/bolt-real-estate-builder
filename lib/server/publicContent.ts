@@ -1,5 +1,6 @@
 import { getServiceClient } from '@/lib/supabase/server';
 import type { BlogPost, Listing, ListingGalleryImage } from '@/lib/types';
+import { decodeHtmlEntities } from '@/lib/html-entities';
 import { fetchWpBlogPostBySlugRaw, fetchWpListingBySlugRaw, fetchWpPostsRaw } from '../wordpress/client';
 import { getWordPressBaseUrl } from '../wordpress/env';
 import { aspenBlogPostToHeadless, aspenListingToHeadless } from '../wordpress/headlessBridge';
@@ -93,8 +94,9 @@ function rowToBlog(row: BlogRow): BlogPost {
     tenantId: row.tenant_id ?? undefined,
     title: row.title,
     slug: row.slug,
-    excerpt: row.excerpt ?? undefined,
-    metaDescription: row.meta_description ?? undefined,
+    excerpt: row.excerpt != null ? decodeHtmlEntities(row.excerpt) : undefined,
+    metaDescription:
+      row.meta_description != null ? decodeHtmlEntities(row.meta_description) : undefined,
     contentHtml: row.content_html,
     featuredImage: row.featured_image ?? undefined,
     authorName: row.author_name ?? undefined,
