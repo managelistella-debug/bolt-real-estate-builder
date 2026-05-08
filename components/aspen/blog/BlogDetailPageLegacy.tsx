@@ -58,7 +58,7 @@ function Sidebar({ recentPosts }: { recentPosts: BlogPost[] }) {
       {/* Recent posts - sticks 15px below the header once it
           reaches the top of the viewport */}
       {recentPosts.length > 0 && (
-        <div className="lg:sticky lg:top-[114px]">
+        <div className="lg:sticky lg:top-[114px] scroll-m-0">
           <h3
             className="font-heading text-[22px] md:text-[24px] gold-gradient-text leading-[1.2]"
             style={{ fontWeight: 400 }}
@@ -120,19 +120,17 @@ export default function BlogDetailPageLegacy({
   recentPosts = [],
 }: BlogDetailPageProps) {
   return (
-    <div className="relative">
-      {/* Locked-in-place background covering the full viewport. We use
-          positive z-index (z-0) instead of negative so the fixed layers
-          paint above the public layout's solid #09312a background,
-          which would otherwise hide the image. */}
+    <div>
+      {/* Fixed background layers — z-[1] keeps them above the layout's
+          solid bg-[#09312a] but below the z-10 sections and footer. */}
       <div
         aria-hidden
-        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none"
+        className="fixed inset-0 z-[1] bg-cover bg-center bg-no-repeat pointer-events-none"
         style={{ backgroundImage: "url(/images/homepage-testimonial-bg.webp)" }}
       />
       <div
         aria-hidden
-        className="fixed inset-0 z-0 bg-[#09312a]/75 pointer-events-none"
+        className="fixed inset-0 z-[1] bg-[#09312a]/70 pointer-events-none"
       />
 
       {/* Hero */}
@@ -239,18 +237,15 @@ export default function BlogDetailPageLegacy({
         </div>
       </section>
 
-      {/* Body section (transparent so background shows through).
-          Layout strategy: on lg+ the right-column sidebar is positioned
-          absolutely inside a relative wrapper. This makes the wrapper's
-          (and therefore the section's) height depend ONLY on the body
-          column. That guarantees the page ends right after the
-          "Back to Blog" link with no empty scrollable area below. */}
+      {/* Body section — CSS Grid keeps both columns in normal flow so
+          neither column can overflow its container and inflate the
+          page's scroll height. items-start means each column is sized
+          to its own content, not stretched to match the other. */}
       <section className="relative z-10">
         <div className="max-w-[1100px] mx-auto px-5 md:px-10 lg:px-[60px] py-12 md:py-[80px]">
-          <div className="lg:relative">
-            {/* Body column. On lg+ we reserve room on the right for the
-                absolutely positioned sidebar via right padding. */}
-            <div className="lg:pr-[calc(33.3333%+2rem)]">
+          <div className="lg:grid lg:grid-cols-[2fr_1fr] lg:items-start lg:gap-8">
+            {/* Article column */}
+            <div>
               {post.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-6 md:mb-8">
                   {post.tags.map((tag) => (
@@ -282,19 +277,9 @@ export default function BlogDetailPageLegacy({
               </div>
             </div>
 
-            {/* Mobile sidebar - shown below the body on small screens. */}
-            <aside className="mt-10 lg:hidden">
-              <Sidebar recentPosts={recentPosts} />
-            </aside>
-
-            {/* Desktop sidebar - absolutely positioned so its height does
-                NOT contribute to the wrapper's height. The wrapper (and
-                therefore the section + page) ends at the body column's
-                natural height. overflow-clip visually clips any sidebar
-                content past the body height; unlike overflow-hidden,
-                clip does not create a scroll container, so the inner
-                Recent Posts can still be sticky against the viewport. */}
-            <aside className="hidden lg:block lg:absolute lg:top-0 lg:right-0 lg:bottom-0 lg:w-1/3 lg:overflow-clip">
+            {/* Sidebar — stacks below article on mobile, right column on
+                desktop. In-flow so it cannot inflate page scroll height. */}
+            <aside className="mt-10 lg:mt-0">
               <Sidebar recentPosts={recentPosts} />
             </aside>
           </div>

@@ -103,6 +103,7 @@
   }
 }
 
+
 .blog-content h2 {
   font-family: "Reckless Neue", Georgia, serif;
   font-weight: 400;
@@ -253,10 +254,19 @@
   font-weight: 600;
 }
 
-/* Suppress separator lines that come from WordPress (e.g. <hr> or
-   wp-block-separator) so paragraphs don't get a divider between them. */
+/* Suppress separator lines and spacer blocks from WordPress. */
 .blog-content-aspen hr,
 .blog-content-aspen .wp-block-separator {
+  display: none;
+}
+
+/* WordPress Gutenberg spacer blocks can inject large blank areas. Cap them. */
+.blog-content-aspen .wp-block-spacer {
+  max-height: 40px !important;
+}
+
+/* Strip any trailing empty paragraphs (common in WordPress exports). */
+.blog-content-aspen p:empty {
   display: none;
 }
 

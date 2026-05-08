@@ -77,7 +77,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   };
 
   return (
-    <main className="overflow-x-clip animate-[fadeIn_0.4s_ease-out]">
+    <main className="animate-[fadeIn_0.4s_ease-out]">
       <Header />
       <Script
         id={`blog-jsonld-${resolved.id}`}
@@ -85,7 +85,11 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
       />
       <BlogDetailPageLegacy post={resolved} recentPosts={recentPosts} />
-      <Footer />
+      {/* z-10 > z-[1] on the fixed backgrounds, so the footer always
+          paints on top and is never obscured by the background image. */}
+      <div className="relative z-10">
+        <Footer />
+      </div>
     </main>
   );
 }
