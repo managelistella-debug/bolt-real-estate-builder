@@ -59,11 +59,6 @@ const STATUS_LABELS: Record<string, string> = {
   sold: 'Sold',
 };
 
-const REPRESENTATION_LABELS: Record<string, string> = {
-  buyer_representation: 'Buyer Representation',
-  seller_representation: 'Seller Representation',
-};
-
 function formatPrice(value: number) {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -282,9 +277,6 @@ export function EmbedListingDetail({
                 <p><span style={{ color: style.typography.label.color }}>Year Built</span><br /><span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{listing.year_built}</span></p>
                 <p><span style={{ color: style.typography.label.color }}>Type</span><br /><span style={{ color: style.typography.value.color, fontWeight: style.typography.value.fontWeight }}>{listing.property_type}</span></p>
               </div>
-              {listing.representation && (
-                <p className="text-[13px]" style={{ color: style.typography.meta.color }}>{REPRESENTATION_LABELS[listing.representation] ?? listing.representation}</p>
-              )}
             </div>
 
             <section>
@@ -302,8 +294,6 @@ export function EmbedListingDetail({
                     { label: 'Year Built', value: String(listing.year_built) },
                     { label: 'Taxes', value: formatPrice(listing.taxes_annual) },
                     { label: 'MLS', value: listing.mls_number },
-                    { label: 'Brokerage', value: listing.listing_brokerage },
-                    ...(listing.representation ? [{ label: 'Representation', value: REPRESENTATION_LABELS[listing.representation] ?? listing.representation }] : []),
                   ].map((item) => (
                     <div key={item.label} className="p-4" style={{ borderRadius: `${style.detailsBoxRadius}px`, border: `${style.borderWidth}px solid ${style.borderColor}`, backgroundColor: style.surfaceColor }}>
                       <p className="mb-1" style={{ color: style.typography.label.color }}>{item.label}</p>

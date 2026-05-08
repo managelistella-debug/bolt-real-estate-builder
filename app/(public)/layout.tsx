@@ -14,7 +14,7 @@ export default function PublicLayout({
 }>) {
   return (
     <div
-      className="min-h-screen bg-[#09312a] text-white overflow-x-hidden"
+      className="min-h-screen bg-[#09312a] text-white overflow-x-clip"
       style={{ fontFamily: "'Lato', sans-serif" }}
     >
       {children}

@@ -726,7 +726,7 @@
     }
     html += '<div style="margin-bottom:24px"><h3 style="font-size:15px;font-weight:500;color:#000;margin:0 0 12px">Property Details</h3>';
     html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-size:13px">';
-    var details = [['Property Type', listing.property_type], ['Lot Area', listing.lot_area_value + ' ' + (listing.lot_area_unit || 'sqft')], ['Year Built', listing.year_built], ['Taxes', formatPrice(listing.taxes_annual)], ['MLS', listing.mls_number], ['Brokerage', listing.listing_brokerage]];
+    var details = [['Property Type', listing.property_type], ['Lot Area', listing.lot_area_value + ' ' + (listing.lot_area_unit || 'sqft')], ['Year Built', listing.year_built], ['Taxes', formatPrice(listing.taxes_annual)], ['MLS', listing.mls_number]];
     details.forEach(function (dd) { html += '<div style="border:1px solid #EBEBEB;border-radius:12px;padding:16px"><p style="color:#888C99;margin:0 0 4px">' + dd[0] + '</p><p style="font-weight:500;color:#000;margin:0">' + (dd[1] || '') + '</p></div>'; });
     html += '</div></div></div>';
     var node = el('div');

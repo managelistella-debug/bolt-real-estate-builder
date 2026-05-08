@@ -11,7 +11,6 @@ import {
   formatListingPrice,
   formatLotArea,
   formatNumber,
-  LISTING_REPRESENTATION_LABELS,
   LISTING_STATUS_LABELS,
 } from '@/lib/listings';
 import { Calculator, ChevronDown, ChevronUp, Mail, Phone } from 'lucide-react';
@@ -214,11 +213,6 @@ export function ListingDetailTemplate({ slug }: ListingDetailTemplateProps) {
                   <p><span className="text-[#888C99]">Year Built</span><br /><span className="font-medium text-black">{listing.yearBuilt}</span></p>
                   <p><span className="text-[#888C99]">Type</span><br /><span className="font-medium text-black">{listing.propertyType}</span></p>
                 </div>
-                {listing.representation && (
-                  <p className="text-[13px] text-[#888C99]">
-                    {LISTING_REPRESENTATION_LABELS[listing.representation]}
-                  </p>
-                )}
               </div>
 
               <section>
@@ -235,8 +229,6 @@ export function ListingDetailTemplate({ slug }: ListingDetailTemplateProps) {
                     { label: 'Year Built', value: String(listing.yearBuilt) },
                     { label: 'Taxes', value: formatListingPrice(listing.taxesAnnual) },
                     { label: 'MLS', value: listing.mlsNumber },
-                    { label: 'Brokerage', value: listing.listingBrokerage },
-                    ...(listing.representation ? [{ label: 'Representation', value: LISTING_REPRESENTATION_LABELS[listing.representation] }] : []),
                   ].map((item) => (
                     <div key={item.label} className="rounded-xl border border-[#EBEBEB] bg-white p-4">
                       <p className="mb-1 text-[#888C99]">{item.label}</p>

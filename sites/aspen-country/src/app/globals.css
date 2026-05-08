@@ -50,7 +50,7 @@ body {
   background: #09312a;
   color: #ffffff;
   font-family: 'Lato', sans-serif;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .font-heading {
@@ -191,4 +191,116 @@ textarea::placeholder {
   .blog-content h2 {
     font-size: 26px;
   }
+}
+
+/* Blog post detail body on dark/image background (white text) */
+.blog-content-aspen h1,
+.blog-content-aspen h2,
+.blog-content-aspen h3,
+.blog-content-aspen h4 {
+  font-family: 'Reckless Neue', 'Georgia', serif;
+  font-weight: 400;
+  color: #ffffff;
+  line-height: 1.25;
+  margin-top: 1.6em;
+  margin-bottom: 0.6em;
+}
+
+.blog-content-aspen h1 { font-size: 30px; }
+.blog-content-aspen h2 { font-size: 24px; }
+.blog-content-aspen h3 { font-size: 20px; }
+.blog-content-aspen h4 { font-size: 18px; }
+
+.blog-content-aspen h1:first-child,
+.blog-content-aspen h2:first-child,
+.blog-content-aspen h3:first-child,
+.blog-content-aspen h4:first-child {
+  margin-top: 0;
+}
+
+.blog-content-aspen p {
+  margin: 0 0 1em 0;
+  padding: 0;
+  border: 0;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.blog-content-aspen p:last-child {
+  margin-bottom: 0;
+}
+
+.blog-content-aspen a {
+  color: #daaf3a;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.2s ease;
+}
+
+.blog-content-aspen a:hover {
+  color: #ffebaf;
+}
+
+/* Show bullets / numbers from WordPress */
+.blog-content-aspen ul,
+.blog-content-aspen ol {
+  margin: 0 0 1em 0;
+  padding-left: 1.5em;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.blog-content-aspen ul { list-style: disc outside; }
+.blog-content-aspen ol { list-style: decimal outside; }
+
+.blog-content-aspen ul ul {
+  list-style: circle outside;
+  margin-top: 0.4em;
+  margin-bottom: 0.4em;
+}
+
+.blog-content-aspen ol ol {
+  list-style: lower-alpha outside;
+  margin-top: 0.4em;
+  margin-bottom: 0.4em;
+}
+
+.blog-content-aspen li {
+  margin-bottom: 0.4em;
+  padding-left: 0.25em;
+}
+
+.blog-content-aspen li::marker {
+  color: #daaf3a;
+}
+
+.blog-content-aspen blockquote {
+  border-left: 3px solid #daaf3a;
+  padding: 0.25em 0 0.25em 1em;
+  margin: 1.25em 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-style: italic;
+}
+
+.blog-content-aspen img {
+  max-width: 100%;
+  height: auto;
+  margin: 1.25em 0;
+}
+
+.blog-content-aspen strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Suppress separator lines that may come from WordPress (e.g. <hr> or
+   wp-block-separator) so paragraphs don't get a divider between them. */
+.blog-content-aspen hr,
+.blog-content-aspen .wp-block-separator {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .blog-content-aspen h1 { font-size: 36px; }
+  .blog-content-aspen h2 { font-size: 28px; }
+  .blog-content-aspen h3 { font-size: 22px; }
+  .blog-content-aspen h4 { font-size: 19px; }
 }

@@ -30,11 +30,6 @@ const STATUS_LABELS: Record<string, string> = {
   sold: 'Sold',
 };
 
-const REPRESENTATION_LABELS: Record<string, string> = {
-  buyer_representation: 'Buyer Representation',
-  seller_representation: 'Seller Representation',
-};
-
 function formatPrice(value: number) {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -329,11 +324,6 @@ export function ListingDetail({
                   <span className="font-medium text-black">{listing.propertyType}</span>
                 </p>
               </div>
-              {listing.representation && (
-                <p className="text-[13px] text-[#888C99]">
-                  {REPRESENTATION_LABELS[listing.representation] ?? listing.representation}
-                </p>
-              )}
             </div>
 
             <section>
@@ -355,17 +345,6 @@ export function ListingDetail({
                   { label: 'Year Built', value: String(listing.yearBuilt) },
                   { label: 'Taxes', value: formatPrice(listing.taxesAnnual) },
                   { label: 'MLS', value: listing.mlsNumber },
-                  { label: 'Brokerage', value: listing.listingBrokerage },
-                  ...(listing.representation
-                    ? [
-                        {
-                          label: 'Representation',
-                          value:
-                            REPRESENTATION_LABELS[listing.representation] ??
-                            listing.representation,
-                        },
-                      ]
-                    : []),
                 ].map((item) => (
                   <div
                     key={item.label}

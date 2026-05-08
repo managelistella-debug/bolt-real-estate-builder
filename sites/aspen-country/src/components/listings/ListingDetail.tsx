@@ -247,8 +247,6 @@ export default function ListingDetail({ listing, styleConfig }: ListingDetailPro
                   { label: "Year Built", value: String(listing.yearBuilt) },
                   { label: "Taxes", value: formatPrice(listing.taxes) },
                   { label: "MLS", value: listing.mlsNumber },
-                  { label: "Brokerage", value: listing.listingBrokerage },
-                  ...(listing.representation ? [{ label: "Representation", value: listing.representation }] : []),
                 ].map((item) => (
                   <div key={item.label} className="bg-white p-4" style={{ borderRadius: `${style.detailsBoxRadius}px`, border: `${style.borderWidth}px solid ${style.borderColor}` }}>
                     <p className="mb-1" style={{ color: style.typography.label.color }}>{item.label}</p>

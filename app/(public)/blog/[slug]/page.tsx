@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import Header from "@/components/aspen/Header";
 import Footer from "@/components/aspen/Footer";
 import BlogDetailPageLegacy from "@/components/aspen/blog/BlogDetailPageLegacy";
-import { getPostBySlug, getAllPosts } from "@/lib/aspen/blog";
+import { getAllPosts, getPostBySlug, getRecentPosts } from "@/lib/aspen/blog";
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
@@ -60,6 +60,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const description =
     resolved.excerpt ||
     resolved.content.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160);
+  const recentPool = await getRecentPosts(4);
+  const recentPosts = recentPool.filter((p) => p.slug !== resolved.slug).slice(0, 3);
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -82,7 +84,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
       />
-      <BlogDetailPageLegacy post={resolved} />
+      <BlogDetailPageLegacy post={resolved} recentPosts={recentPosts} />
       <Footer />
     </main>
   );

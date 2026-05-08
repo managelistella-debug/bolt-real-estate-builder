@@ -63,8 +63,6 @@ export default function ListingDetailLegacy({ listing }: ListingDetailProps) {
     { label: "Taxes (Annual)", value: formatPrice(listing.taxes) },
     { label: "Neighborhood", value: listing.neighborhood },
     { label: "City", value: listing.city },
-    ...(listing.representation ? [{ label: "Representation", value: listing.representation }] : []),
-    { label: "Listing Brokerage", value: listing.listingBrokerage },
     { label: "MLS #", value: listing.mlsNumber },
   ];
 
