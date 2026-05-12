@@ -19,7 +19,7 @@ export default function EstateCard({
 
   return (
     <Link
-      href={`/estates/${estate.id}`}
+      href={`/acreages/${estate.id}`}
       className="block cursor-pointer group"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}

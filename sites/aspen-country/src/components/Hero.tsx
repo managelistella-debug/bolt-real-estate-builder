@@ -58,11 +58,11 @@ export default function Hero() {
           className="flex flex-col sm:flex-row items-center gap-4 sm:gap-[39px] mt-6 md:mt-[39px]"
         >
           <a
-            href="/estates"
+            href="/acreages"
             className="gold-gradient-bg flex items-center justify-center h-[47px] w-[178px] text-[#09312a] font-semibold text-[14px] transition-all duration-300"
             style={{ fontFamily: "'Lato', sans-serif" }}
           >
-            View Estates
+            View Acreages
           </a>
           <a
             href="/listings/active"

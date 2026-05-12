@@ -65,6 +65,22 @@ export async function getRanchEstateListings(): Promise<Listing[]> {
     .sort((a, b) => b.listPrice - a.listPrice);
 }
 
+function isRecreationalPropertyType(value: string): boolean {
+  const normalized = (value || "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  return normalized.includes("recreational");
+}
+
+/** Listings whose ACF/CMS `property_type` is exactly "Recreational" (case-insensitive). */
+export async function getRecreationalPropertyListings(): Promise<Listing[]> {
+  const all = await getResolvedListings();
+  return all
+    .filter((listing) => isRecreationalPropertyType(listing.propertyType))
+    .sort((a, b) => b.listPrice - a.listPrice);
+}
+
 export async function getAllListings(): Promise<Listing[]> {
   return getResolvedListings();
 }
@@ -274,6 +290,31 @@ const fallbackListings: Listing[] = [
       "/images/featured-2.webp",
     ].map(normalizeImageUrl),
     thumbnail: normalizeImageUrl("/images/featured-1.webp"),
+    ranchEstateFeatured: false,
+  },
+  {
+    id: "16",
+    slug: "8844-foothills-retreat",
+    address: "8844 Foothills Retreat",
+    description:
+      "<p>Secluded recreational holding with trail access and panoramic foothill views.</p>",
+    listPrice: 625000,
+    listingStatus: "active",
+    neighborhood: "Foothills",
+    city: "Sundre",
+    bedrooms: 2,
+    bathrooms: "1",
+    propertyType: "Recreational",
+    yearBuilt: 2005,
+    livingArea: 920,
+    lotArea: 40,
+    lotAreaUnit: "acres",
+    taxes: 2100,
+    listingBrokerage: "RE/MAX House of Real Estate",
+    mlsNumber: "A2090001",
+    gallery: ["/images/featured-1.webp", "/images/featured-2.webp"].map(normalizeImageUrl),
+    thumbnail: normalizeImageUrl("/images/featured-1.webp"),
+    homepageFeatured: false,
     ranchEstateFeatured: false,
   },
 ];

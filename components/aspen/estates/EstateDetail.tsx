@@ -109,10 +109,10 @@ export default function EstateDetail({ estate }: EstateDetailProps) {
         </div>
 
         <div className="absolute top-[90px] md:top-[120px] right-5 md:right-10 lg:right-[60px] z-10">
-          <Link href="/estates" className="flex items-center gap-2 text-white/70 hover:text-white text-[14px] transition-colors duration-300" style={{ fontFamily: "'Lato', sans-serif" }}>
+          <Link href="/acreages" className="flex items-center gap-2 text-white/70 hover:text-white text-[14px] transition-colors duration-300" style={{ fontFamily: "'Lato', sans-serif" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/images/arrow-left.svg" alt="" width={16} height={16} />
-            Back to Estates
+            Back to Acreages
           </Link>
         </div>
 

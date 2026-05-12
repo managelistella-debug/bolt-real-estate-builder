@@ -8,13 +8,25 @@ import { Listing } from "@/lib/aspen/listings";
 
 const ITEMS_PER_PAGE = 12;
 
+const DEFAULT_TITLE = "Acreages";
+const DEFAULT_DESCRIPTION =
+  "Explore exclusive acreages in Sundre, Mountain View County, and the surrounding Alberta foothills.";
+
 interface EstatesListingsPageProps {
   listings: Listing[];
+  title?: string;
+  description?: string;
+  detailMetric?: "livingArea" | "lotArea";
 }
 
 type FilterState = "all" | "active" | "sold";
 
-export default function EstatesListingsPage({ listings }: EstatesListingsPageProps) {
+export default function EstatesListingsPage({
+  listings,
+  title = DEFAULT_TITLE,
+  description = DEFAULT_DESCRIPTION,
+  detailMetric = "lotArea",
+}: EstatesListingsPageProps) {
   const [filter, setFilter] = useState<FilterState>("all");
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
 
@@ -44,7 +56,7 @@ export default function EstatesListingsPage({ listings }: EstatesListingsPagePro
             className="font-heading text-[36px] sm:text-[48px] md:text-[56px] lg:text-[64px] leading-[1.13] text-white"
             style={{ fontWeight: 400 }}
           >
-            Estates & Ranch Properties
+            {title}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 30 }}
@@ -53,8 +65,7 @@ export default function EstatesListingsPage({ listings }: EstatesListingsPagePro
             className="mt-4 md:mt-6 text-white/70 text-[15px] md:text-[16px] max-w-[600px] leading-[26px]"
             style={{ fontFamily: "'Lato', sans-serif" }}
           >
-            Explore exclusive estate and ranch properties in Sundre,
-            Mountain View County, and the surrounding Alberta foothills.
+            {description}
           </motion.p>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.6 }} className="mt-3 md:mt-4">
             <span className="text-white/40 text-[14px]" style={{ fontFamily: "'Lato', sans-serif" }}>
@@ -93,7 +104,7 @@ export default function EstatesListingsPage({ listings }: EstatesListingsPagePro
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 lg:gap-10">
             {visibleListings.map((listing, index) => (
               <ScrollReveal key={listing.id} delay={index * 0.04}>
-                <ListingCard listing={listing} showPrice={true} detailMetric="lotArea" />
+                <ListingCard listing={listing} showPrice={true} detailMetric={detailMetric} />
               </ScrollReveal>
             ))}
           </motion.div>

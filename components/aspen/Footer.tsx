@@ -4,7 +4,8 @@ import Image from "next/image";
 
 const footerNav = [
   { label: "Home", href: "/" },
-  { label: "Estates/Ranch Properties", href: "/estates" },
+  { label: "Acreages", href: "/acreages" },
+  { label: "Recreational Properties", href: "/recreational-properties" },
   { label: "Active", href: "/listings/active" },
   { label: "Sold", href: "/listings/sold" },
   { label: "Buying", href: "/buying" },

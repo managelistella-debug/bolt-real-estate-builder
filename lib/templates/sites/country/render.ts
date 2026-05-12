@@ -48,14 +48,16 @@ export function renderCountrySite(
     { label: 'About', href: '/about' },
     { label: 'Buying', href: '/buying' },
     { label: 'Selling', href: '/selling' },
-    { label: 'Estates', href: '/estates' },
+    { label: 'Acreages', href: '/acreages' },
+    { label: 'Recreational Properties', href: '/recreational-properties' },
     { label: 'Active Listings', href: '/listings/active' },
     { label: 'Sold', href: '/listings/sold' },
     { label: 'Blog', href: '/blog' },
     { label: 'Contact', href: '/contact' },
   ];
   const footerNav = [
-    { label: 'Home', href: '/' }, { label: 'Estates', href: '/estates' },
+    { label: 'Home', href: '/' }, { label: 'Acreages', href: '/acreages' },
+    { label: 'Recreational Properties', href: '/recreational-properties' },
     { label: 'Active', href: '/listings/active' }, { label: 'Sold', href: '/listings/sold' },
     { label: 'Buying', href: '/buying' }, { label: 'Selling', href: '/selling' },
     { label: 'Blog', href: '/blog' }, { label: 'About', href: '/about' },
@@ -112,7 +114,7 @@ export function renderCountrySite(
   <section class="hero"><div class="hero-bg parallax-bg" style="background-image:url(${I}/hero-bg.webp)"></div><div class="hero-ov"></div>
     <div class="hero-ct"><h1 class="font-h">Extraordinary Land. Exceptional Representation</h1>
       <p class="hero-sub">Specializing in ${esc(areas)}, ${esc(agent)} brings deep local expertise to every estate, ranch, and acreage transaction. Whether buying or selling, expect results rooted in strategy, care, and precision.</p>
-      <div class="hero-btns"><a href="/estates" class="cta gold-grad-bg">View Estates</a><a href="/listings/active" class="cta cta-outline">View Listings</a></div>
+      <div class="hero-btns"><a href="/acreages" class="cta gold-grad-bg">View Acreages</a><a href="/listings/active" class="cta cta-outline">View Listings</a></div>
     </div></section>
   <section class="services"><div class="srv-grid">
     <a href="/listings/active" class="srv-card"><img src="${I}/listings-card.webp" alt="Listings" class="srv-img"/><div class="srv-ov"></div><div class="srv-lbl"><h3 class="font-h">Listings</h3><div class="gold-line"></div></div></a>
@@ -146,7 +148,7 @@ export function renderCountrySite(
     <div class="pg-hero-txt-side"><span class="font-h" style="font-size:16px;color:#fff">Meet Your Realtor</span><h1 class="font-h gold-grad-text" style="font-size:clamp(36px,5vw,64px);line-height:1.1;margin-top:12px">${esc(agent)}</h1><div class="gold-accent-line"></div><p class="hero-body">${esc(about1)}</p><p class="hero-body">${esc(about2)}</p></div></section>
   <section class="story-sec"><div class="story-grid">
     <div class="story-card"><span class="font-h gold-grad-text" style="font-size:15px">Professional Background</span><h2 class="font-h" style="font-size:clamp(24px,3vw,30px);color:#fff;margin-top:8px">Built on Experience</h2><div class="gold-accent-line"></div><p>${esc(agent)}'s career in real estate is rooted in a genuine passion for connecting people with the right property. Over the years, a reputation for being thorough, strategic, and deeply committed to clients' success has been developed.</p></div>
-    <div class="story-card"><span class="font-h gold-grad-text" style="font-size:15px">Specialization</span><h2 class="font-h" style="font-size:clamp(24px,3vw,30px);color:#fff;margin-top:8px">Why Estates &amp; Ranch Properties</h2><div class="gold-accent-line"></div><p>Rural real estate requires a specialized understanding. ${esc(agent)} chose to focus on acreages, farms, and estate properties because of the unique complexities that come with land.</p></div>
+    <div class="story-card"><span class="font-h gold-grad-text" style="font-size:15px">Specialization</span><h2 class="font-h" style="font-size:clamp(24px,3vw,30px);color:#fff;margin-top:8px">Why Acreages</h2><div class="gold-accent-line"></div><p>Rural real estate requires a specialized understanding. ${esc(agent)} chose to focus on acreages, farms, and estate properties because of the unique complexities that come with land.</p></div>
     <div class="story-card"><span class="font-h gold-grad-text" style="font-size:15px">Philosophy</span><h2 class="font-h" style="font-size:clamp(24px,3vw,30px);color:#fff;margin-top:8px">Values That Guide Every Transaction</h2><div class="gold-accent-line"></div><p>Real estate is about more than buying and selling property — it's about trust, transparency, and building relationships that last well beyond closing day.</p></div>
   </div></section>
   <section class="about-test"><div class="about-test-inner"><h2 class="font-h gold-grad-text sec-title">What Clients Say</h2><div class="test-card"><img src="${I}/stars.svg" alt="5 stars" class="stars"/><p class="test-quote">"${esc(agent)} made the entire process of selling our family ranch seamless and stress-free. The understanding of the rural market is unmatched."</p><p class="test-author">Satisfied Client</p></div></div></section>
@@ -184,8 +186,8 @@ export function renderCountrySite(
   <section class="sell-cta"><div class="sell-cta-bg parallax-bg" style="background-image:url(${I}/selling-cta-bg.webp)"></div><div class="sell-cta-ov"></div><div class="sell-cta-ct"><h2 class="font-h gold-grad-text sec-title">Ready to Sell Your Property?</h2><p>Schedule a complimentary property consultation to discuss your goals, review your property's market position, and outline a personalized selling strategy.</p><div class="cta-row"><a href="/contact" class="cta gold-grad-bg">Request a Consultation</a><a href="tel:${phoneDigits}" class="cta cta-outline">Call ${esc(phone)}</a></div></div></section>
 </div>`;
 
-  const pgEstates = `<div data-page="/estates" style="display:none">
-  <section class="pg-banner"><div class="pg-banner-bg parallax-bg" style="background-image:url(${I}/estate-hero.webp)"></div><div class="pg-banner-ov"></div><div class="pg-banner-ct"><h1 class="font-h">Estates &amp; Ranch Properties</h1><p>Explore exclusive estate and ranch properties in ${esc(areas)}.</p><span class="count-label">3 properties available</span></div></section>
+  const pgAcreages = `<div data-page="/acreages" style="display:none">
+  <section class="pg-banner"><div class="pg-banner-bg parallax-bg" style="background-image:url(${I}/estate-hero.webp)"></div><div class="pg-banner-ov"></div><div class="pg-banner-ct"><h1 class="font-h">Acreages</h1><p>Explore exclusive acreages in ${esc(areas)}.</p><span class="count-label">3 properties available</span></div></section>
   <section class="grid-sec" data-source="cms-listings"><div class="grid-inner"><div class="cards-grid cols-2">${sampleActive.map(l => listingCard(l, 'For Sale')).join('')}</div></div></section>
 </div>`;
 
@@ -258,7 +260,7 @@ export function renderCountrySite(
 })();
 <\/script>`;
 
-  const previewHtml = `<main class="site-root">${header}${pgHome}${pgAbout}${pgBuying}${pgSelling}${pgEstates}${pgActiveListings}${pgSoldListings}${pgBlog}${pgContact}${pgPrivacy}${footer}</main>${routerScript}`;
+  const previewHtml = `<main class="site-root">${header}${pgHome}${pgAbout}${pgBuying}${pgSelling}${pgAcreages}${pgActiveListings}${pgSoldListings}${pgBlog}${pgContact}${pgPrivacy}${footer}</main>${routerScript}`;
 
   const previewCss = buildCss();
 
@@ -356,7 +358,7 @@ img{max-width:100%;display:block}
 .about-sec{background:var(--darker);border-top:1px solid var(--gold);border-bottom:1px solid var(--gold)}
 .about-inner{max-width:1440px;margin:0 auto;display:flex;align-items:stretch}
 .about-img-wrap{width:696px;flex-shrink:0;overflow:hidden}
-.about-img{width:100%;height:100%;min-height:652px;object-fit:cover;object-position:center 35%;transition:transform .7s cubic-bezier(.25,.46,.45,.94)}
+.about-img{width:100%;height:100%;min-height:652px;object-fit:cover;transition:transform .7s cubic-bezier(.25,.46,.45,.94)}
 .about-img-wrap:hover .about-img{transform:scale(1.04)}
 .about-txt{flex:1;display:flex;flex-direction:column;justify-content:center;padding:60px 60px 60px 96px}
 .about-txt h2{font-size:50px;line-height:60px;margin-bottom:25px}
@@ -413,7 +415,7 @@ img{max-width:100%;display:block}
 .pg-hero-ct p{margin-top:24px;font-size:16px;line-height:24px;max-width:696px;margin-left:auto;margin-right:auto;color:rgba(255,255,255,.8)}
 .pg-hero-split{background:var(--primary);display:flex;align-items:stretch}
 .pg-hero-img-side{width:50%;flex-shrink:0;overflow:hidden;padding-top:99px}
-.pg-hero-portrait{width:100%;height:100%;min-height:500px;object-fit:cover;object-position:center 35%}
+.pg-hero-portrait{width:100%;height:100%;min-height:500px;object-fit:cover}
 .pg-hero-txt-side{flex:1;display:flex;flex-direction:column;justify-content:center;padding:80px 60px 80px 80px}
 .hero-body{margin-top:16px;font-size:16px;line-height:26px;color:rgba(255,255,255,.8);max-width:520px}
 .pg-banner{position:relative;width:100%;padding:140px 0 60px;overflow:hidden}

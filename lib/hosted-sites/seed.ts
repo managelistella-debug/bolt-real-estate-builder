@@ -1,7 +1,7 @@
 import { HostedSite } from '@/lib/types';
 
 const ASPEN_COUNTRY_PAGES = [
-  '/', '/about', '/buying', '/selling', '/estates',
+  '/', '/about', '/buying', '/selling', '/acreages', '/recreational-properties',
   '/listings/active', '/listings/sold', '/blog', '/contact', '/privacy',
 ];
 

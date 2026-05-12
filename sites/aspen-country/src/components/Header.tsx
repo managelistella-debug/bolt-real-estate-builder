@@ -16,7 +16,8 @@ const navItems = [
     children: [
       { label: "Active Listings", href: "/listings/active" },
       { label: "Sold", href: "/listings/sold" },
-      { label: "Estates/Ranch Properties", href: "/estates" },
+      { label: "Acreages", href: "/acreages" },
+      { label: "Recreational Properties", href: "/recreational-properties" },
     ],
   },
   { label: "Blog", href: "/blog" },
