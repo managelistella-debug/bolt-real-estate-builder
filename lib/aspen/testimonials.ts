@@ -67,6 +67,69 @@ const HARDCODED_TESTIMONIALS: Testimonial[] = [
     displayContext: "both",
     sortOrder: 7,
   },
+  {
+    id: "t8",
+    quote:
+      "We found Aspen to be a great real estate agent, She was very easy to visit with and was very knowledgeable of the Sundre area. We can recommend her to anyone looking for a property in Sundre.",
+    author: "Trevor Williams",
+    rating: 5,
+    displayContext: "both",
+    sortOrder: 8,
+  },
+  {
+    id: "t9",
+    quote:
+      "If you're looking for a realtor who's equal parts kind-hearted, hardworking, and completely authentic, look no further than Aspen Muraski. She is incredibly responsive, always willing to go the extra mile, and somehow manages to make what could be a stressful process feel easy and enjoyable. She genuinely cares about her clients and treats people with warmth, patience, and respect. One of the things I appreciated most was that she never felt like a salesperson. She felt like someone who was truly in my corner, helping me make the best decisions for me. She's professional, knowledgeable, funny, a little quirky in the best possible way, and just an all-around wonderful human being. Buying a home is a big deal, and having someone you trust makes all the difference. By the end of the process, I felt like I had gained a friend. I would recommend her to anyone without hesitation.",
+    author: "Jocelyn Waggoner",
+    rating: 5,
+    displayContext: "both",
+    sortOrder: 9,
+  },
+  {
+    id: "t10",
+    quote:
+      "Aspen worked very hard behind the scene to sell our property. We would definitely work with her again and would recommend her to others.",
+    author: "Valerie Hall",
+    rating: 5,
+    displayContext: "both",
+    sortOrder: 10,
+  },
+  {
+    id: "t11",
+    quote:
+      "Aspen Muraski was knowledgeable, friendly, easy going, and super responsive. Zero communication issues. We would use her again and highly recommend.",
+    author: "Jennifer Watson",
+    rating: 5,
+    displayContext: "both",
+    sortOrder: 11,
+  },
+  {
+    id: "t12",
+    quote:
+      "Very helpful. I wanted a fast closing and Aspen made it happen. I would definitely recommend her as an agent",
+    author: "Mike Roberts",
+    rating: 5,
+    displayContext: "both",
+    sortOrder: 12,
+  },
+  {
+    id: "t13",
+    quote:
+      "Excellent support and all tasks were completed in a timely manner. Aspen made the whole process seamless and I would recommend her to my friends and family.",
+    author: "M L",
+    rating: 4.5,
+    displayContext: "both",
+    sortOrder: 13,
+  },
+  {
+    id: "t14",
+    quote:
+      "Aspen was really good to deal with and she took alot of time and effort gathering information about my listing which I am certain helped getting the sale. She always replied to any concerns I had immeddiately which is getting harder to find people that have that quality these days. Very happy with the deal she closed for me. Thanks Aspen your the best",
+    author: "Keith Silzer",
+    rating: 5,
+    displayContext: "both",
+    sortOrder: 14,
+  },
 ];
 
 function sortedCopy(): Testimonial[] {
