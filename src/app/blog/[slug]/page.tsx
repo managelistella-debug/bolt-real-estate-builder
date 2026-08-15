@@ -1,0 +1,86 @@
+import Script from "next/script";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import BlogDetailPageLegacy from "@/components/blog/BlogDetailPageLegacy";
+import { getPostBySlug, getRecentPosts, portableTextToPlainText } from "@/lib/blog";
+
+interface BlogPostPageProps {
+  params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const post = await getPostBySlug(slug);
+  if (!post) {
+    return {
+      title: "Post Not Found",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const description = post.excerpt || portableTextToPlainText(post.content).slice(0, 160);
+  const canonical = `/blog/${post.slug}`;
+
+  return {
+    title: `${post.title} | Aspen Muraski Real Estate`,
+    description,
+    alternates: {
+      canonical,
+    },
+    openGraph: {
+      type: "article",
+      title: `${post.title} | Aspen Muraski Real Estate`,
+      description,
+      images: post.featuredImage ? [{ url: post.featuredImage }] : undefined,
+    },
+    twitter: {
+      card: post.featuredImage ? "summary_large_image" : "summary",
+      title: `${post.title} | Aspen Muraski Real Estate`,
+      description,
+      images: post.featuredImage ? [post.featuredImage] : undefined,
+    },
+  };
+}
+
+export default async function BlogPostPage({ params }: BlogPostPageProps) {
+  const { slug } = await params;
+  const resolved = await getPostBySlug(slug);
+  if (!resolved) {
+    notFound();
+  }
+  const description = resolved.excerpt || portableTextToPlainText(resolved.content).slice(0, 160);
+  const recentPool = await getRecentPosts(4);
+  const recentPosts = recentPool.filter((p) => p.slug !== resolved.slug).slice(0, 3);
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: resolved.title,
+    description,
+    datePublished: new Date(resolved.publishDate).toISOString(),
+    image: resolved.featuredImage ? [resolved.featuredImage] : undefined,
+    author: resolved.author ? { "@type": "Person", name: resolved.author } : undefined,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `/blog/${resolved.slug}`,
+    },
+  };
+
+  return (
+    <main className="animate-[fadeIn_0.4s_ease-out]">
+      <Header />
+      <Script
+        id={`blog-jsonld-${resolved.id}`}
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
+      <BlogDetailPageLegacy post={resolved} recentPosts={recentPosts} />
+      {/* z-10 > z-[1] on the fixed backgrounds, so the footer always
+          paints on top and is never obscured by the background image. */}
+      <div className="relative z-10">
+        <Footer />
+      </div>
+    </main>
+  );
+}
