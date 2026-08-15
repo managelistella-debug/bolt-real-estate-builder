@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import ScrollReveal from "@/components/ScrollReveal";
 import ListingCard from "@/components/listings/ListingCard";
@@ -21,6 +21,9 @@ interface EstatesListingsPageProps {
 
 type FilterState = "all" | "active" | "sold";
 
+/** Active listings lead, sold follow — only ever differs under the "All" filter. */
+const STATUS_ORDER: Record<Listing["listingStatus"], number> = { active: 0, sold: 1 };
+
 export default function EstatesListingsPage({
   listings,
   title = DEFAULT_TITLE,
@@ -30,10 +33,17 @@ export default function EstatesListingsPage({
   const [filter, setFilter] = useState<FilterState>("all");
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
 
-  const filteredListings = listings.filter((listing) => {
-    if (filter === "all") return true;
-    return listing.listingStatus === filter;
-  });
+  const filteredListings = useMemo(() => {
+    // `filter` returns a fresh array, so sorting in place never mutates the prop.
+    return listings
+      .filter((listing) => filter === "all" || listing.listingStatus === filter)
+      .sort((a, b) => {
+        const byStatus = STATUS_ORDER[a.listingStatus] - STATUS_ORDER[b.listingStatus];
+        if (byStatus !== 0) return byStatus;
+        return b.listPrice - a.listPrice;
+      });
+  }, [listings, filter]);
+
   const visibleListings = filteredListings.slice(0, visibleCount);
   const hasMore = visibleCount < filteredListings.length;
 
