@@ -81,17 +81,22 @@ export default function Header() {
                       <span className="text-[10px] mt-[1px]">▼</span>
                       <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#daaf3a] group-hover:w-full transition-all duration-300 ease-out" />
                     </Link>
-                    <div className="pointer-events-none opacity-0 translate-y-2 group-hover:pointer-events-auto group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 absolute left-0 top-full mt-2 min-w-[230px] bg-[#09312a] border border-[#daaf3a]/30 shadow-[0_8px_20px_rgba(0,0,0,0.35)]">
-                      {item.children.map((child) => (
-                        <Link
-                          key={child.label}
-                          href={child.href}
-                          className="block px-4 py-3 text-[13px] text-white/85 hover:bg-white/10 hover:text-[#daaf3a]"
-                          style={{ fontFamily: "'Lato', sans-serif" }}
-                        >
-                          {child.label}
-                        </Link>
-                      ))}
+                    {/* pt-2 (not mt-2) keeps the 8px offset inside the hover
+                        target, so the cursor never leaves `group` on its way
+                        down into the panel. */}
+                    <div className="pointer-events-none opacity-0 translate-y-2 group-hover:pointer-events-auto group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 absolute left-0 top-full pt-2 min-w-[230px]">
+                      <div className="bg-[#09312a] border border-[#daaf3a]/30 shadow-[0_8px_20px_rgba(0,0,0,0.35)]">
+                        {item.children.map((child) => (
+                          <Link
+                            key={child.label}
+                            href={child.href}
+                            className="block px-4 py-3 text-[13px] text-white/85 hover:bg-white/10 hover:text-[#daaf3a]"
+                            style={{ fontFamily: "'Lato', sans-serif" }}
+                          >
+                            {child.label}
+                          </Link>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 ) : (
