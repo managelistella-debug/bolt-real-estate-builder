@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireAuth } from "@/lib/admin/requireAuth";
-import { ensureUniqueSlug, numOrUndefined, sanitizePatch, withArrayKeys } from "@/lib/admin/helpers";
+import { ensureUniqueSlug, isoDateOrUndefined, numOrUndefined, sanitizePatch, withArrayKeys } from "@/lib/admin/helpers";
 import { getSanityWriteClient } from "@/lib/sanity/client";
 import { slugify } from "@/lib/sanity/slugify";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/sanity/types";
@@ -48,8 +48,22 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       updates[numField] = numOrUndefined(updates[numField]);
     }
   }
+  const unsets: string[] = [];
+  if ("dateListed" in updates) {
+    const raw = updates.dateListed;
+    delete updates.dateListed;
+    if (raw === null || raw === "") {
+      unsets.push("dateListed");
+    } else {
+      const normalized = isoDateOrUndefined(raw);
+      // Malformed input is ignored rather than wiping an existing good date.
+      if (normalized) updates.dateListed = normalized;
+    }
+  }
 
-  const updated = await client.patch(id).set(updates).commit({ returnDocuments: true });
+  let patch = client.patch(id).set(updates);
+  if (unsets.length) patch = patch.unset(unsets);
+  const updated = await patch.commit({ returnDocuments: true });
   return NextResponse.json({ listing: updated });
 }
 

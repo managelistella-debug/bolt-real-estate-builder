@@ -6,6 +6,18 @@ export function numOrUndefined(v: unknown): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
+/**
+ * Normalises a date input to a bare `YYYY-MM-DD` string. Anything blank or
+ * malformed becomes undefined, which clears the field rather than storing junk
+ * that would corrupt listing order.
+ */
+export function isoDateOrUndefined(v: unknown): string | undefined {
+  if (typeof v !== "string") return undefined;
+  const trimmed = v.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return undefined;
+  return Number.isNaN(Date.parse(trimmed)) ? undefined : trimmed;
+}
+
 /** Ensures every object in an array has a `_key`, required by Sanity for array-of-object fields. */
 export function withArrayKeys<T extends Record<string, unknown>>(
   items: T[]

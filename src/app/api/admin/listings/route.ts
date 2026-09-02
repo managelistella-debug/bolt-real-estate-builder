@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireAuth } from "@/lib/admin/requireAuth";
-import { ensureUniqueSlug, numOrUndefined, withArrayKeys } from "@/lib/admin/helpers";
+import { ensureUniqueSlug, isoDateOrUndefined, numOrUndefined, withArrayKeys } from "@/lib/admin/helpers";
 import { getSanityWriteClient } from "@/lib/sanity/client";
 import { slugify } from "@/lib/sanity/slugify";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/sanity/types";
@@ -8,7 +8,7 @@ import { PROPERTY_TYPE_OPTIONS } from "@/lib/sanity/types";
 const LIST_PROJECTION = `{
   _id, address, city, neighborhood, slug, status, price, bedrooms, bathrooms,
   livingAreaSqft, lotSizeSqft, lotSizeDisplayUnit, propertyType, mainImage,
-  featured, sortOrder, published, _updatedAt
+  featured, sortOrder, published, dateListed, _updatedAt
 }`;
 
 export async function GET(req: NextRequest) {
@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
     propertyType,
     yearBuilt: numOrUndefined(body.yearBuilt),
     propertyTaxes: numOrUndefined(body.propertyTaxes),
+    dateListed: isoDateOrUndefined(body.dateListed),
     mlsNumber: body.mlsNumber || "",
     description: body.description || "",
     mainImage: body.mainImage || undefined,

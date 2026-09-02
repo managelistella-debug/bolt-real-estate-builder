@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import BlogDetailPageLegacy from "@/components/blog/BlogDetailPageLegacy";
 import { getPostBySlug, getRecentPosts, portableTextToPlainText } from "@/lib/blog";
+import { DEFAULT_OG_IMAGE } from "@/lib/seo";
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
@@ -33,13 +34,13 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       type: "article",
       title: `${post.title} | Aspen Muraski Real Estate`,
       description,
-      images: post.featuredImage ? [{ url: post.featuredImage }] : undefined,
+      images: [{ url: post.featuredImage || DEFAULT_OG_IMAGE }],
     },
     twitter: {
-      card: post.featuredImage ? "summary_large_image" : "summary",
+      card: "summary_large_image",
       title: `${post.title} | Aspen Muraski Real Estate`,
       description,
-      images: post.featuredImage ? [post.featuredImage] : undefined,
+      images: [post.featuredImage || DEFAULT_OG_IMAGE],
     },
   };
 }

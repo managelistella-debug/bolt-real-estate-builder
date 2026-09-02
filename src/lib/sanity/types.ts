@@ -57,6 +57,8 @@ export interface Listing {
   propertyType: PropertyType[];
   yearBuilt?: number;
   propertyTaxes?: number;
+  /** Admin-only ISO date (YYYY-MM-DD). Drives listing order; never rendered. */
+  dateListed?: string;
   mlsNumber?: string;
   description?: string;
   mainImage?: SanityImageRef;

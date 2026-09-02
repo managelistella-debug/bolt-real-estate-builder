@@ -26,6 +26,8 @@ export interface Listing {
   lotAreaUnit: string;
   yearBuilt: number;
   taxes: number;
+  /** ISO date (YYYY-MM-DD), "" when unset. Ordering only — never displayed. */
+  dateListed: string;
   mlsNumber: string;
   gallery: string[];
   thumbnail: string;
@@ -73,10 +75,32 @@ function toListing(l: SanityListing): Listing {
     lotAreaUnit: lotAreaUnit === "acres" ? "acres" : "sq ft",
     yearBuilt: l.yearBuilt || 0,
     taxes: l.propertyTaxes || 0,
+    dateListed: l.dateListed || "",
     mlsNumber: l.mlsNumber || "",
     gallery,
     thumbnail,
   };
+}
+
+const STATUS_RANK: Record<Listing["listingStatus"], number> = { active: 0, sold: 1 };
+
+/**
+ * The one ordering every listings page uses: active before sold, then newest
+ * list date first, then price high to low as the tie-break. Listings with no
+ * list date fall to the end of their status group.
+ */
+export function compareListings(a: Listing, b: Listing): number {
+  const byStatus = STATUS_RANK[a.listingStatus] - STATUS_RANK[b.listingStatus];
+  if (byStatus !== 0) return byStatus;
+
+  if (a.dateListed !== b.dateListed) {
+    // Blank sorts last either way, so it can't win on a string comparison.
+    if (!a.dateListed) return 1;
+    if (!b.dateListed) return -1;
+    return a.dateListed < b.dateListed ? 1 : -1;
+  }
+
+  return b.listPrice - a.listPrice;
 }
 
 export async function getFeaturedListings(limit = 6): Promise<Listing[]> {
@@ -89,29 +113,29 @@ export async function getFeaturedListings(limit = 6): Promise<Listing[]> {
 
 export async function getActiveListings(): Promise<Listing[]> {
   const listings = await fetchListingsByStatus("Active");
-  return listings.map(toListing);
+  return listings.map(toListing).sort(compareListings);
 }
 
 export async function getSoldListings(): Promise<Listing[]> {
   const listings = await fetchListingsByStatus("Sold");
-  return listings.map(toListing);
+  return listings.map(toListing).sort(compareListings);
 }
 
 /** Acreages collection page. */
 export async function getRanchEstateListings(): Promise<Listing[]> {
   const listings = await fetchListingsByPropertyType("Acreage");
-  return listings.map(toListing);
+  return listings.map(toListing).sort(compareListings);
 }
 
 /** Recreational Properties collection page. */
 export async function getRecreationalPropertyListings(): Promise<Listing[]> {
   const listings = await fetchListingsByPropertyType("Recreational");
-  return listings.map(toListing);
+  return listings.map(toListing).sort(compareListings);
 }
 
 export async function getAllListings(): Promise<Listing[]> {
   const listings = await fetchAllPublishedListings();
-  return listings.map(toListing);
+  return listings.map(toListing).sort(compareListings);
 }
 
 export async function getListingBySlug(slug: string): Promise<Listing | undefined> {

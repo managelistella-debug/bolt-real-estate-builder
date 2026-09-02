@@ -30,6 +30,7 @@ export default function ListingForm({ listing }: ListingFormProps) {
   const [bathrooms, setBathrooms] = useState(field(listing, "bathrooms", ""));
   const [livingAreaSqft, setLivingAreaSqft] = useState(listing?.livingAreaSqft?.toString() ?? "");
   const [yearBuilt, setYearBuilt] = useState(listing?.yearBuilt?.toString() ?? "");
+  const [dateListed, setDateListed] = useState(listing?.dateListed ?? "");
   const [propertyTaxes, setPropertyTaxes] = useState(listing?.propertyTaxes?.toString() ?? "");
   const [mlsNumber, setMlsNumber] = useState(field(listing, "mlsNumber", ""));
   const [description, setDescription] = useState(field(listing, "description", ""));
@@ -125,6 +126,7 @@ export default function ListingForm({ listing }: ListingFormProps) {
       lotSizeDisplayUnit: lotSizeUnit,
       propertyType,
       yearBuilt: yearBuilt === "" ? undefined : Number(yearBuilt),
+      dateListed: dateListed === "" ? null : dateListed,
       propertyTaxes: propertyTaxes === "" ? undefined : Number(propertyTaxes),
       mlsNumber,
       description,
@@ -229,6 +231,18 @@ export default function ListingForm({ listing }: ListingFormProps) {
         <div>
           <label className={labelClass}>Annual Property Taxes ($)</label>
           <input className={inputClass} type="number" value={propertyTaxes} onChange={(e) => setPropertyTaxes(e.target.value)} />
+        </div>
+        <div>
+          <label className={labelClass}>Date Listed</label>
+          <input
+            className={inputClass}
+            type="date"
+            value={dateListed}
+            onChange={(e) => setDateListed(e.target.value)}
+          />
+          <p className="mt-1 text-white/40 text-[11px]">
+            Orders the listing pages. Not shown on the site. Blank sorts to the end.
+          </p>
         </div>
         <div>
           <label className={labelClass}>MLS Number</label>

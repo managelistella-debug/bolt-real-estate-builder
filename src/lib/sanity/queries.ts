@@ -11,7 +11,7 @@ const NO_STORE = { cache: "no-store" as const };
 const LISTING_FIELDS = `{
   _id, _createdAt, _updatedAt, address, city, neighborhood, slug, status, price,
   bedrooms, bathrooms, livingAreaSqft, lotSizeSqft, lotSizeDisplayUnit, propertyType,
-  yearBuilt, propertyTaxes, mlsNumber, description, mainImage, gallery,
+  yearBuilt, propertyTaxes, dateListed, mlsNumber, description, mainImage, gallery,
   featured, sortOrder, published
 }`;
 

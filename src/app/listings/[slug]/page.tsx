@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ListingDetailLegacy from "@/components/listings/ListingDetailLegacy";
 import { getListingBySlug } from "@/lib/listings";
+import { DEFAULT_OG_IMAGE } from "@/lib/seo";
 
 interface ListingPageProps {
   params: Promise<{ slug: string }>;
@@ -28,8 +29,13 @@ export async function generateMetadata({ params }: ListingPageProps): Promise<Me
     openGraph: {
       title: `${listing.address} | Aspen Muraski Real Estate`,
       description: `${listing.propertyType} in ${listing.city} - ${listing.bedrooms} bed, ${listing.bathrooms} bath, ${listing.livingArea.toLocaleString()} sq ft.`,
-      images: listing.thumbnail ? [{ url: listing.thumbnail }] : undefined,
+      images: [{ url: listing.thumbnail || DEFAULT_OG_IMAGE }],
       type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${listing.address} | Aspen Muraski Real Estate`,
+      images: [listing.thumbnail || DEFAULT_OG_IMAGE],
     },
   };
 }
